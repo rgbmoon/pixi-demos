@@ -1,10 +1,11 @@
-import { BackgroundCanvas } from 'src/components/BackgroundCanvas'
 import { Button } from 'src/components/Button'
+
+import { BackgroundCanvas } from './BackgroundCanvas'
 
 export const MainPage = () => {
   return (
-    <div className="relative h-[calc(100vh-var(--header-height))] flex flex-col items-center justify-center p-6 gap-20">
-      <div className="absolute inset-0 -z-10">
+    <div className="relative isolate h-[calc(100vh-var(--header-height))] flex flex-col items-center justify-center p-6 gap-20">
+      <div className="fixed inset-0 -z-10">
         <BackgroundCanvas />
       </div>
       <div className="flex flex-col items-center gap-4">
