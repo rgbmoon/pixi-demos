@@ -12,9 +12,7 @@ export const MainPage = () => {
           Добро пожаловать в <span className="text-[#a98fc3]">Pixi</span> <span className="text-[#6ec3a7]">Game</span>
         </h1>
         <p className="text-xl text-center font-extralight">
-          Эту игру делают два энтузиаста с целью лучше изучить Pixi.js и веб гейм-дев в целом
-          <br />
-          Надеюсь, вам понравится
+          Выиграть тут в принципе невозможно, но зато можно весело провести время и потренировать реакцию
         </p>
       </div>
       <Button link href="/game">

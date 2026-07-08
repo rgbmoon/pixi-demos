@@ -1,18 +1,15 @@
 # Pixi Game Pet Project
 
-## TODO
+Small project made for better pixie.js and game development understanding.
 
-1. Серега готовит ассеты
-2. Набросать архитектурный план: где мы храним инстанс приложения, как мы его инициализируем, где храним логику, подумать о паттернах - DI, MVP, и в целом о system design решениях нашего приложения
+## Tech used
 
-## Проект использует
-
-- **PixiJS** — рендеринг canvas
-- **React** — построение интерфейсов
-- **MobX** — управление состоянием
-- **Tailwind CSS** — CSS фреймворк
-- **clsx** — композиция классов
-- **TypeScript** — типизация
-- **Vite** — сборка
-- **ESLint** — линтинг кода
-- **Husky** — автоматизация git hooks
+- **PixiJS** — canvas rendering
+- **React** — building user interfaces
+- **MobX** — state management
+- **Tailwind CSS** — CSS framework
+- **clsx** — class composition
+- **TypeScript** — typing
+- **Vite** — bundling
+- **ESLint** — code linting
+- **Husky** — git hooks automation

@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import { LogoIcon } from 'src/assets/icons'
-import headerBg from 'src/assets/icons/header-bg.svg?url'
+import headerBg from 'src/assets/img/header-bg.svg?url'
 
 export const Layout = () => {
   return (
