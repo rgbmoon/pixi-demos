@@ -23,7 +23,7 @@
 - **Новый и изменённый код** снабжай подробными комментариями: **зачем** он здесь и какую задачу решает (назначение, принципы, неочевидные решения) — а не буквальный пересказ «что делает строка».
 - Комментируй **только новое/изменённое**. **Не** дописывай комментарии в существующий неизменённый код.
 - Сергей при ревью может вычищать эти комментарии — это ожидаемо, не возвращай их.
-- **Спецификации функционала** — в [docs/](docs/): по каждому модулю назначение, бизнес-логика и принципы работы. Добавляешь/меняешь модуль — создай или обнови его спеку (шаблон: [docs/specs/_template.md](docs/specs/_template.md)).
+- **Спецификации функционала** — в [docs/](docs/): по каждому модулю назначение, бизнес-логика и принципы работы. Добавляешь/меняешь модуль — создай или обнови его спеку (шаблон: [docs/specs/\_template.md](docs/specs/_template.md)).
 
 ---
 
@@ -51,11 +51,11 @@ src/
   app/
     index.tsx              # <App>: StrictMode → RouterProvider
     router.tsx             # createBrowserRouter, ленивые страницы
-  components/              # переиспользуемые компоненты (Button, GameCanvas, Layout)
-  pages/                   # роут-страницы (main, game, not-found); подкомпоненты вложены (main/BackgroundCanvas)
-  stores/                  # MobX-сторы-синглтоны (root.ts, bg.ts)
-  constants/               # bg-blobs.ts
-  utils/                   # create-blob-texture.ts
+  components/              # переиспользуемые компоненты
+  pages/                   # роут-страницы
+  stores/                  # MobX-сторы: game-root.ts (корень игры) + будущее игровое состояние
+  constants/               # глобальные константы, переиспользуемые на уровне всего приложения
+  utils/                   # глобальные утилиты, переиспользуемые на уровне всего приложения
   styles/index.css         # единственный глобальный стиль (Tailwind + @theme)
   assets/
     icons/index.ts         # баррель SVG-иконок как React-компонентов
@@ -109,25 +109,23 @@ lazy: async () => {
 }
 ```
 
-**Стейт (MobX)** — классы-синглтоны на уровне модуля, `makeAutoObservable(this)` в конструкторе, экспорт инстанса в конце файла (`export const bgStore = new BgStore()`).
+**Стейт (MobX)** — в `stores/` пока один стор — `game-root.ts` (корень игрового PIXI: `makeAutoObservable` с исключением тяжёлых полей `app`/`pending`, своего реактивного состояния ещё не держит — обвязка «на вырост»). Сторы игрового состояния (баланс, фаза спина и т.п.) появятся позже. Паттерн для них: классы-синглтоны на уровне модуля, `makeAutoObservable(this)` в конструкторе, экспорт инстанса в конце файла (`export const balanceStore = new BalanceStore()`).
 
-- Тяжёлые/нереактивные PIXI-поля **исключай из наблюдения** — как в [bg.ts](src/stores/bg.ts): `makeAutoObservable<this,'app'|'texture'|...>(this, { app: false, ... })`. Observable — только UI-состояние (`isReady`).
+- MobX — для **игрового состояния**. UI-состояние интерфейса — на стороне React (`useState`, позже Zustand), не в MobX.
+- Тяжёлые/нереактивные PIXI-поля **исключай из наблюдения**: `makeAutoObservable<this,'app'|...>(this, { app: false, ... })`. Observable — только то, на что реагирует UI/логика.
 - Мутации observable в async-коде оборачивай в `runInAction`.
 - Библиотека — только `mobx` (без `mobx-react`/`-lite`). `observer()` пока не используется.
-- ⚠️ Известное расхождение: в [root.ts](src/stores/root.ts) поле `pixiApp` публичное и потому становится observable — это против канона выше. При работе с этим стором приводи к паттерну `bg.ts`.
 
-**Мост React ↔ PIXI** — канон: `useRef` + `useEffect` с очисткой (см. [BackgroundCanvas](src/pages/main/BackgroundCanvas/index.tsx)):
+**Мост React ↔ PIXI** — канон: `useRef` + `useEffect` с очисткой. В `mount` канвас создаёт `Application`, а cleanup через `unmount`/teardown его уничтожает — при уходе со страницы освобождаются тикер, ResizeObserver и WebGL-контекст:
 
 ```tsx
 useEffect(() => {
   const container = containerRef.current
   if (!container) return
-  void bgStore.mount(container)
-  return () => bgStore.unmount()
+  void gameRoot.mount(container)
+  return () => gameRoot.unmount()
 }, [])
 ```
-
-⚠️ [GameCanvas](src/components/GameCanvas/index.tsx) использует упрощённый callback-ref **без cleanup** — это устаревший вариант, не тиражируй его; новый канвас-код делай по образцу `BackgroundCanvas`.
 
 ---
 
@@ -135,9 +133,9 @@ useEffect(() => {
 
 - PIXI **v8**. Инициализация асинхронная: `const app = new Application(); await app.init({ resizeTo: container, ... }); container.appendChild(app.canvas)`.
 - Ресайз — только через опцию `resizeTo`, ручных listener'ов нет.
-- Игровой цикл — `app.ticker.add(fn)`; `fn` хранится как поле класса, чтобы корректно сниматься в `unmount`.
-- **React StrictMode** двойной-монтирует эффекты — защищайся от гонки. Образец в [bg.ts](src/stores/bg.ts): поле `pending` хранит «актуальный» app; после `await init()` проверяем `if (this.pending !== app) { app.destroy(...); return }`.
-- Учитывай **доступность**: анимационный тикер добавляется только если нет `prefers-reduced-motion` (см. `bg.ts`).
+- Игровой цикл — `app.ticker.add(fn)`; `fn` хранится как стабильная ссылка (поле класса или локальная `const`), чтобы корректно сниматься при teardown.
+- **React StrictMode** двойной-монтирует эффекты — защищайся от гонки. В синглтоне-владельце — поле `pending` ([game-root.ts](src/stores/game-root.ts)); в функции — локальный флаг `disposed` ([mountBackground](src/pages/main/BackgroundCanvas/index.tsx)): после `await init()` уничтожаем «устаревший» app и выходим.
+- Учитывай **доступность**: анимационный тикер добавляется только если нет `prefers-reduced-motion` (см. `mountBackground`).
 - Провайдеры приложения — только `StrictMode → RouterProvider` ([app/index.tsx](src/app/index.tsx)). Store-провайдера/темы/error-boundary нет.
 
 ---
@@ -152,7 +150,7 @@ useEffect(() => {
 
 > Из брифа. **Ещё не реализовано** — ориентир для будущего кода. Слои канваса оперируют обвязками, а не сырыми Spine-объектами.
 
-1. **Сторы (MobX)** — хранение данных и реактивность (частично есть, см. `stores/`). Держим **независимые синглтоны**, агрегирующий store-of-stores пока не делаем.
+1. **Сторы (MobX)** — хранение данных и реактивность игрового состояния (сейчас есть только `game-root.ts` — корень канваса; сторы состояния добавим позже). Держим **независимые синглтоны**; RootStore/store-of-stores не вводим, координацию между сторами — в контроллерах/эмиттере.
 2. **Сетевой слой** — делает запросы, парсит ответы, пишет результат в сторы. Бэкенд **мокаем через [MSW](https://mswjs.io/)**; транспорт (REST/WebSocket) ещё не выбран. _(нет)_
 3. **Event emitter** — **собственный класс-эмиттер** (не сторонняя библиотека) — «склеивает» JS-логику/сторы с анимациями. _(нет)_
 4. **Класс анимации** — обвязка над конкретной Spine-сущностью: методы, дёргающие её анимации. Внешний код работает с этой обвязкой, а не с сырым Spine-объектом. Spine-интеграцию, скорее всего, **пишем своим решением**, а не берём готовый сторонний рантайм. _(нет)_
@@ -172,8 +170,8 @@ useEffect(() => {
 
 - Не коммить `src/assets/game/**`.
 - Не вводи `any` и `@ts-ignore`; не оставляй `console.*` (это warn) и `debugger` (error).
-- Не тиражируй callback-ref без cleanup (`GameCanvas`) — используй `useEffect + unmount`.
-- Не делай тяжёлые PIXI-инстансы observable — исключай их из `makeAutoObservable`.
+- Не используй callback-ref без cleanup для канвасов — только `useEffect` с очисткой (см. канон «Мост React↔PIXI»).
+- Не делай тяжёлые PIXI-инстансы observable — исключай их из `makeAutoObservable` (см. `game-root.ts`).
 - Не добавляй ручную мемоизацию без нужды — работает React Compiler.
 - Не выдумывай нерешённые техвыборы (см. «Ещё не решено») — сперва уточни.
 - Не комментируй существующий неизменённый код — комментарии только к новому/изменённому (см. «Учебный проект…»).

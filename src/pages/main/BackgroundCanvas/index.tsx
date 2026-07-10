@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 
-import { bgStore } from 'src/stores/bg'
+import { mountBackground } from '../utils/mount-background'
 
 export const BackgroundCanvas = () => {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -10,9 +10,7 @@ export const BackgroundCanvas = () => {
 
     if (!container) return
 
-    void bgStore.mount(container)
-
-    return () => bgStore.unmount()
+    return mountBackground(container)
   }, [])
 
   return <div ref={containerRef} className="w-full h-full" />

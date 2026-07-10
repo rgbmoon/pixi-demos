@@ -10,7 +10,7 @@ export const createBlobTexture = (): Texture => {
   const ctx = canvas.getContext('2d')
 
   if (!ctx) {
-    throw new Error('BgStore: 2d context недоступен')
+    throw new Error('createBlobTexture: 2d context недоступен')
   }
 
   const radius = blobTextureSize / 2
