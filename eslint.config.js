@@ -62,7 +62,7 @@ export default [
           alphabetize: { order: 'asc', caseInsensitive: true },
         },
       ],
-      'import/no-cycle': ['error', { maxDepth: Infinity }],
+      'import/no-cycle': ['error', { maxDepth: Infinity, ignoreExternal: true }],
 
       // React
       'react/react-in-jsx-scope': 'off',

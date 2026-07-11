@@ -50,11 +50,14 @@ src/
   app/
     index.tsx              # <App>: StrictMode → RouterProvider
     router.tsx             # createBrowserRouter, ленивые страницы
+  api/                     # сетевой слой: service.ts (базовый WS-транспорт) + <name>-api.ts (эндпоинт + zod-DTO)
   components/              # переиспользуемые компоненты
+  mocks/                   # MSW-моки: create-ws-handler.ts (база) + handlers.ts (эндпоинты) + browser.ts (worker)
   pages/                   # роут-страницы
   stores/                  # MobX-сторы: game-root.ts (корень игры) + будущее игровое состояние
   constants/               # глобальные константы, переиспользуемые на уровне всего приложения
   utils/                   # глобальные утилиты, переиспользуемые на уровне всего приложения
+  types/                   # общие типы по темам (network.ts, …)
   styles/index.css         # единственный глобальный стиль (Tailwind + @theme)
   assets/
     icons/index.ts         # баррель SVG-иконок как React-компонентов
@@ -75,9 +78,10 @@ src/
 **Экспорты и типы**
 
 - Только **именованные экспорты** (default — лишь у SVG через `?react`).
-- Компоненты — стрелочные `export const`, без `React.FC`. Пропсы типизируй `interface XxxProps` рядом с компонентом (см. [Button](src/components/Button/index.tsx)). Отдельной папки `types/` нет — типы держим рядом с использованием.
+- Компоненты — стрелочные `export const`, без `React.FC`. Пропсы типизируй `interface XxxProps` рядом с компонентом (см. [Button](src/components/Button/index.tsx)). Общие/переиспользуемые типы — в **`src/types/`** по темам (`network.ts` и т.п.); типы, специфичные для одного места, держим рядом с использованием — в частности **DTO-типы `z.infer` живут рядом со своими zod-схемами в `api/`**.
 - `any` **запрещён** (`no-explicit-any: error`) — в коде его нет, не вводи. Вместо `@ts-ignore` — `@ts-expect-error`.
 - Type-only импорты обязательны: `import { type X }` / `import type` (`consistent-type-imports: error`).
+- **Enum-подобные наборы** — не `enum` (запрещён `erasableSyntaxOnly`) и не голый union, а `as const`-объект + производный тип: `export const X = { a: 'a', … } as const` → `export type X = (typeof X)[keyof typeof X]` (см. [RequestStatus](src/types/network.ts)). Даёт значения с автокомплитом (`X.a`, сужение в `if`/`switch`) и zero-runtime union-тип.
 
 **Импорты**
 
@@ -87,6 +91,8 @@ src/
 **Форматирование** — Prettier + автофиксимые ESLint-правила чинит `npm run lint` на pre-commit; вручную формат не подгоняй.
 
 **TypeScript** — строгий (`strict` + `noUnusedLocals/Parameters`, `verbatimModuleSyntax`, `erasableSyntaxOnly`, `moduleDetection: force`). Неиспользуемые параметры — с префиксом `_` (`(_ticker: Ticker) => {}`).
+
+**Асинхронность** — `async/await` + `try/catch`; `.then()/.catch()` **не используем**. Неизбежные исключения: конструктор `new Promise((resolve, reject) => …)` для отложенного (deferred) промиса, который резолвится извне — напр. запрос↔ответ в [service.ts](src/api/service.ts); и «выстрелил-и-забыл» через `void fn()` (см. [main.tsx](src/main.tsx), [mount-background.ts](src/pages/main/utils/mount-background.ts)). Так же исключение startMocking - так синтаксически удобнее и конструкция легко читаемая
 
 ---
 
@@ -112,6 +118,7 @@ lazy: async () => {
 - Тяжёлые/нереактивные PIXI-поля **исключай из наблюдения**: `makeAutoObservable<this,'app'|...>(this, { app: false, ... })`. Observable — только то, на что реагирует UI/логика.
 - Мутации observable в async-коде оборачивай в `runInAction`.
 - Библиотека — только `mobx` (без `mobx-react`/`-lite`). `observer()` пока не используется.
+- **Сеть в сторе** — через единые хелперы [AsyncValue](src/stores/async-value.ts)`<T>` (фетч/мутации: `this.x.run(() => apiCall())`, сам ведёт `value/status/error`) и [AsyncStream](src/stores/async-stream.ts)`<T>` (WS-подписки: `this.x.start(subscribeFn)`/`stop()`, `value` = последнее push-значение). Единый синтаксис на все три задачи (фетч, мутация, подписка); `fromResource`/сырой `flow` в сторах для этого не пишем.
 
 **Мост React ↔ PIXI** — канон: `useRef` + `useEffect` с очисткой. В `mount` канвас создаёт `Application`, а cleanup через `unmount`/teardown его уничтожает — при уходе со страницы освобождаются тикер, ResizeObserver и WebGL-контекст:
 

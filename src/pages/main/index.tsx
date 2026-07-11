@@ -13,7 +13,7 @@ export const MainPage = () => {
           Добро пожаловать в <span className="text-[#a98fc3]">Pixi</span> <span className="text-[#6ec3a7]">Game</span>
         </h1>
         <p className="text-xl text-center font-extralight">
-          Выиграть тут в принципе невозможно, но зато можно весело провести время и потренировать реакцию
+          Выиграть тут в принципе невозможно, но зато можно весело провести время
         </p>
       </div>
       <Button link href="/game">
