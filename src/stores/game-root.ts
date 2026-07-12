@@ -1,29 +1,27 @@
 import { makeAutoObservable } from 'mobx'
-import { Application, type Ticker } from 'pixi.js'
-import {
-  fetchBalance,
-  pingServer,
-  sendDeposit,
-  subscribeTicks,
-  type Balance,
-  type Pong,
-  type Tick,
-} from 'src/api/root-api'
-import { AsyncStream } from 'src/utils/async-stream'
-import { AsyncValue } from 'src/utils/async-value'
+import { Application } from 'pixi.js'
+import { gameEmitter } from 'src/events/game-emitter'
+import type { Fsm } from 'src/flow/fsm'
+import { createGameFsm } from 'src/flow/game-fsm'
+import { ReelsController } from 'src/game/controllers/reels-controller'
+import { SpinButton } from 'src/game/controllers/spin-button'
+import { spinStore } from 'src/stores/spin-store'
 
 class GameRoot {
   private app: Application | null = null
   private pending: Application | null = null
 
-  balance = new AsyncValue<Balance>()
-  pong = new AsyncValue<Pong>()
-  tick = new AsyncStream<Tick>()
+  private fsm: Fsm | null = null
+  private reels: ReelsController | null = null
+  private spinButton: SpinButton | null = null
 
   constructor() {
-    makeAutoObservable<this, 'app' | 'pending'>(this, {
+    makeAutoObservable<this, 'app' | 'pending' | 'fsm' | 'reels' | 'spinButton'>(this, {
       app: false,
       pending: false,
+      fsm: false,
+      reels: false,
+      spinButton: false,
     })
   }
 
@@ -51,45 +49,59 @@ class GameRoot {
 
     this.app = app
 
-    app.ticker.add(this.gameLoop)
+    const reels = new ReelsController(app.ticker, gameEmitter)
+    const spinButton = new SpinButton(gameEmitter)
+
+    app.stage.addChild(reels, spinButton)
+
+    this.reels = reels
+    this.spinButton = spinButton
+
+    this.layout()
+    app.renderer.on('resize', this.layout)
+
+    const fsm = createGameFsm({
+      context: { emitter: gameEmitter, ticker: app.ticker, reels },
+      onPhaseChange: (phase) => spinStore.setPhase(phase),
+      onError: (error) => spinStore.setFatalError(error),
+    })
+
+    this.fsm = fsm
+
+    void fsm.start()
   }
 
   unmount() {
     this.pending = null
 
+    this.fsm?.dispose()
+    this.fsm = null
+
     if (this.app) {
-      this.app.ticker.remove(this.gameLoop)
+      this.app.renderer.off('resize', this.layout)
+    }
+
+    this.reels?.destroy({ children: true })
+    this.reels = null
+
+    this.spinButton?.destroy({ children: true })
+    this.spinButton = null
+
+    if (this.app) {
       this.app.destroy(true, { children: true })
       this.app = null
     }
   }
 
-  private gameLoop = (_ticker: Ticker) => {}
+  private layout = () => {
+    if (!this.app) {
+      return
+    }
 
-  // TODO выпилить примеры loadBalance deposit ping connect disconnect
+    const { width, height } = this.app.screen
 
-  // Фетч: результат кладётся в balance.value, статус ведёт сам AsyncValue.
-  loadBalance() {
-    return this.balance.run(fetchBalance)
-  }
-
-  // Мутация: тот же .run, просто другой сетевой вызов; ответ обновляет balance.value.
-  deposit(amount: number) {
-    return this.balance.run(() => sendDeposit(amount))
-  }
-
-  // hello-world: ping → pong (pong.value.message === 'hello world').
-  ping() {
-    return this.pong.run(pingServer)
-  }
-
-  // Подписка на WS-поток tick: значения капают в tick.value до disconnect().
-  connect() {
-    this.tick.start(subscribeTicks)
-  }
-
-  disconnect() {
-    this.tick.stop()
+    this.reels?.layout(width, height)
+    this.spinButton?.layout(width, height)
   }
 }
 

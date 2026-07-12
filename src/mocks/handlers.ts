@@ -2,27 +2,25 @@ import { WS_URL } from 'src/constants/environment'
 
 import { createWsHandler } from './create-ws-handler'
 
-let balance = 1000
+const SYMBOLS_COUNT = 3
+const SYMBOL_VARIANTS = 5
+
+const rollSymbols = (): number[] =>
+  Array.from({ length: SYMBOLS_COUNT }, () => Math.floor(Math.random() * SYMBOL_VARIANTS))
+
+const calculateWin = (symbols: number[], bet: number): number =>
+  symbols.every((symbol) => symbol === symbols[0]) ? bet * 10 : 0
 
 export const handlers = [
   createWsHandler({
     url: WS_URL,
     endpoints: {
-      ping: (_payload, reply) => reply('pong', { message: 'hello world', time: Date.now() }),
-      getBalance: (_payload, reply) => reply('balance', { amount: balance }),
-      deposit: (payload, reply) => {
-        const { amount = 0 } = payload as { amount?: number }
-        balance += amount
-        reply('balance', { amount: balance })
+      spin: (payload, reply) => {
+        const { bet = 0 } = payload as { bet?: number }
+        const symbols = rollSymbols()
+
+        reply('spinResult', { symbols, win: calculateWin(symbols, bet) })
       },
-    },
-    onConnect: ({ push, onClose }) => {
-      let count = 0
-      const interval = setInterval(() => {
-        count += 1
-        push('tick', { count })
-      }, 1000)
-      onClose(() => clearInterval(interval))
     },
   }),
 ]
