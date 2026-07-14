@@ -16,3 +16,13 @@ export type Phase = {
   enter(context: PhaseContext): Promise<PhaseName> | PhaseName
   exit?(context: PhaseContext): void
 }
+
+export type FsmOptions = {
+  phases: Record<PhaseName, Phase>
+  initial: PhaseName
+  context: Omit<PhaseContext, 'signal'>
+  onPhaseChange?: (phase: PhaseName) => void
+  onError?: (error: unknown) => void
+}
+
+export type CreateGameFsmOptions = Omit<FsmOptions, 'phases' | 'initial'>

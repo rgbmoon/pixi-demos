@@ -1,6 +1,6 @@
-import { makeAutoObservable } from 'mobx'
+import { action, computed, makeObservable, observable } from 'mobx'
+import { AsyncValue } from 'src/stores/utils/async-value'
 import { PhaseName, type SpinResult } from 'src/types/game'
-import { AsyncValue } from 'src/utils/async-value'
 
 class SpinStore {
   phase: PhaseName = PhaseName.idle
@@ -9,7 +9,16 @@ class SpinStore {
   fatalError: unknown = undefined
 
   constructor() {
-    makeAutoObservable(this)
+    makeObservable(this, {
+      phase: observable,
+      bet: observable,
+      result: observable.ref,
+      fatalError: observable.ref,
+      canSpin: computed,
+      setPhase: action,
+      setBet: action,
+      setFatalError: action,
+    })
   }
 
   get canSpin(): boolean {

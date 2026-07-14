@@ -4,6 +4,7 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import react from 'eslint-plugin-react'
 import importPlugin from 'eslint-plugin-import-x'
+import unusedImports from 'eslint-plugin-unused-imports'
 import prettierConfig from 'eslint-config-prettier'
 import tseslint from 'typescript-eslint'
 
@@ -30,6 +31,7 @@ export default [
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
       import: importPlugin,
+      'unused-imports': unusedImports,
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
@@ -63,6 +65,7 @@ export default [
         },
       ],
       'import/no-cycle': ['error', { maxDepth: Infinity, ignoreExternal: true }],
+      'unused-imports/no-unused-imports': 'error',
 
       // React
       'react/react-in-jsx-scope': 'off',

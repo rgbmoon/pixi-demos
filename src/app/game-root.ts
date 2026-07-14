@@ -1,28 +1,30 @@
-import { makeAutoObservable } from 'mobx'
 import { Application } from 'pixi.js'
 import { gameEmitter } from 'src/events/game-emitter'
 import type { Fsm } from 'src/flow/fsm'
-import { createGameFsm } from 'src/flow/game-fsm'
+import { createGameFsm } from 'src/flow/helpers'
 import { ReelsController } from 'src/game/controllers/reels-controller'
 import { SpinButton } from 'src/game/controllers/spin-button'
 import { spinStore } from 'src/stores/spin-store'
 
-class GameRoot {
+/**
+ * Композиционный корень игры: единственное место, знающее про все слои сразу: PIXI-Application, контроллеры, автомат, сторы и тд.
+ */
+export class GameRoot {
   private app: Application | null = null
   private pending: Application | null = null
-
   private fsm: Fsm | null = null
   private reels: ReelsController | null = null
   private spinButton: SpinButton | null = null
 
-  constructor() {
-    makeAutoObservable<this, 'app' | 'pending' | 'fsm' | 'reels' | 'spinButton'>(this, {
-      app: false,
-      pending: false,
-      fsm: false,
-      reels: false,
-      spinButton: false,
-    })
+  private layout = () => {
+    if (!this.app) {
+      return
+    }
+
+    const { width, height } = this.app.screen
+
+    this.reels?.layout(width, height)
+    this.spinButton?.layout(width, height)
   }
 
   async mount(container: HTMLElement) {
@@ -92,17 +94,4 @@ class GameRoot {
       this.app = null
     }
   }
-
-  private layout = () => {
-    if (!this.app) {
-      return
-    }
-
-    const { width, height } = this.app.screen
-
-    this.reels?.layout(width, height)
-    this.spinButton?.layout(width, height)
-  }
 }
-
-export const gameRoot = new GameRoot()

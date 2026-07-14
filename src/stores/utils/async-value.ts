@@ -1,4 +1,4 @@
-import { flow, makeAutoObservable } from 'mobx'
+import { computed, flow, makeObservable, observable } from 'mobx'
 import { RequestStatus } from 'src/types/network'
 
 export class AsyncValue<T> {
@@ -7,7 +7,13 @@ export class AsyncValue<T> {
   error: unknown = undefined
 
   constructor() {
-    makeAutoObservable(this)
+    makeObservable(this, {
+      value: observable.ref,
+      status: observable,
+      error: observable.ref,
+      isLoading: computed,
+      run: false,
+    })
   }
 
   get isLoading(): boolean {

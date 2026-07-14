@@ -18,7 +18,12 @@ type BlobConfig = {
   /** Медленная пульсация масштаба */
   pulseSpeed: number
   phasePulse: number
+  /** Задержка появления от старта сцены, сек: блобы проявляются каскадом, а не все разом */
+  spawnDelay: number
 }
+
+/** Сколько длится появление одного блоба (0 → полный размер и альфа), сек */
+export const BG_SPAWN_DURATION = 1.2
 
 export const BG_BLOBS: BlobConfig[] = [
   {
@@ -27,14 +32,15 @@ export const BG_BLOBS: BlobConfig[] = [
     size: 1.35,
     cx: 0.3,
     cy: 0.3,
-    ax: 0.18,
-    ay: 0.14,
-    sx: 0.071,
-    sy: 0.053,
+    ax: 0.32,
+    ay: 0.3,
+    sx: 0.284,
+    sy: 0.212,
     phaseX: 0,
     phaseY: 1.7,
-    pulseSpeed: 0.09,
+    pulseSpeed: 0.31,
     phasePulse: 0.4,
+    spawnDelay: 0,
   },
   {
     color: 0x7c3aed,
@@ -42,14 +48,15 @@ export const BG_BLOBS: BlobConfig[] = [
     size: 0.95,
     cx: 0.68,
     cy: 0.25,
-    ax: 0.2,
-    ay: 0.12,
-    sx: 0.049,
-    sy: 0.083,
+    ax: 0.36,
+    ay: 0.28,
+    sx: 0.196,
+    sy: 0.332,
     phaseX: 2.1,
     phaseY: 0.6,
-    pulseSpeed: 0.11,
+    pulseSpeed: 0.37,
     phasePulse: 2.2,
+    spawnDelay: 0.15,
   },
   {
     color: 0xa98fc3,
@@ -57,14 +64,15 @@ export const BG_BLOBS: BlobConfig[] = [
     size: 0.7,
     cx: 0.82,
     cy: 0.62,
-    ax: 0.16,
-    ay: 0.18,
-    sx: 0.061,
-    sy: 0.044,
+    ax: 0.34,
+    ay: 0.38,
+    sx: 0.244,
+    sy: 0.176,
     phaseX: 4.3,
     phaseY: 3.1,
-    pulseSpeed: 0.07,
+    pulseSpeed: 0.28,
     phasePulse: 1.1,
+    spawnDelay: 0.3,
   },
   {
     color: 0x059669,
@@ -72,14 +80,15 @@ export const BG_BLOBS: BlobConfig[] = [
     size: 1.15,
     cx: 0.25,
     cy: 0.78,
-    ax: 0.22,
-    ay: 0.13,
-    sx: 0.055,
-    sy: 0.077,
+    ax: 0.38,
+    ay: 0.3,
+    sx: 0.22,
+    sy: 0.308,
     phaseX: 1.2,
     phaseY: 5,
-    pulseSpeed: 0.1,
+    pulseSpeed: 0.34,
     phasePulse: 3.5,
+    spawnDelay: 0.45,
   },
   {
     color: 0x6ec3a7,
@@ -87,13 +96,14 @@ export const BG_BLOBS: BlobConfig[] = [
     size: 0.75,
     cx: 0.58,
     cy: 0.72,
-    ax: 0.24,
-    ay: 0.2,
-    sx: 0.089,
-    sy: 0.067,
+    ax: 0.4,
+    ay: 0.36,
+    sx: 0.356,
+    sy: 0.268,
     phaseX: 3.4,
     phaseY: 2.4,
-    pulseSpeed: 0.13,
+    pulseSpeed: 0.4,
     phasePulse: 5.2,
+    spawnDelay: 0.6,
   },
 ]

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 
-import { mountBackground } from '../utils/mount-background'
+import { mountBackground } from '../utils'
 
 export const BackgroundCanvas = () => {
   const containerRef = useRef<HTMLDivElement>(null)

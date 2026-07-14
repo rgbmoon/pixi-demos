@@ -1,4 +1,4 @@
-import { waitFor } from 'src/events/wait-for'
+import { waitFor } from 'src/events/helpers'
 import { spinStore } from 'src/stores/spin-store'
 import { PhaseName } from 'src/types/game'
 

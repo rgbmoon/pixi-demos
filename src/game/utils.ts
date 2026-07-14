@@ -1,5 +1,9 @@
 import type { Ticker } from 'pixi.js'
 
+/**
+ * Игровая пауза: промис резолвится, когда тикер накопил `durationMs` в своих кадрах.
+ * В свёрнутой вкладке тикер стоит, поэтому пауза замирает вместе с картинкой. Отменяется через `signal`.
+ */
 export const waitTicks = (ticker: Ticker, durationMs: number, signal?: AbortSignal): Promise<void> =>
   new Promise<void>((resolve, reject) => {
     if (signal?.aborted) {

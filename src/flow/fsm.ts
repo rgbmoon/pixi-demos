@@ -1,16 +1,10 @@
 import type { PhaseName } from 'src/types/game'
 
-import type { Phase, PhaseContext } from './types'
+import type { FsmOptions, Phase, PhaseContext } from './types'
 
-type FsmOptions = {
-  phases: Record<PhaseName, Phase>
-  initial: PhaseName
-  context: Omit<PhaseContext, 'signal'>
-  onPhaseChange?: (phase: PhaseName) => void
-  onError?: (error: unknown) => void
-}
-
-/** Движок конечного автомата на промисах. */
+/**
+ * Движок конечного автомата. Граф переходов держат сами фазы; движок крутит петлю и не знает их порядка.
+ */
 export class Fsm {
   private readonly phases: Record<PhaseName, Phase>
   private readonly initial: PhaseName
@@ -20,6 +14,10 @@ export class Fsm {
 
   private readonly controller = new AbortController()
 
+  /**
+   * Принимает словарь фаз, имя стартовой, зависимости фаз и колбэки на смену фазы и на ошибку.
+   * `signal` в контекст фаз добавляет сам — им же гасит автомат в `dispose`.
+   */
   constructor({ phases, initial, context, onPhaseChange, onError }: FsmOptions) {
     this.phases = phases
     this.initial = initial
@@ -28,6 +26,9 @@ export class Fsm {
     this.context = { ...context, signal: this.controller.signal }
   }
 
+  /**
+   * Запускает петлю фаз со стартовой фазы и крутит её, пока автомат не остановят.
+   */
   async start(): Promise<void> {
     let next = this.initial
 
@@ -52,6 +53,10 @@ export class Fsm {
     }
   }
 
+  /**
+   * Останавливает автомат: абортит `signal` контекста, из-за чего реджектятся все ожидания
+   * внутри фаз (события, анимации, запросы), а петля останавливается, не начав следующую фазу.
+   */
   dispose(): void {
     this.controller.abort(new Error('Игровой автомат остановлен'))
   }

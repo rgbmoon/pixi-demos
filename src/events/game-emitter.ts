@@ -1,35 +1,29 @@
 import { EventEmitter } from 'pixi.js'
 
-import type { EventMap, EventName, GameEvents } from './types'
-
-type AnyHandler = (payload: unknown) => void
+import type { AnyHandler, EventMap, EventName, GameEvents } from './types'
+import { traceEvent } from './utils'
 
 /**
- * Типизированный эмиттер — центр регистрации имён событий игры.
+ * Типизированный эмиттер игровых событий: имена и payload'ы типизированы, эмит произвольной строки невозможен.
  *
- * Под капотом EventEmitter из pixi.js (это eventemitter3, он уже в бандле как зависимость PIXI.
- * Обёртка нужна, потому что у голого ee3 не хватает трёх вещей:
- *   1. on() возвращает `this`, а не функцию отписки — приходится хранить ссылку на колбэк;
- *   2. нет промиса ожидания события (см. waitFor рядом);
- *   3. нет wildcard-подписки, а значит негде повесить общий лог всех эвентов.
- *
- * Внутренний эмиттер сознательно типизирован «широко» (payload как unknown): протащить в его
- * дженерики нашу карту не выйдет — TS не сводит `keyof E` к его собственным mapped-типам.
- * Поэтому всю типобезопасность держат сигнатуры методов ниже, а два каста handler'а
- * заперты внутри этого класса и наружу не текут.
- *
- * Прямой доступ к внутреннему эмиттеру закрыт намеренно: off(event) без колбэка и
- * removeAllListeners() снимают ЧУЖИЕ подписки, и такой вызов из компонента ломает соседей.
+ * Под капотом — EventEmitter из pixi.js (это eventemitter3, он уже в бандле как зависимость PIXI).
+ * Обёртка добавляет к нему три недостающие вещи:
+ *   1. on() отдаёт функцию отписки вместо `this` — не нужно хранить ссылку на колбэк ради off();
+ *   2. ожидание события промисом (см. waitFor рядом);
+ *   3. точку, куда вешается общий лог всех событий: wildcard-подписки у ee3 нет.
  */
 export class GameEmitter<E extends EventMap> {
   private readonly emitter = new EventEmitter<Record<string, [unknown]>>()
-
   private readonly trace?: (event: string, payload: unknown) => void
 
   constructor(trace?: (event: string, payload: unknown) => void) {
     this.trace = trace
   }
 
+  /**
+   * Подписывает `handler` на событие `event`.
+   * Возвращает функцию отписки — её обязан вызвать владелец подписки.
+   */
   on<K extends EventName<E>>(event: K, handler: (payload: E[K]) => void): () => void {
     this.emitter.on(event, handler as AnyHandler)
 
@@ -38,6 +32,7 @@ export class GameEmitter<E extends EventMap> {
     }
   }
 
+  /** Доставляет `payload` всем, кто подписан на `event`, и отдаёт то же событие в трассировку. */
   emit<K extends EventName<E>>(event: K, payload: E[K]): void {
     this.trace?.(event, payload)
 
@@ -45,9 +40,8 @@ export class GameEmitter<E extends EventMap> {
   }
 
   /**
-   * Диагностика утечек.
-   * Числа должны быть стабильны от раунда к раунду — монотонный рост означает,
-   * что кто-то не вызвал свою функцию отписки.
+   * Отдаёт число живых подписчиков по каждому событию — инструмент диагностики утечек.
+   * Числа стабильны от раунда к раунду; рост означает, что кто-то не вызвал свою функцию отписки.
    */
   listenerCounts(): Record<string, number> {
     const counts: Record<string, number> = {}
@@ -59,14 +53,5 @@ export class GameEmitter<E extends EventMap> {
     return counts
   }
 }
-
-// Трассировка всех событий в одной точке — главный инструмент отладки эвентной архитектуры:
-// по консоли видно точную последовательность моментов раунда. Собирается только в DEV.
-const traceEvent = import.meta.env.DEV
-  ? (event: string, payload: unknown) => {
-      // eslint-disable-next-line no-console
-      console.debug(`%c[event] ${event}`, 'color: #a98fc3', payload)
-    }
-  : undefined
 
 export const gameEmitter = new GameEmitter<GameEvents>(traceEvent)

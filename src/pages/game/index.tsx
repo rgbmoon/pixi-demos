@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 
-import { gameRoot } from 'src/stores/game-root'
+import { GameRoot } from 'src/app/game-root'
 
 export const GamePage = () => {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -10,9 +10,11 @@ export const GamePage = () => {
 
     if (!container) return
 
-    void gameRoot.mount(container)
+    const game = new GameRoot()
 
-    return () => gameRoot.unmount()
+    void game.mount(container)
+
+    return () => game.unmount()
   }, [])
 
   return <div ref={containerRef} className="w-full h-full" />

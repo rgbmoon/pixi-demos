@@ -1,7 +1,7 @@
 import type { GameEmitter } from './game-emitter'
 import type { EventMap, EventName } from './types'
 
-export type WaitForOptions<P> = {
+type WaitForOptions<P> = {
   // Отмена извне: unmount страницы, обрыв раунда. Без него зависшее ожидание живёт вечно.
   signal?: AbortSignal
   // Страховка на случай «событие не пришло никогда» (потерянный ответ сервера).
@@ -11,8 +11,8 @@ export type WaitForOptions<P> = {
 }
 
 /**
- * Мост «эвенты → async/await»: промис, который резолвится при первом подходящем событии.
- * На нём стоит весь конечный автомат — фаза «спит» на промисе вместо опроса флагов в тикере.
+ * Отдаёт промис с payload первого события `event`, прошедшего `filter` (без фильтра — любого).
+ * Реджектится, если ожидание отменили через `signal` или событие не пришло за `timeoutMs`.
  */
 export const waitFor = <E extends EventMap, K extends EventName<E>>(
   emitter: GameEmitter<E>,
@@ -56,9 +56,8 @@ export const waitFor = <E extends EventMap, K extends EventName<E>>(
     }
 
     if (timeoutMs !== undefined) {
-      // Единственный setTimeout, допустимый в игровом коде: это watchdog, а не игровая
-      // задержка. Он и ДОЛЖЕН идти по системному времени — сторож обязан сработать,
-      // даже если вкладка свёрнута и тикер стоит. Игровые паузы — только через waitTicks.
+      // Здесь setTimeout уместен: таймаут ожидания отсчитывается системным временем и обязан
+      // сработать даже в свёрнутой вкладке, где тикер PIXI остановлен.
       const timeoutId = setTimeout(() => {
         settle(() => reject(new Error(`waitFor: событие "${event}" не пришло за ${timeoutMs} мс`)))
       }, timeoutMs)

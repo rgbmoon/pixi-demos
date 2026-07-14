@@ -1,6 +1,7 @@
 import { Container, Graphics, Text, type Ticker } from 'pixi.js'
 import type { SpinResult } from 'src/types/game'
-import { waitTicks } from 'src/utils/wait-ticks'
+
+import { waitTicks } from '../utils'
 
 const REEL_WIDTH = 300
 const REEL_HEIGHT = 120

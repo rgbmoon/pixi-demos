@@ -4,14 +4,11 @@ import { Fsm } from './fsm'
 import { idlePhase } from './phases/idle'
 import { resultPhase } from './phases/result'
 import { spinningPhase } from './phases/spinning'
-import type { PhaseContext } from './types'
+import type { CreateGameFsmOptions } from './types'
 
-type CreateGameFsmOptions = {
-  context: Omit<PhaseContext, 'signal'>
-  onPhaseChange?: (phase: PhaseName) => void
-  onError?: (error: unknown) => void
-}
-
+/**
+ * Собирает автомат раунда: подставляет в движок фазы игры.
+ */
 export const createGameFsm = ({ context, onPhaseChange, onError }: CreateGameFsmOptions): Fsm =>
   new Fsm({
     phases: {

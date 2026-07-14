@@ -13,7 +13,7 @@ export const spinningPhase: Phase = {
 
     emitter.emit('spin:started', { bet })
 
-    await Promise.all([spinStore.result.run(() => sendSpin(bet)), reels.spin(signal)])
+    await Promise.all([spinStore.result.run(() => sendSpin(bet, signal)), reels.spin(signal)])
 
     if (spinStore.result.status === RequestStatus.error) {
       return PhaseName.idle

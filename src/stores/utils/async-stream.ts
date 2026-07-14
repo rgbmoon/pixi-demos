@@ -1,4 +1,4 @@
-import { makeAutoObservable, runInAction } from 'mobx'
+import { action, makeObservable, observable, runInAction } from 'mobx'
 
 export class AsyncStream<T> {
   value: T | undefined = undefined
@@ -6,7 +6,12 @@ export class AsyncStream<T> {
   private dispose: (() => void) | null = null
 
   constructor() {
-    makeAutoObservable<this, 'dispose'>(this, { dispose: false })
+    makeObservable<this, 'dispose'>(this, {
+      value: observable.ref,
+      dispose: false,
+      start: action,
+      stop: action,
+    })
   }
 
   start(subscribe: (onValue: (value: T) => void) => () => void): void {

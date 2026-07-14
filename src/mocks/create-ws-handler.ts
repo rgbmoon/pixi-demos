@@ -1,18 +1,6 @@
 import { ws } from 'msw'
 
-export type WsReply = (type: string, payload: unknown) => void
-export type WsEndpoint = (payload: unknown, reply: WsReply) => void
-
-export type WsConnectionContext = {
-  push: (type: string, payload: unknown) => void
-  onClose: (cleanup: () => void) => void
-}
-
-type CreateWsHandlerOptions = {
-  url: string
-  endpoints: Record<string, WsEndpoint>
-  onConnect?: (context: WsConnectionContext) => void
-}
+import type { CreateWsHandlerOptions } from './types'
 
 export const createWsHandler = ({ url, endpoints, onConnect }: CreateWsHandlerOptions) =>
   ws.link(url).addEventListener('connection', ({ client }) => {
@@ -34,6 +22,11 @@ export const createWsHandler = ({ url, endpoints, onConnect }: CreateWsHandlerOp
         return
       }
 
-      endpoint(message.payload, (type, payload) => client.send(JSON.stringify({ id: message.id, type, payload })))
+      endpoint(
+        message.payload,
+        (type, payload) => client.send(JSON.stringify({ id: message.id, type, payload })),
+        (code, errorMessage) =>
+          client.send(JSON.stringify({ id: message.id, type: message.type, error: { code, message: errorMessage } }))
+      )
     })
   })
