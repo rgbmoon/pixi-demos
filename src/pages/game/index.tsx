@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 
-import { GameRoot } from 'src/app/game-root'
+import { appContainer } from 'src/app/container'
+import { TOKENS } from 'src/constants/tokens'
 
 export const GamePage = () => {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -10,7 +11,8 @@ export const GamePage = () => {
 
     if (!container) return
 
-    const game = new GameRoot()
+    // Роут-страница — точка входа: резолвит транзиентный GameRoot и владеет его mount/unmount
+    const game = appContainer.get(TOKENS.GameRoot)
 
     void game.mount(container)
 

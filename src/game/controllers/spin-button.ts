@@ -1,21 +1,33 @@
+import { inject, injectable } from 'inversify'
 import { reaction } from 'mobx'
 import { Container, type DestroyOptions, Graphics, Text } from 'pixi.js'
+import { TOKENS } from 'src/constants/tokens'
 import type { GameEmitter } from 'src/events/game-emitter'
 import type { GameEvents } from 'src/events/types'
-import { spinStore } from 'src/stores/spin-store'
+import type { SpinStore } from 'src/stores/spin-store'
 
 const BUTTON_WIDTH = 180
 const BUTTON_HEIGHT = 56
 
+/**
+ * Кнопка запуска спина: по тапу объявляет `ui:spinRequested` с текущей ставкой;
+ * доступность следует за `spinStore.canSpin`.
+ */
+@injectable()
 export class SpinButton extends Container {
   private readonly emitter: GameEmitter<GameEvents>
+  private readonly spinStore: SpinStore
   private readonly background: Graphics
   private readonly disposers: Array<() => void> = []
 
-  constructor(emitter: GameEmitter<GameEvents>) {
+  constructor(
+    @inject(TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>,
+    @inject(TOKENS.SpinStore) spinStore: SpinStore
+  ) {
     super()
 
     this.emitter = emitter
+    this.spinStore = spinStore
 
     this.background = new Graphics().roundRect(0, 0, BUTTON_WIDTH, BUTTON_HEIGHT, 12).fill('#a98fc3')
 
@@ -35,7 +47,7 @@ export class SpinButton extends Container {
 
     this.disposers.push(
       reaction(
-        () => spinStore.canSpin,
+        () => this.spinStore.canSpin,
         (canSpin) => this.setEnabled(canSpin),
         { fireImmediately: true }
       )
@@ -43,7 +55,7 @@ export class SpinButton extends Container {
   }
 
   private handleTap = () => {
-    this.emitter.emit('ui:spinRequested', { bet: spinStore.bet })
+    this.emitter.emit('ui:spinRequested', { bet: this.spinStore.bet })
   }
 
   private setEnabled(enabled: boolean) {

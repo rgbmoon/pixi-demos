@@ -1,22 +1,21 @@
 import { computed, flow, makeObservable, observable } from 'mobx'
 import { RequestStatus } from 'src/types/network'
 
+/**
+ * Асинхронное значение для стора: хранит результат, статус и ошибку запроса.
+ * `run(task)` выполняет запрос и ведёт статусы; ошибку записывает в `error`, промис не реджектится.
+ */
 export class AsyncValue<T> {
-  value: T | undefined = undefined
-  status: RequestStatus = RequestStatus.idle
-  error: unknown = undefined
-
   constructor() {
-    makeObservable(this, {
-      value: observable.ref,
-      status: observable,
-      error: observable.ref,
-      isLoading: computed,
-      run: false,
-    })
+    // Применяет разметку legacy-декораторов к экземпляру (см. CLAUDE.md, «Стейт (MobX)»)
+    makeObservable(this)
   }
 
-  get isLoading(): boolean {
+  @observable.ref value: T | undefined = undefined
+  @observable status: RequestStatus = RequestStatus.idle
+  @observable.ref error: unknown = undefined
+
+  @computed get isLoading(): boolean {
     return this.status === RequestStatus.loading
   }
 

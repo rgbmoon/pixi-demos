@@ -1,6 +1,5 @@
 import { nanoid } from 'nanoid'
 import { WebSocket as ReconnectingWebSocket } from 'partysocket'
-import { WS_URL } from 'src/constants/environment'
 import { z } from 'zod'
 
 import type { PendingRequest, PushListener, WsRequestOptions, WsTransportOptions } from './types'
@@ -15,7 +14,7 @@ const EnvelopeSchema = z.object({
 /**
  * Обертка вокруг partysocket, предоставляющая методы для удобной работы с сетью
  */
-class WsTransport {
+export class WsTransport {
   private socket: ReconnectingWebSocket | null = null
 
   private readonly pending = new Map<string, PendingRequest>()
@@ -23,7 +22,7 @@ class WsTransport {
   private readonly url: string
   private readonly timeoutMs: number
 
-  constructor({ url = WS_URL, timeoutMs = 10000 }: WsTransportOptions = {}) {
+  constructor({ url, timeoutMs = 10000 }: WsTransportOptions) {
     this.url = url
     this.timeoutMs = timeoutMs
   }
@@ -262,5 +261,3 @@ class WsTransport {
     this.socket = null
   }
 }
-
-export const wsTransport = new WsTransport()

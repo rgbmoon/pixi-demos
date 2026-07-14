@@ -1,12 +1,29 @@
+import { inject, injectable } from 'inversify'
+import { TOKENS } from 'src/constants/tokens'
 import type { SpinResult } from 'src/types/game'
 import { z } from 'zod'
 
-import { wsTransport } from './service'
+import type { WsTransport } from './service'
 
 const SpinResultSchema = z.object({
   symbols: z.array(z.number()),
   win: z.number(),
 })
 
-export const sendSpin = (bet: number, signal?: AbortSignal): Promise<SpinResult> =>
-  wsTransport.request('spin', SpinResultSchema, { bet }, { signal })
+/**
+ * Описание эндпоинтов корневого домена: методы отправляют запрос через транспорт
+ * и возвращают ответ, разобранный zod-схемой.
+ */
+@injectable()
+export class RootApi {
+  private readonly transport: WsTransport
+
+  constructor(@inject(TOKENS.WsTransport) transport: WsTransport) {
+    this.transport = transport
+  }
+
+  /** Запрашивает у сервера результат спина для ставки `bet`. */
+  sendSpin(bet: number, signal?: AbortSignal): Promise<SpinResult> {
+    return this.transport.request('spin', SpinResultSchema, { bet }, { signal })
+  }
+}

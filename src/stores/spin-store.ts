@@ -1,41 +1,33 @@
+import { injectable } from 'inversify'
 import { action, computed, makeObservable, observable } from 'mobx'
 import { AsyncValue } from 'src/stores/utils/async-value'
 import { PhaseName, type SpinResult } from 'src/types/game'
 
-class SpinStore {
-  phase: PhaseName = PhaseName.idle
-  bet = 10
-  result = new AsyncValue<SpinResult>()
-  fatalError: unknown = undefined
-
+/** Состояние раунда: фаза автомата, ставка и результат спина. */
+@injectable()
+export class SpinStore {
   constructor() {
-    makeObservable(this, {
-      phase: observable,
-      bet: observable,
-      result: observable.ref,
-      fatalError: observable.ref,
-      canSpin: computed,
-      setPhase: action,
-      setBet: action,
-      setFatalError: action,
-    })
+    makeObservable(this)
   }
 
-  get canSpin(): boolean {
+  @observable phase: PhaseName = PhaseName.idle
+  @observable bet = 10
+  @observable.ref result = new AsyncValue<SpinResult>()
+  @observable.ref fatalError: unknown = undefined
+
+  @computed get canSpin(): boolean {
     return this.phase === PhaseName.idle
   }
 
-  setPhase(phase: PhaseName) {
+  @action setPhase(phase: PhaseName) {
     this.phase = phase
   }
 
-  setBet(bet: number) {
+  @action setBet(bet: number) {
     this.bet = bet
   }
 
-  setFatalError(error: unknown) {
+  @action setFatalError(error: unknown) {
     this.fatalError = error
   }
 }
-
-export const spinStore = new SpinStore()

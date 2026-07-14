@@ -1,14 +1,21 @@
+import { inject, injectable } from 'inversify'
 import { Container, type DestroyOptions, type Ticker } from 'pixi.js'
+import { TOKENS } from 'src/constants/tokens'
 import type { GameEmitter } from 'src/events/game-emitter'
 import type { GameEvents } from 'src/events/types'
 import { ReelAnimation } from 'src/game/animations/reel-animation'
 import type { SpinResult } from 'src/types/game'
 
+/**
+ * Контроллер барабанов: создаёт анимацию, транслирует ей команды фаз
+ * и подсвечивает результат по событию `spin:landed`.
+ */
+@injectable()
 export class ReelsController extends Container {
   private readonly animation: ReelAnimation
   private readonly disposers: Array<() => void> = []
 
-  constructor(ticker: Ticker, emitter: GameEmitter<GameEvents>) {
+  constructor(@inject(TOKENS.Ticker) ticker: Ticker, @inject(TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>) {
     super()
 
     this.animation = new ReelAnimation(ticker)

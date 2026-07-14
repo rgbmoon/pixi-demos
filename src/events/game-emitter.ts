@@ -1,7 +1,6 @@
 import { EventEmitter } from 'pixi.js'
 
-import type { AnyHandler, EventMap, EventName, GameEvents } from './types'
-import { traceEvent } from './utils'
+import type { AnyHandler, EventMap, EventName } from './types'
 
 /**
  * Типизированный эмиттер игровых событий: имена и payload'ы типизированы, эмит произвольной строки невозможен.
@@ -53,5 +52,3 @@ export class GameEmitter<E extends EventMap> {
     return counts
   }
 }
-
-export const gameEmitter = new GameEmitter<GameEvents>(traceEvent)

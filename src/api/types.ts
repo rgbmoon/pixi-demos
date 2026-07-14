@@ -1,7 +1,7 @@
 import type { ZodType } from 'zod'
 
 export type WsTransportOptions = {
-  url?: string
+  url: string
   timeoutMs?: number
 }
 

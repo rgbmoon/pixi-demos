@@ -1,20 +1,19 @@
 import { action, makeObservable, observable, runInAction } from 'mobx'
 
+/**
+ * Push-подписка для стора: `start(subscribe)` подписывается и складывает входящие
+ * значения в `value`, `stop()` отписывается.
+ */
 export class AsyncStream<T> {
-  value: T | undefined = undefined
+  constructor() {
+    makeObservable(this)
+  }
+
+  @observable.ref value: T | undefined = undefined
 
   private dispose: (() => void) | null = null
 
-  constructor() {
-    makeObservable<this, 'dispose'>(this, {
-      value: observable.ref,
-      dispose: false,
-      start: action,
-      stop: action,
-    })
-  }
-
-  start(subscribe: (onValue: (value: T) => void) => () => void): void {
+  @action start(subscribe: (onValue: (value: T) => void) => () => void): void {
     this.stop()
     this.dispose = subscribe((value) => {
       runInAction(() => {
@@ -23,7 +22,7 @@ export class AsyncStream<T> {
     })
   }
 
-  stop(): void {
+  @action stop(): void {
     this.dispose?.()
     this.dispose = null
   }

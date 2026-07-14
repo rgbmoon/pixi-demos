@@ -1,20 +1,26 @@
+import { type Container, inject, injectable } from 'inversify'
 import { Application } from 'pixi.js'
-import { gameEmitter } from 'src/events/game-emitter'
-import type { Fsm } from 'src/flow/fsm'
-import { createGameFsm } from 'src/flow/helpers'
-import { ReelsController } from 'src/game/controllers/reels-controller'
-import { SpinButton } from 'src/game/controllers/spin-button'
-import { spinStore } from 'src/stores/spin-store'
+import { TOKENS } from 'src/constants/tokens'
+import type { ReelsController } from 'src/game/controllers/reels-controller'
+import type { SpinButton } from 'src/game/controllers/spin-button'
 
 /**
- * Композиционный корень игры: единственное место, знающее про все слои сразу: PIXI-Application, контроллеры, автомат, сторы и тд.
+ * Хост жизненного цикла игры: создаёт PIXI-приложение, монтирует канвас в DOM-элемент,
+ * собирает игровой граф из child-контейнера и разбирает всё при уходе со страницы.
  */
+@injectable()
 export class GameRoot {
+  private readonly createGameContainer: (app: Application) => Container
+
   private app: Application | null = null
   private pending: Application | null = null
-  private fsm: Fsm | null = null
+  private container: Container | null = null
   private reels: ReelsController | null = null
   private spinButton: SpinButton | null = null
+
+  constructor(@inject(TOKENS.GameContainerFactory) createGameContainer: (app: Application) => Container) {
+    this.createGameContainer = createGameContainer
+  }
 
   private layout = () => {
     if (!this.app) {
@@ -27,6 +33,10 @@ export class GameRoot {
     this.spinButton?.layout(width, height)
   }
 
+  /**
+   * Инициализирует PIXI-приложение внутри `container`, собирает игровой граф
+   * и запускает автомат. Повторный вызов до завершения предыдущего игнорируется.
+   */
   async mount(container: HTMLElement) {
     if (this.pending) {
       return
@@ -51,8 +61,12 @@ export class GameRoot {
 
     this.app = app
 
-    const reels = new ReelsController(app.ticker, gameEmitter)
-    const spinButton = new SpinButton(gameEmitter)
+    const di = this.createGameContainer(app)
+
+    this.container = di
+
+    const reels = di.get(TOKENS.ReelsController)
+    const spinButton = di.get(TOKENS.SpinButton)
 
     app.stage.addChild(reels, spinButton)
 
@@ -62,31 +76,28 @@ export class GameRoot {
     this.layout()
     app.renderer.on('resize', this.layout)
 
-    const fsm = createGameFsm({
-      context: { emitter: gameEmitter, ticker: app.ticker, reels },
-      onPhaseChange: (phase) => spinStore.setPhase(phase),
-      onError: (error) => spinStore.setFatalError(error),
-    })
-
-    this.fsm = fsm
+    const fsm = di.get(TOKENS.Fsm)
 
     void fsm.start()
   }
 
+  /** Разбирает игру: останавливает автомат, уничтожает контроллеры и PIXI-приложение. Порядок шагов фиксирован. */
   unmount() {
     this.pending = null
-
-    this.fsm?.dispose()
-    this.fsm = null
 
     if (this.app) {
       this.app.renderer.off('resize', this.layout)
     }
 
-    this.reels?.destroy({ children: true })
-    this.reels = null
+    // Деактивации биндингов вызывают dispose/destroy; автомат гасится раньше контроллеров
+    if (this.container) {
+      this.container.unbind(TOKENS.Fsm)
+      this.container.unbind(TOKENS.ReelsController)
+      this.container.unbind(TOKENS.SpinButton)
+      this.container = null
+    }
 
-    this.spinButton?.destroy({ children: true })
+    this.reels = null
     this.spinButton = null
 
     if (this.app) {

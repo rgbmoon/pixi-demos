@@ -1,4 +1,3 @@
-import { spinStore } from 'src/stores/spin-store'
 import { PhaseName } from 'src/types/game'
 
 import type { Phase } from '../types'
@@ -6,7 +5,7 @@ import type { Phase } from '../types'
 export const resultPhase: Phase = {
   name: PhaseName.result,
 
-  enter: async ({ emitter, reels, signal }) => {
+  enter: async ({ emitter, reels, spinStore, signal }) => {
     const result = spinStore.result.value
 
     if (!result) {
