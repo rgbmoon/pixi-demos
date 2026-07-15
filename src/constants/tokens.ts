@@ -2,12 +2,12 @@ import type { Container, ServiceIdentifier } from 'inversify'
 import type { Application, Ticker } from 'pixi.js'
 import type { RootApi } from 'src/api/root-api'
 import type { WsTransport } from 'src/api/service'
-import type { GameRoot } from 'src/app/game-root'
 import type { GameEmitter } from 'src/events/game-emitter'
 import type { GameEvents } from 'src/events/types'
 import type { Fsm } from 'src/flow/fsm'
 import type { ReelsController } from 'src/game/controllers/reels-controller'
 import type { SpinButton } from 'src/game/controllers/spin-button'
+import type { GameRoot } from 'src/game/game-root'
 import type { SpinStore } from 'src/stores/spin-store'
 
 /**

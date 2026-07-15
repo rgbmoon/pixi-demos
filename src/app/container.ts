@@ -7,10 +7,10 @@ import { TOKENS } from 'src/constants/tokens'
 import { GameEmitter } from 'src/events/game-emitter'
 import type { GameEvents } from 'src/events/types'
 import { traceEvent } from 'src/events/utils'
+import { GameRoot } from 'src/game/game-root'
 import { SpinStore } from 'src/stores/spin-store'
 
 import { createGameContainer } from './game-container'
-import { GameRoot } from './game-root'
 
 /**
  * App-контейнер — composition root приложения. Его биндинги живут всё время работы вкладки;

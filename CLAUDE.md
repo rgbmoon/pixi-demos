@@ -55,12 +55,12 @@ src/
     router.tsx             # createBrowserRouter, ленивые страницы
     container.ts           # app-контейнер (composition root): биндинги транспорта, api, эмиттера, стора, GameRoot
     game-container.ts      # фабрика child-контейнера на один маунт: Application/Ticker, контроллеры, Fsm + деактивации
-    game-root.ts           # хост жизненного цикла игры: PIXI-init, DOM-мост, layout, порядок unbind (transient)
   api/                     # сетевой слой: service.ts (класс WsTransport) + types.ts + <name>-api.ts (класс-фасад эндпоинтов + zod-DTO)
   components/              # переиспользуемые компоненты
   events/                  # эвентный слой: game-emitter.ts (класс GameEmitter) + types.ts (карта GameEvents) + utils.ts (traceEvent) + helpers.ts (waitFor)
   flow/                    # конечный автомат раунда: fsm.ts (движок) + types.ts (Phase, PhaseContext, опции) + helpers.ts (createGameFsm — сборка) + phases/ (idle, spinning, result)
-  game/                    # PIXI-слой: utils.ts (waitTicks) + роли из брифа:
+  game/                    # PIXI-слой: game-root.ts (хост жизненного цикла) + utils.ts (waitTicks) + роли из брифа:
+    game-root.ts           #   хост жизненного цикла игры: PIXI-init, DOM-мост, layout, порядок unbind (transient)
     animations/            #   п.4 — классы анимации: обёртки над визуальной сущностью, методы с игровой семантикой → промис
     controllers/           #   п.5 — контроллеры-Container: создают анимации, держат подписки на эвенты
   mocks/                   # MSW-моки: create-ws-handler.ts (база) + types.ts + handlers.ts (эндпоинты) + browser.ts (worker)
@@ -194,7 +194,7 @@ useEffect(() => {
 - Ресайз — только через опцию `resizeTo`, ручных listener'ов нет.
 - Игровой цикл — `app.ticker.add(fn)`; `fn` хранится как стабильная ссылка (поле класса или локальная `const`), чтобы её можно было удалить из тикера при teardown.
 - **Игровые задержки — только [waitTicks](src/game/utils.ts)**, не `setTimeout`: в свёрнутой вкладке тикер PIXI останавливается, а `setTimeout` — нет; анимация завершилась бы по таймеру, не отрисовав ни одного кадра, и автомат перешёл бы к следующей фазе, рассинхронизировавшись с отрисовкой. `setTimeout` допустим лишь как watchdog-таймаут по системному времени ([waitFor](src/events/helpers.ts), [service.ts](src/api/service.ts)).
-- **React StrictMode** монтирует эффекты дважды (mount → cleanup → mount) — защищайся от гонки инициализации. В классе-владельце — поле `pending` ([game-root.ts](src/app/game-root.ts)); в функции — локальный флаг `disposed` (`mountBackground` в [BackgroundCanvas/utils.ts](src/components/BackgroundCanvas/utils.ts)): после `await init()` уничтожаем устаревший app и выходим.
+- **React StrictMode** монтирует эффекты дважды (mount → cleanup → mount) — защищайся от гонки инициализации. В классе-владельце — поле `pending` ([game-root.ts](src/game/game-root.ts)); в функции — локальный флаг `disposed` (`mountBackground` в [BackgroundCanvas/utils.ts](src/components/BackgroundCanvas/utils.ts)): после `await init()` уничтожаем устаревший app и выходим.
 - Учитывай **доступность**: анимационный тикер добавляется только если нет `prefers-reduced-motion` (см. `mountBackground`).
 - Провайдеры приложения — только `StrictMode → RouterProvider` ([app/index.tsx](src/app/index.tsx)). Store-провайдера/темы/error-boundary нет.
 
@@ -243,7 +243,7 @@ useEffect(() => {
 - Не вызывай `unbindAll()` и не вешай async-обработчики на `onDeactivation` при синхронном `unbind` — порядок смерти только явной цепочкой (см. «Композиция и DI»).
 - Не используй callback-ref без cleanup для канвасов — только `useEffect` с очисткой (см. «Мост React↔PIXI»).
 - Не используй `makeAutoObservable` и карты-объекты `makeObservable(this, {...})` — только декораторы у членов + `makeObservable(this)` в конструкторе.
-- Не делай тяжёлые PIXI-инстансы observable; классу без реактивных полей MobX не подключаем (см. `app/game-root.ts`).
+- Не делай тяжёлые PIXI-инстансы observable; классу без реактивных полей MobX не подключаем (см. `game/game-root.ts`).
 - Не клади в `stores/` не-MobX-классы.
 - Не добавляй ручную мемоизацию без нужды — работает React Compiler.
 - По нерешённым техвыборам (см. «Ещё не решено») не принимай решений самостоятельно — сперва уточни.
