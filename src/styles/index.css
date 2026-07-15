@@ -6,6 +6,9 @@
 
 html,
 body {
-  background-color: var(--color-slate-600);
   color: var(--color-slate-200);
+}
+
+html {
+  background-color: var(--color-slate-600);
 }

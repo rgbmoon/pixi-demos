@@ -117,7 +117,7 @@ src/
 
 **TypeScript** — строгий (`strict` + `noUnusedLocals/Parameters`, `verbatimModuleSyntax`, `erasableSyntaxOnly`, `moduleDetection: force`). Неиспользуемые параметры — с префиксом `_` (`(_ticker: Ticker) => {}`). Включены legacy-декораторы (`experimentalDecorators`) под inversify; `emitDecoratorMetadata` **выключен** — токены в `@inject` всегда явные. Parameter properties (`constructor(private x: X)`) запрещены `erasableSyntaxOnly` — поле объявляем и присваиваем вручную.
 
-**Асинхронность** — `async/await` + `try/catch`; `.then()/.catch()` **не используем**. Исключения: конструктор `new Promise((resolve, reject) => …)` для deferred-промиса, который резолвится извне (запрос↔ответ в [service.ts](src/api/service.ts)); запуск async-функции без ожидания результата — `void fn()` (`void setup()` в [pages/main/utils.ts](src/pages/main/utils.ts)); и `void startMocking().then(...)` в [main.tsx](src/main.tsx) — так синтаксически удобнее, конструкция легко читается.
+**Асинхронность** — `async/await` + `try/catch`; `.then()/.catch()` **не используем**. Исключения: конструктор `new Promise((resolve, reject) => …)` для deferred-промиса, который резолвится извне (запрос↔ответ в [service.ts](src/api/service.ts)); запуск async-функции без ожидания результата — `void fn()` (`void setup()` в [BackgroundCanvas/utils.ts](src/components/BackgroundCanvas/utils.ts)); и `void startMocking().then(...)` в [main.tsx](src/main.tsx) — так синтаксически удобнее, конструкция легко читается.
 
 ---
 
@@ -194,7 +194,7 @@ useEffect(() => {
 - Ресайз — только через опцию `resizeTo`, ручных listener'ов нет.
 - Игровой цикл — `app.ticker.add(fn)`; `fn` хранится как стабильная ссылка (поле класса или локальная `const`), чтобы её можно было удалить из тикера при teardown.
 - **Игровые задержки — только [waitTicks](src/game/utils.ts)**, не `setTimeout`: в свёрнутой вкладке тикер PIXI останавливается, а `setTimeout` — нет; анимация завершилась бы по таймеру, не отрисовав ни одного кадра, и автомат перешёл бы к следующей фазе, рассинхронизировавшись с отрисовкой. `setTimeout` допустим лишь как watchdog-таймаут по системному времени ([waitFor](src/events/helpers.ts), [service.ts](src/api/service.ts)).
-- **React StrictMode** монтирует эффекты дважды (mount → cleanup → mount) — защищайся от гонки инициализации. В классе-владельце — поле `pending` ([game-root.ts](src/app/game-root.ts)); в функции — локальный флаг `disposed` (`mountBackground` в [pages/main/utils.ts](src/pages/main/utils.ts)): после `await init()` уничтожаем устаревший app и выходим.
+- **React StrictMode** монтирует эффекты дважды (mount → cleanup → mount) — защищайся от гонки инициализации. В классе-владельце — поле `pending` ([game-root.ts](src/app/game-root.ts)); в функции — локальный флаг `disposed` (`mountBackground` в [BackgroundCanvas/utils.ts](src/components/BackgroundCanvas/utils.ts)): после `await init()` уничтожаем устаревший app и выходим.
 - Учитывай **доступность**: анимационный тикер добавляется только если нет `prefers-reduced-motion` (см. `mountBackground`).
 - Провайдеры приложения — только `StrictMode → RouterProvider` ([app/index.tsx](src/app/index.tsx)). Store-провайдера/темы/error-boundary нет.
 

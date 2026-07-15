@@ -1,4 +1,4 @@
-import { Sprite, Application, BlurFilter, Container, Texture, type Ticker } from 'pixi.js'
+import { Sprite, Application, Container, Texture, type Ticker } from 'pixi.js'
 import { BG_BLOBS, BG_SPAWN_DURATION } from 'src/constants/bg-blobs'
 
 const PULSE_AMPLITUDE = 0.25
@@ -85,7 +85,6 @@ export const mountBackground = (container: HTMLElement): (() => void) => {
     const blobs = new Container()
 
     blobs.addChild(...sprites)
-    blobs.filters = [new BlurFilter({ strength: 40, quality: 3, resolution: 0.5 })]
 
     app.stage.addChild(blobs)
 

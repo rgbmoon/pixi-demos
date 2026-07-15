@@ -19,5 +19,9 @@ export const GamePage = () => {
     return () => game.unmount()
   }, [])
 
-  return <div ref={containerRef} className="w-full h-full" />
+  return (
+    <div className="h-full flex justify-center">
+      <div ref={containerRef} className="h-full max-w-full aspect-9/16" />
+    </div>
+  )
 }
