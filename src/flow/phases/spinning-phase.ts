@@ -1,0 +1,48 @@
+import { inject, injectable } from 'inversify'
+import type { RootApi } from 'src/api/root-api'
+import { TOKENS } from 'src/constants/tokens'
+import type { GameEmitter } from 'src/events/game-emitter'
+import type { GameEvents } from 'src/events/types'
+import type { ReelsController } from 'src/game/controllers/reels-controller'
+import type { SpinStore } from 'src/stores/spin-store'
+import { PhaseName } from 'src/types/game'
+import { RequestStatus } from 'src/types/network'
+
+import type { Phase } from '../types'
+
+/** Фаза вращения: параллельно шлёт запрос спина и крутит барабаны, исход выбирает по статусу ответа. */
+@injectable()
+export class SpinningPhase implements Phase {
+  readonly name = PhaseName.spinning
+
+  private readonly emitter: GameEmitter<GameEvents>
+  private readonly spinStore: SpinStore
+  private readonly api: RootApi
+  private readonly reels: ReelsController
+
+  constructor(
+    @inject(TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>,
+    @inject(TOKENS.SpinStore) spinStore: SpinStore,
+    @inject(TOKENS.RootApi) api: RootApi,
+    @inject(TOKENS.ReelsController) reels: ReelsController
+  ) {
+    this.emitter = emitter
+    this.spinStore = spinStore
+    this.api = api
+    this.reels = reels
+  }
+
+  async enter(signal: AbortSignal): Promise<typeof PhaseName.idle | typeof PhaseName.result> {
+    const { bet } = this.spinStore
+
+    this.emitter.emit('spin:started', { bet })
+
+    await Promise.all([this.spinStore.result.run(() => this.api.sendSpin(bet, signal)), this.reels.spin(signal)])
+
+    if (this.spinStore.result.status === RequestStatus.error) {
+      return PhaseName.idle
+    }
+
+    return PhaseName.result
+  }
+}

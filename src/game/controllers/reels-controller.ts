@@ -1,9 +1,10 @@
 import { inject, injectable } from 'inversify'
-import { Container, type DestroyOptions, type Ticker } from 'pixi.js'
+import { Container, type DestroyOptions } from 'pixi.js'
 import { TOKENS } from 'src/constants/tokens'
 import type { GameEmitter } from 'src/events/game-emitter'
 import type { GameEvents } from 'src/events/types'
 import { ReelAnimation } from 'src/game/animations/reel-animation'
+import type { GameTicker } from 'src/game/game-ticker'
 import type { SpinResult } from 'src/types/game'
 
 /**
@@ -15,7 +16,7 @@ export class ReelsController extends Container {
   private readonly animation: ReelAnimation
   private readonly disposers: Array<() => void> = []
 
-  constructor(@inject(TOKENS.Ticker) ticker: Ticker, @inject(TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>) {
+  constructor(@inject(TOKENS.GameTicker) ticker: GameTicker, @inject(TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>) {
     super()
 
     this.animation = new ReelAnimation(ticker)
@@ -30,10 +31,6 @@ export class ReelsController extends Container {
 
   land(result: SpinResult, signal?: AbortSignal): Promise<void> {
     return this.animation.land(result, signal)
-  }
-
-  layout(screenWidth: number, screenHeight: number): void {
-    this.position.set((screenWidth - this.animation.width) / 2, screenHeight / 2 - this.animation.height)
   }
 
   override destroy(options?: DestroyOptions): void {

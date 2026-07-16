@@ -1,6 +1,7 @@
 import { inject, injectable } from 'inversify'
 import { reaction } from 'mobx'
 import { Container, type DestroyOptions, Graphics, Text } from 'pixi.js'
+import { PALETTE } from 'src/constants/palette'
 import { TOKENS } from 'src/constants/tokens'
 import type { GameEmitter } from 'src/events/game-emitter'
 import type { GameEvents } from 'src/events/types'
@@ -29,7 +30,7 @@ export class SpinButton extends Container {
     this.emitter = emitter
     this.spinStore = spinStore
 
-    this.background = new Graphics().roundRect(0, 0, BUTTON_WIDTH, BUTTON_HEIGHT, 12).fill('#a98fc3')
+    this.background = new Graphics().roundRect(0, 0, BUTTON_WIDTH, BUTTON_HEIGHT, 12).fill(PALETTE.primary)
 
     const label = new Text({
       text: 'SPIN',
@@ -62,10 +63,6 @@ export class SpinButton extends Container {
     this.eventMode = enabled ? 'static' : 'none'
     this.cursor = enabled ? 'pointer' : 'default'
     this.background.alpha = enabled ? 1 : 0.4
-  }
-
-  layout(screenWidth: number, screenHeight: number): void {
-    this.position.set((screenWidth - BUTTON_WIDTH) / 2, screenHeight / 2 + BUTTON_HEIGHT)
   }
 
   override destroy(options?: DestroyOptions): void {

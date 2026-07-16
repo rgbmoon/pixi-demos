@@ -1,7 +1,8 @@
 import { Container, Graphics, Text, type Ticker } from 'pixi.js'
+import { PALETTE } from 'src/constants/palette'
 import type { SpinResult } from 'src/types/game'
 
-import { waitTicks } from '../utils'
+import type { GameTicker } from '../game-ticker'
 
 const REEL_WIDTH = 300
 const REEL_HEIGHT = 120
@@ -11,17 +12,17 @@ const FLICKER_PERIOD_MS = 60
 const SYMBOL_VARIANTS = 5
 
 const COLOR_IDLE = '#e2e8f0'
-const COLOR_WIN = '#a98fc3'
+const COLOR_WIN = PALETTE.primary
 
 const formatSymbols = (symbols: number[]): string => symbols.join('   ')
 
 export class ReelAnimation {
   readonly view = new Container()
 
-  private readonly ticker: Ticker
+  private readonly ticker: GameTicker
   private readonly label: Text
 
-  constructor(ticker: Ticker) {
+  constructor(ticker: GameTicker) {
     this.ticker = ticker
 
     const background = new Graphics().roundRect(0, 0, REEL_WIDTH, REEL_HEIGHT, 16).fill('#1e293b')
@@ -57,7 +58,7 @@ export class ReelAnimation {
     this.ticker.add(flicker)
 
     try {
-      await waitTicks(this.ticker, SPIN_DURATION_MS, signal)
+      await this.ticker.waitTicks(SPIN_DURATION_MS, signal)
     } finally {
       this.ticker.remove(flicker)
     }
@@ -67,19 +68,11 @@ export class ReelAnimation {
   async land(result: SpinResult, signal?: AbortSignal): Promise<void> {
     this.label.text = formatSymbols(result.symbols)
 
-    await waitTicks(this.ticker, LAND_DURATION_MS, signal)
+    await this.ticker.waitTicks(LAND_DURATION_MS, signal)
   }
 
   /** Реакция на уже случившееся событие — синхронная, промиса не возвращает. */
   highlight(result: SpinResult): void {
     this.label.style.fill = result.win > 0 ? COLOR_WIN : COLOR_IDLE
-  }
-
-  get width(): number {
-    return REEL_WIDTH
-  }
-
-  get height(): number {
-    return REEL_HEIGHT
   }
 }

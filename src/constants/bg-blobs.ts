@@ -1,5 +1,8 @@
+import { PALETTE } from 'src/constants/palette'
+
 type BlobConfig = {
-  color: number
+  /** CSS-цвет тинта спрайта */
+  color: string
   alpha: number
   /** Диаметр относительно большей стороны экрана: > 1 — блоб крупнее экрана, краёв не видно */
   size: number
@@ -27,7 +30,7 @@ export const BG_SPAWN_DURATION = 1.2
 
 export const BG_BLOBS: BlobConfig[] = [
   {
-    color: 0x4c1d95,
+    color: '#4c1d95',
     alpha: 0.85,
     size: 1.35,
     cx: 0.3,
@@ -43,7 +46,7 @@ export const BG_BLOBS: BlobConfig[] = [
     spawnDelay: 0,
   },
   {
-    color: 0x7c3aed,
+    color: '#7c3aed',
     alpha: 0.7,
     size: 0.95,
     cx: 0.68,
@@ -59,7 +62,7 @@ export const BG_BLOBS: BlobConfig[] = [
     spawnDelay: 0.15,
   },
   {
-    color: 0xa98fc3,
+    color: PALETTE.primary,
     alpha: 0.5,
     size: 0.7,
     cx: 0.82,
@@ -75,7 +78,7 @@ export const BG_BLOBS: BlobConfig[] = [
     spawnDelay: 0.3,
   },
   {
-    color: 0x059669,
+    color: '#059669',
     alpha: 0.8,
     size: 1.15,
     cx: 0.25,
@@ -91,7 +94,7 @@ export const BG_BLOBS: BlobConfig[] = [
     spawnDelay: 0.45,
   },
   {
-    color: 0x6ec3a7,
+    color: PALETTE.accent,
     alpha: 0.55,
     size: 0.75,
     cx: 0.58,

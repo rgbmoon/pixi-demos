@@ -1,25 +1,31 @@
-import { type Container, inject, injectable } from 'inversify'
+import { inject, injectable } from 'inversify'
 import { Application } from 'pixi.js'
 import { TOKENS } from 'src/constants/tokens'
-import type { ReelsController } from 'src/game/controllers/reels-controller'
-import type { SpinButton } from 'src/game/controllers/spin-button'
+import type { Fsm } from 'src/flow/fsm'
+import type { GameTicker } from 'src/game/game-ticker'
+import type { GameScene } from 'src/game/scenes/game-scene'
 
 /**
- * Хост жизненного цикла игры: создаёт PIXI-приложение, монтирует канвас в DOM-элемент,
- * собирает игровой граф из child-контейнера и разбирает всё при уходе со страницы.
+ * Хост жизненного цикла игры: инициализирует PIXI-приложение, монтирует канвас в DOM,
+ * показывает сцену и запускает автомат; при уходе со страницы уничтожает PIXI-мир.
  */
 @injectable()
 export class GameRoot {
-  private readonly createGameContainer: (app: Application) => Container
+  private readonly ticker: GameTicker
+  private readonly scene: GameScene
+  private readonly fsm: Fsm
 
   private app: Application | null = null
   private pending: Application | null = null
-  private container: Container | null = null
-  private reels: ReelsController | null = null
-  private spinButton: SpinButton | null = null
 
-  constructor(@inject(TOKENS.GameContainerFactory) createGameContainer: (app: Application) => Container) {
-    this.createGameContainer = createGameContainer
+  constructor(
+    @inject(TOKENS.GameTicker) ticker: GameTicker,
+    @inject(TOKENS.GameScene) scene: GameScene,
+    @inject(TOKENS.Fsm) fsm: Fsm
+  ) {
+    this.ticker = ticker
+    this.scene = scene
+    this.fsm = fsm
   }
 
   private layout = () => {
@@ -29,13 +35,12 @@ export class GameRoot {
 
     const { width, height } = this.app.screen
 
-    this.reels?.layout(width, height)
-    this.spinButton?.layout(width, height)
+    this.scene.layout(width, height)
   }
 
   /**
-   * Инициализирует PIXI-приложение внутри `container`, собирает игровой граф
-   * и запускает автомат. Повторный вызов до завершения предыдущего игнорируется.
+   * Инициализирует PIXI-приложение внутри `container`, показывает сцену и запускает автомат.
+   * Повторный вызов до завершения предыдущего игнорируется.
    */
   async mount(container: HTMLElement) {
     if (this.pending) {
@@ -46,7 +51,9 @@ export class GameRoot {
 
     this.pending = app
 
+    // autoStart: false — свой тикер приложение не запускает
     await app.init({
+      autoStart: false,
       background: '#475569',
       resizeTo: container,
     })
@@ -57,50 +64,31 @@ export class GameRoot {
       return
     }
 
+    // Устанавлиаем внешний тикер, далее им владеет PIXI
+    app.ticker = this.ticker
+    this.ticker.start()
+
     container.appendChild(app.canvas)
 
     this.app = app
 
-    const di = this.createGameContainer(app)
-
-    this.container = di
-
-    const reels = di.get(TOKENS.ReelsController)
-    const spinButton = di.get(TOKENS.SpinButton)
-
-    app.stage.addChild(reels, spinButton)
-
-    this.reels = reels
-    this.spinButton = spinButton
+    app.stage.addChild(this.scene)
 
     this.layout()
     app.renderer.on('resize', this.layout)
 
-    const fsm = di.get(TOKENS.Fsm)
-
-    void fsm.start()
+    void this.fsm.start()
   }
 
-  /** Разбирает игру: останавливает автомат, уничтожает контроллеры и PIXI-приложение. Порядок шагов фиксирован. */
+  /**
+   * Уничтожает PIXI-приложение вместе со сценой, тикером и канвасом. Вызывается деактивацией
+   * биндинга последним шагом destroyGameContainer — автомат и контроллеры уже погашены.
+   */
   unmount() {
     this.pending = null
 
     if (this.app) {
       this.app.renderer.off('resize', this.layout)
-    }
-
-    // Деактивации биндингов вызывают dispose/destroy; автомат гасится раньше контроллеров
-    if (this.container) {
-      this.container.unbind(TOKENS.Fsm)
-      this.container.unbind(TOKENS.ReelsController)
-      this.container.unbind(TOKENS.SpinButton)
-      this.container = null
-    }
-
-    this.reels = null
-    this.spinButton = null
-
-    if (this.app) {
       this.app.destroy(true, { children: true })
       this.app = null
     }

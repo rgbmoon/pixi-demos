@@ -1,38 +1,41 @@
 import { Container } from 'inversify'
-import type { Application } from 'pixi.js'
-import { RootApi } from 'src/api/root-api'
-import { WsTransport } from 'src/api/service'
-import { WS_URL } from 'src/constants/environment'
 import { TOKENS } from 'src/constants/tokens'
-import { GameEmitter } from 'src/events/game-emitter'
-import type { GameEvents } from 'src/events/types'
-import { traceEvent } from 'src/events/utils'
-import { GameRoot } from 'src/game/game-root'
-import { SpinStore } from 'src/stores/spin-store'
 
-import { createGameContainer } from './game-container'
+import { bindApp, bindGame } from './bindings'
 
 /**
  * App-контейнер — composition root приложения. Его биндинги живут всё время работы вкладки;
- * скоуп по умолчанию — Singleton, transient задаётся явно.
  */
 export const appContainer = new Container({ defaultScope: 'Singleton' })
 
-appContainer
-  .bind(TOKENS.WsTransport)
-  .toDynamicValue(() => new WsTransport({ url: WS_URL }))
-  .onDeactivation((transport) => transport.disconnect())
+bindApp(appContainer)
 
-appContainer.bind(TOKENS.RootApi).to(RootApi)
+let gameContainer: Container | null = null
 
-appContainer.bind(TOKENS.GameEmitter).toDynamicValue(() => new GameEmitter<GameEvents>(traceEvent))
+/**
+ * Собирает контейнер игрового графа на один маунт страницы — child app-контейнера.
+ */
+export const createGameContainer = (): Container => {
+  gameContainer = new Container({ parent: appContainer, defaultScope: 'Singleton' })
 
-appContainer.bind(TOKENS.SpinStore).to(SpinStore)
+  bindGame(gameContainer)
 
-// Transient: каждый маунт страницы получает свой экземпляр хоста
-appContainer.bind(TOKENS.GameRoot).to(GameRoot).inTransientScope()
+  return gameContainer
+}
 
-// GameRoot получает фабрику через токен: прямой импорт этого модуля из game-root.ts создал бы цикл
-appContainer
-  .bind(TOKENS.GameContainerFactory)
-  .toConstantValue((app: Application) => createGameContainer(app, appContainer))
+/**
+ * Разбирает текущий игровой контейнер.
+ */
+export const destroyGameContainer = (): void => {
+  if (!gameContainer) {
+    return
+  }
+
+  // Порядкозависимые анбинды, выполняем отдельно от unbindAll
+  gameContainer.unbind(TOKENS.Fsm)
+  gameContainer.unbind(TOKENS.GameRoot)
+  // unbindAll уничтожает все биндинги
+  gameContainer.unbindAll()
+
+  gameContainer = null
+}

@@ -2,6 +2,8 @@
 
 @theme {
   --header-height: 64px;
+  --color-brand-primary: #a98fc3;
+  --color-brand-accent: #6ec3a7;
 }
 
 html,

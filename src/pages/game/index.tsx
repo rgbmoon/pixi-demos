@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 
-import { appContainer } from 'src/app/container'
+import { createGameContainer, destroyGameContainer } from 'src/app/container'
 import { TOKENS } from 'src/constants/tokens'
 
 export const GamePage = () => {
@@ -11,12 +11,13 @@ export const GamePage = () => {
 
     if (!container) return
 
-    // Роут-страница — точка входа: резолвит транзиентный GameRoot и владеет его mount/unmount
-    const game = appContainer.get(TOKENS.GameRoot)
+    // Роут-страница — точка входа: монтирует game-контейнер и владеет его временем жизни
+    const game = createGameContainer()
+    const root = game.get(TOKENS.GameRoot)
 
-    void game.mount(container)
+    void root.mount(container)
 
-    return () => game.unmount()
+    return () => destroyGameContainer()
   }, [])
 
   return (

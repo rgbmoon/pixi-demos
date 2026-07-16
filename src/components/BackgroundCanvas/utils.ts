@@ -1,5 +1,8 @@
-import { Sprite, Application, Container, Texture, type Ticker } from 'pixi.js'
+import type * as PixiModule from 'pixi.js'
+import type { Texture, Ticker } from 'pixi.js'
 import { BG_BLOBS, BG_SPAWN_DURATION } from 'src/constants/bg-blobs'
+
+type Pixi = typeof PixiModule
 
 const PULSE_AMPLITUDE = 0.25
 
@@ -19,7 +22,7 @@ const easeOutBack = (t: number): number => {
 
 const clamp = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max)
 
-export const createBlobTexture = (): Texture => {
+export const createBlobTexture = (pixi: Pixi): Texture => {
   const blobTextureSize = 512
   const canvas = document.createElement('canvas')
 
@@ -44,16 +47,24 @@ export const createBlobTexture = (): Texture => {
   ctx.fillStyle = gradient
   ctx.fillRect(0, 0, blobTextureSize, blobTextureSize)
 
-  return Texture.from(canvas)
+  return pixi.Texture.from(canvas)
 }
 
 export const mountBackground = (container: HTMLElement): (() => void) => {
-  const app = new Application()
-
   let disposed = false
   let teardown: (() => void) | null = null
 
   const setup = async (): Promise<void> => {
+    // PIXI приходит динамическим import(): фон стоит в глобальном Layout, и статический
+    // импорт утянул бы рендерер в стартовый бандл каждой страницы
+    const pixi = await import('pixi.js')
+
+    if (disposed) {
+      return
+    }
+
+    const app = new pixi.Application()
+
     await app.init({
       background: '#1e293b',
       resizeTo: container,
@@ -70,10 +81,10 @@ export const mountBackground = (container: HTMLElement): (() => void) => {
 
     container.appendChild(app.canvas)
 
-    const texture: Texture = createBlobTexture()
+    const texture = createBlobTexture(pixi)
 
     const sprites = BG_BLOBS.map((blob) => {
-      const sprite = new Sprite(texture)
+      const sprite = new pixi.Sprite(texture)
 
       sprite.anchor.set(0.5)
       sprite.tint = blob.color
@@ -82,7 +93,7 @@ export const mountBackground = (container: HTMLElement): (() => void) => {
       return sprite
     })
 
-    const blobs = new Container()
+    const blobs = new pixi.Container()
 
     blobs.addChild(...sprites)
 

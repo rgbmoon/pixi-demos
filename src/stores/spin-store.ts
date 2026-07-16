@@ -1,33 +1,28 @@
-import { injectable } from 'inversify'
+import { inject, injectable } from 'inversify'
 import { action, computed, makeObservable, observable } from 'mobx'
+import { TOKENS } from 'src/constants/tokens'
+import type { FlowStore } from 'src/stores/flow-store'
 import { AsyncValue } from 'src/stores/utils/async-value'
 import { PhaseName, type SpinResult } from 'src/types/game'
 
-/** Состояние раунда: фаза автомата, ставка и результат спина. */
 @injectable()
 export class SpinStore {
-  constructor() {
+  private readonly flowStore: FlowStore
+
+  constructor(@inject(TOKENS.FlowStore) flowStore: FlowStore) {
+    this.flowStore = flowStore
+
     makeObservable(this)
   }
 
-  @observable phase: PhaseName = PhaseName.idle
   @observable bet = 10
   @observable.ref result = new AsyncValue<SpinResult>()
-  @observable.ref fatalError: unknown = undefined
 
   @computed get canSpin(): boolean {
-    return this.phase === PhaseName.idle
-  }
-
-  @action setPhase(phase: PhaseName) {
-    this.phase = phase
+    return this.flowStore.phase === PhaseName.idle
   }
 
   @action setBet(bet: number) {
     this.bet = bet
-  }
-
-  @action setFatalError(error: unknown) {
-    this.fatalError = error
   }
 }

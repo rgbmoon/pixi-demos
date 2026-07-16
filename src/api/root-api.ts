@@ -5,7 +5,7 @@ import { z } from 'zod'
 
 import type { WsTransport } from './service'
 
-const SpinResultSchema = z.object({
+const SpinResultSchema: z.ZodType<SpinResult> = z.object({
   symbols: z.array(z.number()),
   win: z.number(),
 })

@@ -1,6 +1,6 @@
 import { EventEmitter } from 'pixi.js'
 
-import type { AnyHandler, EventMap, EventName } from './types'
+import type { AnyHandler, EventMap, EventName, WaitForOptions } from './types'
 
 /**
  * Типизированный эмиттер игровых событий: имена и payload'ы типизированы, эмит произвольной строки невозможен.
@@ -8,7 +8,7 @@ import type { AnyHandler, EventMap, EventName } from './types'
  * Под капотом — EventEmitter из pixi.js (это eventemitter3, он уже в бандле как зависимость PIXI).
  * Обёртка добавляет к нему три недостающие вещи:
  *   1. on() отдаёт функцию отписки вместо `this` — не нужно хранить ссылку на колбэк ради off();
- *   2. ожидание события промисом (см. waitFor рядом);
+ *   2. ожидание события промисом (метод waitFor);
  *   3. точку, куда вешается общий лог всех событий: wildcard-подписки у ee3 нет.
  */
 export class GameEmitter<E extends EventMap> {
@@ -36,6 +36,53 @@ export class GameEmitter<E extends EventMap> {
     this.trace?.(event, payload)
 
     this.emitter.emit(event, payload)
+  }
+
+  /**
+   * Отдаёт промис с payload первого события `event`, прошедшего `filter` (без фильтра — любого).
+   * Реджектится, если ожидание отменили через `signal` или событие не пришло за `timeoutMs`.
+   */
+  waitFor<K extends EventName<E>>(event: K, { signal, timeoutMs, filter }: WaitForOptions<E[K]> = {}): Promise<E[K]> {
+    return new Promise<E[K]>((resolve, reject) => {
+      if (signal?.aborted) {
+        reject(signal.reason as Error)
+
+        return
+      }
+
+      const offEvent = this.on(event, (payload) => {
+        if (filter && !filter(payload)) {
+          return
+        }
+
+        cleanup()
+        resolve(payload)
+      })
+
+      const handleAbort = () => {
+        cleanup()
+        reject(signal?.reason as Error)
+      }
+
+      signal?.addEventListener('abort', handleAbort, { once: true })
+
+      // Таймаут ожидания отсчитывается системным временем и обязан
+      // сработать даже в свёрнутой вкладке, где тикер PIXI остановлен.
+      const timeoutId =
+        timeoutMs !== undefined
+          ? setTimeout(() => {
+              cleanup()
+              reject(new Error(`waitFor: событие "${event}" не пришло за ${timeoutMs} мс`))
+            }, timeoutMs)
+          : undefined
+
+      // function-декларация: хоистится, поэтому колбэки выше могут ссылаться на неё до объявления
+      function cleanup() {
+        offEvent()
+        signal?.removeEventListener('abort', handleAbort)
+        clearTimeout(timeoutId)
+      }
+    })
   }
 
   /**
