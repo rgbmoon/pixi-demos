@@ -14,7 +14,7 @@ export class ThemeToggleButton extends Button {
   private readonly sceneStore: SceneStore
 
   constructor(@inject(TOKENS.SceneStore) sceneStore: SceneStore) {
-    super({ size: ButtonSize.md, icon: LIGHT_THEME_ICON })
+    super({ size: ButtonSize.md, icon: DARK_THEME_ICON })
 
     this.sceneStore = sceneStore
 
@@ -23,7 +23,7 @@ export class ThemeToggleButton extends Button {
     this.watch(
       () => this.sceneStore.theme,
       (theme) => {
-        void this.setIcon(theme === 'light' ? LIGHT_THEME_ICON : DARK_THEME_ICON)
+        void this.setIcon(theme === 'light' ? DARK_THEME_ICON : LIGHT_THEME_ICON)
       },
       { fireImmediately: true }
     )
