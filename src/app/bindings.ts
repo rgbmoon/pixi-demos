@@ -12,6 +12,8 @@ import { ResultPhase } from 'src/flow/phases/result-phase'
 import { SpinningPhase } from 'src/flow/phases/spinning-phase'
 import { AutospinToggleButton } from 'src/game/controllers/autospin-toggle-button'
 import { BackgroundController } from 'src/game/controllers/background-controller'
+import { BetMinusButton } from 'src/game/controllers/bet-minus-button'
+import { BetPlusButton } from 'src/game/controllers/bet-plus-button'
 import { ReelsController } from 'src/game/controllers/reels-controller'
 import { SoundToggleButton } from 'src/game/controllers/sound-toggle-button'
 import { SpinButton } from 'src/game/controllers/spin-button'
@@ -102,8 +104,21 @@ const bindScene = (container: Container): void => {
     .onDeactivation((button) => {
       if (!button.destroyed) button.destroy({ children: true })
     })
-}
 
+  container
+    .bind(TOKENS.BetPlusButton)
+    .to(BetPlusButton)
+    .onDeactivation((button) => {
+      if (!button.destroyed) button.destroy({ children: true })
+    })
+
+  container
+    .bind(TOKENS.BetMinusButton)
+    .to(BetMinusButton)
+    .onDeactivation((button) => {
+      if (!button.destroyed) button.destroy({ children: true })
+    })
+}
 /** Хост жизненного цикла игры. */
 const bindHost = (container: Container): void => {
   container

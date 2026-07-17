@@ -16,6 +16,9 @@ export class SpinStore {
   }
 
   @observable bet = 10
+  @observable credit = 999999
+  @observable win = 0
+
   @observable.ref result = new AsyncValue<SpinResult>()
 
   @computed get canSpin(): boolean {

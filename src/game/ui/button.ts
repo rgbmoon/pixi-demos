@@ -91,10 +91,7 @@ export class Button extends LiveContainer {
   }
 
   private async loadBackgrounds(normalSrc: string, activeSrc: string): Promise<void> {
-    const [normal, active] = await Promise.all([
-      Assets.load<Texture>(normalSrc),
-      Assets.load<Texture>(activeSrc),
-    ])
+    const [normal, active] = await Promise.all([Assets.load<Texture>(normalSrc), Assets.load<Texture>(activeSrc)])
 
     if (this.destroyed) return
 

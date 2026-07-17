@@ -7,6 +7,8 @@ import type { Fsm } from 'src/flow/fsm'
 import type { Phase } from 'src/flow/types'
 import type { AutospinToggleButton } from 'src/game/controllers/autospin-toggle-button'
 import type { BackgroundController } from 'src/game/controllers/background-controller'
+import type { BetMinusButton } from 'src/game/controllers/bet-minus-button'
+import type { BetPlusButton } from 'src/game/controllers/bet-plus-button'
 import type { ReelsController } from 'src/game/controllers/reels-controller'
 import type { SoundToggleButton } from 'src/game/controllers/sound-toggle-button'
 import type { SpinButton } from 'src/game/controllers/spin-button'
@@ -46,4 +48,6 @@ export const TOKENS = {
   SpinButton: Symbol('SpinButton') as ServiceIdentifier<SpinButton>,
   SoundToggleButton: Symbol('SoundToggleButton') as ServiceIdentifier<SoundToggleButton>,
   AutospinToggleButton: Symbol('AutospinToggleButton') as ServiceIdentifier<AutospinToggleButton>,
+  BetPlusButton: Symbol('BetPlusButton') as ServiceIdentifier<BetPlusButton>,
+  BetMinusButton: Symbol('BetMinusButton') as ServiceIdentifier<BetMinusButton>,
 } as const

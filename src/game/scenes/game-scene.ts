@@ -5,6 +5,8 @@ import type { ReelsController } from 'src/game/controllers/reels-controller'
 
 import type { AutospinToggleButton } from '../controllers/autospin-toggle-button'
 import type { BackgroundController } from '../controllers/background-controller'
+import type { BetMinusButton } from '../controllers/bet-minus-button'
+import type { BetPlusButton } from '../controllers/bet-plus-button'
 import type { SoundToggleButton } from '../controllers/sound-toggle-button'
 import type { SpinButton } from '../controllers/spin-button'
 
@@ -19,13 +21,17 @@ export class GameScene extends Container {
   private readonly spinButton: SpinButton
   private readonly soundToggleButton: SoundToggleButton
   private readonly autospinToggleButton: AutospinToggleButton
+  private readonly betPlusButton: BetPlusButton
+  private readonly betMinusButton: BetMinusButton
 
   constructor(
     @inject(TOKENS.BackgroundController) background: BackgroundController,
     @inject(TOKENS.ReelsController) reels: ReelsController,
     @inject(TOKENS.SpinButton) spinButton: SpinButton,
     @inject(TOKENS.SoundToggleButton) soundToggleButton: SoundToggleButton,
-    @inject(TOKENS.AutospinToggleButton) autospinToggleButton: AutospinToggleButton
+    @inject(TOKENS.AutospinToggleButton) autospinToggleButton: AutospinToggleButton,
+    @inject(TOKENS.BetPlusButton) betPlusButton: BetPlusButton,
+    @inject(TOKENS.BetMinusButton) betMinusButton: BetMinusButton
   ) {
     super()
 
@@ -34,8 +40,10 @@ export class GameScene extends Container {
     this.spinButton = spinButton
     this.soundToggleButton = soundToggleButton
     this.autospinToggleButton = autospinToggleButton
+    this.betPlusButton = betPlusButton
+    this.betMinusButton = betMinusButton
 
-    this.addChild(background, reels, spinButton, soundToggleButton, autospinToggleButton)
+    this.addChild(background, reels, spinButton, soundToggleButton, autospinToggleButton, betPlusButton, betMinusButton)
   }
 
   layout(screenWidth: number, screenHeight: number): void {
@@ -44,10 +52,20 @@ export class GameScene extends Container {
     this.soundToggleButton.position.set(20, 20)
 
     this.reels.position.set((screenWidth - this.reels.width) / 2, screenHeight / 2 - this.reels.height)
-    this.spinButton.position.set((screenWidth - this.spinButton.width) / 2, screenHeight - this.spinButton.height - 20)
+
+    this.spinButton.position.set(
+      (screenWidth - this.spinButton.width) / 2,
+      screenHeight * 0.8 - this.spinButton.height - 20
+    )
     this.autospinToggleButton.position.set(
       (screenWidth - this.autospinToggleButton.width) / 2 - this.spinButton.width,
-      screenHeight - this.autospinToggleButton.height - 35
+      screenHeight * 0.8 - this.autospinToggleButton.height - 35
+    )
+
+    this.betMinusButton.position.set(20, screenHeight * 0.9 - this.betPlusButton.height)
+    this.betPlusButton.position.set(
+      screenWidth - this.betPlusButton.width - 20,
+      screenHeight * 0.9 - this.betPlusButton.height
     )
   }
 }
