@@ -20,12 +20,11 @@ export class ReelAnimation {
   readonly view = new Container()
 
   private readonly ticker: GameTicker
+  private readonly background = new Graphics()
   private readonly label: Text
 
   constructor(ticker: GameTicker) {
     this.ticker = ticker
-
-    const background = new Graphics().roundRect(0, 0, REEL_WIDTH, REEL_HEIGHT, 16).fill('#1e293b')
 
     this.label = new Text({
       text: formatSymbols([0, 0, 0]),
@@ -33,9 +32,15 @@ export class ReelAnimation {
     })
 
     this.label.anchor.set(0.5)
-    this.label.position.set(REEL_WIDTH / 2, REEL_HEIGHT / 2)
 
-    this.view.addChild(background, this.label)
+    this.view.addChild(this.background, this.label)
+    this.resize(REEL_WIDTH, REEL_HEIGHT)
+  }
+
+  /** Перерисовывает подложку под переданный размер и центрирует символы. */
+  resize(width: number, height: number): void {
+    this.background.clear().roundRect(0, 0, width, height, 16).fill('#1e293b')
+    this.label.position.set(width / 2, height / 2)
   }
 
   /** Раскрутка: символы мелькают, пока не выйдет время. Результат тут ещё неизвестен. */

@@ -59,12 +59,12 @@ src/
   components/              # переиспользуемые компоненты
   events/                  # эвентный слой: game-emitter.ts (класс GameEmitter: on/emit/waitFor) + types.ts (карта GameEvents) + utils.ts (traceEvent)
   flow/                    # конечный автомат раунда: fsm.ts (движок, @multiInject фаз) + types.ts (Phase) + constants.ts (INITIAL_PHASE) + utils.ts (tracePhase) + phases/ (классы IdlePhase, SpinningPhase, ResultPhase)
-  game/                    # PIXI-слой: game-root.ts (хост жизненного цикла) + game-ticker.ts (GameTicker: тикер + waitTicks) + роли из брифа:
+  game/                    # PIXI-слой: game-root.ts (хост жизненного цикла) + game-ticker.ts (GameTicker: тикер + waitTicks) + utils.ts (утилиты слоя: formatAmount) + роли из брифа:
     game-root.ts           #   хост жизненного цикла игры: PIXI-init, DOM-мост, игровой тикер, запуск автомата
     scenes/                #   сцены: GameScene — @inject контроллеров, дерево отображения, layout
     animations/            #   п.4 — классы анимации: обёртки над визуальной сущностью, методы с игровой семантикой → промис
     controllers/           #   п.5 — контроллеры (наследники LiveContainer): создают анимации, держат подписки на эвенты через watch/listen
-    ui/                    #   базовые view-классы сцен: live-container.ts (LiveContainer: подписки watch/listen, снимаются в destroy) + button.ts (Button: подложка + active + size-пресет + SVG-иконка)
+    ui/                    #   базовые view-классы сцен: live-container.ts (LiveContainer: подписки watch/listen, снимаются в destroy) + button.ts (Button: подложка + active + size-пресет + SVG-иконка) + label.ts (Label: текст игровым шрифтом, цвет из палитры)
   mocks/                   # MSW-моки: create-ws-handler.ts (база) + types.ts + handlers.ts (эндпоинты) + browser.ts (worker)
   pages/                   # роут-страницы
   stores/                  # MobX-сторы: flow-store.ts (фаза автомата) + spin-store.ts (состояние раунда) + utils/ (классы AsyncValue, AsyncStream)

@@ -18,19 +18,19 @@ const ASSETS_DIR = '/src/assets/game/graphic/AL_Gamble_buttons'
 
 const SIZE_PRESETS: Record<ButtonSize, { px: number; normal: string; active: string }> = {
   md: {
-    px: 61,
-    normal: `${ASSETS_DIR}/button-bg.png`,
-    active: `${ASSETS_DIR}/button-bg-active.png`,
+    px: 65,
+    normal: `${ASSETS_DIR}/button-bg.svg`,
+    active: `${ASSETS_DIR}/button-bg-active.svg`,
   },
   lg: {
-    px: 91.5,
-    normal: `${ASSETS_DIR}/button-bg-lg.png`,
-    active: `${ASSETS_DIR}/button-bg-active-lg.png`,
+    px: 130,
+    normal: `${ASSETS_DIR}/button-bg-lg.svg`,
+    active: `${ASSETS_DIR}/button-bg-active-lg.svg`,
   },
 }
 
 // Доля стороны подложки, которую занимает иконка
-const ICON_RATIO = 0.6
+const ICON_RATIO = 0.5
 
 /**
  * База кнопок сцены: спрайт-подложка с обычным и active-состоянием,

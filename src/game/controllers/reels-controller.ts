@@ -24,6 +24,10 @@ export class ReelsController extends LiveContainer {
     this.listen(emitter, 'spin:landed', (result) => this.animation.highlight(result))
   }
 
+  layout(width: number, height: number): void {
+    this.animation.resize(width, height)
+  }
+
   spin(signal?: AbortSignal): Promise<void> {
     return this.animation.spin(signal)
   }

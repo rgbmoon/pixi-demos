@@ -13,10 +13,13 @@ import { SpinningPhase } from 'src/flow/phases/spinning-phase'
 import { AutospinToggleButton } from 'src/game/controllers/autospin-toggle-button'
 import { BackgroundController } from 'src/game/controllers/background-controller'
 import { BetMinusButton } from 'src/game/controllers/bet-minus-button'
+import { BetPanel } from 'src/game/controllers/bet-panel'
 import { BetPlusButton } from 'src/game/controllers/bet-plus-button'
+import { CreditLabel } from 'src/game/controllers/credit-label'
 import { ReelsController } from 'src/game/controllers/reels-controller'
 import { SoundToggleButton } from 'src/game/controllers/sound-toggle-button'
 import { SpinButton } from 'src/game/controllers/spin-button'
+import { WinLabel } from 'src/game/controllers/win-label'
 import { GameRoot } from 'src/game/game-root'
 import { GameTicker } from 'src/game/game-ticker'
 import { GameScene } from 'src/game/scenes/game-scene'
@@ -117,6 +120,27 @@ const bindScene = (container: Container): void => {
     .to(BetMinusButton)
     .onDeactivation((button) => {
       if (!button.destroyed) button.destroy({ children: true })
+    })
+
+  container
+    .bind(TOKENS.BetPanel)
+    .to(BetPanel)
+    .onDeactivation((panel) => {
+      if (!panel.destroyed) panel.destroy({ children: true })
+    })
+
+  container
+    .bind(TOKENS.WinLabel)
+    .to(WinLabel)
+    .onDeactivation((label) => {
+      if (!label.destroyed) label.destroy({ children: true })
+    })
+
+  container
+    .bind(TOKENS.CreditLabel)
+    .to(CreditLabel)
+    .onDeactivation((label) => {
+      if (!label.destroyed) label.destroy({ children: true })
     })
 }
 /** Хост жизненного цикла игры. */

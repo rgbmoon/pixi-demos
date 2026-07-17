@@ -8,10 +8,13 @@ import type { Phase } from 'src/flow/types'
 import type { AutospinToggleButton } from 'src/game/controllers/autospin-toggle-button'
 import type { BackgroundController } from 'src/game/controllers/background-controller'
 import type { BetMinusButton } from 'src/game/controllers/bet-minus-button'
+import type { BetPanel } from 'src/game/controllers/bet-panel'
 import type { BetPlusButton } from 'src/game/controllers/bet-plus-button'
+import type { CreditLabel } from 'src/game/controllers/credit-label'
 import type { ReelsController } from 'src/game/controllers/reels-controller'
 import type { SoundToggleButton } from 'src/game/controllers/sound-toggle-button'
 import type { SpinButton } from 'src/game/controllers/spin-button'
+import type { WinLabel } from 'src/game/controllers/win-label'
 import type { GameRoot } from 'src/game/game-root'
 import type { GameTicker } from 'src/game/game-ticker'
 import type { GameScene } from 'src/game/scenes/game-scene'
@@ -50,4 +53,7 @@ export const TOKENS = {
   AutospinToggleButton: Symbol('AutospinToggleButton') as ServiceIdentifier<AutospinToggleButton>,
   BetPlusButton: Symbol('BetPlusButton') as ServiceIdentifier<BetPlusButton>,
   BetMinusButton: Symbol('BetMinusButton') as ServiceIdentifier<BetMinusButton>,
+  BetPanel: Symbol('BetPanel') as ServiceIdentifier<BetPanel>,
+  WinLabel: Symbol('WinLabel') as ServiceIdentifier<WinLabel>,
+  CreditLabel: Symbol('CreditLabel') as ServiceIdentifier<CreditLabel>,
 } as const
