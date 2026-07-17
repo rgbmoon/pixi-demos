@@ -5,9 +5,11 @@ import type { GameEmitter } from 'src/events/game-emitter'
 import type { GameEvents } from 'src/events/types'
 import type { Fsm } from 'src/flow/fsm'
 import type { Phase } from 'src/flow/types'
+import type { BackgroundController } from 'src/game/controllers/background-controller'
 import type { ReelsController } from 'src/game/controllers/reels-controller'
 import type { SoundToggleButton } from 'src/game/controllers/sound-toggle-button'
 import type { SpinButton } from 'src/game/controllers/spin-button'
+import type { ThemeToggleButton } from 'src/game/controllers/theme-toggle-button'
 import type { GameRoot } from 'src/game/game-root'
 import type { GameTicker } from 'src/game/game-ticker'
 import type { GameScene } from 'src/game/scenes/game-scene'
@@ -39,7 +41,9 @@ export const TOKENS = {
   SpinStore: Symbol('SpinStore') as ServiceIdentifier<SpinStore>,
   SceneStore: Symbol('SceneStore') as ServiceIdentifier<SceneStore>,
   // Контроллеры
+  BackgroundController: Symbol('BackgroundController') as ServiceIdentifier<BackgroundController>,
   ReelsController: Symbol('ReelsController') as ServiceIdentifier<ReelsController>,
   SpinButton: Symbol('SpinButton') as ServiceIdentifier<SpinButton>,
   SoundToggleButton: Symbol('SoundToggleButton') as ServiceIdentifier<SoundToggleButton>,
+  ThemeToggleButton: Symbol('ThemeToggleButton') as ServiceIdentifier<ThemeToggleButton>,
 } as const
