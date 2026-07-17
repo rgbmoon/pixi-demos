@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify'
 import { BET_STEP } from 'src/constants/game'
 import { TOKENS } from 'src/constants/tokens'
-import { Button, ButtonSize } from 'src/game/ui/button'
+import { Button, ButtonSize, ButtonVariant } from 'src/game/ui/button'
 import type { SpinStore } from 'src/stores/spin-store'
 
 const BET_DOWN_ICON = '/src/assets/game/graphic/Icons/minus-svgrepo-com.svg'
@@ -14,7 +14,11 @@ export class BetMinusButton extends Button {
   private readonly spinStore: SpinStore
 
   constructor(@inject(TOKENS.SpinStore) spinStore: SpinStore) {
-    super({ size: ButtonSize.md, icon: BET_DOWN_ICON })
+    super({
+      variant: ButtonVariant.circle,
+      size: ButtonSize.md,
+      icon: BET_DOWN_ICON,
+    })
 
     this.spinStore = spinStore
 

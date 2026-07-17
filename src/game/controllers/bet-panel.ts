@@ -11,7 +11,7 @@ import type { BetPlusButton } from './bet-plus-button'
 
 const PLATE_SRC = '/src/assets/game/graphic/AL_Gamble_buttons/plate-bg.svg'
 const PLATE_WIDTH = 180
-const PLATE_HEIGHT = 60
+const PLATE_HEIGHT = 64
 const BUTTON_GAP = 8
 const CAPTION_SIZE = 16
 const VALUE_SIZE = 20

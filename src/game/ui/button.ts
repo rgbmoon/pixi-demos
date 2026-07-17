@@ -9,23 +9,57 @@ export const ButtonSize = {
 
 export type ButtonSize = (typeof ButtonSize)[keyof typeof ButtonSize]
 
+export const ButtonVariant = {
+  romb: 'romb',
+  circle: 'circle',
+} as const
+
+export type ButtonVariant = (typeof ButtonVariant)[keyof typeof ButtonVariant]
+
 interface BaseButtonOptions {
+  variant: ButtonVariant
   size: ButtonSize
   icon: string
+  iconRatio?: number
 }
 
 const ASSETS_DIR = '/src/assets/game/graphic/AL_Gamble_buttons'
 
-const SIZE_PRESETS: Record<ButtonSize, { px: number; normal: string; active: string }> = {
+const SIZE_PRESETS: Record<
+  ButtonSize,
+  {
+    px: number
+    [ButtonVariant.romb]: {
+      normal: string
+      active: string
+    }
+    [ButtonVariant.circle]: {
+      normal: string
+      active: string
+    }
+  }
+> = {
   md: {
     px: 65,
-    normal: `${ASSETS_DIR}/button-bg.svg`,
-    active: `${ASSETS_DIR}/button-bg-active.svg`,
+    [ButtonVariant.romb]: {
+      normal: `${ASSETS_DIR}/button-romb-bg.svg`,
+      active: `${ASSETS_DIR}/button-romb-bg-active.svg`,
+    },
+    [ButtonVariant.circle]: {
+      normal: `${ASSETS_DIR}/button-circle-bg.svg`,
+      active: `${ASSETS_DIR}/button-circle-bg-active.svg`,
+    },
   },
   lg: {
     px: 130,
-    normal: `${ASSETS_DIR}/button-bg-lg.svg`,
-    active: `${ASSETS_DIR}/button-bg-active-lg.svg`,
+    [ButtonVariant.romb]: {
+      normal: `${ASSETS_DIR}/button-romb-bg-lg.svg`,
+      active: `${ASSETS_DIR}/button-romb-bg-active-lg.svg`,
+    },
+    [ButtonVariant.circle]: {
+      normal: `${ASSETS_DIR}/button-circle-bg-lg.svg`,
+      active: `${ASSETS_DIR}/button-circle-bg-active-lg.svg`,
+    },
   },
 }
 
@@ -62,8 +96,8 @@ export class Button extends LiveContainer {
     this.eventMode = 'static'
     this.cursor = 'pointer'
 
-    void this.loadBackgrounds(preset.normal, preset.active)
-    void this.setIcon(options.icon)
+    void this.loadBackgrounds(preset[options.variant].normal, preset[options.variant].active)
+    void this.setIcon(options.icon, options.iconRatio)
   }
 
   /** Переключает подложку между обычным и active-состоянием. */
@@ -79,7 +113,7 @@ export class Button extends LiveContainer {
   }
 
   /** Меняет иконку кнопки; из параллельных вызовов применяется последний. */
-  protected async setIcon(src: string): Promise<void> {
+  protected async setIcon(src: string, iconRatio?: number): Promise<void> {
     this.iconSrc = src
 
     const texture = await Assets.load<Texture>(src)
@@ -87,7 +121,7 @@ export class Button extends LiveContainer {
     if (this.destroyed || this.iconSrc !== src) return
 
     this.icon.texture = texture
-    this.icon.setSize(this.sizePx * ICON_RATIO)
+    this.icon.setSize(this.sizePx * (iconRatio ?? ICON_RATIO))
   }
 
   private async loadBackgrounds(normalSrc: string, activeSrc: string): Promise<void> {

@@ -2,7 +2,7 @@ import { inject, injectable } from 'inversify'
 import { TOKENS } from 'src/constants/tokens'
 import type { GameEmitter } from 'src/events/game-emitter'
 import type { GameEvents } from 'src/events/types'
-import { Button, ButtonSize } from 'src/game/ui/button'
+import { Button, ButtonSize, ButtonVariant } from 'src/game/ui/button'
 import type { SpinStore } from 'src/stores/spin-store'
 
 const SPIN_ICON = '/src/assets/game/graphic/Icons/arrow-cycle-svgrepo-com.svg'
@@ -20,7 +20,12 @@ export class SpinButton extends Button {
     @inject(TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>,
     @inject(TOKENS.SpinStore) spinStore: SpinStore
   ) {
-    super({ size: ButtonSize.lg, icon: SPIN_ICON })
+    super({
+      variant: ButtonVariant.circle,
+      size: ButtonSize.lg,
+      icon: SPIN_ICON,
+      iconRatio: 0.6,
+    })
 
     this.emitter = emitter
     this.spinStore = spinStore
