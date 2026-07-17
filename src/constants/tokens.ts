@@ -6,11 +6,13 @@ import type { GameEvents } from 'src/events/types'
 import type { Fsm } from 'src/flow/fsm'
 import type { Phase } from 'src/flow/types'
 import type { ReelsController } from 'src/game/controllers/reels-controller'
+import type { SoundToggleButton } from 'src/game/controllers/sound-toggle-button'
 import type { SpinButton } from 'src/game/controllers/spin-button'
 import type { GameRoot } from 'src/game/game-root'
 import type { GameTicker } from 'src/game/game-ticker'
 import type { GameScene } from 'src/game/scenes/game-scene'
 import type { FlowStore } from 'src/stores/flow-store'
+import type { SceneStore } from 'src/stores/scene-store'
 import type { SpinStore } from 'src/stores/spin-store'
 
 /**
@@ -35,7 +37,9 @@ export const TOKENS = {
   // Сторы
   FlowStore: Symbol('FlowStore') as ServiceIdentifier<FlowStore>,
   SpinStore: Symbol('SpinStore') as ServiceIdentifier<SpinStore>,
+  SceneStore: Symbol('SceneStore') as ServiceIdentifier<SceneStore>,
   // Контроллеры
   ReelsController: Symbol('ReelsController') as ServiceIdentifier<ReelsController>,
   SpinButton: Symbol('SpinButton') as ServiceIdentifier<SpinButton>,
+  SoundToggleButton: Symbol('SoundToggleButton') as ServiceIdentifier<SoundToggleButton>,
 } as const

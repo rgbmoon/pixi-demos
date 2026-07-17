@@ -1,57 +1,36 @@
 import { inject, injectable } from 'inversify'
-import { reaction } from 'mobx'
-import { Container, type DestroyOptions, Graphics, Text } from 'pixi.js'
-import { PALETTE } from 'src/constants/palette'
 import { TOKENS } from 'src/constants/tokens'
 import type { GameEmitter } from 'src/events/game-emitter'
 import type { GameEvents } from 'src/events/types'
+import { Button, ButtonSize } from 'src/game/ui/button'
 import type { SpinStore } from 'src/stores/spin-store'
 
-const BUTTON_WIDTH = 180
-const BUTTON_HEIGHT = 56
+const SPIN_ICON = '/src/assets/game/graphic/Icons/arrow-cycle-svgrepo-com.svg'
 
 /**
  * Кнопка запуска спина: по тапу объявляет `ui:spinRequested` с текущей ставкой;
  * доступность следует за `spinStore.canSpin`.
  */
 @injectable()
-export class SpinButton extends Container {
+export class SpinButton extends Button {
   private readonly emitter: GameEmitter<GameEvents>
   private readonly spinStore: SpinStore
-  private readonly background: Graphics
-  private readonly disposers: Array<() => void> = []
 
   constructor(
     @inject(TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>,
     @inject(TOKENS.SpinStore) spinStore: SpinStore
   ) {
-    super()
+    super({ size: ButtonSize.lg, icon: SPIN_ICON })
 
     this.emitter = emitter
     this.spinStore = spinStore
 
-    this.background = new Graphics().roundRect(0, 0, BUTTON_WIDTH, BUTTON_HEIGHT, 12).fill(PALETTE.primary)
-
-    const label = new Text({
-      text: 'SPIN',
-      style: { fontFamily: 'monospace', fontSize: 24, fontWeight: 'bold', fill: '#1e293b' },
-    })
-
-    label.anchor.set(0.5)
-    label.position.set(BUTTON_WIDTH / 2, BUTTON_HEIGHT / 2)
-
-    this.addChild(this.background, label)
-
-    this.eventMode = 'static'
-    this.cursor = 'pointer'
     this.on('pointertap', this.handleTap)
 
-    this.disposers.push(
-      reaction(
-        () => this.spinStore.canSpin,
-        (canSpin) => this.setEnabled(canSpin),
-        { fireImmediately: true }
-      )
+    this.watch(
+      () => this.spinStore.canSpin,
+      (canSpin) => this.setEnabled(canSpin),
+      { fireImmediately: true }
     )
   }
 
@@ -62,18 +41,6 @@ export class SpinButton extends Container {
   private setEnabled(enabled: boolean) {
     this.eventMode = enabled ? 'static' : 'none'
     this.cursor = enabled ? 'pointer' : 'default'
-    this.background.alpha = enabled ? 1 : 0.4
-  }
-
-  override destroy(options?: DestroyOptions): void {
-    this.off('pointertap', this.handleTap)
-
-    for (const dispose of this.disposers) {
-      dispose()
-    }
-
-    this.disposers.length = 0
-
-    super.destroy(options)
+    this.alpha = enabled ? 1 : 0.7
   }
 }

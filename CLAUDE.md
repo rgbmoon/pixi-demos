@@ -63,7 +63,8 @@ src/
     game-root.ts           #   хост жизненного цикла игры: PIXI-init, DOM-мост, игровой тикер, запуск автомата
     scenes/                #   сцены: GameScene — @inject контроллеров, дерево отображения, layout
     animations/            #   п.4 — классы анимации: обёртки над визуальной сущностью, методы с игровой семантикой → промис
-    controllers/           #   п.5 — контроллеры-Container: создают анимации, держат подписки на эвенты
+    controllers/           #   п.5 — контроллеры (наследники LiveContainer): создают анимации, держат подписки на эвенты через watch/listen
+    ui/                    #   базовые view-классы сцен: live-container.ts (LiveContainer: подписки watch/listen, снимаются в destroy) + button.ts (Button: подложка + active + size-пресет + SVG-иконка)
   mocks/                   # MSW-моки: create-ws-handler.ts (база) + types.ts + handlers.ts (эндпоинты) + browser.ts (worker)
   pages/                   # роут-страницы
   stores/                  # MobX-сторы: flow-store.ts (фаза автомата) + spin-store.ts (состояние раунда) + utils/ (классы AsyncValue, AsyncStream)
@@ -91,7 +92,7 @@ src/
 
 **Исключения из «в файле только класс»** — два, новых без причины не заводим:
 
-- **`game/animations/` и `game/controllers/`** — константы и утилиты класса кладём **в его же файл, выше объявления** (тайминги барабана в [reel-animation.ts](src/game/animations/reel-animation.ts)): это числовые параметры одной визуальной сущности, их правят вместе с кодом, который их использует.
+- **`game/animations/`, `game/controllers/` и `game/ui/`** — константы и утилиты класса кладём **в его же файл, выше объявления** (тайминги барабана в [reel-animation.ts](src/game/animations/reel-animation.ts), размер-пресеты подложки в [button.ts](src/game/ui/button.ts)): это числовые параметры одной визуальной сущности, их правят вместе с кодом, который их использует.
 - **zod-схемы api-слоя** — в файле класса, который ими парсит (`EnvelopeSchema` в [service.ts](src/api/service.ts), `SpinResultSchema` в [root-api.ts](src/api/root-api.ts)): формат читается рядом с разбирающим кодом.
 
 **Именование**
@@ -148,7 +149,7 @@ src/
 - **Поле-`flow(...)`** (как `run` в [AsyncValue](src/stores/utils/async-value.ts)) — **без декоратора**: обёртка уже сделана вызовом `flow()`, а недекорированное `makeObservable(this)` не трогает. Именно **поле**, а не generator-метод с `@flow`: только форма-поле типизируется как «возвращает промис» для `await` в фазах.
 - Мутации observable в async-коде оборачивай в `runInAction`.
 - Включён строгий режим — `configure({ enforceActions: 'always' })` в composition root ([app/container.ts](src/app/container.ts)): запись observable вне action — рантайм-ошибка. В `main.tsx` конфиг не выносим — импорт mobx утянул бы библиотеку в стартовый бандл лендинга.
-- Библиотека — только `mobx` (без `mobx-react`/`-lite`). `observer()` пока не используется; в PIXI-слое подписка на стор — через `reaction` с отпиской в `destroy()` (см. [SpinButton](src/game/controllers/spin-button.ts)).
+- Библиотека — только `mobx` (без `mobx-react`/`-lite`). `observer()` пока не используется; в PIXI-слое подписка на стор — через `this.watch` базы [LiveContainer](src/game/ui/live-container.ts) (MobX-`reaction`, отписка привязана к `destroy`; см. [SpinButton](src/game/controllers/spin-button.ts)). Прямой импорт `reaction`/`autorun`/`when` в `game/` запрещён ESLint-правилом.
 - **Единственный писатель в сторы — автомат** (`flow/`): движок пишет `FlowStore`, фазы — доменные сторы. Контроллеры, view и React только читают.
 - **Сеть в сторе** — через единые хелперы [AsyncValue](src/stores/utils/async-value.ts)`<T>` (фетч/мутации: `this.x.run(() => apiCall())`, управляет полями `value/status/error`) и [AsyncStream](src/stores/utils/async-stream.ts)`<T>` (WS-подписки: `this.x.start(subscribeFn)`/`stop()`). `fromResource`/сырой `flow` в сторах для этого не пишем.
 
@@ -160,16 +161,16 @@ src/
 - **Правила биндингов.** Зависимости-сервисы → `@injectable()` на классе + явный `@inject(TOKENS.X)` на каждом параметре + `.to(Class)` (контроллеры, сцена, фазы, `Fsm`, `GameRoot`, сторы). Конфиг/дженерики → фабрика `toDynamicValue` без декораторов, конфиг живёт в композиции (`new WsTransport({ url: WS_URL })`, `new GameEmitter<GameEvents>(traceEvent)`). Не-сервисы (анимации, value-объекты, PIXI-детали) создаёт класс-владелец, в DI они не биндятся.
 - **Асинхронно-рождающиеся ресурсы в граф не кладём.** PIXI `Application` обретает поля только после `await init()` — им владеет `GameRoot` (создаёт, уничтожает, держит pending-guard). Игровой тикер (`GameTicker`, подкласс PIXI-`Ticker` с паузой `waitTicks`) поэтому создаёт контейнер (валиден с рождения), а после init `GameRoot` переводит рендер на него: `app.ticker = ticker` (штатный сеттер `TickerPlugin`), дальше тикером владеет приложение.
 - **`container.get()` — только в точках входа**: `app/` и роут-страницы. `GamePage` создаёт game-контейнер и одним `get(TOKENS.GameRoot)` материализует весь граф по конструкторам; cleanup вызывает `destroyGameContainer`. Слои получают зависимости конструктором и импортируют только значение `TOKENS`; классы зависимостей — строго `import type`.
-- **Смерть — через контейнер**: `onDeactivation` пишется рядом с `bind()` (автомату — `dispose()`, контроллерам и сцене — guard-`destroy()`, хосту — `unmount()`, транспорту — `disconnect()`). Деактивации **синхронные** (появится async — вызов меняется на `unbindAsync`), **идемпотентные и порядконезависимые**: destroy — под guard'ом `if (!x.destroyed)`. Порядкозависимых смертей две, они зашиты в `destroyGameContainer` навсегда: `unbind(Fsm)` → `unbind(GameRoot)` (его `app.destroy` каскадом уничтожает сцену с контроллерами — их override'ы `destroy` чистят подписки) → `unbindAll()` — хвост для остальных деактиваций (нужен графу, не доехавшему до сцены из-за StrictMode-гонки). Новая сущность в разборку не добавляется.
+- **Смерть — через контейнер**: `onDeactivation` пишется рядом с `bind()` (автомату — `dispose()`, контроллерам и сцене — guard-`destroy()`, хосту — `unmount()`, транспорту — `disconnect()`). Деактивации **синхронные** (появится async — вызов меняется на `unbindAsync`), **идемпотентные и порядконезависимые**: destroy — под guard'ом `if (!x.destroyed)`. Порядкозависимых смертей две, они зашиты в `destroyGameContainer` навсегда: `unbind(Fsm)` → `unbind(GameRoot)` (его `app.destroy` каскадом уничтожает сцену с контроллерами — унаследованный от `LiveContainer` `destroy` чистит их подписки) → `unbindAll()` — хвост для остальных деактиваций (нужен графу, не доехавшему до сцены из-за StrictMode-гонки). Новая сущность в разборку не добавляется.
 - **GameRoot — хост жизненного цикла** (биндинг в game-контейнере): за ним только то, что невозможно до конца `init` — PIXI-init с pending-guard, перевод рендера на игровой тикер, канвас в DOM, сцена на stage, ресайз, запуск автомата. Сборкой графа не занимается: сцену, тикер и автомат получает `@inject`, контейнера не видит.
-- **Как расширять.** Контроллер: класс → токен → строка `bind` + guard-деактивация в своей bind-функции (`bindScene` и т.п.) → `@inject` в `GameScene`, она же ставит его на место в `layout`; `destroyGameContainer` не трогается. Анимация: класс в `animations/`, создаёт контроллер — композиция не меняется. Фаза: класс → имя в `PhaseName` → `bind(TOKENS.Phase).to(X)` → `return`-переходы соседних фаз; `Fsm` не меняется. Сцена: класс в `scenes/` + токен + `bind`; сцене с приватным состоянием — свой child-контейнер по образцу game. Вырастет `bindings.ts` — режется на `app/bindings/*.ts`, `bindGame` остаётся оглавлением.
+- **Как расширять.** Контроллер: класс → токен → строка `bind` + guard-деактивация в своей bind-функции (`bindScene` и т.п.) → `@inject` в `GameScene`, она же ставит его на место в `layout`; `destroyGameContainer` не трогается. Кнопка: наследуй `Button` из `game/ui/` (подложка, `active`, размер-пресет и иконка уже в нём), дальше — как контроллер. Подписки контроллера — только `this.watch`/`this.listen` (наследуются от `LiveContainer`), свой `destroy` для отписок не нужен. Анимация: класс в `animations/`, создаёт контроллер — композиция не меняется. Фаза: класс → имя в `PhaseName` → `bind(TOKENS.Phase).to(X)` → `return`-переходы соседних фаз; `Fsm` не меняется. Сцена: класс в `scenes/` + токен + `bind`; сцене с приватным состоянием — свой child-контейнер по образцу game. Вырастет `bindings.ts` — режется на `app/bindings/*.ts`, `bindGame` остаётся оглавлением.
 
 **Событийная модель** — [events/](src/events/): `GameEmitter` (тонкая обёртка над `EventEmitter` из `pixi.js` — это eventemitter3, он уже в бандле; ожидание события промисом — его метод `waitFor`) и карта событий [types.ts](src/events/types.ts). Единственный экземпляр эмиттера создаёт app-контейнер (фабричный биндинг — класс generic-параметризован `GameEvents`); слои получают его через `@inject`/контекст, а не импортом.
 
 - **Все имена событий — только в `GameEvents`.** Набор ограничен и типизирован: `emit(произвольная строка)` невозможен, payload проверяет компилятор.
 - **Две системы наблюдения, не смешивать.** Эмиттер — для дискретных **моментов** (`ui:spinRequested`, `spin:landed`). MobX — для непрерывного **состояния** (ставка, фаза, баланс). Событие, у которого есть «текущее значение», на самом деле состояние — его место в сторе.
 - **Событие ≠ команда.** Вверх (view → логика) — событие в прошедшем времени: view сообщает, что произошло. Вниз (автомат → view) — **прямой вызов метода контроллера**, возвращающего промис (`await reels.land(result)`): фаза обязана дождаться конца анимации, а `emit` ничего не возвращает.
-- `on()` возвращает **функцию отписки** — сохраняй их в массив и вызывай все в `destroy()`. `off(event)` без колбэка и `removeAllListeners()` **не вызывай**: они снимут и чужие подписки.
+- `on()` возвращает **функцию отписки**. В классах дерева сцены его напрямую не зови — подписывайся через `this.listen` базы [LiveContainer](src/game/ui/live-container.ts): отписка регистрируется сама и снимается в `destroy()`. Вне дерева сцены — сохрани функцию отписки и вызови при смерти владельца. `off(event)` без колбэка и `removeAllListeners()` **не вызывай**: они снимут и чужие подписки.
 - Утечки диагностируй через `listenerCounts()` эмиттера (в консоли: `appContainer.get(TOKENS.GameEmitter).listenerCounts()`) — числа должны быть стабильны от раунда к раунду, а после ухода со страницы игры — пустыми.
 
 **Конечный автомат (цикл раунда)** — [flow/](src/flow/): движок [fsm.ts](src/flow/fsm.ts) + фазы `idle → spinning → result → idle`. Своя реализация на async-фазах.
@@ -212,6 +213,7 @@ useEffect(() => {
 ## Ассеты и .gitignore
 
 - Ассеты игры лежат в **`src/assets/game/`** (~146 МБ) и игнорятся в [.gitignore](.gitignore) правилом `src/assets/game/` — **не коммить их в remote**.
+- **SVG-иконки игры (`graphic/Icons/`) — всегда белые**: tint PIXI умножает цвет (белому источнику можно задать любой цвет, чёрному — никакой), поэтому у новой иконки правь `stroke`/`fill` на `#ffffff` прямо в файле.
 
 ---
 
@@ -252,6 +254,7 @@ useEffect(() => {
 - Не вешай async-обработчики на `onDeactivation` при синхронном `unbind`; `unbindAll()` — только страховочный хвост `destroyGameContainer` после порядкозависимых `unbind`, не замена им. Деактивации-`destroy` — только под guard'ом `destroyed` (см. «Композиция и DI»).
 - Не используй callback-ref без cleanup для канвасов — только `useEffect` с очисткой (см. «Мост React↔PIXI»).
 - Не используй `makeAutoObservable` и карты-объекты `makeObservable(this, {...})` — только декораторы у членов + `makeObservable(this)` в конструкторе.
+- Не подписывайся в `game/` напрямую (`reaction` MobX, `emitter.on`) — только `watch`/`listen` базы `LiveContainer`; mobx-обход ловит ESLint (см. «Стейт (MobX)» и «Событийная модель»).
 - Не делай тяжёлые PIXI-инстансы observable; классу без реактивных полей MobX не подключаем (см. `game/game-root.ts`).
 - Не клади в `stores/` не-MobX-классы.
 - Не добавляй ручную мемоизацию без нужды — работает React Compiler.

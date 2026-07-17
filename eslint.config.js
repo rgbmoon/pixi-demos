@@ -78,4 +78,23 @@ export default [
       'react/self-closing-comp': ['error'],
     },
   },
+  {
+    files: ['src/game/**/*.ts'],
+    ignores: ['src/game/ui/live-container.ts'],
+    rules: {
+      // Это правило нужно для запрета импортов reaction и autorun из mobx в коде игры, чтобы подписки делались через LiveContainer.
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'mobx',
+              importNames: ['reaction', 'autorun', 'when'],
+              message: 'В дереве сцены подписки — через watch/listen базы LiveContainer.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]

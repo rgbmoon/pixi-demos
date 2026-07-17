@@ -11,11 +11,13 @@ import { IdlePhase } from 'src/flow/phases/idle-phase'
 import { ResultPhase } from 'src/flow/phases/result-phase'
 import { SpinningPhase } from 'src/flow/phases/spinning-phase'
 import { ReelsController } from 'src/game/controllers/reels-controller'
+import { SoundToggleButton } from 'src/game/controllers/sound-toggle-button'
 import { SpinButton } from 'src/game/controllers/spin-button'
 import { GameRoot } from 'src/game/game-root'
 import { GameTicker } from 'src/game/game-ticker'
 import { GameScene } from 'src/game/scenes/game-scene'
 import { FlowStore } from 'src/stores/flow-store'
+import { SceneStore } from 'src/stores/scene-store'
 import { SpinStore } from 'src/stores/spin-store'
 
 /** Биндинги app-уровня: сервисы, живущие всё время работы вкладки. */
@@ -38,7 +40,6 @@ const bindCore = (container: Container): void => {
 
   // Состояние раунда живёт один маунт — каждый заход начинается со свежих сторов
   container.bind(TOKENS.FlowStore).to(FlowStore)
-  container.bind(TOKENS.SpinStore).to(SpinStore)
 }
 
 /** Автомат раунда: фазы на общем токене + движок. */
@@ -53,10 +54,18 @@ const bindFlow = (container: Container): void => {
     .onDeactivation((fsm) => fsm.dispose())
 }
 
-/** Картинка: контроллеры и собирающая их сцена. */
+/** Картинка: контроллеры и собирающая их сцена. А так-же сторы сцены */
 const bindScene = (container: Container): void => {
-  // destroy под guard'ом destroyed: в штатной разборке PIXI-каскад app.destroy уничтожает
-  // сцену и контроллеры раньше, чем unbindAll доходит до их деактиваций
+  container.bind(TOKENS.SceneStore).to(SceneStore)
+  container.bind(TOKENS.SpinStore).to(SpinStore)
+
+  container
+    .bind(TOKENS.GameScene)
+    .to(GameScene)
+    .onDeactivation((scene) => {
+      if (!scene.destroyed) scene.destroy()
+    })
+
   container
     .bind(TOKENS.ReelsController)
     .to(ReelsController)
@@ -72,10 +81,10 @@ const bindScene = (container: Container): void => {
     })
 
   container
-    .bind(TOKENS.GameScene)
-    .to(GameScene)
-    .onDeactivation((scene) => {
-      if (!scene.destroyed) scene.destroy()
+    .bind(TOKENS.SoundToggleButton)
+    .to(SoundToggleButton)
+    .onDeactivation((button) => {
+      if (!button.destroyed) button.destroy({ children: true })
     })
 }
 
