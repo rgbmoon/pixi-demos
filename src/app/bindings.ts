@@ -10,11 +10,11 @@ import { Fsm } from 'src/flow/fsm'
 import { IdlePhase } from 'src/flow/phases/idle-phase'
 import { ResultPhase } from 'src/flow/phases/result-phase'
 import { SpinningPhase } from 'src/flow/phases/spinning-phase'
+import { AutospinToggleButton } from 'src/game/controllers/autospin-toggle-button'
 import { BackgroundController } from 'src/game/controllers/background-controller'
 import { ReelsController } from 'src/game/controllers/reels-controller'
 import { SoundToggleButton } from 'src/game/controllers/sound-toggle-button'
 import { SpinButton } from 'src/game/controllers/spin-button'
-import { ThemeToggleButton } from 'src/game/controllers/theme-toggle-button'
 import { GameRoot } from 'src/game/game-root'
 import { GameTicker } from 'src/game/game-ticker'
 import { GameScene } from 'src/game/scenes/game-scene'
@@ -97,8 +97,8 @@ const bindScene = (container: Container): void => {
     })
 
   container
-    .bind(TOKENS.ThemeToggleButton)
-    .to(ThemeToggleButton)
+    .bind(TOKENS.AutospinToggleButton)
+    .to(AutospinToggleButton)
     .onDeactivation((button) => {
       if (!button.destroyed) button.destroy({ children: true })
     })

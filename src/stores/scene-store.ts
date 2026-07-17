@@ -1,6 +1,5 @@
 import { injectable } from 'inversify'
 import { action, makeObservable, observable } from 'mobx'
-import { SceneTheme } from 'src/types/game'
 
 @injectable()
 export class SceneStore {
@@ -9,13 +8,13 @@ export class SceneStore {
   }
 
   @observable isSoundOn = true
-  @observable theme: SceneTheme = SceneTheme.light
+  @observable isAutospin = false
 
   @action toggleSound() {
     this.isSoundOn = !this.isSoundOn
   }
 
-  @action toggleTheme() {
-    this.theme = this.theme === SceneTheme.light ? SceneTheme.dark : SceneTheme.light
+  @action toggleAutospin() {
+    this.isAutospin = !this.isAutospin
   }
 }

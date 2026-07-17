@@ -56,6 +56,8 @@ export class GameRoot {
       autoStart: false,
       background: '#475569',
       resizeTo: container,
+      resolution: window.devicePixelRatio,
+      autoDensity: true,
     })
 
     if (this.pending !== app) {

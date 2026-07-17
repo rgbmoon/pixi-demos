@@ -3,12 +3,12 @@ export type SpinResult = {
   win: number
 }
 
-export const SceneTheme = {
+export const SceneBackground = {
   light: 'light',
   dark: 'dark',
 } as const
 
-export type SceneTheme = (typeof SceneTheme)[keyof typeof SceneTheme]
+export type SceneBackground = (typeof SceneBackground)[keyof typeof SceneBackground]
 
 export const PhaseName = {
   idle: 'idle',

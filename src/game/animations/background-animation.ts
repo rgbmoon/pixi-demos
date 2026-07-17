@@ -1,13 +1,13 @@
 import { Assets, Container, Sprite, type Texture, type Ticker } from 'pixi.js'
-import { SceneTheme } from 'src/types/game'
+import { SceneBackground } from 'src/types/game'
 
 import type { GameTicker } from '../game-ticker'
 
 const FADE_DURATION_MS = 200
 
 const TEXTURE_SOURCES = {
-  [SceneTheme.light]: { alias: 'al_bg_reg', src: '/src/assets/game/graphic/AL_Background/AL_bg_reg.{webp,png}' },
-  [SceneTheme.dark]: { alias: 'al_bg_fs', src: '/src/assets/game/graphic/AL_Background/AL_bg_fs.{webp,png}' },
+  [SceneBackground.light]: { alias: 'al_bg_reg', src: '/src/assets/game/graphic/AL_Background/AL_bg_reg.{webp,png}' },
+  [SceneBackground.dark]: { alias: 'al_bg_fs', src: '/src/assets/game/graphic/AL_Background/AL_bg_fs.{webp,png}' },
 } as const
 
 /**
@@ -23,10 +23,10 @@ export class BackgroundAnimation {
   private width = 0
   private height = 0
 
-  constructor(ticker: GameTicker, initialTheme: SceneTheme) {
+  constructor(ticker: GameTicker, initialBg: SceneBackground) {
     this.ticker = ticker
 
-    this.darkSprite.alpha = initialTheme === SceneTheme.dark ? 1 : 0
+    this.darkSprite.alpha = initialBg === SceneBackground.light ? 0 : 1
     this.view.addChild(this.lightSprite, this.darkSprite)
 
     void this.load()
@@ -63,13 +63,13 @@ export class BackgroundAnimation {
   }
 
   /** Плавно ведёт фон к целевой теме; вызов посреди fade разворачивает его с текущего alpha. */
-  fadeTo(theme: SceneTheme): void {
+  fadeTo(isAutospin: boolean): void {
     if (this.fadeStep) {
       this.ticker.remove(this.fadeStep)
       this.fadeStep = undefined
     }
 
-    const target = theme === SceneTheme.dark ? 1 : 0
+    const target = Number(isAutospin)
 
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       this.darkSprite.alpha = target
