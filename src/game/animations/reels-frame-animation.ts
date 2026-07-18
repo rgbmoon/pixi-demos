@@ -1,5 +1,7 @@
+import { Point } from 'pixi.js'
+
 import type { GameTicker } from '../game-ticker'
-import { SpineAnimation } from './spine-animation'
+import { SpineAnimation } from '../ui/spine-animation'
 
 const SKELETON_URL = '/src/assets/game/animations/reels_frame/frame.json'
 const ATLAS_URL = '/src/assets/game/animations/reels_frame/1/frame.atlas'
@@ -10,7 +12,6 @@ const NATIVE_WIDTH = 1074.93
 const TRACK_MAIN = 0
 const TRACK_TINT = 1
 
-/** Spine-рамка барабанов: idle-контур на основном треке, затемнение символов — на отдельном. */
 export class ReelsFrameAnimation extends SpineAnimation {
   private width = 0
   private height = 0
@@ -46,6 +47,29 @@ export class ReelsFrameAnimation extends SpineAnimation {
     await this.playOnce(TRACK_TINT, 'tint_hide', signal)
 
     this.clearTrack(TRACK_TINT)
+  }
+
+  /** Точка размещения символов под тинтом, в координатах `view`. */
+  getSymbolsPoint(): Point {
+    return this.getSlotPoint('symbols_placeholder')
+  }
+
+  /** Точка для вин-анимаций символов, в координатах `view`. */
+  getSymbolsWinPoint(): Point {
+    return this.getSlotPoint('symbols_win_placeholder')
+  }
+
+  /** Точка для текстовых попапов, в координатах `view`. */
+  getPopupPoint(): Point {
+    return this.getSlotPoint('popup_placeholder')
+  }
+
+  private getSlotPoint(slotName: string): Point {
+    const bone = this.spine?.skeleton.findSlot(slotName)?.bone
+
+    if (!this.spine || !bone) return new Point()
+
+    return this.view.toLocal({ x: bone.worldX, y: bone.worldY }, this.spine)
   }
 
   private applySize(): void {
