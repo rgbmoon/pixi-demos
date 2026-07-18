@@ -37,9 +37,15 @@ export class SpinningPhase implements Phase {
 
     this.emitter.emit('spin:started', { bet })
 
-    await Promise.all([this.spinStore.result.run(() => this.api.sendSpin(bet, signal)), this.reels.spin(signal)])
+    await Promise.all([
+      this.spinStore.result.run(() => this.api.sendSpin(bet, signal)),
+      this.reels.spin(signal),
+      this.reels.showTint(signal),
+    ])
 
     if (this.spinStore.result.status === RequestStatus.error) {
+      await this.reels.hideTint(signal)
+
       return PhaseName.idle
     }
 

@@ -34,7 +34,7 @@ export class ResultPhase implements Phase {
       return PhaseName.idle
     }
 
-    await this.reels.land(result, signal)
+    await Promise.all([this.reels.land(result, signal), this.reels.hideTint(signal)])
 
     this.emitter.emit('spin:landed', result)
 

@@ -1,27 +1,28 @@
 import { inject, injectable } from 'inversify'
 import { TOKENS } from 'src/constants/tokens'
-import type { GameEmitter } from 'src/events/game-emitter'
-import type { GameEvents } from 'src/events/types'
-import { ReelAnimation } from 'src/game/animations/reel-animation'
+import { ReelsFrameAnimation } from 'src/game/animations/reels-frame-animation'
 import type { GameTicker } from 'src/game/game-ticker'
 import { LiveContainer } from 'src/game/ui/live-container'
 import type { SpinResult } from 'src/types/game'
 
+// паузы-заглушки: держат темп раунда, пока нет настоящих барабанов
+const SPIN_DURATION_MS = 900
+const LAND_DURATION_MS = 350
+
 /**
- * Контроллер барабанов: создаёт анимацию, транслирует ей команды фаз
- * и подсвечивает результат по событию `spin:landed`.
+ * Контроллер зоны барабанов: Spine-рамка с тинтом.
  */
 @injectable()
 export class ReelsController extends LiveContainer {
-  private readonly animation: ReelAnimation
+  private readonly ticker: GameTicker
+  private readonly animation: ReelsFrameAnimation
 
-  constructor(@inject(TOKENS.GameTicker) ticker: GameTicker, @inject(TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>) {
+  constructor(@inject(TOKENS.GameTicker) ticker: GameTicker) {
     super()
 
-    this.animation = new ReelAnimation(ticker)
+    this.ticker = ticker
+    this.animation = new ReelsFrameAnimation(ticker)
     this.addChild(this.animation.view)
-
-    this.listen(emitter, 'spin:landed', (result) => this.animation.highlight(result))
   }
 
   layout(width: number, height: number): void {
@@ -29,10 +30,19 @@ export class ReelsController extends LiveContainer {
   }
 
   spin(signal?: AbortSignal): Promise<void> {
-    return this.animation.spin(signal)
+    return this.ticker.waitTicks(SPIN_DURATION_MS, signal)
   }
 
-  land(result: SpinResult, signal?: AbortSignal): Promise<void> {
-    return this.animation.land(result, signal)
+  // параметр результата сохраняет контракт фазы под будущие барабаны
+  land(_result: SpinResult, signal?: AbortSignal): Promise<void> {
+    return this.ticker.waitTicks(LAND_DURATION_MS, signal)
+  }
+
+  showTint(signal?: AbortSignal): Promise<void> {
+    return this.animation.showTint(signal)
+  }
+
+  hideTint(signal?: AbortSignal): Promise<void> {
+    return this.animation.hideTint(signal)
   }
 }

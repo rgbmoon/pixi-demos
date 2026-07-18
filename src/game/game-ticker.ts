@@ -7,6 +7,14 @@ import { Ticker } from 'pixi.js'
  */
 @injectable()
 export class GameTicker extends Ticker {
+  destroyed = false
+
+  override destroy(): void {
+    this.destroyed = true
+
+    super.destroy()
+  }
+
   /**
    * Игровая пауза: промис резолвится, когда тикер накопил `durationMs` в своих кадрах.
    * В свёрнутой вкладке тикер стоит, поэтому пауза замирает вместе с картинкой. Отменяется через `signal`.
