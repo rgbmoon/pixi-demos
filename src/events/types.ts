@@ -1,4 +1,4 @@
-import type { SpinResult } from 'src/types/game'
+import type { SpinResponse } from 'src/api/root-api'
 
 export type AnyHandler = (payload: unknown) => void
 
@@ -24,5 +24,5 @@ export type EventName<E extends EventMap> = keyof E & string
 export type GameEvents = {
   'ui:spinRequested': { bet: number }
   'spin:started': { bet: number }
-  'spin:landed': SpinResult
+  'spin:landed': SpinResponse
 }

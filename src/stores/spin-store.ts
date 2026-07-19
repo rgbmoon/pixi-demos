@@ -1,9 +1,10 @@
 import { inject, injectable } from 'inversify'
 import { action, computed, makeObservable, observable } from 'mobx'
+import type { SpinResponse } from 'src/api/root-api'
 import { TOKENS } from 'src/constants/tokens'
 import type { FlowStore } from 'src/stores/flow-store'
 import { AsyncValue } from 'src/stores/utils/async-value'
-import { PhaseName, type SpinResult } from 'src/types/game'
+import { PhaseName } from 'src/types/game'
 
 @injectable()
 export class SpinStore {
@@ -16,10 +17,11 @@ export class SpinStore {
   }
 
   @observable bet = 10
+  @observable gameMode = 4
   @observable credit = 999999
   @observable win = 0
 
-  @observable.ref result = new AsyncValue<SpinResult>()
+  @observable.ref result = new AsyncValue<SpinResponse>()
 
   @computed get canSpin(): boolean {
     return this.flowStore.phase === PhaseName.idle
@@ -27,5 +29,9 @@ export class SpinStore {
 
   @action setBet(bet: number) {
     this.bet = bet
+  }
+
+  @action setGameMode(gameMode: number) {
+    this.gameMode = gameMode
   }
 }

@@ -84,7 +84,7 @@ src/
     game-ticker.ts — GameTicker: тикер игры + waitTicks (пауза в игровом времени)
   stores/     — SpinStore (состояние раунда) + utils/ (AsyncValue, AsyncStream)
   mocks/      — MSW-моки WebSocket-сервера
-  types/      — кросс-слойные типы (SpinResult, PhaseName, RequestStatus)
+  types/      — кросс-слойные типы (SpinResponse, PhaseName, RequestStatus)
   constants/  — глобальные константы (environment.ts → WS_URL, tokens.ts → словарь DI-токенов, конфиг блобов фона)
   app/        — вход React (роутер) + composition root (container.ts, bindings.ts)
   pages/, components/ — React-обвязка: страницы, UI
@@ -152,7 +152,7 @@ src/
 @injectable()
 export class SpinStore {
   @observable bet = 10
-  @observable.ref result = new AsyncValue<SpinResult>() // чужой инстанс со своей разметкой — следим только за ссылкой
+  @observable.ref result = new AsyncValue<SpinResponse>() // чужой инстанс со своей разметкой — следим только за ссылкой
 
   constructor(@inject(TOKENS.FlowStore) flowStore: FlowStore) {
     this.flowStore = flowStore
@@ -242,7 +242,7 @@ Event emitter — реализация паттерна **publish/subscribe**: �
 export type GameEvents = {
   'ui:spinRequested': { bet: number }
   'spin:started': { bet: number }
-  'spin:landed': SpinResult
+  'spin:landed': SpinResponse
 }
 ```
 
@@ -494,17 +494,17 @@ if (this.pending !== app) { // пока я ждал, случился unmount (p
 
 WebSocket — это просто двусторонний канал сообщений: в отличие от HTTP, встроенного понятия «запрос и ответ на него» в нём нет. Транспорт достраивает его до двух нужных игре моделей общения:
 
-**Запрос-ответ** — через конверт (envelope) и сопоставление ответа с запросом по id. Каждое сообщение — JSON вида `{ id?, type, payload, error? }`. Отправляя запрос, транспорт генерирует id через `nanoid()` (не счётчик — id должен быть уникален и между вкладками), создаёт «отложенный» (deferred) промис, кладёт его `resolve`/`reject` в карту `pending` под этим id, шлёт `{ id, type: 'spin', payload }` и возвращает промис вызывающему. Когда с сервера приходит сообщение **с id**, транспорт находит в `pending` соответствующую запись, валидирует payload zod-схемой запроса и резолвит промис. Это единственное место в проекте, где легален «сырой» `new Promise` с внешним resolve: промис резолвится не изнутри своего тела, а из обработчика чужого события — `async/await` такое выразить не может.
+**Запрос-ответ** — через конверт (envelope) реального SignalR-формата и сопоставление ответа с запросом по `invocationId`. Отправляя запрос, транспорт генерирует `invocationId` через `nanoid()` (не счётчик — id должен быть уникален и между вкладками), создаёт «отложенный» (deferred) промис, кладёт его `resolve`/`reject` в карту `pending` под этим id, шлёт invocation `{ type: 1, invocationId, target: 'spin', arguments }` и возвращает промис вызывающему. Сервер отвечает конвертом `{ request, response }`: `request` — эхо invocation, `response` — completion (`type: 3`, `{ invocationId, result }`). Транспорт находит в `pending` запись по `response.invocationId`, валидирует **весь** конверт zod-схемой эндпоинта (полный `{ request, response }`) и резолвит промис. Это единственное место в проекте, где легален «сырой» `new Promise` с внешним resolve: промис резолвится не изнутри своего тела, а из обработчика чужого события — `async/await` такое выразить не может.
 
 Три механизма защищают запрос от вечного ожидания:
 
 - **Сторожевой таймер**: не пришёл ответ за 10 секунд — запись удаляется из `pending`, промис реджектится. Без него потерянный сервером ответ означал бы вечно висящий `await` в фазе.
-- **Ответ-ошибка**: конверт с полем `error: { code, message }` реджектит промис сразу, не дожидаясь таймаута.
+- **Ответ-ошибка**: completion с полем `error: string` вместо `result` (SignalR-стиль) реджектит промис сразу, не дожидаясь таймаута.
 - **Отмена извне**: четвёртым аргументом `request` принимает `{ signal }` — тот же `AbortSignal`, которым автомат гасит анимации. У каждого запроса внутри свой `AbortController` (`lifetime`): одна функция `dispose()` снимает и таймер, и слушателей сокета разом, каким бы способом запрос ни завершился. При закрытии сокета все незавершённые запросы реджектятся скопом (`rejectAllPending`).
 
-**Push-подписки** — сообщение **без id** (или с id, которого нет в `pending`) раздаётся подписчикам, зарегистрированным в карте `listeners` на его `type`: у каждого подписчика своя zod-схема и колбэк, `subscribe()` возвращает функцию отписки. Это серверная инициатива — сообщения, которые никто не запрашивал.
+**Push-подписки** — серверная invocation `{ type: 1, target, arguments }` **без `invocationId`** (её нет в `pending`) раздаётся подписчикам, зарегистрированным в карте `listeners` на её `target`: у каждого подписчика своя zod-схема и колбэк, `subscribe()` возвращает функцию отписки. Это серверная инициатива — сообщения, которые никто не запрашивал.
 
-Обработчик входящих сообщений — **граница без страховки сверху**: у WS-колбэка нет внешнего обработчика исключений, упавший разбор оборвал бы обработку молча. Поэтому каждый шаг защищён по месту: `JSON.parse` обёрнут в `try/catch`, конверт разбирается через `safeParse` (невалидное сообщение игнорируется без ошибки), а каждый push-подписчик вызывается в собственном `try/catch` — исключение в одном обработчике не лишает сообщения остальных.
+Обработчик входящих сообщений — **граница без страховки сверху**: у WS-колбэка нет внешнего обработчика исключений, упавший разбор оборвал бы обработку молча. Поэтому каждый шаг защищён по месту: `JSON.parse` обёрнут в `try/catch`, конверт разбирается через `safeParse` (сперва completion-конверт с `response.invocationId`, иначе серверная invocation; невалидное сообщение игнорируется без ошибки), а каждый push-подписчик вызывается в собственном `try/catch` — исключение в одном обработчике не лишает сообщения остальных.
 
 Ещё две детали:
 
@@ -514,7 +514,15 @@ WebSocket — это просто двусторонний канал сообщ
 **[root-api.ts](src/api/root-api.ts)** — образец модуля-эндпоинта, по которому будут писаться остальные: zod-схема ответа + класс-фасад с методами игровой семантики:
 
 ```ts
-const SpinResultSchema: z.ZodType<SpinResult> = z.object({ symbols: z.array(z.number()), win: z.number() })
+// Общий SignalR-конверт `{ request, response }`; им заданы обе схемы эндпоинтов.
+const envelope = <A extends z.ZodType, R extends z.ZodType>(argumentsSchema: A, resultSchema: R) =>
+  z.object({
+    request: z.object({ type: z.literal(1), invocationId: z.string(), target: z.string(), arguments: argumentsSchema }),
+    response: z.object({ type: z.literal(3), invocationId: z.string(), result: resultSchema }),
+  })
+
+export const SpinResponseSchema = envelope(z.array(z.object({ bet: z.number(), gameMode: z.number() })), SpinResultSchema)
+export type SpinResponse = z.infer<typeof SpinResponseSchema>
 
 @injectable()
 export class RootApi {
@@ -524,28 +532,28 @@ export class RootApi {
     this.transport = transport
   }
 
-  sendSpin(bet: number, signal?: AbortSignal): Promise<SpinResult> {
-    return this.transport.request('spin', SpinResultSchema, { bet }, { signal })
+  sendSpin(bet: number, gameMode: number, signal?: AbortSignal): Promise<SpinResponse> {
+    return this.transport.request('spin', SpinResponseSchema, [{ bet, gameMode }], { signal })
   }
 }
 ```
 
 Класс вместо свободных функций — чтобы транспорт приходил через конструктор, а не импортом: потребители (фазы) получают `api` из контекста и не привязаны к конкретному экземпляру.
 
-Схема здесь — не формальность: это граница доверия. Всё, что пришло из сети, — `unknown`, пока zod не подтвердил форму. Дальше по коду `SpinResult` можно передавать без единой проверки — типам можно верить, потому что на входе стоит валидатор.
+Схема здесь — не формальность: это граница доверия. Всё, что пришло из сети, — `unknown`, пока zod не подтвердил форму. Дальше по коду `SpinResponse` можно передавать без единой проверки — типам можно верить, потому что на входе стоит валидатор.
 
 Две тонкости, которые легко забыть:
 
-- Тип `SpinResult` объявлен в [types/game.ts](src/types/game.ts), а схема — здесь; связь закреплена аннотацией `z.ZodType<SpinResult>`: разъехавшаяся схема — ошибка компиляции.
+- Тип `SpinResponse` **выводится из схемы** (`z.infer<typeof SpinResponseSchema>`) и живёт рядом с ней в [root-api.ts](src/api/root-api.ts): единый источник формы — схема, отдельного ручного типа нет, разъезжаться нечему.
 - `WS_URL` ([constants/environment.ts](src/constants/environment.ts)) отдаёт `import.meta.env.VITE_WS_URL` как есть; отсутствие переменной ловит guard в биндинге транспорта ([bindings.ts](src/app/bindings.ts)) — понятная ошибка вместо сокета на `undefined`.
 
 ### 3.2 mocks — фальшивый сервер
 
 Бэкенда у проекта нет — его роль исполняет [MSW](https://mswjs.io/) (Mock Service Worker). Ключевое свойство MSW: перехват происходит **на сетевом уровне**, через Service Worker браузера. Приложение об этом не знает — `service.ts` открывает настоящий WebSocket на настоящий URL, и весь сетевой код прогоняется по-настоящему. Когда появится реальный бэкенд, в `src/api/` не придётся менять ни строчки.
 
-**[create-ws-handler.ts](src/mocks/create-ws-handler.ts)** — базовая обвязка: слушает подключения к `url`, парсит входящие сообщения и по полю `type` направляет каждое в свой обработчик из карты `endpoints`. Эндпоинт получает две функции ответа: `reply(type, payload)` — успешный ответ, и `fail(code, message)` — конверт с полем `error`, который транспорт на клиенте превращает в реджект запроса. Обе сами подставляют в ответ **id из запроса** — так мок сохраняет связь «запрос → ответ», которую ждёт транспорт. Контекст подключения (`push` — отправить клиенту сообщение без запроса, `onClose` — очистить ресурсы при отключении) существует под будущие push-рассылки; текущим эндпоинтам он не нужен. Типы обвязки — в соседнем [types.ts](src/mocks/types.ts).
+**[create-ws-handler.ts](src/mocks/create-ws-handler.ts)** — базовая обвязка: слушает подключения к `url`, парсит входящие invocation и по полю `target` направляет каждую в свой обработчик из карты `endpoints`. Эндпоинт получает `arguments` и две функции ответа: `reply(result)` — успешный completion, и `fail(error)` — completion с полем `error: string`, который транспорт на клиенте превращает в реджект запроса. Обе собирают конверт `{ request, response }`, **эхом возвращая входящую invocation** в `request` (в ней `invocationId`) — так мок сохраняет связь «запрос → ответ», которую ждёт транспорт. Ответ уходит с **задержкой 100–300 мс** (`scheduleSend` через `setTimeout`) — симуляция сетевой латентности по системному времени. Контекст подключения (`push(target, args)` — серверная invocation без запроса, `onClose` — очистить ресурсы при отключении) существует под будущие push-рассылки; текущим эндпоинтам он не нужен. Типы обвязки — в соседнем [types.ts](src/mocks/types.ts).
 
-**[handlers.ts](src/mocks/handlers.ts)** — сами «серверные» правила. Эндпоинт `spin`: сгенерировать три случайных символа (0–4), посчитать выигрыш (все три совпали → ставка × 10), ответить `spinResult`. Обрати внимание — **выигрыш считает мок**, то есть «сервер». Клиент в [result-фазе](src/flow/phases/result-phase.ts) и [WinLabel](src/game/controllers/win-label.ts) только читает `win`, ничего не пересчитывая: инвариант «сервер — источник правды» соблюдается даже в игрушечном моке.
+**[handlers.ts](src/mocks/handlers.ts)** — сами «серверные» правила. Эндпоинт `spin`: сгенерировать три случайных символа (0–4), посчитать выигрыш (все три совпали → ставка × 10), ответить `SpinResponse`. Обрати внимание — **выигрыш считает мок**, то есть «сервер». Клиент в [result-фазе](src/flow/phases/result-phase.ts) и [WinLabel](src/game/controllers/win-label.ts) только читает `win`, ничего не пересчитывая: инвариант «сервер — источник правды» соблюдается даже в игрушечном моке.
 
 **[browser.ts](src/mocks/browser.ts)** + [main.tsx](src/main.tsx): worker собирается из хендлеров, а запускается только в DEV и через динамический `import()` — в прод-бандл MSW не попадает вовсе. React рендерится строго **после** `worker.start()`: иначе первый же запрос успел бы уйти в сеть до того, как перехватчик заработал.
 
@@ -593,7 +601,7 @@ async enter(signal: AbortSignal): Promise<PhaseName> {
 
 **[flow-store.ts](src/stores/flow-store.ts)** — публичное состояние автомата: `phase` и `fatalError` (`@observable.ref`) с сеттерами-actions. Зависимостей у стора нет, поэтому его могут читать и другие сторы, и view — циклов с движком не возникает. Единственный писатель — движок `Fsm`; управление автоматом (`start`/`dispose`) в стор не выносится, оно остаётся в машине вместе с её рабочим состоянием (словарь фаз, `AbortController`).
 
-**[spin-store.ts](src/stores/spin-store.ts)** — состояние раунда: `bet`, `result: AsyncValue<SpinResult>`; computed `canSpin` — cross-store: читает `flowStore.phase` (крутить можно только в `idle`). Все наблюдаемые члены размечены декораторами у объявления + `makeObservable(this)` в конструкторе (см. [2.2](#22-реактивность-mobx)). Писатели — фазы, читатели — кнопка (через `reaction`) и будущий React-UI. Экземплярами обоих сторов владеет game-контейнер: раунд живёт один маунт страницы, каждый заход начинается со свежих сторов.
+**[spin-store.ts](src/stores/spin-store.ts)** — состояние раунда: `bet`, `result: AsyncValue<SpinResponse>`; computed `canSpin` — cross-store: читает `flowStore.phase` (крутить можно только в `idle`). Все наблюдаемые члены размечены декораторами у объявления + `makeObservable(this)` в конструкторе (см. [2.2](#22-реактивность-mobx)). Писатели — фазы, читатели — кнопка (через `reaction`) и будущий React-UI. Экземплярами обоих сторов владеет game-контейнер: раунд живёт один маунт страницы, каждый заход начинается со свежих сторов.
 
 Тонкость: поле `fatalError` в `FlowStore` заполняется при крахе автомата, но пока ничем не читается — ни UI, ни канвасом. Вместе с поведением движка (см. [2.4](#24-конечный-автомат)) это означает: упавший автомат оставляет игру в последней фазе с выключенной кнопкой и без индикации проблемы.
 
@@ -682,10 +690,10 @@ MobX в хосте нет — наблюдаемого состояния он �
 
 **5. Фаза spinning: развилка.** Фаза объявляет `spin:started` (слушателей пока нет — событие на вырост) и запускает **параллельно** два процесса, дожидаясь обоих через `Promise.all`:
 
-- **Сеть.** `spinStore.result.run(() => api.sendSpin(bet, signal))`: статус в сторе становится `loading`, транспорт генерирует id (`nanoid()`), кладёт deferred-промис в `pending`, шлёт `{ id, type: 'spin', payload: { bet: 10 } }`. Service Worker перехватывает, мок бросает три случайных символа, считает выигрыш и отвечает `{ id, type: 'spinResult', payload: { symbols: [3,3,3], win: 100 } }`. Транспорт находит запись по id, прогоняет payload через zod-схему и резолвит промис запроса. `AsyncValue` дописывает: `value` = результат, `status = 'success'`.
+- **Сеть.** `spinStore.result.run(() => api.sendSpin(bet, gameMode, signal))`: статус в сторе становится `loading`, транспорт генерирует `invocationId` (`nanoid()`), кладёт deferred-промис в `pending`, шлёт invocation `{ type: 1, invocationId, target: 'spin', arguments: [{ bet: 10, gameMode: 4 }] }`. Service Worker перехватывает, мок разыгрывает сетку символов, считает выигрыш и с задержкой 100–300 мс отвечает конвертом `{ request: <эхо invocation>, response: { type: 3, invocationId, result: {…} } }`. Транспорт находит запись по `response.invocationId`, прогоняет весь конверт через zod-схему эндпоинта и резолвит промис. `AsyncValue` дописывает: `value` = результат, `status = 'success'`.
 - **Анимация.** `reels.spin(signal)` — пауза-заглушка: промис держится 900 мс тикерного времени (`waitTicks`); параллельно `reels.showTint(signal)` зажигает Spine-тинт рамки.
 
-Мок отвечает почти мгновенно, поэтому реальная длительность фазы — это длительность анимации. С настоящим сервером порядок завершения может быть любым — `Promise.all` этим не интересуется, ему нужны оба.
+Мок отвечает с задержкой 100–300 мс, но анимация обычно дольше, поэтому реальную длительность фазы задаёт она. С настоящим сервером порядок завершения может быть любым — `Promise.all` этим не интересуется, ему нужны оба.
 
 **6. Проверка исхода.** Фаза смотрит `spinStore.result.status`. Успех → вернуть `'result'`. Ошибка → вернуть `'idle'` (об этой ветке — ниже).
 

@@ -1,84 +1,97 @@
+import { SymbolKey } from 'src/types/game'
+
 import type { GameTicker } from '../game-ticker'
 import { SpineAnimation } from '../ui/spine-animation'
 
 const LOW_ATLAS_URL = '/src/assets/game/animations/symbols/low/1/low.atlas'
 
-// путь к скелету и атласу на тир символа + ширина скелета из его .json (origin арта — в его центре)
-const SYMBOL_TIERS = {
-  low_1: {
+const SYMBOL_TIERS: Record<
+  SymbolKey,
+  {
+    skeletonUrl: string
+    atlasUrl: string
+    nativeWidth: number
+  }
+> = {
+  [SymbolKey.K]: {
     skeletonUrl: '/src/assets/game/animations/symbols/low/low_1.json',
     atlasUrl: LOW_ATLAS_URL,
     nativeWidth: 156,
   },
-  low_2: {
+  [SymbolKey.L]: {
     skeletonUrl: '/src/assets/game/animations/symbols/low/low_2.json',
     atlasUrl: LOW_ATLAS_URL,
     nativeWidth: 135.43,
   },
-  low_3: {
+  [SymbolKey.M]: {
     skeletonUrl: '/src/assets/game/animations/symbols/low/low_3.json',
     atlasUrl: LOW_ATLAS_URL,
     nativeWidth: 164.82,
   },
-  low_4: {
+  [SymbolKey.N]: {
     skeletonUrl: '/src/assets/game/animations/symbols/low/low_4.json',
     atlasUrl: LOW_ATLAS_URL,
     nativeWidth: 105.73,
   },
-  low_5: {
+  [SymbolKey.O]: {
     skeletonUrl: '/src/assets/game/animations/symbols/low/low_5.json',
     atlasUrl: LOW_ATLAS_URL,
     nativeWidth: 191,
   },
-  low_6: {
+  [SymbolKey.P]: {
     skeletonUrl: '/src/assets/game/animations/symbols/low/low_6.json',
     atlasUrl: LOW_ATLAS_URL,
     nativeWidth: 132.95,
   },
-  middle_1: {
+  [SymbolKey.E]: {
     skeletonUrl: '/src/assets/game/animations/symbols/middle_1/middle_1.json',
     atlasUrl: '/src/assets/game/animations/symbols/middle_1/1/middle_1.atlas',
     nativeWidth: 167.4,
   },
-  middle_2: {
+  [SymbolKey.F]: {
     skeletonUrl: '/src/assets/game/animations/symbols/middle_2/middle_2.json',
     atlasUrl: '/src/assets/game/animations/symbols/middle_2/1/middle_2.atlas',
     nativeWidth: 157.81,
   },
-  high_1: {
+  [SymbolKey.A]: {
     skeletonUrl: '/src/assets/game/animations/symbols/high_1/high_1.json',
     atlasUrl: '/src/assets/game/animations/symbols/high_1/1/high_1.atlas',
     nativeWidth: 207.9,
   },
-  wild: {
+  [SymbolKey.W]: {
     skeletonUrl: '/src/assets/game/animations/symbols/wild/wild.json',
     atlasUrl: '/src/assets/game/animations/symbols/wild/1/wild.atlas',
     nativeWidth: 196.25,
   },
-} as const
-
-export type SymbolTier = keyof typeof SYMBOL_TIERS
+  [SymbolKey.S]: {
+    skeletonUrl: '/src/assets/game/animations/symbols/scatter/scatter.json',
+    atlasUrl: '/src/assets/game/animations/symbols/scatter/1/scatter.atlas',
+    nativeWidth: 219.77,
+  },
+}
 
 const TRACK_MAIN = 0
 
-/** Анимация символа барабана: ассеты и размер — из `SYMBOL_TIERS` по имени тира. */
+/** Анимация символа барабана: ассеты и размер — из `SYMBOL_TIERS` по ключу символа. У скаттера (`S`) — доп. состояния free games. */
 export class SymbolAnimation extends SpineAnimation {
   private readonly nativeWidth: number
+  private readonly isScatter: boolean
   private width = 0
   private height = 0
 
-  constructor(ticker: GameTicker, tier: SymbolTier) {
+  constructor(ticker: GameTicker, key: SymbolKey) {
     super(ticker)
 
-    const { skeletonUrl, atlasUrl, nativeWidth } = SYMBOL_TIERS[tier]
+    const { skeletonUrl, atlasUrl, nativeWidth } = SYMBOL_TIERS[key]
 
     this.nativeWidth = nativeWidth
+    this.isScatter = key === SymbolKey.S
 
     void this.load(skeletonUrl, atlasUrl)
   }
 
   protected override onLoaded(): void {
-    this.play(TRACK_MAIN, 'idle')
+    this.idle()
     this.applySize()
   }
 
@@ -95,16 +108,37 @@ export class SymbolAnimation extends SpineAnimation {
     this.play(TRACK_MAIN, 'blur')
   }
 
-  /** Простой символа. */
+  /** Простой символа; у скаттера — простой с надписью scatter. */
   idle(): void {
-    this.play(TRACK_MAIN, 'idle')
+    this.play(TRACK_MAIN, this.isScatter ? 'idle_1' : 'idle')
   }
 
   /** Выигрышная анимация символа, затем возврат в простой. */
   async win(signal?: AbortSignal): Promise<void> {
-    await this.playOnce(TRACK_MAIN, 'win', signal)
+    await this.playOnce(TRACK_MAIN, this.isScatter ? 'win_1' : 'win', signal)
 
-    this.play(TRACK_MAIN, 'idle')
+    this.idle()
+  }
+
+  /** Скаттер: простой с надписью free games. У остальных символов ничего не делает. */
+  idleFreeGames(): void {
+    if (!this.isScatter) return
+
+    this.play(TRACK_MAIN, 'idle_2')
+  }
+
+  /** Скаттер: переход во free games один раз, дальше — `winFreeGamesLoop`. У остальных символов ничего не делает. */
+  winToFreeGames(signal?: AbortSignal): Promise<void> {
+    if (!this.isScatter) return Promise.resolve()
+
+    return this.playOnce(TRACK_MAIN, 'win_2', signal)
+  }
+
+  /** Скаттер: циклическая выигрышная анимация во free games. У остальных символов ничего не делает. */
+  winFreeGamesLoop(): void {
+    if (!this.isScatter) return
+
+    this.play(TRACK_MAIN, 'win_3')
   }
 
   private applySize(): void {

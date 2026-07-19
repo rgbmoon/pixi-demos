@@ -1,9 +1,11 @@
-export type WsReply = (type: string, payload: unknown) => void
-export type WsFail = (code: string, message: string) => void
-export type WsEndpoint = (payload: unknown, reply: WsReply, fail: WsFail) => void
+import type { SpinResponse } from 'src/api/root-api'
+
+export type WsReply = (result: unknown) => void
+export type WsFail = (error: string) => void
+export type WsEndpoint = (args: unknown[], reply: WsReply, fail: WsFail) => void
 
 export type WsConnectionContext = {
-  push: (type: string, payload: unknown) => void
+  push: (target: string, args: unknown[]) => void
   onClose: (cleanup: () => void) => void
 }
 
@@ -12,3 +14,8 @@ export type CreateWsHandlerOptions = {
   endpoints: Record<string, WsEndpoint>
   onConnect?: (context: WsConnectionContext) => void
 }
+
+export type SpinRequestPayload = { bet: number; gameMode: number }
+
+/** Одна трансформация результата спина — член дискриминированного union из api-схемы. */
+export type SpinTransformation = SpinResponse['response']['result']['SpinResponse']['transformations'][number]

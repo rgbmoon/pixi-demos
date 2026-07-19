@@ -4,11 +4,20 @@ import { z } from 'zod'
 
 import type { PendingRequest, PushListener, WsRequestOptions, WsTransportOptions } from './types'
 
-const EnvelopeSchema = z.object({
-  id: z.string().optional(),
-  type: z.string(),
-  payload: z.unknown(),
-  error: z.object({ code: z.string(), message: z.string() }).optional(),
+// Ответ на запрос: пара { request, response }. Коррелируем по response.invocationId,
+// ошибку сервера ловим по response.error.
+const CompletionEnvelopeSchema = z.object({
+  response: z.object({
+    invocationId: z.string(),
+    error: z.string().optional(),
+  }),
+})
+
+// Серверный push: SignalR-invocation без invocationId, роутинг по target.
+const ServerInvocationSchema = z.object({
+  type: z.literal(1),
+  target: z.string(),
+  arguments: z.array(z.unknown()).optional(),
 })
 
 /**
@@ -57,17 +66,17 @@ export class WsTransport {
 
   /**
    * Завершает промис запроса пришедшим ответом:
-   * Резолвит его, если payload сошёлся со схемой запроса.
-   * Реджектит, если сервер вернул ошибку или payload не соответствует схеме.
+   * Резолвит его, если весь конверт `{ request, response }` сошёлся со схемой эндпоинта.
+   * Реджектит, если сервер вернул `response.error` или конверт не соответствует схеме.
    */
-  private settlePending(entry: PendingRequest, envelope: z.infer<typeof EnvelopeSchema>): void {
-    if (envelope.error) {
-      entry.reject(new Error(`${envelope.error.code}: ${envelope.error.message}`))
+  private settlePending(entry: PendingRequest, raw: unknown, error?: string): void {
+    if (error !== undefined) {
+      entry.reject(new Error(error))
 
       return
     }
 
-    const parsed = entry.schema.safeParse(envelope.payload)
+    const parsed = entry.schema.safeParse(raw)
 
     if (!parsed.success) {
       entry.reject(parsed.error)
@@ -79,15 +88,15 @@ export class WsTransport {
   }
 
   /**
-   * Доставляет сообщение, пришедшее по инициативе сервера, в обработчики всех подписчиков на его `type`.
-   * Подписчик пропускается, если payload не сошёлся с его схемой.
+   * Доставляет серверную invocation в обработчики всех подписчиков на её `target`.
+   * Подписчик пропускается, если `arguments` не сошлись с его схемой.
    */
-  private dispatchPush(envelope: z.infer<typeof EnvelopeSchema>): void {
-    const set = this.listeners.get(envelope.type)
+  private dispatchPush(invocation: z.infer<typeof ServerInvocationSchema>): void {
+    const set = this.listeners.get(invocation.target)
     if (!set) return
 
     for (const listener of set) {
-      const parsed = listener.schema.safeParse(envelope.payload)
+      const parsed = listener.schema.safeParse(invocation.arguments ?? [])
       if (!parsed.success) continue
 
       try {
@@ -100,7 +109,7 @@ export class WsTransport {
 
   /**
    * Открывает соединение с сервером и разбирает всё, что по нему приходит: ответ на запрос уходит в `settlePending`,
-   * сообщение без запроса — в `dispatchPush`, закрытие соединения — в `rejectAllPending`.
+   * серверная invocation — в `dispatchPush`, закрытие соединения — в `rejectAllPending`.
    */
   private createSocket(): ReconnectingWebSocket {
     const activeSocket = new ReconnectingWebSocket(this.url)
@@ -116,22 +125,22 @@ export class WsTransport {
         return
       }
 
-      const envelope = EnvelopeSchema.safeParse(raw)
-      if (!envelope.success) return
+      const completion = CompletionEnvelopeSchema.safeParse(raw)
 
-      const { data } = envelope
-
-      if (data.id !== undefined) {
-        const entry = this.takePending(data.id)
+      if (completion.success) {
+        const entry = this.takePending(completion.data.response.invocationId)
 
         if (entry) {
-          this.settlePending(entry, data)
-
-          return
+          this.settlePending(entry, raw, completion.data.response.error)
         }
+
+        return
       }
 
-      this.dispatchPush(data)
+      const invocation = ServerInvocationSchema.safeParse(raw)
+      if (invocation.success) {
+        this.dispatchPush(invocation.data)
+      }
     })
 
     activeSocket.addEventListener('close', () => {
@@ -169,17 +178,17 @@ export class WsTransport {
   }
 
   /**
-   * Шлёт запрос `type` и отдаёт промис с ответом сервера, разобранным по `schema`.
+   * Шлёт invocation `target` с аргументами `args` и отдаёт промис с ответом сервера, разобранным по `schema`.
    * Реджектится ошибкой сервера, невалидным ответом, отменой через `signal` или таймаутом ожидания.
    */
   request<S extends z.ZodType>(
-    type: string,
+    target: string,
     schema: S,
-    payload?: unknown,
+    args: unknown[] = [],
     { signal }: WsRequestOptions = {}
   ): Promise<z.infer<S>> {
     const activeSocket = this.connect()
-    const id = nanoid()
+    const invocationId = nanoid()
 
     return new Promise<z.infer<S>>((resolve, reject) => {
       if (signal?.aborted) {
@@ -191,22 +200,22 @@ export class WsTransport {
       const lifetime = new AbortController()
 
       const timeoutId = setTimeout(() => {
-        this.takePending(id)
+        this.takePending(invocationId)
 
-        reject(new Error(`WS-запрос "${type}" не ответил за ${this.timeoutMs} мс`))
+        reject(new Error(`WS-запрос "${target}" не ответил за ${this.timeoutMs} мс`))
       }, this.timeoutMs)
 
       signal?.addEventListener(
         'abort',
         () => {
-          this.takePending(id)
+          this.takePending(invocationId)
 
           reject(signal.reason as Error)
         },
         { once: true, signal: lifetime.signal }
       )
 
-      this.pending.set(id, {
+      this.pending.set(invocationId, {
         resolve: resolve as (value: unknown) => void,
         reject,
         schema,
@@ -220,9 +229,9 @@ export class WsTransport {
         try {
           await this.whenOpen(activeSocket, lifetime.signal)
 
-          activeSocket.send(JSON.stringify({ id, type, payload }))
+          activeSocket.send(JSON.stringify({ type: 1, invocationId, target, arguments: args }))
         } catch (error) {
-          this.takePending(id)
+          this.takePending(invocationId)
 
           reject(error)
         }
@@ -233,16 +242,16 @@ export class WsTransport {
   }
 
   /**
-   * Подписывает `handler` на push-сообщения `type`, приходящие по инициативе сервера.
+   * Подписывает `handler` на серверные invocation с `target`, приходящие по инициативе сервера.
    * Возвращает функцию отписки.
    */
-  subscribe<S extends z.ZodType>(type: string, schema: S, handler: (value: z.infer<S>) => void): () => void {
+  subscribe<S extends z.ZodType>(target: string, schema: S, handler: (value: z.infer<S>) => void): () => void {
     this.connect()
 
-    let set = this.listeners.get(type)
+    let set = this.listeners.get(target)
     if (!set) {
       set = new Set()
-      this.listeners.set(type, set)
+      this.listeners.set(target, set)
     }
 
     const listener: PushListener = { schema, handler: handler as (value: unknown) => void }

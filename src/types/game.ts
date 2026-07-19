@@ -1,8 +1,3 @@
-export type SpinResult = {
-  symbols: number[]
-  win: number
-}
-
 export const SceneBackground = {
   light: 'light',
   dark: 'dark',
@@ -17,3 +12,19 @@ export const PhaseName = {
 } as const
 
 export type PhaseName = (typeof PhaseName)[keyof typeof PhaseName]
+
+export const SymbolKey = {
+  S: 'S',
+  W: 'W',
+  A: 'A',
+  E: 'E',
+  F: 'F',
+  K: 'K',
+  L: 'L',
+  M: 'M',
+  N: 'N',
+  O: 'O',
+  P: 'P',
+} as const
+
+export type SymbolKey = (typeof SymbolKey)[keyof typeof SymbolKey]

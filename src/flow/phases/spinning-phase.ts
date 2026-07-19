@@ -33,12 +33,12 @@ export class SpinningPhase implements Phase {
   }
 
   async enter(signal: AbortSignal): Promise<typeof PhaseName.idle | typeof PhaseName.result> {
-    const { bet } = this.spinStore
+    const { bet, gameMode } = this.spinStore
 
     this.emitter.emit('spin:started', { bet })
 
     await Promise.all([
-      this.spinStore.result.run(() => this.api.sendSpin(bet, signal)),
+      this.spinStore.result.run(() => this.api.sendSpin(bet, gameMode, signal)),
       this.reels.spin(signal),
       this.reels.showTint(signal),
     ])

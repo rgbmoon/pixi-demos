@@ -1,9 +1,9 @@
 import { inject, injectable } from 'inversify'
+import type { SpinResponse } from 'src/api/root-api'
 import { TOKENS } from 'src/constants/tokens'
 import { ReelsFrameAnimation } from 'src/game/animations/reels-frame-animation'
 import type { GameTicker } from 'src/game/game-ticker'
 import { LiveContainer } from 'src/game/ui/live-container'
-import type { SpinResult } from 'src/types/game'
 
 // паузы-заглушки: держат темп раунда, пока нет настоящих барабанов
 const SPIN_DURATION_MS = 900
@@ -34,7 +34,7 @@ export class ReelsController extends LiveContainer {
   }
 
   // параметр результата сохраняет контракт фазы под будущие барабаны
-  land(_result: SpinResult, signal?: AbortSignal): Promise<void> {
+  land(_result: SpinResponse, signal?: AbortSignal): Promise<void> {
     return this.ticker.waitTicks(LAND_DURATION_MS, signal)
   }
 
