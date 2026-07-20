@@ -21,6 +21,44 @@ const envelope = <A extends z.ZodType, R extends z.ZodType>(argumentsSchema: A, 
     }),
   })
 
+/** Трансформации раунда: дискриминированный по `type` список шагов, общий для `initGame` и `spin`. */
+const TransformationsSchema = z.array(
+  z.discriminatedUnion('type', [
+    z.object({
+      type: z.literal('frameInit'),
+      value: z.array(z.array(z.string<SymbolKey>())),
+    }),
+    z.object({
+      type: z.literal('paylines'),
+      value: z.array(
+        z.object({
+          lineId: z.string(),
+          line: z.array(z.number().nullable()),
+          value: z.number(),
+        })
+      ),
+    }),
+    z.object({
+      type: z.literal('win'),
+      value: z.number(),
+    }),
+    z.object({
+      type: z.literal('multipliersInit'),
+      value: z.array(z.number()),
+      context: z.string(),
+    }),
+    z.object({
+      type: z.literal('waitForChoice'),
+      value: z.object({
+        id: z.string(),
+        optionsCount: z.number(),
+        selectCount: z.number(),
+        defaultOptions: z.array(z.number()),
+      }),
+    }),
+  ])
+)
+
 export const GameInitResponseSchema = envelope(
   z.array(z.unknown()),
   z.object({
@@ -34,12 +72,7 @@ export const GameInitResponseSchema = envelope(
       platformMaxWin: z.number().nullable(),
       endedUtc: z.string(),
       SpinResponse: z.object({
-        transformations: z.array(
-          z.object({
-            type: z.string(),
-            value: z.array(z.array(z.string<SymbolKey>())),
-          })
-        ),
+        transformations: TransformationsSchema,
       }),
       freeRoundCampaign: z.null(),
     }),
@@ -98,42 +131,7 @@ export const SpinResponseSchema = envelope(
     platformMaxWin: z.number().nullable(),
     endedUtc: z.string().nullable(),
     SpinResponse: z.object({
-      transformations: z.array(
-        z.discriminatedUnion('type', [
-          z.object({
-            type: z.literal('frameInit'),
-            value: z.array(z.array(z.string<SymbolKey>())),
-          }),
-          z.object({
-            type: z.literal('paylines'),
-            value: z.array(
-              z.object({
-                lineId: z.string(),
-                line: z.array(z.number().nullable()),
-                value: z.number(),
-              })
-            ),
-          }),
-          z.object({
-            type: z.literal('win'),
-            value: z.number(),
-          }),
-          z.object({
-            type: z.literal('multipliersInit'),
-            value: z.array(z.number()),
-            context: z.string(),
-          }),
-          z.object({
-            type: z.literal('waitForChoice'),
-            value: z.object({
-              id: z.string(),
-              optionsCount: z.number(),
-              selectCount: z.number(),
-              defaultOptions: z.array(z.number()),
-            }),
-          }),
-        ])
-      ),
+      transformations: TransformationsSchema,
     }),
     freeRoundCampaign: z.null(),
   })

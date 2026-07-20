@@ -31,7 +31,7 @@ export class ReelSetController extends LiveContainer {
     )
 
     this.watch(
-      () => sceneStore.initialSymbols,
+      () => sceneStore.symbols,
       (symbols) => this.showSymbols(symbols),
       { fireImmediately: true }
     )

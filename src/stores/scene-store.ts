@@ -27,7 +27,7 @@ export class SceneStore {
   @observable win = 0
 
   @observable.ref game = new AsyncValue<GameInitResponse>()
-  @observable.ref result = new AsyncValue<SpinResponse>()
+  @observable.ref spin = new AsyncValue<SpinResponse>()
 
   @computed get canSpin(): boolean {
     return this.flowStore.phase === PhaseName.idle
@@ -38,10 +38,12 @@ export class SceneStore {
   }
 
   /** Стартовая раскладка барабанов из ответа `initGame`: символы по барабанам, `value[барабан][ячейка]`. */
-  @computed get initialSymbols(): SymbolKey[][] | undefined {
-    return this.game.value?.response.result.round.SpinResponse.transformations.find(
-      (transformation) => transformation.type === 'frameInit'
-    )?.value
+  @computed get symbols(): SymbolKey[][] | undefined {
+    const transformations = this.spin.value
+      ? this.spin.value.response.result.SpinResponse.transformations
+      : this.game.value?.response.result.round.SpinResponse.transformations
+
+    return transformations?.find((transformation) => transformation.type === 'frameInit')?.value
   }
 
   @action setBet(bet: number) {

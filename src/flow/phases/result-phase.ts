@@ -28,7 +28,7 @@ export class ResultPhase implements Phase {
   }
 
   async enter(signal: AbortSignal): Promise<typeof PhaseName.idle> {
-    const result = this.sceneStore.result.value
+    const result = this.sceneStore.spin.value
 
     if (!result) {
       return PhaseName.idle
