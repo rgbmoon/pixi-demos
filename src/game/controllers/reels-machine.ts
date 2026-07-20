@@ -13,7 +13,7 @@ const LAND_DURATION_MS = 350
  * Контроллер зоны барабанов: Spine-рамка с тинтом.
  */
 @injectable()
-export class ReelsController extends LiveContainer {
+export class ReelsMachineController extends LiveContainer {
   private readonly ticker: GameTicker
   private readonly animation: ReelsFrameAnimation
 

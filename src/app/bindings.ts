@@ -11,12 +11,12 @@ import { IdlePhase } from 'src/flow/phases/idle-phase'
 import { ResultPhase } from 'src/flow/phases/result-phase'
 import { SpinningPhase } from 'src/flow/phases/spinning-phase'
 import { AutospinToggleButton } from 'src/game/controllers/autospin-toggle-button'
-import { BackgroundController } from 'src/game/controllers/background-controller'
+import { BackgroundController } from 'src/game/controllers/background'
 import { BetMinusButton } from 'src/game/controllers/bet-minus-button'
 import { BetPanel } from 'src/game/controllers/bet-panel'
 import { BetPlusButton } from 'src/game/controllers/bet-plus-button'
 import { CreditLabel } from 'src/game/controllers/credit-label'
-import { ReelsController } from 'src/game/controllers/reels-controller'
+import { ReelsMachineController } from 'src/game/controllers/reels-machine'
 import { SoundToggleButton } from 'src/game/controllers/sound-toggle-button'
 import { SpinButton } from 'src/game/controllers/spin-button'
 import { WinLabel } from 'src/game/controllers/win-label'
@@ -81,8 +81,8 @@ const bindScene = (container: Container): void => {
     })
 
   container
-    .bind(TOKENS.ReelsController)
-    .to(ReelsController)
+    .bind(TOKENS.ReelsMachineController)
+    .to(ReelsMachineController)
     .onDeactivation((reels) => {
       if (!reels.destroyed) reels.destroy({ children: true })
     })

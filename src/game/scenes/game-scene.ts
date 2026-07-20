@@ -1,10 +1,10 @@
 import { inject, injectable } from 'inversify'
 import { Assets, Container, Sprite } from 'pixi.js'
 import { TOKENS } from 'src/constants/tokens'
-import type { ReelsController } from 'src/game/controllers/reels-controller'
+import type { ReelsMachineController } from 'src/game/controllers/reels-machine'
 
 import type { AutospinToggleButton } from '../controllers/autospin-toggle-button'
-import type { BackgroundController } from '../controllers/background-controller'
+import type { BackgroundController } from '../controllers/background'
 import type { BetPanel } from '../controllers/bet-panel'
 import type { CreditLabel } from '../controllers/credit-label'
 import type { SoundToggleButton } from '../controllers/sound-toggle-button'
@@ -19,7 +19,7 @@ import type { WinLabel } from '../controllers/win-label'
 export class GameScene extends Container {
   private readonly background: BackgroundController
   private readonly logo = new Sprite()
-  private readonly reels: ReelsController
+  private readonly reels: ReelsMachineController
   private readonly spinButton: SpinButton
   private readonly soundToggleButton: SoundToggleButton
   private readonly autospinToggleButton: AutospinToggleButton
@@ -29,7 +29,7 @@ export class GameScene extends Container {
 
   constructor(
     @inject(TOKENS.BackgroundController) background: BackgroundController,
-    @inject(TOKENS.ReelsController) reels: ReelsController,
+    @inject(TOKENS.ReelsMachineController) reels: ReelsMachineController,
     @inject(TOKENS.SpinButton) spinButton: SpinButton,
     @inject(TOKENS.SoundToggleButton) soundToggleButton: SoundToggleButton,
     @inject(TOKENS.AutospinToggleButton) autospinToggleButton: AutospinToggleButton,

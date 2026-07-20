@@ -3,7 +3,7 @@ import type { RootApi } from 'src/api/root-api'
 import { TOKENS } from 'src/constants/tokens'
 import type { GameEmitter } from 'src/events/game-emitter'
 import type { GameEvents } from 'src/events/types'
-import type { ReelsController } from 'src/game/controllers/reels-controller'
+import type { ReelsMachineController } from 'src/game/controllers/reels-machine'
 import type { SpinStore } from 'src/stores/spin-store'
 import { PhaseName } from 'src/types/game'
 import { RequestStatus } from 'src/types/network'
@@ -18,13 +18,13 @@ export class SpinningPhase implements Phase {
   private readonly emitter: GameEmitter<GameEvents>
   private readonly spinStore: SpinStore
   private readonly api: RootApi
-  private readonly reels: ReelsController
+  private readonly reels: ReelsMachineController
 
   constructor(
     @inject(TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>,
     @inject(TOKENS.SpinStore) spinStore: SpinStore,
     @inject(TOKENS.RootApi) api: RootApi,
-    @inject(TOKENS.ReelsController) reels: ReelsController
+    @inject(TOKENS.ReelsMachineController) reels: ReelsMachineController
   ) {
     this.emitter = emitter
     this.spinStore = spinStore

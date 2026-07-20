@@ -6,12 +6,12 @@ import type { GameEvents } from 'src/events/types'
 import type { Fsm } from 'src/flow/fsm'
 import type { Phase } from 'src/flow/types'
 import type { AutospinToggleButton } from 'src/game/controllers/autospin-toggle-button'
-import type { BackgroundController } from 'src/game/controllers/background-controller'
+import type { BackgroundController } from 'src/game/controllers/background'
 import type { BetMinusButton } from 'src/game/controllers/bet-minus-button'
 import type { BetPanel } from 'src/game/controllers/bet-panel'
 import type { BetPlusButton } from 'src/game/controllers/bet-plus-button'
 import type { CreditLabel } from 'src/game/controllers/credit-label'
-import type { ReelsController } from 'src/game/controllers/reels-controller'
+import type { ReelsMachineController } from 'src/game/controllers/reels-machine'
 import type { SoundToggleButton } from 'src/game/controllers/sound-toggle-button'
 import type { SpinButton } from 'src/game/controllers/spin-button'
 import type { WinLabel } from 'src/game/controllers/win-label'
@@ -47,7 +47,7 @@ export const TOKENS = {
   SceneStore: Symbol('SceneStore') as ServiceIdentifier<SceneStore>,
   // Контроллеры
   BackgroundController: Symbol('BackgroundController') as ServiceIdentifier<BackgroundController>,
-  ReelsController: Symbol('ReelsController') as ServiceIdentifier<ReelsController>,
+  ReelsMachineController: Symbol('ReelsMachineController') as ServiceIdentifier<ReelsMachineController>,
   SpinButton: Symbol('SpinButton') as ServiceIdentifier<SpinButton>,
   SoundToggleButton: Symbol('SoundToggleButton') as ServiceIdentifier<SoundToggleButton>,
   AutospinToggleButton: Symbol('AutospinToggleButton') as ServiceIdentifier<AutospinToggleButton>,
