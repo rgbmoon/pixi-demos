@@ -5,44 +5,49 @@ import { ReelsFrameAnimation } from 'src/game/animations/reels-frame-animation'
 import type { GameTicker } from 'src/game/game-ticker'
 import { LiveContainer } from 'src/game/ui/live-container'
 
-// паузы-заглушки: держат темп раунда, пока нет настоящих барабанов
-const SPIN_DURATION_MS = 900
-const LAND_DURATION_MS = 350
+import type { ReelSetController } from './reel-set'
 
-/**
- * Контроллер зоны барабанов: Spine-рамка с тинтом.
- */
 @injectable()
 export class ReelsMachineController extends LiveContainer {
   private readonly ticker: GameTicker
-  private readonly animation: ReelsFrameAnimation
+  private readonly reelsFrameAnimation: ReelsFrameAnimation
+  private readonly reelSet: ReelSetController
 
-  constructor(@inject(TOKENS.GameTicker) ticker: GameTicker) {
+  constructor(
+    @inject(TOKENS.GameTicker) ticker: GameTicker,
+    @inject(TOKENS.ReelSetController) reelSet: ReelSetController
+  ) {
     super()
 
     this.ticker = ticker
-    this.animation = new ReelsFrameAnimation(ticker)
-    this.addChild(this.animation.view)
+    this.reelsFrameAnimation = new ReelsFrameAnimation(ticker)
+    this.reelSet = reelSet
+
+    this.addChild(reelSet, this.reelsFrameAnimation.view)
   }
 
   layout(width: number, height: number): void {
-    this.animation.resize(width, height)
+    this.reelsFrameAnimation.resize(width, height)
+
+    const zone = this.reelsFrameAnimation.getSymbolsZone()
+
+    this.reelSet.position.set(zone.x, zone.y)
+    this.reelSet.layout(zone.width, zone.height)
   }
 
   spin(signal?: AbortSignal): Promise<void> {
-    return this.ticker.waitTicks(SPIN_DURATION_MS, signal)
+    return this.ticker.waitTicks(300, signal)
   }
 
-  // параметр результата сохраняет контракт фазы под будущие барабаны
   land(_result: SpinResponse, signal?: AbortSignal): Promise<void> {
-    return this.ticker.waitTicks(LAND_DURATION_MS, signal)
+    return this.ticker.waitTicks(300, signal)
   }
 
   showTint(signal?: AbortSignal): Promise<void> {
-    return this.animation.showTint(signal)
+    return this.reelsFrameAnimation.showTint(signal)
   }
 
   hideTint(signal?: AbortSignal): Promise<void> {
-    return this.animation.hideTint(signal)
+    return this.reelsFrameAnimation.hideTint(signal)
   }
 }

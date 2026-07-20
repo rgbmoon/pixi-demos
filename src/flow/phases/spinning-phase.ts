@@ -4,7 +4,7 @@ import { TOKENS } from 'src/constants/tokens'
 import type { GameEmitter } from 'src/events/game-emitter'
 import type { GameEvents } from 'src/events/types'
 import type { ReelsMachineController } from 'src/game/controllers/reels-machine'
-import type { SpinStore } from 'src/stores/spin-store'
+import type { SceneStore } from 'src/stores/scene-store'
 import { PhaseName } from 'src/types/game'
 import { RequestStatus } from 'src/types/network'
 
@@ -16,36 +16,33 @@ export class SpinningPhase implements Phase {
   readonly name = PhaseName.spinning
 
   private readonly emitter: GameEmitter<GameEvents>
-  private readonly spinStore: SpinStore
+  private readonly sceneStore: SceneStore
   private readonly api: RootApi
   private readonly reels: ReelsMachineController
 
   constructor(
     @inject(TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>,
-    @inject(TOKENS.SpinStore) spinStore: SpinStore,
+    @inject(TOKENS.SceneStore) sceneStore: SceneStore,
     @inject(TOKENS.RootApi) api: RootApi,
     @inject(TOKENS.ReelsMachineController) reels: ReelsMachineController
   ) {
     this.emitter = emitter
-    this.spinStore = spinStore
+    this.sceneStore = sceneStore
     this.api = api
     this.reels = reels
   }
 
   async enter(signal: AbortSignal): Promise<typeof PhaseName.idle | typeof PhaseName.result> {
-    const { bet, gameMode } = this.spinStore
+    const { bet, gameMode } = this.sceneStore
 
     this.emitter.emit('spin:started', { bet })
 
     await Promise.all([
-      this.spinStore.result.run(() => this.api.sendSpin(bet, gameMode, signal)),
+      this.sceneStore.result.run(() => this.api.sendSpin(bet, gameMode, signal)),
       this.reels.spin(signal),
-      this.reels.showTint(signal),
     ])
 
-    if (this.spinStore.result.status === RequestStatus.error) {
-      await this.reels.hideTint(signal)
-
+    if (this.sceneStore.result.status === RequestStatus.error) {
       return PhaseName.idle
     }
 

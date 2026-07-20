@@ -10,6 +10,8 @@ export class SpineAnimation {
   protected spine: Spine | null = null
 
   private readonly ticker: GameTicker
+  private loadId = 0
+  private attached = false
 
   // Spine.update принимает секунды; autoUpdate выключен — иначе Spine подписался бы на Ticker.shared и шёл в свёрнутой вкладке
   private readonly tick = (ticker: Ticker) => this.spine?.update(ticker.deltaMS / 1000)
@@ -18,20 +20,30 @@ export class SpineAnimation {
     this.ticker = ticker
   }
 
-  /** Грузит скелет и атлас, создаёт Spine-инстанс и подключает его к игровому тикеру. */
+  /** Грузит скелет и атлас, создаёт Spine-инстанс и подключает его к игровому тикеру. Повторный вызов подменяет скелет. */
   protected async load(skeletonUrl: string, atlasUrl: string): Promise<void> {
+    this.loadId += 1
+
+    const id = this.loadId
+
     await Assets.load([skeletonUrl, atlasUrl])
 
-    if (this.view.destroyed) return
+    // загрузку обогнал следующий вызов load — её скелет уже неактуален
+    if (this.view.destroyed || id !== this.loadId) return
 
+    this.spine?.destroy()
     this.spine = Spine.from({ skeleton: skeletonUrl, atlas: atlasUrl, autoUpdate: false })
     this.view.addChild(this.spine)
 
-    this.ticker.add(this.tick)
-    // при разборке всего приложения тикер умирает раньше сцены — снимать колбэк уже не с чего
-    this.view.once('destroyed', () => {
-      if (!this.ticker.destroyed) this.ticker.remove(this.tick)
-    })
+    if (!this.attached) {
+      this.attached = true
+
+      this.ticker.add(this.tick)
+      // при разборке всего приложения тикер умирает раньше сцены — снимать колбэк уже не с чего
+      this.view.once('destroyed', () => {
+        if (!this.ticker.destroyed) this.ticker.remove(this.tick)
+      })
+    }
 
     this.onLoaded()
   }

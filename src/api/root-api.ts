@@ -1,5 +1,6 @@
 import { inject, injectable } from 'inversify'
 import { TOKENS } from 'src/constants/tokens'
+import type { SymbolKey } from 'src/types/game'
 import { z } from 'zod'
 
 import type { WsTransport } from './service'
@@ -36,7 +37,7 @@ export const GameInitResponseSchema = envelope(
         transformations: z.array(
           z.object({
             type: z.string(),
-            value: z.array(z.array(z.string())),
+            value: z.array(z.array(z.string<SymbolKey>())),
           })
         ),
       }),
@@ -101,7 +102,7 @@ export const SpinResponseSchema = envelope(
         z.discriminatedUnion('type', [
           z.object({
             type: z.literal('frameInit'),
-            value: z.array(z.array(z.string())),
+            value: z.array(z.array(z.string<SymbolKey>())),
           }),
           z.object({
             type: z.literal('paylines'),
@@ -156,7 +157,6 @@ export class RootApi {
     return this.transport.request('initGame', GameInitResponseSchema, [], { signal })
   }
 
-  /** Запрашивает у сервера результат спина для ставки `bet` в режиме `gameMode`. */
   sendSpin(bet: number, gameMode: number, signal?: AbortSignal): Promise<SpinResponse> {
     return this.transport.request('spin', SpinResponseSchema, [{ bet, gameMode }], { signal })
   }

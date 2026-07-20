@@ -28,6 +28,9 @@ type BlobConfig = {
 /** Сколько длится появление одного блоба (0 → полный размер и альфа), сек */
 export const BG_SPAWN_DURATION = 1.2
 
+/** Фон канваса под блобами; его же берёт экран загрузки игры */
+export const BG_CANVAS_COLOR = '#1e293b'
+
 export const BG_BLOBS: BlobConfig[] = [
   {
     color: '#4c1d95',

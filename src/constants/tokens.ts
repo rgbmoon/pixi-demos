@@ -12,6 +12,7 @@ import type { BetPanel } from 'src/game/controllers/bet-panel'
 import type { BetPlusButton } from 'src/game/controllers/bet-plus-button'
 import type { CreditLabel } from 'src/game/controllers/credit-label'
 import type { LoadingScreen } from 'src/game/controllers/loading-screen'
+import type { ReelSetController } from 'src/game/controllers/reel-set'
 import type { ReelsMachineController } from 'src/game/controllers/reels-machine'
 import type { SoundToggleButton } from 'src/game/controllers/sound-toggle-button'
 import type { SpinButton } from 'src/game/controllers/spin-button'
@@ -21,7 +22,6 @@ import type { GameTicker } from 'src/game/game-ticker'
 import type { GameScene } from 'src/game/scenes/game-scene'
 import type { FlowStore } from 'src/stores/flow-store'
 import type { SceneStore } from 'src/stores/scene-store'
-import type { SpinStore } from 'src/stores/spin-store'
 
 /**
  * Словарь DI-токенов. `ServiceIdentifier<T>` привязывает
@@ -44,7 +44,6 @@ export const TOKENS = {
   Phase: Symbol('Phase') as ServiceIdentifier<Phase>,
   // Сторы
   FlowStore: Symbol('FlowStore') as ServiceIdentifier<FlowStore>,
-  SpinStore: Symbol('SpinStore') as ServiceIdentifier<SpinStore>,
   SceneStore: Symbol('SceneStore') as ServiceIdentifier<SceneStore>,
   // Контроллеры
   BackgroundController: Symbol('BackgroundController') as ServiceIdentifier<BackgroundController>,
@@ -58,4 +57,5 @@ export const TOKENS = {
   WinLabel: Symbol('WinLabel') as ServiceIdentifier<WinLabel>,
   CreditLabel: Symbol('CreditLabel') as ServiceIdentifier<CreditLabel>,
   LoadingScreen: Symbol('LoadingScreen') as ServiceIdentifier<LoadingScreen>,
+  ReelSetController: Symbol('ReelSetController') as ServiceIdentifier<ReelSetController>,
 } as const

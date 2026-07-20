@@ -1,4 +1,4 @@
-import { Point } from 'pixi.js'
+import { Point, Rectangle } from 'pixi.js'
 
 import type { GameTicker } from '../game-ticker'
 import { SpineAnimation } from '../ui/spine-animation'
@@ -8,6 +8,10 @@ const ATLAS_URL = '/src/assets/game/animations/reels_frame/1/frame.atlas'
 
 // ширина скелета из frame.json; origin арта — в его центре
 const NATIVE_WIDTH = 1074.93
+
+// зона символов внутри рамки: пять шагов между divider_center и высота разделителя, обе величины из frame.json
+const NATIVE_ZONE_WIDTH = 1006.7
+const NATIVE_ZONE_HEIGHT = 589
 
 const TRACK_MAIN = 0
 const TRACK_TINT = 1
@@ -47,6 +51,15 @@ export class ReelsFrameAnimation extends SpineAnimation {
     await this.playOnce(TRACK_TINT, 'tint_hide', signal)
 
     this.clearTrack(TRACK_TINT)
+  }
+
+  /** Зона символов внутри рамки, в координатах `view`: рамка вписана по ширине, зона стоит в её центре. */
+  getSymbolsZone(): Rectangle {
+    const scale = this.width / NATIVE_WIDTH
+    const zoneWidth = NATIVE_ZONE_WIDTH * scale
+    const zoneHeight = NATIVE_ZONE_HEIGHT * scale
+
+    return new Rectangle((this.width - zoneWidth) / 2, (this.height - zoneHeight) / 2, zoneWidth, zoneHeight)
   }
 
   /** Точка размещения символов под тинтом, в координатах `view`. */

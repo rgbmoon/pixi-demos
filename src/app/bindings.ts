@@ -17,6 +17,7 @@ import { BetPanel } from 'src/game/controllers/bet-panel'
 import { BetPlusButton } from 'src/game/controllers/bet-plus-button'
 import { CreditLabel } from 'src/game/controllers/credit-label'
 import { LoadingScreen } from 'src/game/controllers/loading-screen'
+import { ReelSetController } from 'src/game/controllers/reel-set'
 import { ReelsMachineController } from 'src/game/controllers/reels-machine'
 import { SoundToggleButton } from 'src/game/controllers/sound-toggle-button'
 import { SpinButton } from 'src/game/controllers/spin-button'
@@ -26,7 +27,6 @@ import { GameTicker } from 'src/game/game-ticker'
 import { GameScene } from 'src/game/scenes/game-scene'
 import { FlowStore } from 'src/stores/flow-store'
 import { SceneStore } from 'src/stores/scene-store'
-import { SpinStore } from 'src/stores/spin-store'
 
 /** Биндинги app-уровня: сервисы, живущие всё время работы вкладки. */
 export const bindApp = (container: Container): void => {
@@ -65,7 +65,6 @@ const bindFlow = (container: Container): void => {
 /** Картинка: контроллеры и собирающая их сцена. А так-же сторы сцены */
 const bindScene = (container: Container): void => {
   container.bind(TOKENS.SceneStore).to(SceneStore)
-  container.bind(TOKENS.SpinStore).to(SpinStore)
 
   container
     .bind(TOKENS.GameScene)
@@ -147,6 +146,13 @@ const bindScene = (container: Container): void => {
   container
     .bind(TOKENS.LoadingScreen)
     .to(LoadingScreen)
+    .onDeactivation((screen) => {
+      if (!screen.destroyed) screen.destroy({ children: true })
+    })
+
+  container
+    .bind(TOKENS.ReelSetController)
+    .to(ReelSetController)
     .onDeactivation((screen) => {
       if (!screen.destroyed) screen.destroy({ children: true })
     })

@@ -2,7 +2,7 @@ import { inject, injectable } from 'inversify'
 import { BET_STEP } from 'src/constants/game'
 import { TOKENS } from 'src/constants/tokens'
 import { Button, ButtonSize, ButtonVariant } from 'src/game/ui/button'
-import type { SpinStore } from 'src/stores/spin-store'
+import type { SceneStore } from 'src/stores/scene-store'
 
 const BET_UP_ICON = '/src/assets/game/graphic/Icons/plus-svgrepo-com.svg'
 
@@ -11,21 +11,21 @@ const BET_UP_ICON = '/src/assets/game/graphic/Icons/plus-svgrepo-com.svg'
  */
 @injectable()
 export class BetPlusButton extends Button {
-  private readonly spinStore: SpinStore
+  private readonly sceneStore: SceneStore
 
-  constructor(@inject(TOKENS.SpinStore) spinStore: SpinStore) {
+  constructor(@inject(TOKENS.SceneStore) sceneStore: SceneStore) {
     super({
       variant: ButtonVariant.circle,
       size: ButtonSize.md,
       icon: BET_UP_ICON,
     })
 
-    this.spinStore = spinStore
+    this.sceneStore = sceneStore
 
     this.on('pointertap', this.handleTap)
   }
 
   private handleTap = () => {
-    this.spinStore.setBet(this.spinStore.bet + BET_STEP)
+    this.sceneStore.setBet(this.sceneStore.bet + BET_STEP)
   }
 }

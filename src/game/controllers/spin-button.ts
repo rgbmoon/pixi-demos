@@ -3,22 +3,22 @@ import { TOKENS } from 'src/constants/tokens'
 import type { GameEmitter } from 'src/events/game-emitter'
 import type { GameEvents } from 'src/events/types'
 import { Button, ButtonSize, ButtonVariant } from 'src/game/ui/button'
-import type { SpinStore } from 'src/stores/spin-store'
+import type { SceneStore } from 'src/stores/scene-store'
 
 const SPIN_ICON = '/src/assets/game/graphic/Icons/arrow-cycle-svgrepo-com.svg'
 
 /**
  * Кнопка запуска спина: по тапу объявляет `ui:spinRequested` с текущей ставкой;
- * доступность следует за `spinStore.canSpin`.
+ * доступность следует за `sceneStore.canSpin`.
  */
 @injectable()
 export class SpinButton extends Button {
   private readonly emitter: GameEmitter<GameEvents>
-  private readonly spinStore: SpinStore
+  private readonly sceneStore: SceneStore
 
   constructor(
     @inject(TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>,
-    @inject(TOKENS.SpinStore) spinStore: SpinStore
+    @inject(TOKENS.SceneStore) sceneStore: SceneStore
   ) {
     super({
       variant: ButtonVariant.circle,
@@ -28,19 +28,19 @@ export class SpinButton extends Button {
     })
 
     this.emitter = emitter
-    this.spinStore = spinStore
+    this.sceneStore = sceneStore
 
     this.on('pointertap', this.handleTap)
 
     this.watch(
-      () => this.spinStore.canSpin,
+      () => this.sceneStore.canSpin,
       (canSpin) => this.setEnabled(canSpin),
       { fireImmediately: true }
     )
   }
 
   private handleTap = () => {
-    this.emitter.emit('ui:spinRequested', { bet: this.spinStore.bet })
+    this.emitter.emit('ui:spinRequested', { bet: this.sceneStore.bet })
   }
 
   private setEnabled(enabled: boolean) {

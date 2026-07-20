@@ -10,84 +10,70 @@ const SYMBOL_TIERS: Record<
   {
     skeletonUrl: string
     atlasUrl: string
-    nativeWidth: number
   }
 > = {
   [SymbolKey.K]: {
     skeletonUrl: '/src/assets/game/animations/symbols/low/low_1.json',
     atlasUrl: LOW_ATLAS_URL,
-    nativeWidth: 156,
   },
   [SymbolKey.L]: {
     skeletonUrl: '/src/assets/game/animations/symbols/low/low_2.json',
     atlasUrl: LOW_ATLAS_URL,
-    nativeWidth: 135.43,
   },
   [SymbolKey.M]: {
     skeletonUrl: '/src/assets/game/animations/symbols/low/low_3.json',
     atlasUrl: LOW_ATLAS_URL,
-    nativeWidth: 164.82,
   },
   [SymbolKey.N]: {
     skeletonUrl: '/src/assets/game/animations/symbols/low/low_4.json',
     atlasUrl: LOW_ATLAS_URL,
-    nativeWidth: 105.73,
   },
   [SymbolKey.O]: {
     skeletonUrl: '/src/assets/game/animations/symbols/low/low_5.json',
     atlasUrl: LOW_ATLAS_URL,
-    nativeWidth: 191,
   },
   [SymbolKey.P]: {
     skeletonUrl: '/src/assets/game/animations/symbols/low/low_6.json',
     atlasUrl: LOW_ATLAS_URL,
-    nativeWidth: 132.95,
   },
   [SymbolKey.E]: {
     skeletonUrl: '/src/assets/game/animations/symbols/middle_1/middle_1.json',
     atlasUrl: '/src/assets/game/animations/symbols/middle_1/1/middle_1.atlas',
-    nativeWidth: 167.4,
   },
   [SymbolKey.F]: {
     skeletonUrl: '/src/assets/game/animations/symbols/middle_2/middle_2.json',
     atlasUrl: '/src/assets/game/animations/symbols/middle_2/1/middle_2.atlas',
-    nativeWidth: 157.81,
   },
   [SymbolKey.A]: {
     skeletonUrl: '/src/assets/game/animations/symbols/high_1/high_1.json',
     atlasUrl: '/src/assets/game/animations/symbols/high_1/1/high_1.atlas',
-    nativeWidth: 207.9,
   },
   [SymbolKey.W]: {
     skeletonUrl: '/src/assets/game/animations/symbols/wild/wild.json',
     atlasUrl: '/src/assets/game/animations/symbols/wild/1/wild.atlas',
-    nativeWidth: 196.25,
   },
   [SymbolKey.S]: {
     skeletonUrl: '/src/assets/game/animations/symbols/scatter/scatter.json',
     atlasUrl: '/src/assets/game/animations/symbols/scatter/1/scatter.atlas',
-    nativeWidth: 219.77,
   },
 }
 
+const NATIVE_CELL_WIDTH = 201.34
+const NATIVE_CELL_HEIGHT = 196.33
+
 const TRACK_MAIN = 0
 
-/** Анимация символа барабана: ассеты и размер — из `SYMBOL_TIERS` по ключу символа. У скаттера (`S`) — доп. состояния free games. */
+/** Анимация символа барабана: ассеты и размер — из `SYMBOL_TIERS` по текущему ключу (`setKey`). У скаттера (`S`) — доп. состояния free games. */
 export class SymbolAnimation extends SpineAnimation {
-  private readonly nativeWidth: number
-  private readonly isScatter: boolean
+  // до первого setKey ассетов нет: null отличает «ключ ещё не задан» от «задан тот же самый»
+  private key: SymbolKey | null = null
   private width = 0
   private height = 0
 
-  constructor(ticker: GameTicker, key: SymbolKey) {
+  constructor(ticker: GameTicker, visible = true) {
     super(ticker)
 
-    const { skeletonUrl, atlasUrl, nativeWidth } = SYMBOL_TIERS[key]
-
-    this.nativeWidth = nativeWidth
-    this.isScatter = key === SymbolKey.S
-
-    void this.load(skeletonUrl, atlasUrl)
+    this.view.visible = visible
   }
 
   protected override onLoaded(): void {
@@ -95,7 +81,23 @@ export class SymbolAnimation extends SpineAnimation {
     this.applySize()
   }
 
-  /** Вписывает символ в ячейку барабана: масштаб по ширине, центр скелета — в центр ячейки. */
+  /** Задаёт значение символа: грузит скелет с ассетами (на смене ключа — подменяет) и ставит символ в простой. */
+  setKey(key: SymbolKey): void {
+    if (key === this.key) return
+
+    const { skeletonUrl, atlasUrl } = SYMBOL_TIERS[key]
+
+    this.key = key
+
+    void this.load(skeletonUrl, atlasUrl)
+  }
+
+  /** Показывает или скрывает символ. */
+  setVisible(visible: boolean): void {
+    this.view.visible = visible
+  }
+
+  /** Вписывает символ в ячейку барабана: масштаб от эталонной ячейки, центр скелета — в центр ячейки. */
   resize(width: number, height: number): void {
     this.width = width
     this.height = height
@@ -141,10 +143,14 @@ export class SymbolAnimation extends SpineAnimation {
     this.play(TRACK_MAIN, 'win_3')
   }
 
+  private get isScatter(): boolean {
+    return this.key === SymbolKey.S
+  }
+
   private applySize(): void {
     if (!this.spine || this.width === 0) return
 
-    this.spine.scale.set(this.width / this.nativeWidth)
+    this.spine.scale.set(Math.min(this.width / NATIVE_CELL_WIDTH, this.height / NATIVE_CELL_HEIGHT))
     this.spine.position.set(this.width / 2, this.height / 2)
   }
 }

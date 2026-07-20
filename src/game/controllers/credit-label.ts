@@ -3,7 +3,7 @@ import { TOKENS } from 'src/constants/tokens'
 import { Label, LabelColor } from 'src/game/ui/label'
 import { LiveContainer } from 'src/game/ui/live-container'
 import { formatAmount } from 'src/game/utils'
-import type { SpinStore } from 'src/stores/spin-store'
+import type { SceneStore } from 'src/stores/scene-store'
 
 const CAPTION_SIZE = 16
 const VALUE_SIZE = 20
@@ -15,7 +15,7 @@ export class CreditLabel extends LiveContainer {
   private readonly caption = new Label({ color: LabelColor.gold, fontSize: CAPTION_SIZE, text: 'CREDIT' })
   private readonly value = new Label({ color: LabelColor.white, fontSize: VALUE_SIZE })
 
-  constructor(@inject(TOKENS.SpinStore) spinStore: SpinStore) {
+  constructor(@inject(TOKENS.SceneStore) sceneStore: SceneStore) {
     super()
 
     this.caption.anchor.set(0.5, 1)
@@ -26,7 +26,7 @@ export class CreditLabel extends LiveContainer {
     this.addChild(this.caption, this.value)
 
     this.watch(
-      () => spinStore.credit,
+      () => sceneStore.credit,
       (credit) => {
         this.value.text = formatAmount(credit)
       },

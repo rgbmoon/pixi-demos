@@ -4,7 +4,7 @@ import { TOKENS } from 'src/constants/tokens'
 import { Label, LabelColor } from 'src/game/ui/label'
 import { LiveContainer } from 'src/game/ui/live-container'
 import { formatAmount } from 'src/game/utils'
-import type { SpinStore } from 'src/stores/spin-store'
+import type { SceneStore } from 'src/stores/scene-store'
 
 import type { BetMinusButton } from './bet-minus-button'
 import type { BetPlusButton } from './bet-plus-button'
@@ -27,7 +27,7 @@ export class BetPanel extends LiveContainer {
   private readonly value = new Label({ color: LabelColor.white, fontSize: VALUE_SIZE })
 
   constructor(
-    @inject(TOKENS.SpinStore) spinStore: SpinStore,
+    @inject(TOKENS.SceneStore) sceneStore: SceneStore,
     @inject(TOKENS.BetMinusButton) minusButton: BetMinusButton,
     @inject(TOKENS.BetPlusButton) plusButton: BetPlusButton
   ) {
@@ -46,7 +46,7 @@ export class BetPanel extends LiveContainer {
     this.addChild(this.plate, this.caption, this.value, minusButton, plusButton)
 
     this.watch(
-      () => spinStore.bet,
+      () => sceneStore.bet,
       (bet) => {
         this.value.text = formatAmount(bet)
       },

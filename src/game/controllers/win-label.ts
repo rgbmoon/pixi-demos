@@ -3,7 +3,7 @@ import { TOKENS } from 'src/constants/tokens'
 import { Label, LabelColor } from 'src/game/ui/label'
 import { LiveContainer } from 'src/game/ui/live-container'
 import { formatAmount } from 'src/game/utils'
-import type { SpinStore } from 'src/stores/spin-store'
+import type { SceneStore } from 'src/stores/scene-store'
 
 const FONT_SIZE = 24
 const GAP = 8
@@ -14,7 +14,7 @@ export class WinLabel extends LiveContainer {
   private readonly caption = new Label({ color: LabelColor.gold, fontSize: FONT_SIZE, text: 'WIN' })
   private readonly value = new Label({ color: LabelColor.white, fontSize: FONT_SIZE })
 
-  constructor(@inject(TOKENS.SpinStore) spinStore: SpinStore) {
+  constructor(@inject(TOKENS.SceneStore) sceneStore: SceneStore) {
     super()
 
     this.caption.anchor.set(1, 0.5)
@@ -25,7 +25,7 @@ export class WinLabel extends LiveContainer {
     this.addChild(this.caption, this.value)
 
     this.watch(
-      () => spinStore.win,
+      () => sceneStore.win,
       (win) => {
         this.value.text = formatAmount(win)
       },

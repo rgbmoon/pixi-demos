@@ -1,6 +1,6 @@
 import type * as PixiModule from 'pixi.js'
 import type { Texture, Ticker } from 'pixi.js'
-import { BG_BLOBS, BG_SPAWN_DURATION } from 'src/constants/bg-blobs'
+import { BG_BLOBS, BG_CANVAS_COLOR, BG_SPAWN_DURATION } from 'src/constants/bg-blobs'
 
 type Pixi = typeof PixiModule
 
@@ -66,7 +66,7 @@ export const mountBackground = (container: HTMLElement): (() => void) => {
     const app = new pixi.Application()
 
     await app.init({
-      background: '#1e293b',
+      background: BG_CANVAS_COLOR,
       resizeTo: container,
       antialias: false,
       resolution: 1,
