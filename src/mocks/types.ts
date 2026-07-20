@@ -9,9 +9,13 @@ export type WsConnectionContext = {
   onClose: (cleanup: () => void) => void
 }
 
+export type WsDelayRange = { min: number; max: number }
+
 export type CreateWsHandlerOptions = {
   url: string
   endpoints: Record<string, WsEndpoint>
+  /** Задержка ответа по имени эндпоинта; неперечисленные отвечают с дефолтной латентностью. */
+  delays?: Record<string, WsDelayRange>
   onConnect?: (context: WsConnectionContext) => void
 }
 

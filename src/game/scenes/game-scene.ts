@@ -7,6 +7,7 @@ import type { AutospinToggleButton } from '../controllers/autospin-toggle-button
 import type { BackgroundController } from '../controllers/background'
 import type { BetPanel } from '../controllers/bet-panel'
 import type { CreditLabel } from '../controllers/credit-label'
+import type { LoadingScreen } from '../controllers/loading-screen'
 import type { SoundToggleButton } from '../controllers/sound-toggle-button'
 import type { SpinButton } from '../controllers/spin-button'
 import type { WinLabel } from '../controllers/win-label'
@@ -26,6 +27,7 @@ export class GameScene extends Container {
   private readonly winLabel: WinLabel
   private readonly betPanel: BetPanel
   private readonly creditLabel: CreditLabel
+  private readonly loadingScreen: LoadingScreen
 
   constructor(
     @inject(TOKENS.BackgroundController) background: BackgroundController,
@@ -35,7 +37,8 @@ export class GameScene extends Container {
     @inject(TOKENS.AutospinToggleButton) autospinToggleButton: AutospinToggleButton,
     @inject(TOKENS.WinLabel) winLabel: WinLabel,
     @inject(TOKENS.BetPanel) betPanel: BetPanel,
-    @inject(TOKENS.CreditLabel) creditLabel: CreditLabel
+    @inject(TOKENS.CreditLabel) creditLabel: CreditLabel,
+    @inject(TOKENS.LoadingScreen) loadingScreen: LoadingScreen
   ) {
     super()
 
@@ -47,7 +50,9 @@ export class GameScene extends Container {
     this.winLabel = winLabel
     this.betPanel = betPanel
     this.creditLabel = creditLabel
+    this.loadingScreen = loadingScreen
 
+    // Заглушка загрузки добавляется последней — она перекрывает сцену целиком
     this.addChild(
       background,
       this.logo,
@@ -57,7 +62,8 @@ export class GameScene extends Container {
       autospinToggleButton,
       winLabel,
       betPanel,
-      creditLabel
+      creditLabel,
+      loadingScreen
     )
     void this.loadLogo()
   }
@@ -95,5 +101,7 @@ export class GameScene extends Container {
 
     this.betPanel.position.set(screenWidth / 2, screenHeight * 0.87)
     this.creditLabel.position.set(screenWidth / 2, screenHeight * 0.95)
+
+    this.loadingScreen.layout(screenWidth, screenHeight)
   }
 }

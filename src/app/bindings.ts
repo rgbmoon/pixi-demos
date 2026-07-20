@@ -16,6 +16,7 @@ import { BetMinusButton } from 'src/game/controllers/bet-minus-button'
 import { BetPanel } from 'src/game/controllers/bet-panel'
 import { BetPlusButton } from 'src/game/controllers/bet-plus-button'
 import { CreditLabel } from 'src/game/controllers/credit-label'
+import { LoadingScreen } from 'src/game/controllers/loading-screen'
 import { ReelsMachineController } from 'src/game/controllers/reels-machine'
 import { SoundToggleButton } from 'src/game/controllers/sound-toggle-button'
 import { SpinButton } from 'src/game/controllers/spin-button'
@@ -141,6 +142,13 @@ const bindScene = (container: Container): void => {
     .to(CreditLabel)
     .onDeactivation((label) => {
       if (!label.destroyed) label.destroy({ children: true })
+    })
+
+  container
+    .bind(TOKENS.LoadingScreen)
+    .to(LoadingScreen)
+    .onDeactivation((screen) => {
+      if (!screen.destroyed) screen.destroy({ children: true })
     })
 }
 /** Хост жизненного цикла игры. */

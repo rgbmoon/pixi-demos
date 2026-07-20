@@ -75,6 +75,9 @@ let totalWin = 0
 export const handlers = [
   createWsHandler({
     url: WS_URL,
+    // Инициализация запускается раньше PIXI-init, поэтому короткая латентность истекает до первого кадра —
+    // держим её дольше спина, чтобы экран загрузки успевал отрисоваться.
+    delays: { initGame: { min: 1500, max: 2500 } },
     endpoints: {
       initGame: (_args, reply) => {
         reply({

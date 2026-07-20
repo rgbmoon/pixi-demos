@@ -1,18 +1,14 @@
 import { ws } from 'msw'
 
-import type { CreateWsHandlerOptions } from './types'
+import type { CreateWsHandlerOptions, WsDelayRange } from './types'
 
 // Границы искусственной задержки ответа (мс) — симуляция сетевой латентности.
-const RESPONSE_DELAY_MIN = 100
-const RESPONSE_DELAY_MAX = 300
+const DEFAULT_RESPONSE_DELAY: WsDelayRange = { min: 100, max: 300 }
 
-const randomDelay = () => RESPONSE_DELAY_MIN + Math.random() * (RESPONSE_DELAY_MAX - RESPONSE_DELAY_MIN)
+const randomDelay = ({ min, max }: WsDelayRange) => min + Math.random() * (max - min)
 
-export const createWsHandler = ({ url, endpoints, onConnect }: CreateWsHandlerOptions) =>
+export const createWsHandler = ({ url, endpoints, delays, onConnect }: CreateWsHandlerOptions) =>
   ws.link(url).addEventListener('connection', ({ client }) => {
-    // Отправка ответа с задержкой: setTimeout легален — это латентность мока по системному времени, не игровая пауза.
-    const scheduleSend = (data: string) => setTimeout(() => client.send(data), randomDelay())
-
     onConnect?.({
       push: (target, args) => client.send(JSON.stringify({ type: 1, target, arguments: args })),
       onClose: (cleanup) => client.addEventListener('close', () => cleanup()),
@@ -31,6 +27,10 @@ export const createWsHandler = ({ url, endpoints, onConnect }: CreateWsHandlerOp
       if (!endpoint) {
         return
       }
+
+      // Отправка ответа с задержкой: setTimeout легален — это латентность мока по системному времени, не игровая пауза.
+      const scheduleSend = (data: string) =>
+        setTimeout(() => client.send(data), randomDelay(delays?.[message.target] ?? DEFAULT_RESPONSE_DELAY))
 
       endpoint(
         message.arguments ?? [],
