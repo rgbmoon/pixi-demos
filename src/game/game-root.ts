@@ -49,6 +49,10 @@ export class GameRoot {
 
     const app = new Application()
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
+    globalThis.__PIXI_APP__ = app
+
     this.pending = app
 
     // autoStart: false — свой тикер приложение не запускает

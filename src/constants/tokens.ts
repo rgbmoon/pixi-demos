@@ -12,7 +12,6 @@ import type { BetPanel } from 'src/game/controllers/bet-panel'
 import type { BetPlusButton } from 'src/game/controllers/bet-plus-button'
 import type { CreditLabel } from 'src/game/controllers/credit-label'
 import type { LoadingScreen } from 'src/game/controllers/loading-screen'
-import type { ReelSetController } from 'src/game/controllers/reel-set'
 import type { ReelsMachineController } from 'src/game/controllers/reels-machine'
 import type { SoundToggleButton } from 'src/game/controllers/sound-toggle-button'
 import type { SpinButton } from 'src/game/controllers/spin-button'
@@ -57,5 +56,4 @@ export const TOKENS = {
   WinLabel: Symbol('WinLabel') as ServiceIdentifier<WinLabel>,
   CreditLabel: Symbol('CreditLabel') as ServiceIdentifier<CreditLabel>,
   LoadingScreen: Symbol('LoadingScreen') as ServiceIdentifier<LoadingScreen>,
-  ReelSetController: Symbol('ReelSetController') as ServiceIdentifier<ReelSetController>,
 } as const

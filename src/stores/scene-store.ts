@@ -37,13 +37,10 @@ export class SceneStore {
     return this.game.isLoading
   }
 
-  /** Стартовая раскладка барабанов из ответа `initGame`: символы по барабанам, `value[барабан][ячейка]`. */
-  @computed get symbols(): SymbolKey[][] | undefined {
-    const transformations = this.spin.value
-      ? this.spin.value.response.result.SpinResponse.transformations
-      : this.game.value?.response.result.round.SpinResponse.transformations
-
-    return transformations?.find((transformation) => transformation.type === 'frameInit')?.value
+  @computed get initialSymbols(): SymbolKey[][] | undefined {
+    return this.game.value?.response.result.round.SpinResponse.transformations.find(
+      (transformation) => transformation.type === 'frameInit'
+    )?.value
   }
 
   @action setBet(bet: number) {

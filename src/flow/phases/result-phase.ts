@@ -34,7 +34,11 @@ export class ResultPhase implements Phase {
       return PhaseName.idle
     }
 
-    await Promise.all([this.reels.land(result, signal)])
+    const symbolKeys = result.response.result.SpinResponse.transformations.find(
+      (transformation) => transformation.type === 'frameInit'
+    )?.value
+
+    await Promise.all([this.reels.land(symbolKeys, signal)])
 
     this.emitter.emit('spin:landed', result)
 

@@ -1,64 +1,69 @@
-import { inject, injectable } from 'inversify'
-import { TOKENS } from 'src/constants/tokens'
 import type { GameTicker } from 'src/game/game-ticker'
 import { LiveContainer } from 'src/game/ui/live-container'
 import type { SceneStore } from 'src/stores/scene-store'
 import type { SymbolKey } from 'src/types/game'
 
-import { SymbolAnimation } from '../animations/symbol-animation'
+import { ReelController } from './reel'
 
-const REELS = 5
-const VISIBLE_CELLS = 3
-const CELLS = VISIBLE_CELLS + 2
+// Фиксируем константой количество барабанов как 5 и количество видимых символов в барабане как 3, потому что reel-frame не позволяет разместить больше
+const REELS_COUNT = 5
+const VISIBLE_SYMBOLS_COUNT = 3
 
-// TODO - сделать методы для кручения барабанов и отображения данных на основе кручения (выводим из стора или результат спина если есть или initial данные)
+// TODO позиционирует барабаны, готовит и передает данные в каждый барабан
+// Предоставляет публичные методы для родителя для запуска анимаций барабанов последовательно с задержкой
+// Так же возможно здесь будет позже описана freeze механика
 
-@injectable()
 export class ReelSetController extends LiveContainer {
-  private readonly symbolsGrid: SymbolAnimation[][]
+  private readonly ticker: GameTicker
+  private readonly sceneStore: SceneStore
+  private containerWidth: number = 0
+  private containerHeight: number = 0
+  private reels: ReelController[] = []
 
-  constructor(@inject(TOKENS.GameTicker) ticker: GameTicker, @inject(TOKENS.SceneStore) sceneStore: SceneStore) {
+  constructor(ticker: GameTicker, sceneStore: SceneStore) {
     super()
 
-    this.symbolsGrid = Array.from({ length: REELS }, () =>
-      Array.from({ length: CELLS }, (_, cell) => {
-        const symbol = new SymbolAnimation(ticker, cell > 0 && cell < CELLS - 1)
-
-        this.addChild(symbol.view)
-
-        return symbol
-      })
-    )
+    this.ticker = ticker
+    this.sceneStore = sceneStore
 
     this.watch(
-      () => sceneStore.symbols,
-      (symbols) => this.showSymbols(symbols),
+      () => sceneStore.initialSymbols,
+      (initialSymbols) => {
+        if (!initialSymbols || this.reels.length) return
+
+        this.reels = initialSymbols.map(() => new ReelController(ticker))
+        initialSymbols.forEach((symbolKeys, index) => this.reels[index].setSymbols(symbolKeys))
+
+        this.addChild(...this.reels)
+
+        this.setupPosition()
+      },
       { fireImmediately: true }
     )
   }
 
-  // Получаем ширину и высоту от родительского контейнера
-  layout(width: number, height: number): void {
-    const cellWidth = width / REELS
-    const cellHeight = height / VISIBLE_CELLS
+  private setupPosition() {
+    const symbolCellWidth = this.containerWidth / REELS_COUNT
+    const symbolCellHeight = this.containerHeight / VISIBLE_SYMBOLS_COUNT
 
-    this.symbolsGrid.forEach((reel, reelIndex) => {
-      reel.forEach((symbol, cellIndex) => {
-        symbol.resize(cellWidth, cellHeight)
-        // сдвиг на ячейку вверх: видимые ячейки занимают зону, скрытые уходят за её края
-        symbol.view.position.set(reelIndex * cellWidth, (cellIndex - 1) * cellHeight)
-      })
+    this.position.set(-this.containerWidth / 2 + symbolCellWidth / 2, -this.containerHeight / 2 + symbolCellHeight / 2)
+
+    this.reels.forEach((reel, index) => {
+      const reelOffset = symbolCellWidth * index
+
+      reel.position.set(reelOffset, 0)
+      reel.layout(symbolCellWidth, symbolCellHeight)
     })
   }
 
-  private showSymbols(symbols: SymbolKey[][] | undefined): void {
+  setSymbols(symbols: SymbolKey[][] | undefined) {
     if (!symbols) return
 
-    symbols.forEach((reel, reelIndex) => {
-      reel.forEach((key, cellIndex) => {
-        // сервер присылает только видимые ячейки — они начинаются со второй
-        this.symbolsGrid[reelIndex]?.[cellIndex + 1]?.setKey(key)
-      })
-    })
+    symbols.forEach((symbolKeys, index) => this.reels[index].setSymbols(symbolKeys))
+  }
+
+  layout(containerWidth: number, containerHeight: number) {
+    this.containerWidth = containerWidth
+    this.containerHeight = containerHeight
   }
 }
