@@ -1,3 +1,4 @@
+import { Graphics } from 'pixi.js'
 import type { GameTicker } from 'src/game/game-ticker'
 import { LiveContainer } from 'src/game/ui/live-container'
 import type { SceneStore } from 'src/stores/scene-store'
@@ -7,7 +8,7 @@ import { ReelController } from './reel'
 
 // Фиксируем константой количество барабанов как 5 и количество видимых символов в барабане как 3, потому что reel-frame не позволяет разместить больше
 const REELS_COUNT = 5
-const VISIBLE_SYMBOLS_COUNT = 3
+export const VISIBLE_SYMBOLS_COUNT = 3
 
 // TODO позиционирует барабаны, готовит и передает данные в каждый барабан
 // Предоставляет публичные методы для родителя для запуска анимаций барабанов последовательно с задержкой
@@ -16,6 +17,7 @@ const VISIBLE_SYMBOLS_COUNT = 3
 export class ReelSetController extends LiveContainer {
   private readonly ticker: GameTicker
   private readonly sceneStore: SceneStore
+  private readonly maskGraphics = new Graphics()
   private containerWidth: number = 0
   private containerHeight: number = 0
   private reels: ReelController[] = []
@@ -25,6 +27,9 @@ export class ReelSetController extends LiveContainer {
 
     this.ticker = ticker
     this.sceneStore = sceneStore
+
+    this.addChild(this.maskGraphics)
+    this.mask = this.maskGraphics
 
     this.watch(
       () => sceneStore.initialSymbols,
@@ -56,6 +61,16 @@ export class ReelSetController extends LiveContainer {
     })
   }
 
+  private drawMask() {
+    const symbolCellWidth = this.containerWidth / REELS_COUNT
+    const symbolCellHeight = this.containerHeight / VISIBLE_SYMBOLS_COUNT
+
+    this.maskGraphics
+      .clear()
+      .rect(-symbolCellWidth / 2, -symbolCellHeight / 2, this.containerWidth, this.containerHeight)
+      .fill(0xffffff)
+  }
+
   setSymbols(symbols: SymbolKey[][] | undefined) {
     if (!symbols) return
 
@@ -65,5 +80,7 @@ export class ReelSetController extends LiveContainer {
   layout(containerWidth: number, containerHeight: number) {
     this.containerWidth = containerWidth
     this.containerHeight = containerHeight
+
+    this.drawMask()
   }
 }

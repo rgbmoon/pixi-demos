@@ -2,7 +2,10 @@ import type { GameTicker } from 'src/game/game-ticker'
 import { LiveContainer } from 'src/game/ui/live-container'
 import type { SymbolKey } from 'src/types/game'
 
+import { VISIBLE_SYMBOLS_COUNT } from './reel-set'
 import { SymbolAnimation } from '../animations/symbol-animation'
+
+const BUFFER_SYMBOLS_COUNT = 1
 
 // TODO позиционирует свои символы, реализует анимацию вращения, отображает данные барабана, переданные от родителя
 
@@ -22,22 +25,25 @@ export class ReelController extends LiveContainer {
     super()
 
     this.ticker = ticker
+
+    this.symbols = Array.from(
+      { length: VISIBLE_SYMBOLS_COUNT + BUFFER_SYMBOLS_COUNT * 2 },
+      () => new SymbolAnimation(ticker)
+    )
+    this.addChild(...this.symbols.map((animation) => animation.view))
   }
 
   setSymbols(symbolKeys: SymbolKey[]) {
     this.symbolKeys = symbolKeys
 
-    if (!this.symbols.length) {
-      this.symbols = symbolKeys.map(() => new SymbolAnimation(this.ticker))
-      this.addChild(...this.symbols.map((animation) => animation.view))
-    }
+    symbolKeys.forEach((key, index) => this.symbols[index + BUFFER_SYMBOLS_COUNT].setKey(key))
 
-    this.symbolKeys.forEach((key, index) => this.symbols[index].setKey(key))
+    this.symbolKeys.forEach((key, index) => this.symbols[index + BUFFER_SYMBOLS_COUNT].setKey(key))
   }
 
   layout(_symbolCellWidth: number, symbolCellHeight: number) {
     this.symbols.forEach((symbol, index) => {
-      const symbolVerticalOffset = symbolCellHeight * index
+      const symbolVerticalOffset = symbolCellHeight * (index - BUFFER_SYMBOLS_COUNT)
 
       symbol.view.position.set(0, symbolVerticalOffset)
     })
