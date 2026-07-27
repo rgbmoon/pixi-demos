@@ -11,15 +11,15 @@ import { AsyncValue } from './utils/async-value'
 export class SceneStore {
   private readonly flowStore: FlowStore
 
-  /** Готовность initGame: GameRoot ждёт его перед снятием оверлея загрузки. */
-  readonly gameReady: Promise<void>
+  /** Завершение initGame: GameRoot ждёт его перед стартом автомата, исход запроса — в `game.status`. */
+  readonly gameLoaded: Promise<void>
 
   constructor(@inject(TOKENS.RootApi) api: RootApi, @inject(TOKENS.FlowStore) flowStore: FlowStore) {
     makeObservable(this)
 
     this.flowStore = flowStore
 
-    this.gameReady = this.game.run(() => api.initGame())
+    this.gameLoaded = this.game.run(api.initGame())
   }
 
   @observable isSoundOn = true

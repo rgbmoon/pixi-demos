@@ -151,7 +151,7 @@ src/
 - Включён строгий режим — `configure({ enforceActions: 'always' })` в composition root ([app/container.ts](src/app/container.ts)): запись observable вне action — рантайм-ошибка. В `main.tsx` конфиг не выносим — импорт mobx утянул бы библиотеку в стартовый бандл лендинга.
 - Библиотека — только `mobx` (без `mobx-react`/`-lite`). `observer()` пока не используется; в PIXI-слое подписка на стор — через `this.watch` базы [LiveContainer](src/game/ui/live-container.ts) (MobX-`reaction`, отписка привязана к `destroy`; см. [SpinButton](src/game/controllers/spin-button.ts)). Прямой импорт `reaction`/`autorun`/`when` в `game/` запрещён ESLint-правилом.
 - **Единственный писатель в сторы — автомат** (`flow/`): движок пишет `FlowStore`, фазы — доменные сторы. Контроллеры, view и React только читают.
-- **Сеть в сторе** — через единые хелперы [AsyncValue](src/stores/utils/async-value.ts)`<T>` (фетч/мутации: `this.x.run(() => apiCall())`, управляет полями `value/status/error`) и [AsyncStream](src/stores/utils/async-stream.ts)`<T>` (WS-подписки: `this.x.start(subscribeFn)`/`stop()`). `fromResource`/сырой `flow` в сторах для этого не пишем.
+- **Сеть в сторе** — через единые хелперы [AsyncValue](src/stores/utils/async-value.ts)`<T>` (фетч/мутации: `this.x.run(apiCall())`, управляет полями `value/status/error`) и [AsyncStream](src/stores/utils/async-stream.ts)`<T>` (WS-подписки: `this.x.start(subscribeFn)`/`stop()`). `fromResource`/сырой `flow` в сторах для этого не пишем.
 
 **Композиция и DI (inversify)** — composition root живёт в `app/`, **над** слоями: [container.ts](src/app/container.ts) (оба контейнера: `appContainer` + пара `createGameContainer()`/`destroyGameContainer()` — вызываются без аргументов, родитель и слот текущего game-контейнера живут в замыкании модуля) + [bindings.ts](src/app/bindings.ts) (манифест биндингов: `bindApp` + `bindGame` из доменных функций). Словарь токенов — [constants/tokens.ts](src/constants/tokens.ts): аналог карты `GameEvents`, все идентификаторы зависимостей в одном месте; в рантайме файл — лист графа импортов (только `Symbol`, типы через `import type` — их обязан стирать компилятор, иначе появятся циклы).
 
@@ -182,18 +182,22 @@ src/
 - Сеть и анимация запускаются **параллельно** (`Promise.all([api.sendSpin(bet, signal), reels.spin(signal)])`) — анимация не ждёт ответа сервера.
 - Сервер — **источник правды**: клиент отображает присланный результат и ничего не пересчитывает.
 
-**Мост React ↔ PIXI** — `useRef` + `useEffect` с очисткой; cleanup разбирает game-контейнер (а деактивация `GameRoot` уничтожает `Application` с тикером и WebGL-контекстом). Бутстрап двухфазный: сперва `await preloadGameAssets()` (все ассеты в кэш), затем сборка графа — конструкторы сцены читают кэш синхронно. На время предзагрузки [GamePage](src/pages/game/index.tsx) держит React-оверлей (канваса ещё нет), снимает его, когда `root.mount` резолвится (внутри `mount` — `await sceneStore.gameReady`, доска наполнена). Guard `disposed` защищает от гонки StrictMode вокруг `await`:
+**Мост React ↔ PIXI** — `useRef` + `useEffect` с очисткой; cleanup разбирает game-контейнер (а деактивация `GameRoot` уничтожает `Application` с тикером и WebGL-контекстом). Бутстрап двухфазный: сперва `await preloadGameAssets()` (все ассеты в кэш), затем сборка графа — конструкторы сцены читают кэш синхронно. На время предзагрузки [GamePage](src/pages/game/index.tsx) держит React-оверлей (канваса ещё нет), снимает его, когда `root.mount` резолвится (внутри `mount` — `await sceneStore.gameLoaded`, доска наполнена). Провал бутстрапа (ассеты или данные раунда) `mount` отдаёт исключением, `boot` ловит его и оставляет оверлей с текстом ошибки: реджектить сам `gameLoaded` нельзя — его ждут после `await app.init()`, и при раннем отказе запроса отклонение осталось бы без обработчика. Guard `disposed` защищает от гонки StrictMode вокруг `await`:
 
 ```tsx
 useEffect(() => {
   let disposed = false
   const boot = async () => {
-    await preloadGameAssets() // все ассеты в кэш до сборки графа
-    if (disposed || !containerRef.current) return
-    const game = createGameContainer() // parent — appContainer из замыкания
-    const root = game.get(TOKENS.GameRoot) // один get собирает весь граф из кэша
-    await root.mount(containerRef.current)
-    if (!disposed) setLoading(false)
+    try {
+      await preloadGameAssets() // все ассеты в кэш до сборки графа
+      if (disposed || !containerRef.current) return
+      const game = createGameContainer() // parent — appContainer из замыкания
+      const root = game.get(TOKENS.GameRoot) // один get собирает весь граф из кэша
+      await root.mount(containerRef.current)
+      if (!disposed) setLoading(false)
+    } catch {
+      if (!disposed) setFailed(true)
+    }
   }
   void boot()
   return () => {
@@ -234,7 +238,7 @@ useEffect(() => {
 3. **Event emitter** — центр регистрации имён событий; связывает логику и сторы с презентацией. _(есть)_
 4. **Класс анимации** — обёртка над визуальной сущностью: внешний код работает с методами с игровой семантикой (`spin`, `land`), а не с сырым объектом, поэтому замена `Graphics`-заглушки на Spine не потребует изменений ни в контроллере, ни в фазах. _(есть: база [SpineAnimation](src/game/ui/spine-animation.ts) + рамка барабанов; настоящих барабанов нет — `spin`/`land` пока паузы-заглушки в контроллере)_
 
-> **Единый флоу загрузки.** Все URL игровых ассетов — в одном манифесте [assets.ts](src/game/assets.ts) (Spine-скелеты, текстуры, шрифт). Единственный `Assets.load` в проекте — `preloadGameAssets`, его зовёт [GamePage](src/pages/game/index.tsx) на бутстрапе **до** сборки графа. Дальше всё читается из кэша синхронно: Spine — `SpineAnimation.attach` (`Spine.from` без `await`), текстуры — `Assets.get`, шрифт зарегистрирован. Никакой класс не зовёт `Assets.load` сам; `SpineAnimation` синхронный (только `attach`, без `load`/`onLoaded`). Визуал собирается в конструкторе (рамка, кнопки, фон, лейблы) или в `setKey` (символ) — двухфазного `build()` нет, объект рождается после предзагрузки. Поэтому `SymbolAnimation.setKey` синхронный: подмена скелета и следующий pose-метод (`idle`/`blur`) применяются в одном тике — без гонок, `loadId`, `desiredState`, флагов. Асинхронна только **сеть**: `initGame` (данные, не ассеты) наполняет доску реактивно по `initialSymbols`; `GameRoot.mount` ждёт `sceneStore.gameReady` перед снятием оверлея.
+> **Единый флоу загрузки.** Все URL игровых ассетов — в одном манифесте [assets.ts](src/game/assets.ts) (Spine-скелеты, текстуры, шрифт). Единственный `Assets.load` в проекте — `preloadGameAssets`, его зовёт [GamePage](src/pages/game/index.tsx) на бутстрапе **до** сборки графа. Дальше всё читается из кэша синхронно: Spine — `SpineAnimation.attach` (`Spine.from` без `await`), текстуры — `Assets.get`, шрифт зарегистрирован. Никакой класс не зовёт `Assets.load` сам; `SpineAnimation` синхронный (только `attach`, без `load`/`onLoaded`). Визуал собирается в конструкторе (рамка, кнопки, фон, лейблы) или в `setKey` (символ) — двухфазного `build()` нет, объект рождается после предзагрузки. Поэтому `SymbolAnimation.setKey` синхронный: подмена скелета и следующий pose-метод (`idle`/`blur`) применяются в одном тике — без гонок, `loadId`, `desiredState`, флагов. Асинхронна только **сеть**: `initGame` (данные, не ассеты) наполняет доску реактивно по `initialSymbols`; `GameRoot.mount` ждёт `sceneStore.gameLoaded` перед стартом автомата и снятием оверлея.
 5. **Класс-контроллер** — PIXI `Container`: создаёт класс анимации (п.4) и держит подписки на эвенты (п.3). _(есть)_
 
 Поток: **сеть → фазы автомата → сторы + эмиттер → контроллер → класс анимации → Spine.**

@@ -12,7 +12,6 @@ export const VISIBLE_SYMBOLS_COUNT = 3
 
 // TODO позиционирует барабаны, готовит и передает данные в каждый барабан
 // Предоставляет публичные методы для родителя для запуска анимаций барабанов последовательно с задержкой
-// Так же возможно здесь будет позже описана freeze механика
 
 export class ReelSetController extends LiveContainer {
   private readonly ticker: GameTicker

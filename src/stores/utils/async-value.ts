@@ -1,10 +1,9 @@
 import { computed, flow, makeObservable, observable } from 'mobx'
 import { RequestStatus } from 'src/types/network'
 
-// TODO кажется можно упростить
 /**
  * Асинхронное значение для стора: хранит результат, статус и ошибку запроса.
- * `run(task)` выполняет запрос и ведёт статусы; ошибку записывает в `error`, промис не реджектится.
+ * `run(task)` ждёт промис запроса и ведёт статусы; ошибку записывает в `error`, промис не реджектится.
  */
 export class AsyncValue<T> {
   constructor() {
@@ -20,12 +19,12 @@ export class AsyncValue<T> {
     return this.status === RequestStatus.loading
   }
 
-  run = flow(function* (this: AsyncValue<T>, task: () => Promise<T>) {
+  run = flow(function* (this: AsyncValue<T>, task: Promise<T>) {
     this.status = RequestStatus.loading
     this.error = undefined
 
     try {
-      this.value = yield task()
+      this.value = yield task
       this.status = RequestStatus.success
     } catch (error) {
       this.error = error

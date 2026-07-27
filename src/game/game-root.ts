@@ -5,6 +5,7 @@ import type { Fsm } from 'src/flow/fsm'
 import type { GameTicker } from 'src/game/game-ticker'
 import type { GameScene } from 'src/game/scenes/game-scene'
 import type { SceneStore } from 'src/stores/scene-store'
+import { RequestStatus } from 'src/types/network'
 
 /**
  * Хост жизненного цикла игры: инициализирует PIXI-приложение, монтирует канвас в DOM,
@@ -44,7 +45,7 @@ export class GameRoot {
 
   /**
    * Инициализирует PIXI-приложение внутри `container`, показывает сцену и запускает автомат.
-   * Повторный вызов до завершения предыдущего игнорируется.
+   * Повторный вызов до завершения предыдущего игнорируется, провал загрузки данных раунда — ошибка.
    */
   async mount(container: HTMLElement) {
     if (this.pending) {
@@ -89,10 +90,15 @@ export class GameRoot {
     app.renderer.on('resize', this.layout)
 
     // Ждём данные раунда: за это время барабаны наполняются реактивно по initialSymbols
-    await this.sceneStore.gameReady
+    await this.sceneStore.gameLoaded
 
     if (this.pending !== app) {
       return
+    }
+
+    // Без данных раунда барабаны пустые: автомат не запускаем, ошибку показывает страница
+    if (this.sceneStore.game.status === RequestStatus.error) {
+      throw new Error('Не удалось загрузить данные игры', { cause: this.sceneStore.game.error })
     }
 
     void this.fsm.start()
