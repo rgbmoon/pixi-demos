@@ -1,14 +1,10 @@
-import { Assets, Container, Sprite, type Texture, type Ticker } from 'pixi.js'
+import { Assets, Container, Sprite, type Ticker } from 'pixi.js'
 import { SceneBackground } from 'src/types/game'
 
+import { BACKGROUND_ALIASES } from '../assets'
 import type { GameTicker } from '../game-ticker'
 
 const FADE_DURATION_MS = 200
-
-const TEXTURE_SOURCES = {
-  [SceneBackground.light]: { alias: 'al_bg_reg', src: '/src/assets/game/graphic/AL_Background/AL_bg_reg.{webp,png}' },
-  [SceneBackground.dark]: { alias: 'al_bg_fs', src: '/src/assets/game/graphic/AL_Background/AL_bg_fs.{webp,png}' },
-} as const
 
 /**
  * Фон сцены: светлый спрайт снизу, тёмный поверх; смена темы — fade alpha тёмного спрайта.
@@ -27,24 +23,11 @@ export class BackgroundAnimation {
     this.ticker = ticker
 
     this.darkSprite.alpha = initialBg === SceneBackground.light ? 0 : 1
+
+    this.lightSprite.texture = Assets.get(BACKGROUND_ALIASES.light)
+    this.darkSprite.texture = Assets.get(BACKGROUND_ALIASES.dark)
+
     this.view.addChild(this.lightSprite, this.darkSprite)
-
-    void this.load()
-  }
-
-  private async load(): Promise<void> {
-    const [light, dark] = await Promise.all([
-      Assets.load<Texture>(TEXTURE_SOURCES.light),
-      Assets.load<Texture>(TEXTURE_SOURCES.dark),
-    ])
-
-    if (this.view.destroyed) return
-
-    this.lightSprite.texture = light
-    this.darkSprite.texture = dark
-
-    // width/height спрайта — производные scale от текстуры, после её смены размер выставляется заново
-    this.applySize()
   }
 
   /** Растягивает фон на переданный размер экрана. */

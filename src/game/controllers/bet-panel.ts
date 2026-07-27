@@ -1,6 +1,7 @@
 import { inject, injectable } from 'inversify'
-import { Assets, Sprite, type Texture } from 'pixi.js'
+import { Assets, Sprite } from 'pixi.js'
 import { TOKENS } from 'src/constants/tokens'
+import { PLATE_SRC } from 'src/game/assets'
 import { Label, LabelColor } from 'src/game/ui/label'
 import { LiveContainer } from 'src/game/ui/live-container'
 import { formatAmount } from 'src/game/utils'
@@ -9,7 +10,6 @@ import type { SceneStore } from 'src/stores/scene-store'
 import type { BetMinusButton } from './bet-minus-button'
 import type { BetPlusButton } from './bet-plus-button'
 
-const PLATE_SRC = '/src/assets/game/graphic/AL_Gamble_buttons/plate-bg.svg'
 const PLATE_WIDTH = 180
 const PLATE_HEIGHT = 64
 const BUTTON_GAP = 8
@@ -34,6 +34,8 @@ export class BetPanel extends LiveContainer {
     super()
 
     this.plate.anchor.set(0.5)
+    this.plate.texture = Assets.get(PLATE_SRC)
+    this.plate.setSize(PLATE_WIDTH, PLATE_HEIGHT)
 
     this.caption.anchor.set(0.5, 1)
     this.caption.position.set(0, TEXT_SPLIT_Y)
@@ -52,16 +54,5 @@ export class BetPanel extends LiveContainer {
       },
       { fireImmediately: true }
     )
-
-    void this.loadPlate()
-  }
-
-  private async loadPlate(): Promise<void> {
-    const texture = await Assets.load<Texture>(PLATE_SRC)
-
-    if (this.destroyed) return
-
-    this.plate.texture = texture
-    this.plate.setSize(PLATE_WIDTH, PLATE_HEIGHT)
   }
 }

@@ -26,19 +26,19 @@ export class ReelController extends LiveContainer {
 
     this.ticker = ticker
 
-    this.symbols = Array.from(
-      { length: VISIBLE_SYMBOLS_COUNT + BUFFER_SYMBOLS_COUNT * 2 },
-      () => new SymbolAnimation(ticker)
-    )
+    this.symbols = Array.from({ length: VISIBLE_SYMBOLS_COUNT + BUFFER_SYMBOLS_COUNT * 2 }, () => new SymbolAnimation())
     this.addChild(...this.symbols.map((animation) => animation.view))
   }
 
   setSymbols(symbolKeys: SymbolKey[]) {
     this.symbolKeys = symbolKeys
 
-    symbolKeys.forEach((key, index) => this.symbols[index + BUFFER_SYMBOLS_COUNT].setKey(key))
+    symbolKeys.forEach((key, index) => {
+      const cell = this.symbols[index + BUFFER_SYMBOLS_COUNT]
 
-    this.symbolKeys.forEach((key, index) => this.symbols[index + BUFFER_SYMBOLS_COUNT].setKey(key))
+      cell.setKey(key)
+      cell.idle()
+    })
   }
 
   layout(_symbolCellWidth: number, symbolCellHeight: number) {

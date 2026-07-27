@@ -1,10 +1,9 @@
 import { inject, injectable } from 'inversify'
 import { BET_STEP } from 'src/constants/game'
 import { TOKENS } from 'src/constants/tokens'
+import { BUTTON_ICONS } from 'src/game/assets'
 import { Button, ButtonSize, ButtonVariant } from 'src/game/ui/button'
 import type { SceneStore } from 'src/stores/scene-store'
-
-const BET_DOWN_ICON = '/src/assets/game/graphic/Icons/minus-svgrepo-com.svg'
 
 /**
  * Кнопка понижения ставки
@@ -17,7 +16,7 @@ export class BetMinusButton extends Button {
     super({
       variant: ButtonVariant.circle,
       size: ButtonSize.md,
-      icon: BET_DOWN_ICON,
+      icon: BUTTON_ICONS.betDown,
     })
 
     this.sceneStore = sceneStore

@@ -4,6 +4,7 @@ import { TOKENS } from 'src/constants/tokens'
 import type { Fsm } from 'src/flow/fsm'
 import type { GameTicker } from 'src/game/game-ticker'
 import type { GameScene } from 'src/game/scenes/game-scene'
+import type { SceneStore } from 'src/stores/scene-store'
 
 /**
  * Хост жизненного цикла игры: инициализирует PIXI-приложение, монтирует канвас в DOM,
@@ -14,6 +15,7 @@ export class GameRoot {
   private readonly ticker: GameTicker
   private readonly scene: GameScene
   private readonly fsm: Fsm
+  private readonly sceneStore: SceneStore
 
   private app: Application | null = null
   private pending: Application | null = null
@@ -21,11 +23,13 @@ export class GameRoot {
   constructor(
     @inject(TOKENS.GameTicker) ticker: GameTicker,
     @inject(TOKENS.GameScene) scene: GameScene,
-    @inject(TOKENS.Fsm) fsm: Fsm
+    @inject(TOKENS.Fsm) fsm: Fsm,
+    @inject(TOKENS.SceneStore) sceneStore: SceneStore
   ) {
     this.ticker = ticker
     this.scene = scene
     this.fsm = fsm
+    this.sceneStore = sceneStore
   }
 
   private layout = () => {
@@ -82,6 +86,13 @@ export class GameRoot {
 
     this.layout()
     app.renderer.on('resize', this.layout)
+
+    // Ждём данные раунда: за это время барабаны наполняются реактивно по initialSymbols
+    await this.sceneStore.gameReady
+
+    if (this.pending !== app) {
+      return
+    }
 
     void this.fsm.start()
   }

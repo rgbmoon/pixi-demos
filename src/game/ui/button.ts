@@ -1,5 +1,6 @@
 import { Assets, Rectangle, Sprite, type Texture } from 'pixi.js'
 
+import { BUTTON_BACKINGS } from '../assets'
 import { LiveContainer } from './live-container'
 
 export const ButtonSize = {
@@ -23,44 +24,9 @@ interface BaseButtonOptions {
   iconRatio?: number
 }
 
-const ASSETS_DIR = '/src/assets/game/graphic/AL_Gamble_buttons'
-
-const SIZE_PRESETS: Record<
-  ButtonSize,
-  {
-    px: number
-    [ButtonVariant.romb]: {
-      normal: string
-      active: string
-    }
-    [ButtonVariant.circle]: {
-      normal: string
-      active: string
-    }
-  }
-> = {
-  md: {
-    px: 65,
-    [ButtonVariant.romb]: {
-      normal: `${ASSETS_DIR}/button-romb-bg.svg`,
-      active: `${ASSETS_DIR}/button-romb-bg-active.svg`,
-    },
-    [ButtonVariant.circle]: {
-      normal: `${ASSETS_DIR}/button-circle-bg.svg`,
-      active: `${ASSETS_DIR}/button-circle-bg-active.svg`,
-    },
-  },
-  lg: {
-    px: 130,
-    [ButtonVariant.romb]: {
-      normal: `${ASSETS_DIR}/button-romb-bg-lg.svg`,
-      active: `${ASSETS_DIR}/button-romb-bg-active-lg.svg`,
-    },
-    [ButtonVariant.circle]: {
-      normal: `${ASSETS_DIR}/button-circle-bg-lg.svg`,
-      active: `${ASSETS_DIR}/button-circle-bg-active-lg.svg`,
-    },
-  },
+const SIZE_PX: Record<ButtonSize, number> = {
+  md: 65,
+  lg: 130,
 }
 
 // Доля стороны подложки, которую занимает иконка
@@ -76,28 +42,30 @@ export class Button extends LiveContainer {
 
   private readonly background = new Sprite()
   private readonly icon = new Sprite()
-  private textures: { normal: Texture; active: Texture } | null = null
+  private readonly textures: { normal: Texture; active: Texture }
   private isActive = false
-  private iconSrc: string | null = null
 
   constructor(options: BaseButtonOptions) {
     super()
 
-    const preset = SIZE_PRESETS[options.size]
+    const px = SIZE_PX[options.size]
 
-    this.sizePx = preset.px
-    this.boundsArea = new Rectangle(0, 0, preset.px, preset.px)
+    this.sizePx = px
+    this.boundsArea = new Rectangle(0, 0, px, px)
 
     this.icon.anchor.set(0.5)
-    this.icon.position.set(preset.px / 2, preset.px / 2)
+    this.icon.position.set(px / 2, px / 2)
 
     this.addChild(this.background, this.icon)
 
     this.eventMode = 'static'
     this.cursor = 'pointer'
 
-    void this.loadBackgrounds(preset[options.variant].normal, preset[options.variant].active)
-    void this.setIcon(options.icon, options.iconRatio)
+    const backing = BUTTON_BACKINGS[options.size][options.variant]
+
+    this.textures = { normal: Assets.get(backing.normal), active: Assets.get(backing.active) }
+    this.applyBackground()
+    this.setIcon(options.icon, options.iconRatio)
   }
 
   /** Переключает подложку между обычным и active-состоянием. */
@@ -112,30 +80,13 @@ export class Button extends LiveContainer {
     this.applyBackground()
   }
 
-  /** Меняет иконку кнопки; из параллельных вызовов применяется последний. */
-  protected async setIcon(src: string, iconRatio?: number): Promise<void> {
-    this.iconSrc = src
-
-    const texture = await Assets.load<Texture>(src)
-
-    if (this.destroyed || this.iconSrc !== src) return
-
-    this.icon.texture = texture
+  /** Меняет иконку кнопки из кэша Assets. */
+  protected setIcon(src: string, iconRatio?: number): void {
+    this.icon.texture = Assets.get(src)
     this.icon.setSize(this.sizePx * (iconRatio ?? ICON_RATIO))
   }
 
-  private async loadBackgrounds(normalSrc: string, activeSrc: string): Promise<void> {
-    const [normal, active] = await Promise.all([Assets.load<Texture>(normalSrc), Assets.load<Texture>(activeSrc)])
-
-    if (this.destroyed) return
-
-    this.textures = { normal, active }
-    this.applyBackground()
-  }
-
   private applyBackground(): void {
-    if (!this.textures) return
-
     this.background.texture = this.isActive ? this.textures.active : this.textures.normal
     this.background.setSize(this.sizePx, this.sizePx)
   }

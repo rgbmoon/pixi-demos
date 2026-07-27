@@ -182,16 +182,24 @@ src/
 - Сеть и анимация запускаются **параллельно** (`Promise.all([api.sendSpin(bet, signal), reels.spin(signal)])`) — анимация не ждёт ответа сервера.
 - Сервер — **источник правды**: клиент отображает присланный результат и ничего не пересчитывает.
 
-**Мост React ↔ PIXI** — стандартный паттерн: `useRef` + `useEffect` с очисткой; cleanup разбирает game-контейнер (а деактивация `GameRoot` уничтожает `Application` с тикером и WebGL-контекстом):
+**Мост React ↔ PIXI** — `useRef` + `useEffect` с очисткой; cleanup разбирает game-контейнер (а деактивация `GameRoot` уничтожает `Application` с тикером и WebGL-контекстом). Бутстрап двухфазный: сперва `await preloadGameAssets()` (все ассеты в кэш), затем сборка графа — конструкторы сцены читают кэш синхронно. На время предзагрузки [GamePage](src/pages/game/index.tsx) держит React-оверлей (канваса ещё нет), снимает его, когда `root.mount` резолвится (внутри `mount` — `await sceneStore.gameReady`, доска наполнена). Guard `disposed` защищает от гонки StrictMode вокруг `await`:
 
 ```tsx
 useEffect(() => {
-  const container = containerRef.current
-  if (!container) return
-  const game = createGameContainer() // контейнер игры на этот маунт (parent — appContainer из замыкания)
-  const root = game.get(TOKENS.GameRoot) // один get собирает весь игровой граф
-  void root.mount(container)
-  return () => destroyGameContainer()
+  let disposed = false
+  const boot = async () => {
+    await preloadGameAssets() // все ассеты в кэш до сборки графа
+    if (disposed || !containerRef.current) return
+    const game = createGameContainer() // parent — appContainer из замыкания
+    const root = game.get(TOKENS.GameRoot) // один get собирает весь граф из кэша
+    await root.mount(containerRef.current)
+    if (!disposed) setLoading(false)
+  }
+  void boot()
+  return () => {
+    disposed = true
+    destroyGameContainer()
+  }
 }, [])
 ```
 
@@ -226,7 +234,7 @@ useEffect(() => {
 3. **Event emitter** — центр регистрации имён событий; связывает логику и сторы с презентацией. _(есть)_
 4. **Класс анимации** — обёртка над визуальной сущностью: внешний код работает с методами с игровой семантикой (`spin`, `land`), а не с сырым объектом, поэтому замена `Graphics`-заглушки на Spine не потребует изменений ни в контроллере, ни в фазах. _(есть: база [SpineAnimation](src/game/ui/spine-animation.ts) + рамка барабанов; настоящих барабанов нет — `spin`/`land` пока паузы-заглушки в контроллере)_
 
-> Повторный `load` в `SpineAnimation` подменяет скелет: старый Spine уничтожается, тикер и `destroyed`-хук подключены один раз, загрузку, которую обогнала следующая, отбрасывает счётчик `loadId`. На этом стоит `SymbolAnimation.setKey` — ячейка барабана живёт весь раунд, а значение символа в ней меняется. Ассеты грузятся лениво, на первом `setKey`: конструктор ставит только видимость, до вызова ячейка пустая (`key` — `null`).
+> **Единый флоу загрузки.** Все URL игровых ассетов — в одном манифесте [assets.ts](src/game/assets.ts) (Spine-скелеты, текстуры, шрифт). Единственный `Assets.load` в проекте — `preloadGameAssets`, его зовёт [GamePage](src/pages/game/index.tsx) на бутстрапе **до** сборки графа. Дальше всё читается из кэша синхронно: Spine — `SpineAnimation.attach` (`Spine.from` без `await`), текстуры — `Assets.get`, шрифт зарегистрирован. Никакой класс не зовёт `Assets.load` сам; `SpineAnimation` синхронный (только `attach`, без `load`/`onLoaded`). Визуал собирается в конструкторе (рамка, кнопки, фон, лейблы) или в `setKey` (символ) — двухфазного `build()` нет, объект рождается после предзагрузки. Поэтому `SymbolAnimation.setKey` синхронный: подмена скелета и следующий pose-метод (`idle`/`blur`) применяются в одном тике — без гонок, `loadId`, `desiredState`, флагов. Асинхронна только **сеть**: `initGame` (данные, не ассеты) наполняет доску реактивно по `initialSymbols`; `GameRoot.mount` ждёт `sceneStore.gameReady` перед снятием оверлея.
 5. **Класс-контроллер** — PIXI `Container`: создаёт класс анимации (п.4) и держит подписки на эвенты (п.3). _(есть)_
 
 Поток: **сеть → фазы автомата → сторы + эмиттер → контроллер → класс анимации → Spine.**

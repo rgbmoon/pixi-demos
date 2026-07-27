@@ -1,10 +1,8 @@
 import { inject, injectable } from 'inversify'
 import { TOKENS } from 'src/constants/tokens'
+import { BUTTON_ICONS } from 'src/game/assets'
 import { Button, ButtonSize, ButtonVariant } from 'src/game/ui/button'
 import type { SceneStore } from 'src/stores/scene-store'
-
-const SOUND_ON_ICON = '/src/assets/game/graphic/Icons/sound-on-svgrepo-com.svg'
-const SOUND_OFF_ICON = '/src/assets/game/graphic/Icons/sound-off-svgrepo-com.svg'
 
 /**
  * Кнопка отключения/включения звука
@@ -17,7 +15,7 @@ export class SoundToggleButton extends Button {
     super({
       variant: ButtonVariant.romb,
       size: ButtonSize.md,
-      icon: SOUND_ON_ICON,
+      icon: BUTTON_ICONS.soundOn,
     })
 
     this.sceneStore = sceneStore
@@ -28,7 +26,7 @@ export class SoundToggleButton extends Button {
       () => this.sceneStore.isSoundOn,
       (on) => {
         this.active = !on
-        void this.setIcon(on ? SOUND_ON_ICON : SOUND_OFF_ICON)
+        this.setIcon(on ? BUTTON_ICONS.soundOn : BUTTON_ICONS.soundOff)
       },
       { fireImmediately: true }
     )

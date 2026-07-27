@@ -2,10 +2,9 @@ import { inject, injectable } from 'inversify'
 import { TOKENS } from 'src/constants/tokens'
 import type { GameEmitter } from 'src/events/game-emitter'
 import type { GameEvents } from 'src/events/types'
+import { BUTTON_ICONS } from 'src/game/assets'
 import { Button, ButtonSize, ButtonVariant } from 'src/game/ui/button'
 import type { SceneStore } from 'src/stores/scene-store'
-
-const SPIN_ICON = '/src/assets/game/graphic/Icons/arrow-cycle-svgrepo-com.svg'
 
 /**
  * Кнопка запуска спина: по тапу объявляет `ui:spinRequested` с текущей ставкой;
@@ -23,7 +22,7 @@ export class SpinButton extends Button {
     super({
       variant: ButtonVariant.circle,
       size: ButtonSize.lg,
-      icon: SPIN_ICON,
+      icon: BUTTON_ICONS.spin,
       iconRatio: 0.6,
     })
 

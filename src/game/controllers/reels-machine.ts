@@ -25,7 +25,7 @@ export class ReelsMachineController extends LiveContainer {
     super()
 
     this.ticker = ticker
-    this.reelsFrameAnimation = new ReelsFrameAnimation(ticker)
+    this.reelsFrameAnimation = new ReelsFrameAnimation()
 
     this.scale.set(SCALE)
 

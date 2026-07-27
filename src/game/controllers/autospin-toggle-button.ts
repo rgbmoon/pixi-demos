@@ -1,10 +1,8 @@
 import { inject, injectable } from 'inversify'
 import { TOKENS } from 'src/constants/tokens'
+import { BUTTON_ICONS } from 'src/game/assets'
 import { Button, ButtonSize, ButtonVariant } from 'src/game/ui/button'
 import type { SceneStore } from 'src/stores/scene-store'
-
-const AUTOSPIN_ON_ICON = '/src/assets/game/graphic/Icons/square-svgrepo-com.svg'
-const AUTOSPIN_OFF_ICON = '/src/assets/game/graphic/Icons/play-svgrepo-com.svg'
 
 /**
  * Кнопка включения режима автоспинов.
@@ -17,7 +15,7 @@ export class AutospinToggleButton extends Button {
     super({
       variant: ButtonVariant.romb,
       size: ButtonSize.md,
-      icon: AUTOSPIN_OFF_ICON,
+      icon: BUTTON_ICONS.autospinOff,
     })
 
     this.sceneStore = sceneStore
@@ -28,7 +26,7 @@ export class AutospinToggleButton extends Button {
       () => this.sceneStore.isAutospin,
       (isAutospin) => {
         this.active = isAutospin
-        void this.setIcon(isAutospin ? AUTOSPIN_ON_ICON : AUTOSPIN_OFF_ICON)
+        this.setIcon(isAutospin ? BUTTON_ICONS.autospinOn : BUTTON_ICONS.autospinOff)
       },
       { fireImmediately: true }
     )

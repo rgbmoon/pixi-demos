@@ -1,8 +1,5 @@
-import type { GameTicker } from '../game-ticker'
+import { EFFECT_ASSETS } from '../assets'
 import { SpineAnimation } from '../ui/spine-animation'
-
-const SKELETON_URL = '/src/assets/game/animations/win_frame/win_frame.json'
-const ATLAS_URL = '/src/assets/game/animations/win_frame/1/win_frame.atlas'
 
 // ширина скелета из win_frame.json; origin арта — в его центре
 const NATIVE_WIDTH = 228.61
@@ -13,13 +10,10 @@ export class WinFrameAnimation extends SpineAnimation {
   private width = 0
   private height = 0
 
-  constructor(ticker: GameTicker) {
-    super(ticker)
+  constructor() {
+    super()
 
-    void this.load(SKELETON_URL, ATLAS_URL)
-  }
-
-  protected override onLoaded(): void {
+    this.attach(EFFECT_ASSETS.winFrame.skeletonUrl, EFFECT_ASSETS.winFrame.atlasUrl)
     this.applySize()
   }
 

@@ -1,10 +1,7 @@
 import { Container } from 'pixi.js'
 
-import type { GameTicker } from '../game-ticker'
+import { FRAME_ASSET } from '../assets'
 import { SpineAnimation } from '../ui/spine-animation'
-
-const SKELETON_URL = '/src/assets/game/animations/reels_frame/frame.json'
-const ATLAS_URL = '/src/assets/game/animations/reels_frame/1/frame.atlas'
 
 const TRACK_MAIN = 0
 const TRACK_TINT = 1
@@ -14,20 +11,16 @@ export class ReelsFrameAnimation extends SpineAnimation {
   private readonly symbolsWinContainer: Container = new Container()
   private readonly popupContainer: Container = new Container()
 
-  constructor(ticker: GameTicker) {
-    super(ticker)
+  constructor() {
+    super()
 
-    void this.load(SKELETON_URL, ATLAS_URL)
-  }
+    this.attach(FRAME_ASSET.skeletonUrl, FRAME_ASSET.atlasUrl)
 
-  protected override onLoaded(): void {
     this.play(TRACK_MAIN, 'idle')
 
-    if (this.spine) {
-      this.spine.addSlotObject('symbols_placeholder', this.symbolsContainer)
-      this.spine.addSlotObject('symbols_win_placeholder', this.symbolsWinContainer)
-      this.spine.addSlotObject('popup_placeholder', this.popupContainer)
-    }
+    this.spine?.addSlotObject('symbols_placeholder', this.symbolsContainer)
+    this.spine?.addSlotObject('symbols_win_placeholder', this.symbolsWinContainer)
+    this.spine?.addSlotObject('popup_placeholder', this.popupContainer)
   }
 
   async showTint(signal?: AbortSignal): Promise<void> {

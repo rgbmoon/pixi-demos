@@ -11,12 +11,15 @@ import { AsyncValue } from './utils/async-value'
 export class SceneStore {
   private readonly flowStore: FlowStore
 
+  /** Готовность initGame: GameRoot ждёт его перед снятием оверлея загрузки. */
+  readonly gameReady: Promise<void>
+
   constructor(@inject(TOKENS.RootApi) api: RootApi, @inject(TOKENS.FlowStore) flowStore: FlowStore) {
     makeObservable(this)
 
     this.flowStore = flowStore
 
-    void this.game.run(() => api.initGame())
+    this.gameReady = this.game.run(() => api.initGame())
   }
 
   @observable isSoundOn = true
@@ -31,10 +34,6 @@ export class SceneStore {
 
   @computed get canSpin(): boolean {
     return this.flowStore.phase === PhaseName.idle
-  }
-
-  @computed get isGameLoading() {
-    return this.game.isLoading
   }
 
   @computed get initialSymbols(): SymbolKey[][] | undefined {
