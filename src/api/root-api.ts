@@ -5,7 +5,7 @@ import { z } from 'zod'
 
 import type { WsTransport } from './service'
 
-/** SignalR-конверт ответа: пара invocation-запрос (type 1) и completion-результат (type 3). */
+/** SignalR-like формат ответа: пара invocation-запрос (type 1) и completion-результат (type 3). */
 const envelope = <A extends z.ZodType, R extends z.ZodType>(argumentsSchema: A, resultSchema: R) =>
   z.object({
     request: z.object({

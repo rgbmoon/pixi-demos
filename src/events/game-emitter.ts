@@ -76,7 +76,6 @@ export class GameEmitter<E extends EventMap> {
             }, timeoutMs)
           : undefined
 
-      // function-декларация: хоистится, поэтому колбэки выше могут ссылаться на неё до объявления
       function cleanup() {
         offEvent()
         signal?.removeEventListener('abort', handleAbort)

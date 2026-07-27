@@ -1,6 +1,7 @@
 import { injectable } from 'inversify'
 import { Ticker } from 'pixi.js'
 
+// TODO не уверен что нужен отдельный тикер
 /**
  * Игровой тикер: PIXI-Ticker, дополненный игровой паузой `waitTicks`.
  * Экземпляр создаёт game-контейнер до PIXI-init; после init GameRoot переводит на него рендер.

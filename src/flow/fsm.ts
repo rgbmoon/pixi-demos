@@ -15,7 +15,7 @@ import { tracePhase } from './utils'
 export class Fsm {
   private readonly phases: ReadonlyMap<PhaseName, Phase>
   private readonly flowStore: FlowStore
-  private readonly controller = new AbortController()
+  private readonly abortController = new AbortController()
 
   constructor(@multiInject(TOKENS.Phase) phases: Phase[], @inject(TOKENS.FlowStore) flowStore: FlowStore) {
     this.flowStore = flowStore
@@ -43,16 +43,16 @@ export class Fsm {
   async start(): Promise<void> {
     let next = INITIAL_PHASE
 
-    while (!this.controller.signal.aborted) {
+    while (!this.abortController.signal.aborted) {
       const phase = this.getPhase(next)
 
       this.flowStore.setPhase(phase.name)
       tracePhase?.(phase.name)
 
       try {
-        next = await phase.enter(this.controller.signal)
+        next = await phase.enter(this.abortController.signal)
       } catch (error) {
-        if (this.controller.signal.aborted) {
+        if (this.abortController.signal.aborted) {
           return
         }
 
@@ -70,6 +70,6 @@ export class Fsm {
    * внутри них (события, анимации, запросы), а петля останавливается, не начав следующую фазу.
    */
   dispose(): void {
-    this.controller.abort(new Error('Игровой автомат остановлен'))
+    this.abortController.abort(new Error('Игровой автомат остановлен'))
   }
 }

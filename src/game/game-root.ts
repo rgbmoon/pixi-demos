@@ -53,6 +53,7 @@ export class GameRoot {
 
     const app = new Application()
 
+    // Подключение PIXI devtools
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error
     globalThis.__PIXI_APP__ = app

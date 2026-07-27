@@ -1,6 +1,7 @@
 import { computed, flow, makeObservable, observable } from 'mobx'
 import { RequestStatus } from 'src/types/network'
 
+// TODO кажется можно упростить
 /**
  * Асинхронное значение для стора: хранит результат, статус и ошибку запроса.
  * `run(task)` выполняет запрос и ведёт статусы; ошибку записывает в `error`, промис не реджектится.
