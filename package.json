@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint --quiet --fix . && tsc --noEmit --project ./tsconfig.app.json",
     "preview": "vite preview",
+    "preview:mocks": "VITE_USE_MOCKS=true vite build && vite preview",
     "prepare": "husky"
   },
   "dependencies": {

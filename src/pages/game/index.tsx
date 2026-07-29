@@ -7,7 +7,7 @@ import { preloadGameAssets } from 'src/game/assets'
 export const GamePage = () => {
   const containerRef = useRef<HTMLDivElement>(null)
   const [loading, setLoading] = useState(true)
-  const [failed, setFailed] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let disposed = false
@@ -25,11 +25,11 @@ export const GamePage = () => {
         await root.mount(containerRef.current)
 
         if (!disposed) setLoading(false)
-      } catch {
+      } catch (cause) {
         // Бутстрап упал (ассеты или данные раунда) — оверлей остаётся и сообщает об ошибке
         if (disposed) return
 
-        setFailed(true)
+        setError(cause instanceof Error ? `${cause.name}: ${cause.message}` : String(cause))
       }
     }
 
@@ -46,8 +46,11 @@ export const GamePage = () => {
       <div ref={containerRef} className="relative h-full max-w-full aspect-9/16">
         {loading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-800">
-            {failed ? (
-              <p className="px-6 text-center text-white">Не удалось загрузить игру. Обновите страницу.</p>
+            {error ? (
+              <div className="px-6 text-center text-white">
+                <p>Не удалось загрузить игру. Обновите страницу.</p>
+                <p className="mt-3 text-sm wrap-break-word text-white/60">{error}</p>
+              </div>
             ) : (
               <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/30 border-t-white" />
             )}

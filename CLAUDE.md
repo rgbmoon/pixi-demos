@@ -10,7 +10,7 @@
 
 Пет-проект для изучения PIXI.js и геймдева. Цель — **слот-машина**.
 
-**Статус: каркас.** Все пять слоёв целевой архитектуры реализованы, сквозной демо-спин работает (кнопка → сеть → стор → контроллер → Spine-тинт; вращение — пауза-заглушка); Spine подключён (база `SpineAnimation` + рамка барабанов), настоящей слот-логики (барабаны, символы, линии) **пока нет** (см. [Целевая архитектура](#целевая-архитектура)).
+**Статус: каркас.** Все пять слоёв целевой архитектуры реализованы, сквозной спин работает (кнопка → сеть → стор → контроллер → Spine): барабаны крутятся, тормозят и садятся на серверные символы. Линий, выигрышей и звука **пока нет** (см. [Целевая архитектура](#целевая-архитектура)).
 
 **Стек:** React 19 · PIXI.js v8 · MobX 6 · inversify 8 (DI-контейнер) · Tailwind CSS v4 · react-router-dom v7 · TypeScript 6 · Vite 8; сеть — zod + partysocket, моки — MSW. Spine — `@esotericsoftware/spine-pixi-v8`, версия пинована тильдой `~4.2.x`: major.minor рантайма обязан совпадать с версией редактора, экспортировавшего ассеты (4.2.43), рантайм 4.3 их не загрузит. **React Compiler включён** (через `reactCompilerPreset()`, только для JSX-файлов — babel не парсит декораторы в `.ts`, см. [vite.config.ts](vite.config.ts)). `reflect-metadata` — peer-зависимость inversify, стоит в `dependencies` (сами её не импортируем — библиотека тянет `reflect-metadata/lite` сама). `clsx` и `mobx-utils` в зависимостях, но пока не используются.
 
@@ -35,6 +35,7 @@
 | `npm run build`   | `tsc -b && vite build`                                                              |
 | `npm run lint`    | `eslint --quiet --fix .` + `tsc --noEmit -p tsconfig.app.json` (автофикс + тайпчек) |
 | `npm run preview` | превью прод-сборки                                                                  |
+| `npm run preview:mocks` | сборка с `VITE_USE_MOCKS=true` + превью — прод-сборка с работающими MSW-моками |
 
 - Husky `pre-commit` запускает `npm run lint` — линт с автофиксом и тайпчек проходят на каждом коммите.
 - Тестов и тест-раннера в проекте нет.
@@ -47,7 +48,7 @@
 
 ```
 src/
-  main.tsx                 # вход: в DEV стартует MSW, затем createRoot + render(<App/>)
+  main.tsx                 # вход: по USE_MOCKS стартует MSW, затем createRoot + render(<App/>)
   app/
     index.tsx              # <App>: StrictMode → RouterProvider
     router.tsx             # createBrowserRouter, ленивые страницы
@@ -57,7 +58,7 @@ src/
   components/              # переиспользуемые компоненты
   events/                  # эвентный слой: game-emitter.ts (класс GameEmitter: on/emit/waitFor) + types.ts (карта GameEvents) + utils.ts (traceEvent)
   flow/                    # конечный автомат раунда: fsm.ts (движок, @multiInject фаз) + types.ts (Phase) + constants.ts (INITIAL_PHASE) + utils.ts (tracePhase) + phases/ (классы IdlePhase, SpinningPhase, ResultPhase)
-  game/                    # PIXI-слой: game-root.ts (хост жизненного цикла) + game-ticker.ts (GameTicker: тикер + waitTicks) + utils.ts (утилиты слоя: formatAmount) + роли из брифа:
+  game/                    # PIXI-слой: game-root.ts (хост жизненного цикла) + game-ticker.ts (GameTicker: тикер + waitTicks) + utils.ts (утилиты слоя: formatAmount, математика посадки барабана) + constants.ts (размеры и тайминги дерева барабанов) + types.ts (LandingPlan) + роли из брифа:
     game-root.ts           #   хост жизненного цикла игры: PIXI-init, DOM-мост, игровой тикер, запуск автомата
     scenes/                #   сцены: GameScene — @inject контроллеров, дерево отображения, layout
     animations/            #   п.4 — классы анимации: обёртки над визуальной сущностью, методы с игровой семантикой → промис
@@ -71,7 +72,8 @@ src/
   styles/index.css         # единственный глобальный стиль (Tailwind + @theme)
   assets/
     icons/index.ts         # баррель SVG-иконок как React-компонентов
-    game/                  # ⚠️ ассеты игры — в .gitignore, не коммитить (см. ниже)
+public/
+  game-assets/             # ⚠️ ассеты игры — в .gitignore, не коммитить (см. ниже)
 ```
 
 ---
@@ -90,7 +92,7 @@ src/
 
 **Исключения из «в файле только класс»** — два, новых без причины не заводим:
 
-- **`game/animations/`, `game/controllers/` и `game/ui/`** — константы и утилиты класса кладём **в его же файл, выше объявления** (тайминги спина в [reels-controller.ts](src/game/controllers/reels-controller.ts), размер-пресеты подложки в [button.ts](src/game/ui/button.ts)): это числовые параметры одной визуальной сущности, их правят вместе с кодом, который их использует.
+- **`game/animations/`, `game/controllers/` и `game/ui/`** — константы и утилиты класса кладём **в его же файл, выше объявления** (размер-пресеты подложки в [button.ts](src/game/ui/button.ts)): это числовые параметры одной визуальной сущности, их правят вместе с кодом, который их использует. Исключение внутри исключения — **дерево барабанов**: размеры и тайминги общие для `reel.ts`, `reel-set.ts` и `reels-machine.ts`, они лежат в [game/constants.ts](src/game/constants.ts), а расчёт траектории посадки (`planLanding`) — в [game/utils.ts](src/game/utils.ts) рядом с `easeOutBack`.
 - **zod-схемы api-слоя** — в файле класса, который ими парсит (`EnvelopeSchema` в [service.ts](src/api/service.ts), `SpinResponseSchema` в [root-api.ts](src/api/root-api.ts)): формат читается рядом с разбирающим кодом.
 
 **Именование**
@@ -139,6 +141,7 @@ src/
 - **Входящее сообщение парсим `safeParse`** (и `JSON.parse` в `try/catch`): сперва пробуем completion-конверт (есть `response.invocationId` → ответ на запрос), иначе серверную invocation (push по `target`); невалидное сообщение игнорируем без ошибки, push доставляем каждому подписчику изолированно — у WS-колбэка нет внешнего обработчика исключений.
 - **`request` отменяем**: четвёртый аргумент `{ signal }` — тот же `AbortSignal`, что фаза передаёт в анимации (`api.sendSpin(bet, gameMode, signal)`).
 - **Моки отвечают с задержкой 100–300 мс** — `create-ws-handler` планирует отправку `reply`/`fail` через `setTimeout` (симуляция латентности по системному времени; в моке это не игровая пауза).
+- **Включение MSW — флаг `USE_MOCKS` в [main.tsx](src/main.tsx)**: по умолчанию моки идут в dev, `VITE_USE_MOCKS` задаёт значение явно и включает их в прод-сборке (`npm run preview:mocks` — единственный способ погонять preview без живого бэкенда). Флаг объявлен прямо в `main.tsx`, а не в `constants/environment.ts`, вопреки общему правилу: rolldown выбрасывает `import('src/mocks/browser')` из прод-бандла, только пока условие сворачивается в литерал внутри того же модуля — через импортированную константу свёртка не проходит и msw (432 КБ) уезжает в прод. При правке `main.tsx` проверяй: `npm run build && grep -rl setupWorker dist/assets/` должен молчать.
 
 **Стейт (MobX)** — в `stores/`: [flow-store.ts](src/stores/flow-store.ts) (публичное состояние автомата: фаза и фатальная ошибка; без зависимостей — его читают другие сторы и view, циклов с движком не возникает) + [scene-store.ts](src/stores/scene-store.ts) (состояние раунда: ставка, результат; `canSpin` — cross-store computed от `flowStore.phase`). Паттерн стора: класс с `@injectable()`, разметка **legacy-декораторами MobX** (`@observable` / `@observable.ref` / `@computed` / `@action`) у объявления члена + **обязательный `makeObservable(this)`** (без карты) в конструкторе; экземпляром владеет контейнер того скоупа, чьё состояние стор хранит (`SceneStore` — game-контейнер: раунд живёт один маунт). В `stores/` — только MobX-классы; классы без реактивности размещаются в других слоях.
 
@@ -179,7 +182,7 @@ src/
 - **Внутри фазы нет цикла.** Появился `while` — это не одна фаза, а две.
 - Зависимости (`emitter`, `reels`, `sceneStore`, `api`) фаза объявляет сама через `@inject`; `signal` — не зависимость, а рантайм-значение движка, приходит аргументом `enter`. `fsm.dispose()` абортит его — все незавершённые `waitFor` и анимации реджектятся, при уходе со страницы все фазы завершаются.
 - Движок собирает фазы `@multiInject(TOKENS.Phase)` в словарь по `name` (стартовая — `INITIAL_PHASE` из [constants.ts](src/flow/constants.ts)) и публикует активную фазу и фатальную ошибку в `FlowStore` — стор без зависимостей, который читают и другие сторы (`canSpin` в `SceneStore`), и view.
-- Сеть и анимация запускаются **параллельно** (`Promise.all([api.sendSpin(bet, signal), reels.spin(signal)])`) — анимация не ждёт ответа сервера.
+- Сеть и анимация запускаются **параллельно**: фаза дёргает `reels.spin()` и уходит ждать `api.sendSpin(bet, gameMode, signal)`. Промис возвращают только методы с концом (`reels.land(...)`); бесконечная анимация — обычный синхронный вызов, ждать её нечего.
 - Сервер — **источник правды**: клиент отображает присланный результат и ничего не пересчитывает.
 
 **Мост React ↔ PIXI** — `useRef` + `useEffect` с очисткой; cleanup разбирает game-контейнер (а деактивация `GameRoot` уничтожает `Application` с тикером и WebGL-контекстом). Бутстрап двухфазный: сперва `await preloadGameAssets()` (все ассеты в кэш), затем сборка графа — конструкторы сцены читают кэш синхронно. На время предзагрузки [GamePage](src/pages/game/index.tsx) держит React-оверлей (канваса ещё нет), снимает его, когда `root.mount` резолвится (внутри `mount` — `await sceneStore.gameLoaded`, доска наполнена). Провал бутстрапа (ассеты или данные раунда) `mount` отдаёт исключением, `boot` ловит его и оставляет оверлей с текстом ошибки: реджектить сам `gameLoaded` нельзя — его ждут после `await app.init()`, и при раннем отказе запроса отклонение осталось бы без обработчика. Guard `disposed` защищает от гонки StrictMode вокруг `await`:
@@ -224,7 +227,15 @@ useEffect(() => {
 
 ## Ассеты и .gitignore
 
-- Ассеты игры лежат в **`src/assets/game/`** (~146 МБ) и игнорятся в [.gitignore](.gitignore) правилом `src/assets/game/` — **не коммить их в remote**.
+- Ассеты игры лежат в **`public/game-assets/`** (~7.5 МБ) и игнорятся в [.gitignore](.gitignore) правилом `public/game-assets/` — **не коммить их в remote**.
+- **Почему `public/`, а не `src/`**: их грузит `Assets.load` по строковому URL в рантайме, ESM-импорта нет, поэтому в граф сборки Vite они не попадают. Содержимое `public/` копируется в `dist/` как есть, без хеширования имён; из `src/` в прод-сборке они были бы недоступны (в dev это работало, потому что dev-сервер отдаёт исходники по их путям).
+- **Корень URL — `/game-assets`**, задан тремя константами в [assets.ts](src/game/assets.ts) (`SYMBOLS_DIR`, `ANIMATIONS_DIR`, `GRAPHIC_DIR`), остальные пути собираются из них. Каталог назван не `game`, чтобы не пересекаться с роутом `/game` в SPA-фолбэке.
+- **Вложенность внутри `game-assets/` не менять**: `.atlas` ссылается на свою страницу голым именем файла, PIXI резолвит его относительно URL атласа.
+- **Регистр в путях сверяй с диском.** APFS на macOS регистронезависима, поэтому в `npm run dev` опечатка в регистре не проявляется; `sirv` в `vite preview` (и любая прод-раздача) ищет по реальным именам, не находит файл и отдаёт SPA-фолбэк — PIXI получает `index.html` вместо ассета и падает с `InvalidStateError: The source image could not be decoded`. Ошибка указывает на существующий файл, но проблема в регистре. Проверка полного манифеста:
+  ```bash
+  cd public/game-assets && find . -type f | sed 's|^\./||' | sort > /tmp/real.txt
+  # каждый путь из assets.ts должен находиться: grep -qxF "<путь>" /tmp/real.txt
+  ```
 - **SVG-иконки игры (`graphic/Icons/`) — всегда белые**: tint PIXI умножает цвет (белому источнику можно задать любой цвет, чёрному — никакой), поэтому у новой иконки правь `stroke`/`fill` на `#ffffff` прямо в файле.
 
 ---
@@ -236,9 +247,14 @@ useEffect(() => {
 1. **Сторы (MobX)** — игровое состояние. Держим **независимые сторы** (по singleton-биндингу на каждый в контейнере его скоупа); RootStore/store-of-stores не вводим, координация между сторами — в фазах автомата. _(есть)_
 2. **Сетевой слой** — запросы и парсинг ответов; результат в сторы кладут фазы. Бэкенд мокаем через [MSW](https://mswjs.io/). _(есть)_
 3. **Event emitter** — центр регистрации имён событий; связывает логику и сторы с презентацией. _(есть)_
-4. **Класс анимации** — обёртка над визуальной сущностью: внешний код работает с методами с игровой семантикой (`spin`, `land`), а не с сырым объектом, поэтому замена `Graphics`-заглушки на Spine не потребует изменений ни в контроллере, ни в фазах. _(есть: база [SpineAnimation](src/game/ui/spine-animation.ts) + рамка барабанов; настоящих барабанов нет — `spin`/`land` пока паузы-заглушки в контроллере)_
+4. **Класс анимации** — обёртка над визуальной сущностью: внешний код работает с методами с игровой семантикой (`spin`, `land`), а не с сырым объектом, поэтому замена `Graphics`-заглушки на Spine не потребует изменений ни в контроллере, ни в фазах. _(есть: база [SpineAnimation](src/game/ui/spine-animation.ts), рамка барабанов, символы; вращение и посадка — в [reel.ts](src/game/controllers/reel.ts), выигрышных анимаций нет)_
 
-> **Единый флоу загрузки.** Все URL игровых ассетов — в одном манифесте [assets.ts](src/game/assets.ts) (Spine-скелеты, текстуры, шрифт). Единственный `Assets.load` в проекте — `preloadGameAssets`, его зовёт [GamePage](src/pages/game/index.tsx) на бутстрапе **до** сборки графа. Дальше всё читается из кэша синхронно: Spine — `SpineAnimation.attach` (`Spine.from` без `await`), текстуры — `Assets.get`, шрифт зарегистрирован. Никакой класс не зовёт `Assets.load` сам; `SpineAnimation` синхронный (только `attach`, без `load`/`onLoaded`). Визуал собирается в конструкторе (рамка, кнопки, фон, лейблы) или в `setKey` (символ) — двухфазного `build()` нет, объект рождается после предзагрузки. Поэтому `SymbolAnimation.setKey` синхронный: подмена скелета и следующий pose-метод (`idle`/`blur`) применяются в одном тике — без гонок, `loadId`, `desiredState`, флагов. Асинхронна только **сеть**: `initGame` (данные, не ассеты) наполняет доску реактивно по `initialSymbols`; `GameRoot.mount` ждёт `sceneStore.gameLoaded` перед стартом автомата и снятием оверлея.
+> **Единый флоу загрузки.** Все URL игровых ассетов — в одном манифесте [assets.ts](src/game/assets.ts) (Spine-скелеты, текстуры, шрифт). Единственный `Assets.load` в проекте — `preloadGameAssets`, его зовёт [GamePage](src/pages/game/index.tsx) на бутстрапе **до** сборки графа. Дальше всё читается из кэша синхронно: Spine — `SpineAnimation.attach` (берёт готовый скелет из `SpinePool`), текстуры — `Assets.get`, шрифт зарегистрирован. Никакой класс не зовёт `Assets.load` сам; `SpineAnimation` синхронный (только `attach`, без `load`/`onLoaded`). Визуал собирается в конструкторе (рамка, кнопки, фон, лейблы) или в `setKey` (символ) — двухфазного `build()` нет, объект рождается после предзагрузки. Поэтому `SymbolAnimation.setKey` синхронный: подмена скелета и следующий pose-метод (`idle`/`blur`) применяются в одном тике — без гонок, `loadId`, `desiredState`, флагов. Асинхронна только **сеть**: `initGame` (данные, не ассеты) наполняет доску реактивно по `initialSymbols`; `GameRoot.mount` ждёт `sceneStore.gameLoaded` перед стартом автомата и снятием оверлея.
+
+> **Пул скелетов.** `Spine`-инстансы в проекте создаёт и уничтожает только [SpinePool](src/game/spine-pool.ts) (game-контейнер, `TOKENS.SpinePool`) — классы берут их через `SpineAnimation.attach` и возвращают туда же при смене ассета. Причина: `Spine.from` кэширует `SkeletonData`, но на каждый инстанс строит `Skeleton`, `AnimationState` и типизированные массивы на каждый attachment (~35 KB), а лента барабана меняет символ ~83 раза в секунду — пересборка давала мажорные GC и микрофризы. Пул ключуется парой `(skeletonUrl, atlasUrl)` и прогревается в конструкторе по `SPINE_WARM_UP` из [assets.ts](src/game/assets.ts) (число на ассет — пик одновременного спроса). Скоуп — маунт, а не вкладка: инстансы привязаны к `GameTicker`, который умирает вместе с приложением. В `release` обязателен полный сброс — `removeSlotObjects`, `clearTracks`, `setToSetupPose`.
+>
+> **Статичные позы — с `autoUpdate = false`** (`SpineAnimation.freeze`/`unfreeze`). Поза `blur` у символов задана одним ключом, обновлять по ней скелет каждый кадр незачем: без `_updateAndApplyState` Spine не пересчитывает ни кости, ни вершины. Все `Spine` тикают на `GameTicker` (`Spine.from({ ticker })`), а не на `Ticker.shared` с его отдельным rAF-циклом.
+
 5. **Класс-контроллер** — PIXI `Container`: создаёт класс анимации (п.4) и держит подписки на эвенты (п.3). _(есть)_
 
 Поток: **сеть → фазы автомата → сторы + эмиттер → контроллер → класс анимации → Spine.**
@@ -256,9 +272,10 @@ useEffect(() => {
 
 Причины — в профильных разделах выше; здесь только чек-лист.
 
-- Не коммить `src/assets/game/**`.
+- Не коммить `public/game-assets/**`.
 - Не вводи `any` и `@ts-ignore`; не оставляй `console.*` (warn) и `debugger` (error) — исключения: `traceEvent` ([events/utils.ts](src/events/utils.ts)) и `tracePhase` ([flow/utils.ts](src/flow/utils.ts)).
 - Не используй `setTimeout` для игровых задержек — только `waitTicks` (см. «PIXI / канвас»).
+- Не зови `Spine.from`/`spine.destroy` вне [SpinePool](src/game/spine-pool.ts) — скелеты берутся из пула через `attach` (см. «Единый флоу загрузки»).
 - Граф импортов всегда односторонний.
 - Не заводи module-scope синглтоны — экземплярами владеет контейнер; единственное исключение — composition root (`appContainer` и слот game-контейнера в [app/container.ts](src/app/container.ts)).
 - Не вызывай `container.get()` вне `app/` и роут-страниц; в слоях импортируй только `TOKENS`, классы зависимостей — строго `import type`.

@@ -23,6 +23,7 @@ import { WinLabel } from 'src/game/controllers/win-label'
 import { GameRoot } from 'src/game/game-root'
 import { GameTicker } from 'src/game/game-ticker'
 import { GameScene } from 'src/game/scenes/game-scene'
+import { SpinePool } from 'src/game/spine-pool'
 import { FlowStore } from 'src/stores/flow-store'
 import { SceneStore } from 'src/stores/scene-store'
 
@@ -38,11 +39,16 @@ export const bindApp = (container: Container): void => {
   container.bind(TOKENS.GameEmitter).toDynamicValue(() => new GameEmitter<GameEvents>(traceEvent))
 }
 
-/** Общие сущности игры: игровой тикер и стор раунда. */
+/** Общие сущности игры: игровой тикер, пул скелетов и стор раунда. */
 const bindCore = (container: Container): void => {
   // Игровой тикер создаётся до PIXI-init (app.ticker появляется только внутри него);
   // GameRoot после init переводит на него рендер, и умирает он вместе с приложением
   container.bind(TOKENS.GameTicker).to(GameTicker)
+
+  container
+    .bind(TOKENS.SpinePool)
+    .to(SpinePool)
+    .onDeactivation((pool) => pool.destroy())
 
   // Состояние раунда живёт один маунт — каждый заход начинается со свежих сторов
   container.bind(TOKENS.FlowStore).to(FlowStore)

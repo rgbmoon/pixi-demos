@@ -4,8 +4,10 @@ import './styles/index.css'
 
 import { App } from './app'
 
+const USE_MOCKS = import.meta.env.VITE_USE_MOCKS ? import.meta.env.VITE_USE_MOCKS === 'true' : import.meta.env.DEV
+
 const startMocking = async (): Promise<void> => {
-  if (!import.meta.env.DEV) {
+  if (!USE_MOCKS) {
     return
   }
 

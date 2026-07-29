@@ -38,7 +38,7 @@ export class ResultPhase implements Phase {
       (transformation) => transformation.type === 'frameInit'
     )?.value
 
-    await Promise.all([this.reels.land(symbolKeys, signal)])
+    await this.reels.land(symbolKeys, signal)
 
     this.emitter.emit('spin:landed', result)
 

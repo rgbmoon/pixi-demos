@@ -26,6 +26,7 @@ export class SceneStore {
   @observable isAutospin = false
   @observable bet = 10
   @observable gameMode = 4
+  // TODO прописать базовую логику баланса - списывать деньги, начислять выигрыш, настраивать размер ставки
   @observable credit = 999999
   @observable win = 0
 
@@ -42,6 +43,8 @@ export class SceneStore {
     )?.value
   }
 
+  // TODO поправить чтобы нельзя было задать отрициательную ставку
+  // Принимать ставку из initial запроса.
   @action setBet(bet: number) {
     this.bet = bet
   }

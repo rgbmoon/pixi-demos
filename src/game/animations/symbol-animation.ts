@@ -15,11 +15,9 @@ export class SymbolAnimation extends SpineAnimation {
   setKey(key: SymbolKey): void {
     if (key === this.key) return
 
-    const { skeletonUrl, atlasUrl } = SYMBOL_ASSETS[key]
-
     this.key = key
 
-    this.attach(skeletonUrl, atlasUrl)
+    this.attach(SYMBOL_ASSETS[key])
   }
 
   blur(): void {

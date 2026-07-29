@@ -18,6 +18,7 @@ import type { WinLabel } from 'src/game/controllers/win-label'
 import type { GameRoot } from 'src/game/game-root'
 import type { GameTicker } from 'src/game/game-ticker'
 import type { GameScene } from 'src/game/scenes/game-scene'
+import type { SpinePool } from 'src/game/spine-pool'
 import type { FlowStore } from 'src/stores/flow-store'
 import type { SceneStore } from 'src/stores/scene-store'
 
@@ -38,6 +39,7 @@ export const TOKENS = {
   GameRoot: Symbol('GameRoot') as ServiceIdentifier<GameRoot>,
   GameScene: Symbol('GameScene') as ServiceIdentifier<GameScene>,
   GameTicker: Symbol('GameTicker') as ServiceIdentifier<GameTicker>,
+  SpinePool: Symbol('SpinePool') as ServiceIdentifier<SpinePool>,
   Fsm: Symbol('Fsm') as ServiceIdentifier<Fsm>,
   Phase: Symbol('Phase') as ServiceIdentifier<Phase>,
   // Сторы

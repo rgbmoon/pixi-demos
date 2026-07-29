@@ -1,36 +1,33 @@
 import { inject, injectable } from 'inversify'
 import { TOKENS } from 'src/constants/tokens'
 import { ReelsFrameAnimation } from 'src/game/animations/reels-frame-animation'
+import { REELS_MACHINE_SCALE, REELS_ZONE_HEIGHT, REELS_ZONE_WIDTH } from 'src/game/constants'
 import type { GameTicker } from 'src/game/game-ticker'
+import type { SpinePool } from 'src/game/spine-pool'
 import { LiveContainer } from 'src/game/ui/live-container'
 import type { SceneStore } from 'src/stores/scene-store'
 import type { SymbolKey } from 'src/types/game'
 
 import { ReelSetController } from './reel-set'
 
-// зона символов внутри рамки: пять шагов между divider_center и высота разделителя, обе величины из frame.json
-const NATIVE_ZONE_WIDTH = 1006.7
-const NATIVE_ZONE_HEIGHT = 589
-
-// масштаб задаётся один раз, на ресайз экрана машина не реагирует (пока что)
-const SCALE = 0.4
-
 @injectable()
 export class ReelsMachineController extends LiveContainer {
-  private readonly ticker: GameTicker
   private readonly reelsFrameAnimation: ReelsFrameAnimation
   private readonly reelSet: ReelSetController
 
-  constructor(@inject(TOKENS.GameTicker) ticker: GameTicker, @inject(TOKENS.SceneStore) sceneStore: SceneStore) {
+  constructor(
+    @inject(TOKENS.GameTicker) ticker: GameTicker,
+    @inject(TOKENS.SpinePool) pool: SpinePool,
+    @inject(TOKENS.SceneStore) sceneStore: SceneStore
+  ) {
     super()
 
-    this.ticker = ticker
-    this.reelsFrameAnimation = new ReelsFrameAnimation()
+    this.reelsFrameAnimation = new ReelsFrameAnimation(pool)
 
-    this.scale.set(SCALE)
+    this.scale.set(REELS_MACHINE_SCALE)
 
-    this.reelSet = new ReelSetController(ticker, sceneStore)
-    this.reelSet.layout(NATIVE_ZONE_WIDTH, NATIVE_ZONE_HEIGHT)
+    this.reelSet = new ReelSetController(ticker, pool, sceneStore)
+    this.reelSet.layout(REELS_ZONE_WIDTH, REELS_ZONE_HEIGHT)
 
     this.reelsFrameAnimation.addChildToSymbolsSlot(this.reelSet)
 
@@ -43,13 +40,11 @@ export class ReelsMachineController extends LiveContainer {
   // а машина только выполняет то что дергает FSM.
   // Так-же здесь подключаются слои в рамку
 
-  spin(signal?: AbortSignal): Promise<void> {
-    return this.ticker.waitTicks(300, signal)
+  spin() {
+    this.reelSet.spin()
   }
 
   land(symbolKeys: SymbolKey[][] | undefined, signal?: AbortSignal): Promise<void> {
-    this.reelSet.setSymbols(symbolKeys)
-
-    return this.ticker.waitTicks(300, signal)
+    return this.reelSet.land(symbolKeys, signal)
   }
 }

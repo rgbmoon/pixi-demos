@@ -1,4 +1,5 @@
 import { EFFECT_ASSETS } from '../assets'
+import type { SpinePool } from '../spine-pool'
 import { SpineAnimation } from '../ui/spine-animation'
 
 // ширина скелета из win_frame.json; origin арта — в его центре
@@ -10,10 +11,10 @@ export class WinFrameAnimation extends SpineAnimation {
   private width = 0
   private height = 0
 
-  constructor() {
-    super()
+  constructor(pool: SpinePool) {
+    super(pool)
 
-    this.attach(EFFECT_ASSETS.winFrame.skeletonUrl, EFFECT_ASSETS.winFrame.atlasUrl)
+    this.attach(EFFECT_ASSETS.winFrame)
     this.applySize()
   }
 

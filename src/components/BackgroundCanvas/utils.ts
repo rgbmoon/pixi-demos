@@ -105,7 +105,8 @@ export const mountBackground = (container: HTMLElement): (() => void) => {
       const { width, height } = app.screen
       const base = Math.max(width, height)
 
-      sprites.forEach((sprite, index) => {
+      for (let index = 0; index < sprites.length; index++) {
+        const sprite = sprites[index]
         const blob = BG_BLOBS[index]
 
         const spawn = clamp((time - blob.spawnDelay) / BG_SPAWN_DURATION, 0, 1)
@@ -118,7 +119,7 @@ export const mountBackground = (container: HTMLElement): (() => void) => {
         sprite.position.set(x, y)
         sprite.setSize(size, size)
         sprite.alpha = blob.alpha * easeOutCubic(spawn)
-      })
+      }
     }
 
     const loop = (ticker: Ticker) => {

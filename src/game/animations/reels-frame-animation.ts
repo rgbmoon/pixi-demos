@@ -1,6 +1,7 @@
 import { Container } from 'pixi.js'
 
 import { FRAME_ASSET } from '../assets'
+import type { SpinePool } from '../spine-pool'
 import { SpineAnimation } from '../ui/spine-animation'
 
 const TRACK_MAIN = 0
@@ -11,10 +12,10 @@ export class ReelsFrameAnimation extends SpineAnimation {
   private readonly symbolsWinContainer: Container = new Container()
   private readonly popupContainer: Container = new Container()
 
-  constructor() {
-    super()
+  constructor(pool: SpinePool) {
+    super(pool)
 
-    this.attach(FRAME_ASSET.skeletonUrl, FRAME_ASSET.atlasUrl)
+    this.attach(FRAME_ASSET)
 
     this.play(TRACK_MAIN, 'idle')
 

@@ -5,12 +5,12 @@ import { SymbolKey } from 'src/types/game'
 // одним `Assets.load` на бутстрапе, до материализации сцены; классы читают их из кэша
 // синхронно (`Spine.from` / `Assets.get`). Другого `Assets.load` в проекте нет.
 
-type SpineAsset = {
+export type SpineAsset = {
   skeletonUrl: string
   atlasUrl: string
 }
 
-const SYMBOLS_DIR = '/src/assets/game/animations/symbols'
+const SYMBOLS_DIR = '/game-assets/animations/symbols'
 
 export const SYMBOL_ASSETS: Record<SymbolKey, SpineAsset> = {
   [SymbolKey.K]: {
@@ -59,7 +59,7 @@ export const SYMBOL_ASSETS: Record<SymbolKey, SpineAsset> = {
   },
 }
 
-const ANIMATIONS_DIR = '/src/assets/game/animations'
+const ANIMATIONS_DIR = '/game-assets/animations'
 
 export const FRAME_ASSET: SpineAsset = {
   skeletonUrl: `${ANIMATIONS_DIR}/reels_frame/frame.json`,
@@ -73,9 +73,19 @@ export const EFFECT_ASSETS = {
   },
 } satisfies Record<string, SpineAsset>
 
-const GRAPHIC_DIR = '/src/assets/game/graphic'
+// Пик одновременного спроса на один ключ символа: ячеек в машине 20, ключей 11, ключ ленты
+// случайный — распределение Binomial(20, 1/11), шесть и больше выпадает в 0.7% моментов
+const SYMBOL_POOL_SIZE = 6
 
-export const LOGO_SRC = `${GRAPHIC_DIR}/AL_Logo/AL_Logo.png`
+/** Сколько инстансов каждого скелета `SpinePool` держит наготове после прогрева. */
+export const SPINE_WARM_UP: { asset: SpineAsset; count: number }[] = [
+  ...Object.values(SYMBOL_ASSETS).map((asset) => ({ asset, count: SYMBOL_POOL_SIZE })),
+  { asset: FRAME_ASSET, count: 1 },
+]
+
+const GRAPHIC_DIR = '/game-assets/graphic'
+
+export const LOGO_SRC = `${GRAPHIC_DIR}/AL_Logo/AL_logo.png`
 export const PLATE_SRC = `${GRAPHIC_DIR}/AL_Gamble_buttons/plate-bg.svg`
 
 const BUTTONS_DIR = `${GRAPHIC_DIR}/AL_Gamble_buttons`

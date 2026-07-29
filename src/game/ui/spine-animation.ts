@@ -1,22 +1,38 @@
-import { Spine } from '@esotericsoftware/spine-pixi-v8'
+import type { Spine } from '@esotericsoftware/spine-pixi-v8'
 import { Container } from 'pixi.js'
+
+import type { SpineAsset } from '../assets'
+import type { SpinePool } from '../spine-pool'
 
 export class SpineAnimation {
   readonly view = new Container()
   protected spine: Spine | null = null
 
-  /** Синхронная сборка скелета из кэша Assets. Ассеты предзагружены. */
-  protected attach(skeletonUrl: string, atlasUrl: string): void {
+  private readonly pool: SpinePool
+  private asset: SpineAsset | null = null
+
+  constructor(pool: SpinePool) {
+    this.pool = pool
+  }
+
+  /** Ставит скелет из пула; предыдущий возвращает туда же. Ассеты предзагружены. */
+  protected attach(asset: SpineAsset): void {
     if (this.view.destroyed) return
 
-    this.spine?.destroy()
-    this.spine = Spine.from({ skeleton: skeletonUrl, atlas: atlasUrl })
+    if (this.spine && this.asset) this.pool.release(this.asset, this.spine)
+
+    this.asset = asset
+    this.spine = this.pool.acquire(asset)
 
     this.view.addChild(this.spine)
+
+    this.syncTicking()
   }
 
   protected play(track: number, name: string, loop = true): void {
     this.spine?.state.setAnimation(track, name, loop)
+
+    this.syncTicking()
   }
 
   protected playOnce(track: number, name: string, signal?: AbortSignal): Promise<void> {
@@ -50,10 +66,43 @@ export class SpineAnimation {
       entry.listener = { complete: () => settle(resolve), dispose: () => settle(resolve) }
 
       signal?.addEventListener('abort', handleAbort, { once: true })
+
+      // После назначения слушателя: у анимации нулевой длительности `complete` придёт из update(0)
+      this.syncTicking()
     })
   }
 
   protected clearTrack(track: number, mixDuration = 0): void {
     this.spine?.state.setEmptyAnimation(track, mixDuration)
+
+    this.syncTicking()
+  }
+
+  /**
+   * Держит скелет на тикере, только пока есть что обновлять. Анимация нулевой длительности —
+   * неподвижная поза: по ней Spine не пересчитывает ни кости, ни вершины, остаётся трансформ
+   * контейнера.
+   */
+  private syncTicking(): void {
+    const { spine } = this
+
+    if (!spine) return
+
+    // Новое состояние применяем сразу: снятый с тикера скелет сам больше не обновится
+    spine.update(0)
+
+    const { tracks } = spine.state
+
+    for (let index = 0; index < tracks.length; index++) {
+      const entry = tracks[index]
+
+      if (entry !== null && ((entry.animation?.duration ?? 0) > 0 || entry.mixingFrom !== null)) {
+        spine.autoUpdate = true
+
+        return
+      }
+    }
+
+    spine.autoUpdate = false
   }
 }

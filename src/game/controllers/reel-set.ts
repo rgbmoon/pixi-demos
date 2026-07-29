@@ -1,31 +1,21 @@
 import { Graphics } from 'pixi.js'
+import { LAND_STAGGER_CELLS, REELS_COUNT, VISIBLE_SYMBOLS_COUNT } from 'src/game/constants'
 import type { GameTicker } from 'src/game/game-ticker'
+import type { SpinePool } from 'src/game/spine-pool'
 import { LiveContainer } from 'src/game/ui/live-container'
 import type { SceneStore } from 'src/stores/scene-store'
 import type { SymbolKey } from 'src/types/game'
 
 import { ReelController } from './reel'
 
-// Фиксируем константой количество барабанов как 5 и количество видимых символов в барабане как 3, потому что reel-frame не позволяет разместить больше
-const REELS_COUNT = 5
-export const VISIBLE_SYMBOLS_COUNT = 3
-
-// TODO позиционирует барабаны, готовит и передает данные в каждый барабан
-// Предоставляет публичные методы для родителя для запуска анимаций барабанов последовательно с задержкой
-
 export class ReelSetController extends LiveContainer {
-  private readonly ticker: GameTicker
-  private readonly sceneStore: SceneStore
   private readonly maskGraphics = new Graphics()
   private containerWidth: number = 0
   private containerHeight: number = 0
   private reels: ReelController[] = []
 
-  constructor(ticker: GameTicker, sceneStore: SceneStore) {
+  constructor(ticker: GameTicker, pool: SpinePool, sceneStore: SceneStore) {
     super()
-
-    this.ticker = ticker
-    this.sceneStore = sceneStore
 
     this.addChild(this.maskGraphics)
     this.mask = this.maskGraphics
@@ -35,7 +25,7 @@ export class ReelSetController extends LiveContainer {
       (initialSymbols) => {
         if (!initialSymbols || this.reels.length) return
 
-        this.reels = initialSymbols.map(() => new ReelController(ticker))
+        this.reels = initialSymbols.map(() => new ReelController(ticker, pool))
         initialSymbols.forEach((symbolKeys, index) => this.reels[index].setSymbols(symbolKeys))
 
         this.addChild(...this.reels)
@@ -46,28 +36,43 @@ export class ReelSetController extends LiveContainer {
     )
   }
 
-  private setupPosition() {
-    const symbolCellWidth = this.containerWidth / REELS_COUNT
-    const symbolCellHeight = this.containerHeight / VISIBLE_SYMBOLS_COUNT
+  /** Ширина ячейки символа: зона делится поровну между барабанами. */
+  private get cellWidth(): number {
+    return this.containerWidth / REELS_COUNT
+  }
 
-    this.position.set(-this.containerWidth / 2 + symbolCellWidth / 2, -this.containerHeight / 2 + symbolCellHeight / 2)
+  /** Высота ячейки символа: зона делится поровну между видимыми символами. */
+  private get cellHeight(): number {
+    return this.containerHeight / VISIBLE_SYMBOLS_COUNT
+  }
+
+  private setupPosition() {
+    this.position.set(-this.containerWidth / 2 + this.cellWidth / 2, -this.containerHeight / 2 + this.cellHeight / 2)
 
     this.reels.forEach((reel, index) => {
-      const reelOffset = symbolCellWidth * index
+      const reelOffset = this.cellWidth * index
 
       reel.position.set(reelOffset, 0)
-      reel.layout(symbolCellWidth, symbolCellHeight)
+      reel.layout(this.cellHeight)
     })
   }
 
   private drawMask() {
-    const symbolCellWidth = this.containerWidth / REELS_COUNT
-    const symbolCellHeight = this.containerHeight / VISIBLE_SYMBOLS_COUNT
-
     this.maskGraphics
       .clear()
-      .rect(-symbolCellWidth / 2, -symbolCellHeight / 2, this.containerWidth, this.containerHeight)
+      .rect(-this.cellWidth / 2, -this.cellHeight / 2, this.containerWidth, this.containerHeight)
       .fill(0xffffff)
+  }
+
+  spin() {
+    this.reels.forEach((reel) => reel.spin())
+  }
+
+  // TODO доработать на случай если промис упадет
+  async land(symbolKeys: SymbolKey[][] | undefined, signal?: AbortSignal): Promise<void> {
+    await Promise.all(
+      this.reels.map((reel, index) => reel.land(symbolKeys?.[index] ?? [], index * LAND_STAGGER_CELLS, signal))
+    )
   }
 
   setSymbols(symbols: SymbolKey[][] | undefined) {
