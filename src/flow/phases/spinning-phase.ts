@@ -37,6 +37,7 @@ export class SpinningPhase implements Phase {
 
     this.emitter.emit('spin:started', { bet })
 
+    this.sceneStore.setWin(0)
     this.reels.spin()
 
     await this.sceneStore.spin.run(this.api.sendSpin(bet, gameMode, signal))

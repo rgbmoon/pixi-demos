@@ -1,6 +1,6 @@
 import { inject, injectable } from 'inversify'
 import { action, computed, makeObservable, observable } from 'mobx'
-import type { GameInitResponse, RootApi, SpinResponse } from 'src/api/root-api'
+import type { GameInitResponse, Payline, RootApi, RoundTransformation, SpinResponse } from 'src/api/root-api'
 import { TOKENS } from 'src/constants/tokens'
 import { PhaseName, type SymbolKey } from 'src/types/game'
 
@@ -25,7 +25,7 @@ export class SceneStore {
   @observable isSoundOn = true
   @observable isAutospin = false
   @observable bet = 10
-  @observable gameMode = 4
+  @observable gameMode = '4'
   // TODO прописать базовую логику баланса - списывать деньги, начислять выигрыш, настраивать размер ставки
   @observable credit = 999999
   @observable win = 0
@@ -43,14 +43,34 @@ export class SceneStore {
     )?.value
   }
 
+  private get spinTransformations(): RoundTransformation[] {
+    return this.spin.value?.response.result.SpinResponse.transformations ?? []
+  }
+
+  @computed get spinSymbols(): SymbolKey[][] | undefined {
+    return this.spinTransformations.find((transformation) => transformation.type === 'frameInit')?.value
+  }
+
+  @computed get spinPaylines(): Payline[] {
+    return this.spinTransformations.find((transformation) => transformation.type === 'paylines')?.value ?? []
+  }
+
+  @computed get spinWin(): number {
+    return this.spinTransformations.find((transformation) => transformation.type === 'win')?.value ?? 0
+  }
+
   // TODO поправить чтобы нельзя было задать отрициательную ставку
   // Принимать ставку из initial запроса.
   @action setBet(bet: number) {
     this.bet = bet
   }
 
-  @action setGameMode(gameMode: number) {
+  @action setGameMode(gameMode: string) {
     this.gameMode = gameMode
+  }
+
+  @action setWin(win: number) {
+    this.win = win
   }
 
   @action toggleSound() {

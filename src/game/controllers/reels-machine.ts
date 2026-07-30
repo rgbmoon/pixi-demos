@@ -9,11 +9,15 @@ import type { SceneStore } from 'src/stores/scene-store'
 import type { SymbolKey } from 'src/types/game'
 
 import { ReelSetController } from './reel-set'
+import { WinFramesController } from './win-frames'
+import { WinSymbolsController } from './win-symbols'
 
 @injectable()
 export class ReelsMachineController extends LiveContainer {
   private readonly reelsFrameAnimation: ReelsFrameAnimation
   private readonly reelSet: ReelSetController
+  private readonly winSymbols: WinSymbolsController
+  private readonly winFrames: WinFramesController
 
   constructor(
     @inject(TOKENS.GameTicker) ticker: GameTicker,
@@ -29,16 +33,17 @@ export class ReelsMachineController extends LiveContainer {
     this.reelSet = new ReelSetController(ticker, pool, sceneStore)
     this.reelSet.layout(REELS_ZONE_WIDTH, REELS_ZONE_HEIGHT)
 
+    this.winSymbols = new WinSymbolsController(ticker, pool, sceneStore)
+    this.winSymbols.layout(REELS_ZONE_WIDTH, REELS_ZONE_HEIGHT)
+
+    this.winFrames = new WinFramesController(ticker, pool, sceneStore)
+    this.winFrames.layout(REELS_ZONE_WIDTH, REELS_ZONE_HEIGHT)
+
     this.reelsFrameAnimation.addChildToSymbolsSlot(this.reelSet)
+    this.reelsFrameAnimation.addChildToSymbolsWinSlot(this.winSymbols)
 
     this.addChild(this.reelsFrameAnimation.view)
   }
-
-  // TODO пока что кажется, что тут должны быть описаны все публичные методы рил машины:
-  // 1) запуск/остановка всех анимаций - tint, вращение барабанов, win symbols, win frames, paylines
-  // 2) пока неочевидно, но кажется тут так-же можно прописать какое то поведение машины. Либо же все поведение хранить в FSM
-  // а машина только выполняет то что дергает FSM.
-  // Так-же здесь подключаются слои в рамку
 
   spin() {
     this.reelSet.spin()
@@ -47,4 +52,30 @@ export class ReelsMachineController extends LiveContainer {
   land(symbolKeys: SymbolKey[][] | undefined, signal?: AbortSignal): Promise<void> {
     return this.reelSet.land(symbolKeys, signal)
   }
+
+  showTint() {
+    this.reelsFrameAnimation.showTint()
+  }
+
+  hideTint() {
+    this.reelsFrameAnimation.hideTint()
+  }
+
+  showWinSymbols() {
+    this.winSymbols.showWinSymbols()
+  }
+
+  hideWinSymbols() {
+    this.winSymbols.hideWinSymbols()
+  }
+
+  showWinFrames() {
+    this.winFrames.showWinFrames()
+  }
+
+  hideWinFrames() {
+    this.winFrames.hideWinFrames()
+  }
+
+  // TODO описать методы для paylines когда будут готовы
 }

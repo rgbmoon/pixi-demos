@@ -19,7 +19,7 @@ export type CreateWsHandlerOptions = {
   onConnect?: (context: WsConnectionContext) => void
 }
 
-export type SpinRequestPayload = { bet: number; gameMode: number }
+export type SpinRequestPayload = { bet: number; gameMode: string }
 
 /** Одна трансформация результата спина — член дискриминированного union из api-схемы. */
 export type SpinTransformation = SpinResponse['response']['result']['SpinResponse']['transformations'][number]

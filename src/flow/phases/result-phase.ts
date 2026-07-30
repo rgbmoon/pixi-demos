@@ -34,11 +34,7 @@ export class ResultPhase implements Phase {
       return PhaseName.idle
     }
 
-    const symbolKeys = result.response.result.SpinResponse.transformations.find(
-      (transformation) => transformation.type === 'frameInit'
-    )?.value
-
-    await this.reels.land(symbolKeys, signal)
+    await this.reels.land(this.sceneStore.spinSymbols, signal)
 
     this.emitter.emit('spin:landed', result)
 

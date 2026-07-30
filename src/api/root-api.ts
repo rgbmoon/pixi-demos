@@ -21,6 +21,14 @@ const envelope = <A extends z.ZodType, R extends z.ZodType>(argumentsSchema: A, 
     }),
   })
 
+const PaylineSchema = z.object({
+  lineId: z.string(),
+  line: z.array(z.number().nullable()),
+  value: z.number(),
+})
+
+export type Payline = z.infer<typeof PaylineSchema>
+
 /** Трансформации раунда: дискриминированный по `type` список шагов, общий для `initGame` и `spin`. */
 const TransformationsSchema = z.array(
   z.discriminatedUnion('type', [
@@ -30,13 +38,7 @@ const TransformationsSchema = z.array(
     }),
     z.object({
       type: z.literal('paylines'),
-      value: z.array(
-        z.object({
-          lineId: z.string(),
-          line: z.array(z.number().nullable()),
-          value: z.number(),
-        })
-      ),
+      value: z.array(PaylineSchema),
     }),
     z.object({
       type: z.literal('win'),
@@ -58,6 +60,8 @@ const TransformationsSchema = z.array(
     }),
   ])
 )
+
+export type RoundTransformation = z.infer<typeof TransformationsSchema>[number]
 
 export const GameInitResponseSchema = envelope(
   z.array(z.unknown()),
@@ -81,14 +85,14 @@ export const GameInitResponseSchema = envelope(
       payTable: z.record(z.string(), z.record(z.string(), z.number())),
       availableGameModes: z.array(
         z.object({
-          gameMode: z.number(),
+          gameMode: z.string(),
           name: z.string(),
           type: z.string(),
         })
       ),
       allowedLuckyBets: z.array(
         z.object({
-          gameMode: z.number(),
+          gameMode: z.string(),
           coefficient: z.number(),
           bets: z.array(z.number()),
         })
@@ -120,7 +124,7 @@ export const SpinResponseSchema = envelope(
   z.array(
     z.object({
       bet: z.number(),
-      gameMode: z.number(),
+      gameMode: z.string(),
     })
   ),
   z.object({
@@ -155,7 +159,7 @@ export class RootApi {
     return this.transport.request('initGame', GameInitResponseSchema, [], { signal })
   }
 
-  sendSpin(bet: number, gameMode: number, signal?: AbortSignal): Promise<SpinResponse> {
+  sendSpin(bet: number, gameMode: string, signal?: AbortSignal): Promise<SpinResponse> {
     return this.transport.request('spin', SpinResponseSchema, [{ bet, gameMode }], { signal })
   }
 }
