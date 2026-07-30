@@ -28,10 +28,8 @@ export class SymbolAnimation extends SpineAnimation {
     this.play(TRACK_MAIN, this.isScatter ? 'idle_1' : 'idle')
   }
 
-  async win(signal?: AbortSignal): Promise<void> {
-    await this.playOnce(TRACK_MAIN, this.isScatter ? 'win_1' : 'win', signal)
-
-    this.idle()
+  win(): void {
+    this.play(TRACK_MAIN, this.isScatter ? 'win_1' : 'win')
   }
 
   /** Скаттер: простой с надписью free games. У остальных символов ничего не делает. */

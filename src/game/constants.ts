@@ -29,8 +29,30 @@ export const LANDING_BACK_STRENGTH = 0.35
 export const REELS_ZONE_WIDTH = 1006.7
 /** Высота зоны символов в нативных пикселях рамки. */
 export const REELS_ZONE_HEIGHT = 589
+/** Ширина ячейки символа: зона делится поровну между барабанами. */
+export const CELL_WIDTH = REELS_ZONE_WIDTH / REELS_COUNT
+/** Высота ячейки символа: зона делится поровну между видимыми символами. */
+export const CELL_HEIGHT = REELS_ZONE_HEIGHT / VISIBLE_SYMBOLS_COUNT
+/** Высота видимой зоны барабана: за её нижней границей символ уходит в буферную ячейку. */
+export const VISIBLE_REEL_HEIGHT = VISIBLE_SYMBOLS_COUNT * CELL_HEIGHT
+/** Длина ленты барабана: период прокрутки, через который повторяются позиции символов. */
+export const STRIP_HEIGHT = (VISIBLE_SYMBOLS_COUNT + BUFFER_SYMBOLS_COUNT) * CELL_HEIGHT
+// Начало координат зоны символов — центр левой верхней ячейки: ячейка (барабан, ряд) лежит
+// в (CELL_WIDTH * reel, CELL_HEIGHT * row), origin арта символа — его центр
+/** Смещение зоны символов внутри рамки по горизонтали. */
+export const CELLS_ORIGIN_X = (-REELS_ZONE_WIDTH + CELL_WIDTH) / 2
+/** Смещение зоны символов внутри рамки по вертикали. */
+export const CELLS_ORIGIN_Y = (-REELS_ZONE_HEIGHT + CELL_HEIGHT) / 2
 /** Масштаб машины: задаётся один раз, на ресайз экрана машина не реагирует (пока что). */
 export const REELS_MACHINE_SCALE = 0.4
+
+// Тайминги показа выигрыша
+/** Сколько все выигравшие линии и символы показываются разом до разбора по линиям, мс. */
+export const WIN_SHOWCASE_MS = 1500
+/** Сколько линия выплат видна в цикле до смены на рамки, мс. */
+export const PAYLINE_VISIBLE_MS = 700
+/** Сколько рамки висят на символах после ухода линии, мс. */
+export const WIN_FRAMES_VISIBLE_MS = 900
 /** Коэффициент отката канонической easeOutBack (значение с easings.net). */
 export const REFERENCE_BACK_FACTOR = 1.70158
 /** Заброс канонической кривой: её пик превышает цель на 9.99% дистанции. Служит нормировкой для `backStrength`. */

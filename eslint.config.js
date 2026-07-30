@@ -46,7 +46,7 @@ export default [
       // TypeScript
       '@typescript-eslint/consistent-type-imports': 'error',
       '@typescript-eslint/no-use-before-define': ['error', { variables: false, functions: false, classes: false }],
-      '@typescript-eslint/no-unused-vars': 'warn',
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/prefer-ts-expect-error': 'error',
 

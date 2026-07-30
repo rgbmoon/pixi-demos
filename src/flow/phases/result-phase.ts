@@ -34,9 +34,18 @@ export class ResultPhase implements Phase {
       return PhaseName.idle
     }
 
+    this.emitter.emit('spin:landed', result)
+
     await this.reels.land(this.sceneStore.spinSymbols, signal)
 
-    this.emitter.emit('spin:landed', result)
+    if (this.sceneStore.spinPaylines.length === 0) {
+      return PhaseName.idle
+    }
+
+    await this.reels.showAllWins(signal)
+    await this.reels.showTint(signal)
+    await this.reels.playWinLines(signal)
+    await this.reels.hideTint(signal)
 
     return PhaseName.idle
   }

@@ -1,6 +1,13 @@
 import type { DestroyOptions, Ticker, TickerCallback } from 'pixi.js'
 import { SymbolAnimation } from 'src/game/animations/symbol-animation'
-import { BUFFER_SYMBOLS_COUNT, SPIN_SPEED, VISIBLE_SYMBOLS_COUNT } from 'src/game/constants'
+import {
+  BUFFER_SYMBOLS_COUNT,
+  CELL_HEIGHT,
+  SPIN_SPEED,
+  STRIP_HEIGHT,
+  VISIBLE_REEL_HEIGHT,
+  VISIBLE_SYMBOLS_COUNT,
+} from 'src/game/constants'
 import type { GameTicker } from 'src/game/game-ticker'
 import type { SpinePool } from 'src/game/spine-pool'
 import type { LandingPlan } from 'src/game/types'
@@ -12,8 +19,6 @@ export class ReelController extends LiveContainer {
   private readonly ticker: GameTicker
   private readonly symbols: SymbolAnimation[]
 
-  private cellHeight: number = 0
-
   private spinStep: TickerCallback<unknown> | null = null
   private landingStep: TickerCallback<unknown> | null = null
 
@@ -22,10 +27,11 @@ export class ReelController extends LiveContainer {
 
     this.ticker = ticker
 
-    this.symbols = Array.from({ length: VISIBLE_SYMBOLS_COUNT + BUFFER_SYMBOLS_COUNT }, () => {
+    this.symbols = Array.from({ length: VISIBLE_SYMBOLS_COUNT + BUFFER_SYMBOLS_COUNT }, (_, index) => {
       const symbol = new SymbolAnimation(pool)
 
       symbol.setKey(getRandomSymbolKey())
+      symbol.view.position.set(0, CELL_HEIGHT * (index - BUFFER_SYMBOLS_COUNT))
 
       return symbol
     })
@@ -38,16 +44,6 @@ export class ReelController extends LiveContainer {
     this.removeLandingStep()
 
     super.destroy(options)
-  }
-
-  /** Высота видимой зоны барабана: за её нижней границей символ уходит в буферную ячейку. */
-  private get visibleHeight(): number {
-    return VISIBLE_SYMBOLS_COUNT * this.cellHeight
-  }
-
-  /** Длина ленты барабана: период прокрутки, через который повторяются позиции символов. */
-  private get stripHeight(): number {
-    return (VISIBLE_SYMBOLS_COUNT + BUFFER_SYMBOLS_COUNT) * this.cellHeight
   }
 
   /** Опорная позиция ленты: символы двигаются синхронно, для выравнивания годится любой из них. */
@@ -65,9 +61,14 @@ export class ReelController extends LiveContainer {
     return this.landingStep !== null
   }
 
+  /** Символы видимых слотов сверху вниз; порядок берётся из позиций на ленте. */
+  get visibleSymbols(): SymbolAnimation[] {
+    return [...this.symbols].sort((a, b) => a.view.y - b.view.y).slice(BUFFER_SYMBOLS_COUNT)
+  }
+
   /** Индекс слота по позиции на ленте: 0 — верхний видимый слот, -1 — буферная ячейка над зоной. */
   private getSlotIndex(y: number): number {
-    return Math.round(y / this.cellHeight)
+    return Math.round(y / CELL_HEIGHT)
   }
 
   /** Символ видимого слота: лента лежит в массиве сверху вниз, первая ячейка — буферная. */
@@ -134,10 +135,10 @@ export class ReelController extends LiveContainer {
    * Вычитает длину ленты, а не присваивает верхнюю границу: перескок сохраняет дробный остаток, символы держат шаг.
    */
   private wrapSymbol(symbol: SymbolAnimation): boolean {
-    if (symbol.view.y < this.visibleHeight) return false
+    if (symbol.view.y < VISIBLE_REEL_HEIGHT) return false
 
-    while (symbol.view.y >= this.visibleHeight) {
-      symbol.view.y -= this.stripHeight
+    while (symbol.view.y >= VISIBLE_REEL_HEIGHT) {
+      symbol.view.y -= STRIP_HEIGHT
     }
 
     return true
@@ -149,7 +150,7 @@ export class ReelController extends LiveContainer {
    */
   private snapToCells(): void {
     this.symbols.forEach((symbol) => {
-      symbol.view.y = this.getSlotIndex(symbol.view.y) * this.cellHeight
+      symbol.view.y = this.getSlotIndex(symbol.view.y) * CELL_HEIGHT
     })
   }
 
@@ -164,7 +165,7 @@ export class ReelController extends LiveContainer {
     // Точка посадки символа известна на любом кадре: текущий y плюс непройденный остаток пути
     const landingY = symbol.view.y + remainingDistance
 
-    if (landingY >= this.visibleHeight) {
+    if (landingY >= VISIBLE_REEL_HEIGHT) {
       this.showRandomSymbol(symbol)
 
       return
@@ -219,7 +220,7 @@ export class ReelController extends LiveContainer {
 
     this.removeSpinStep()
 
-    const plan = planLanding(this.stripY, this.cellHeight, this.stripHeight, offsetCells)
+    const plan = planLanding(this.stripY, CELL_HEIGHT, STRIP_HEIGHT, offsetCells)
 
     return this.runLanding(plan, symbolKeys, signal)
   }
@@ -231,15 +232,6 @@ export class ReelController extends LiveContainer {
 
       symbol.setKey(key)
       symbol.idle()
-    })
-  }
-
-  /** Раскладывает ленту по ячейкам высотой `cellHeight`; первый символ встаёт в буферную ячейку над зоной. */
-  layout(cellHeight: number): void {
-    this.cellHeight = cellHeight
-
-    this.symbols.forEach((symbol, index) => {
-      symbol.view.position.set(0, cellHeight * (index - BUFFER_SYMBOLS_COUNT))
     })
   }
 }
