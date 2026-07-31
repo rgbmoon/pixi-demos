@@ -39,9 +39,10 @@ export class ResultPhase implements Phase {
       return PhaseName.idle
     }
 
-    this.emitter.emit('spin:landed', result)
-
     await this.reels.land(this.sceneStore.spinSymbols, signal)
+
+    // Событие в прошедшем времени эмитится после посадки: подписчик (звук, аналитика) видит реально остановленные барабаны
+    this.emitter.emit('spin:landed', result)
 
     // Сумма встаёт в WinLabel до анимаций линий и висит там, пока раунд не закроется
     this.sceneStore.setWin(this.sceneStore.spinWin)

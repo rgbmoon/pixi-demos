@@ -39,6 +39,6 @@ export class SpinButton extends Button {
   }
 
   private handleTap = () => {
-    this.emitter.emit('ui:spinRequested', { bet: this.sceneStore.bet })
+    this.emitter.emit('ui:spinRequested')
   }
 }

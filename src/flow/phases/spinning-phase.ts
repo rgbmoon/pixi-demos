@@ -35,7 +35,7 @@ export class SpinningPhase implements Phase {
   async enter(signal: AbortSignal): Promise<typeof PhaseName.idle | typeof PhaseName.result> {
     const { bet, gameMode } = this.sceneStore
 
-    this.emitter.emit('spin:started', { bet })
+    this.emitter.emit('spin:started')
 
     this.sceneStore.setWin(0)
     this.sceneStore.chargeBet()

@@ -1,6 +1,6 @@
 import { EventEmitter } from 'pixi.js'
 
-import type { AnyHandler, EventMap, EventName, WaitForOptions } from './types'
+import type { AnyHandler, EmitArgs, EventMap, EventName, WaitForOptions } from './types'
 
 /**
  * Типизированный эмиттер игровых событий: имена и payload'ы типизированы, эмит произвольной строки невозможен.
@@ -32,7 +32,10 @@ export class GameEmitter<E extends EventMap> {
   }
 
   /** Доставляет `payload` всем, кто подписан на `event`, и отдаёт то же событие в трассировку. */
-  emit<K extends EventName<E>>(event: K, payload: E[K]): void {
+  emit<K extends EventName<E>>(event: K, ...args: EmitArgs<E, K>): void {
+    // Кортеж-хвост нужен ради событий без payload; внутри метода K не разрешён, поэтому элемент достаём приведением
+    const [payload] = args as [E[K]?]
+
     this.trace?.(event, payload)
 
     this.emitter.emit(event, payload)
