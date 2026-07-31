@@ -32,6 +32,9 @@ const SIZE_PX: Record<ButtonSize, number> = {
 // Доля стороны подложки, которую занимает иконка
 const ICON_RATIO = 0.5
 
+// Прозрачность погашенной кнопки
+const DISABLED_ALPHA = 0.7
+
 /**
  * База кнопок сцены: спрайт-подложка с обычным и active-состоянием,
  * размер задаётся пресетом, SVG-иконка по центру.
@@ -78,6 +81,13 @@ export class Button extends LiveContainer {
 
     this.isActive = value
     this.applyBackground()
+  }
+
+  /** Включает или гасит кнопку: снимает интерактивность и притеняет подложку. */
+  protected setEnabled(enabled: boolean): void {
+    this.eventMode = enabled ? 'static' : 'none'
+    this.cursor = enabled ? 'pointer' : 'default'
+    this.alpha = enabled ? 1 : DISABLED_ALPHA
   }
 
   /** Меняет иконку кнопки из кэша Assets. */

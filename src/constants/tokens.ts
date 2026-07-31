@@ -11,6 +11,9 @@ import type { BetMinusButton } from 'src/game/controllers/bet-minus-button'
 import type { BetPanel } from 'src/game/controllers/bet-panel'
 import type { BetPlusButton } from 'src/game/controllers/bet-plus-button'
 import type { CreditLabel } from 'src/game/controllers/credit-label'
+import type { GameModeMinusButton } from 'src/game/controllers/game-mode-minus-button'
+import type { GameModePanel } from 'src/game/controllers/game-mode-panel'
+import type { GameModePlusButton } from 'src/game/controllers/game-mode-plus-button'
 import type { ReelsMachineController } from 'src/game/controllers/reels-machine'
 import type { SoundToggleButton } from 'src/game/controllers/sound-toggle-button'
 import type { SpinButton } from 'src/game/controllers/spin-button'
@@ -54,6 +57,9 @@ export const TOKENS = {
   BetPlusButton: Symbol('BetPlusButton') as ServiceIdentifier<BetPlusButton>,
   BetMinusButton: Symbol('BetMinusButton') as ServiceIdentifier<BetMinusButton>,
   BetPanel: Symbol('BetPanel') as ServiceIdentifier<BetPanel>,
+  GameModePlusButton: Symbol('GameModePlusButton') as ServiceIdentifier<GameModePlusButton>,
+  GameModeMinusButton: Symbol('GameModeMinusButton') as ServiceIdentifier<GameModeMinusButton>,
+  GameModePanel: Symbol('GameModePanel') as ServiceIdentifier<GameModePanel>,
   WinLabel: Symbol('WinLabel') as ServiceIdentifier<WinLabel>,
   CreditLabel: Symbol('CreditLabel') as ServiceIdentifier<CreditLabel>,
 } as const

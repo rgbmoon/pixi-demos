@@ -68,9 +68,9 @@ const GAME_INIT_RESULT: GameInitResponse['response']['result'] = {
   isDemo: false,
 }
 
-// Мок не входит в DI-граф — накопление раунда держим в модульных переменных.
 let balance = INITIAL_BALANCE
 let totalWin = 0
+let lastBet = GAME_INIT_RESULT.round.bet
 
 export const handlers = [
   createWsHandler({
@@ -87,12 +87,22 @@ export const handlers = [
             ...GAME_INIT_RESULT.round,
             roundId: crypto.randomUUID(),
             endedUtc: new Date().toISOString(),
+            bet: lastBet,
+            balance,
+            totalWin,
           },
         })
       },
-      spin: (args, reply) => {
+      spin: (args, reply, fail) => {
         const { bet, gameMode } = parseSpinPayload(args[0])
 
+        if (bet <= 0 || bet > balance) {
+          fail('Недостаточно средств для ставки')
+
+          return
+        }
+
+        lastBet = bet
         balance = roundMoney(balance - bet)
 
         const { transformations, win } = generateSpinOutcome(bet, gameMode)

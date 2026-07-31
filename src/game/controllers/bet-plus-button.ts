@@ -1,9 +1,9 @@
 import { inject, injectable } from 'inversify'
-import { BET_STEP } from 'src/constants/game'
 import { TOKENS } from 'src/constants/tokens'
 import { BUTTON_ICONS } from 'src/game/assets'
 import { Button, ButtonSize, ButtonVariant } from 'src/game/ui/button'
 import type { SceneStore } from 'src/stores/scene-store'
+import { StepDirection } from 'src/types/game'
 
 /**
  * Кнопка повышения ставки
@@ -16,15 +16,21 @@ export class BetPlusButton extends Button {
     super({
       variant: ButtonVariant.circle,
       size: ButtonSize.md,
-      icon: BUTTON_ICONS.betUp,
+      icon: BUTTON_ICONS.plus,
     })
 
     this.sceneStore = sceneStore
 
     this.on('pointertap', this.handleTap)
+
+    this.watch(
+      () => this.sceneStore.canStepBet(StepDirection.forward),
+      (canStep) => this.setEnabled(canStep),
+      { fireImmediately: true }
+    )
   }
 
   private handleTap = () => {
-    this.sceneStore.setBet(this.sceneStore.bet + BET_STEP)
+    this.sceneStore.stepBet(StepDirection.forward)
   }
 }

@@ -13,6 +13,13 @@ export const PhaseName = {
 
 export type PhaseName = (typeof PhaseName)[keyof typeof PhaseName]
 
+export const StepDirection = {
+  forward: 'forward',
+  backward: 'backward',
+} as const
+
+export type StepDirection = (typeof StepDirection)[keyof typeof StepDirection]
+
 export const SymbolKey = {
   S: 'S',
   W: 'W',

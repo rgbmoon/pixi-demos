@@ -130,8 +130,8 @@ export const BUTTON_ICONS = {
   soundOff: `${ICONS_DIR}/sound-off-svgrepo-com.svg`,
   autospinOn: `${ICONS_DIR}/square-svgrepo-com.svg`,
   autospinOff: `${ICONS_DIR}/play-svgrepo-com.svg`,
-  betUp: `${ICONS_DIR}/plus-svgrepo-com.svg`,
-  betDown: `${ICONS_DIR}/minus-svgrepo-com.svg`,
+  plus: `${ICONS_DIR}/plus-svgrepo-com.svg`,
+  minus: `${ICONS_DIR}/minus-svgrepo-com.svg`,
 }
 
 // Фон читается по алиасу (`Assets.get(BACKGROUND_ALIASES.light)`), т.к. src — мультиформат {webp,png}

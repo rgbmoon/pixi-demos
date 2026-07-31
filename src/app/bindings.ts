@@ -16,6 +16,9 @@ import { BetMinusButton } from 'src/game/controllers/bet-minus-button'
 import { BetPanel } from 'src/game/controllers/bet-panel'
 import { BetPlusButton } from 'src/game/controllers/bet-plus-button'
 import { CreditLabel } from 'src/game/controllers/credit-label'
+import { GameModeMinusButton } from 'src/game/controllers/game-mode-minus-button'
+import { GameModePanel } from 'src/game/controllers/game-mode-panel'
+import { GameModePlusButton } from 'src/game/controllers/game-mode-plus-button'
 import { ReelsMachineController } from 'src/game/controllers/reels-machine'
 import { SoundToggleButton } from 'src/game/controllers/sound-toggle-button'
 import { SpinButton } from 'src/game/controllers/spin-button'
@@ -129,6 +132,27 @@ const bindScene = (container: Container): void => {
   container
     .bind(TOKENS.BetPanel)
     .to(BetPanel)
+    .onDeactivation((panel) => {
+      if (!panel.destroyed) panel.destroy({ children: true })
+    })
+
+  container
+    .bind(TOKENS.GameModePlusButton)
+    .to(GameModePlusButton)
+    .onDeactivation((button) => {
+      if (!button.destroyed) button.destroy({ children: true })
+    })
+
+  container
+    .bind(TOKENS.GameModeMinusButton)
+    .to(GameModeMinusButton)
+    .onDeactivation((button) => {
+      if (!button.destroyed) button.destroy({ children: true })
+    })
+
+  container
+    .bind(TOKENS.GameModePanel)
+    .to(GameModePanel)
     .onDeactivation((panel) => {
       if (!panel.destroyed) panel.destroy({ children: true })
     })

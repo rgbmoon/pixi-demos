@@ -6,17 +6,17 @@ import type { SceneStore } from 'src/stores/scene-store'
 import { StepDirection } from 'src/types/game'
 
 /**
- * Кнопка понижения ставки
+ * Кнопка перехода к режиму с большим числом линий
  */
 @injectable()
-export class BetMinusButton extends Button {
+export class GameModePlusButton extends Button {
   private readonly sceneStore: SceneStore
 
   constructor(@inject(TOKENS.SceneStore) sceneStore: SceneStore) {
     super({
       variant: ButtonVariant.circle,
       size: ButtonSize.md,
-      icon: BUTTON_ICONS.minus,
+      icon: BUTTON_ICONS.plus,
     })
 
     this.sceneStore = sceneStore
@@ -24,13 +24,13 @@ export class BetMinusButton extends Button {
     this.on('pointertap', this.handleTap)
 
     this.watch(
-      () => this.sceneStore.canStepBet(StepDirection.backward),
+      () => this.sceneStore.canStepGameMode(StepDirection.forward),
       (canStep) => this.setEnabled(canStep),
       { fireImmediately: true }
     )
   }
 
   private handleTap = () => {
-    this.sceneStore.stepBet(StepDirection.backward)
+    this.sceneStore.stepGameMode(StepDirection.forward)
   }
 }
