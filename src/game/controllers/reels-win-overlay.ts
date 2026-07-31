@@ -1,21 +1,34 @@
 import type { Container } from 'pixi.js'
 import type { Payline } from 'src/api/root-api'
-import { PAYLINE_VISIBLE_MS, WIN_FRAMES_VISIBLE_MS, WIN_SHOWCASE_MS } from 'src/game/constants'
+import {
+  CELL_HEIGHT,
+  CELL_WIDTH,
+  PAYLINE_VISIBLE_MS,
+  REELS_COUNT,
+  WIN_FRAMES_VISIBLE_MS,
+  WIN_SHOWCASE_MS,
+} from 'src/game/constants'
 import type { GameTicker } from 'src/game/game-ticker'
+import type { SpinePool } from 'src/game/spine-pool'
 import { LiveContainer } from 'src/game/ui/live-container'
 import type { SceneStore } from 'src/stores/scene-store'
 
 import type { SymbolAnimation } from '../animations/symbol-animation'
+import { WinFrameAnimation } from '../animations/win-frame-animation'
 
 export class ReelsWinOverlayController extends LiveContainer {
   private readonly ticker: GameTicker
   private readonly reparentedSymbols = new Map<SymbolAnimation, Container>()
+  private readonly winFrames: WinFrameAnimation[]
   private paylines: SceneStore['spinPaylines'] = []
 
-  constructor(ticker: GameTicker, sceneStore: SceneStore) {
+  constructor(ticker: GameTicker, pool: SpinePool, sceneStore: SceneStore) {
     super()
 
     this.ticker = ticker
+
+    this.winFrames = Array.from({ length: REELS_COUNT }, () => new WinFrameAnimation(pool))
+    this.addChild(...this.winFrames.map((winFrame) => winFrame.view))
 
     this.watch(
       () => sceneStore.spinPaylines,
@@ -71,14 +84,25 @@ export class ReelsWinOverlayController extends LiveContainer {
 
   private hidePaylines(): void {}
 
-  // TODO вин-рамки: WinFrameAnimation готова, осталось разложить её по ячейкам линии
-  private showWinFrames(_payline: Payline): void {}
+  private showWinFrames(payline: Payline): void {
+    payline.line.forEach((row, reel) => {
+      if (row === null) return
 
-  private hideWinFrames(): void {}
+      const winFrame = this.winFrames[reel]
+
+      winFrame.view.position.set(CELL_WIDTH * reel, CELL_HEIGHT * row)
+
+      winFrame.show()
+    })
+  }
+
+  private hideWinFrames(): void {
+    this.winFrames.forEach((winFrame) => winFrame.hide())
+  }
 
   /** Показывает разом все выигравшие линии и их символы, затем гасит показ. */
-  async showAllWins(grid: SymbolAnimation[][], signal?: AbortSignal): Promise<void> {
-    const cells = new Set(this.paylines.flatMap((payline) => this.getPaylineSymbols(payline, grid)))
+  async showAllWins(symbolContainers: SymbolAnimation[][], signal?: AbortSignal): Promise<void> {
+    const cells = new Set(this.paylines.flatMap((payline) => this.getPaylineSymbols(payline, symbolContainers)))
 
     try {
       this.showWinSymbols(Array.from(cells))
@@ -91,10 +115,10 @@ export class ReelsWinOverlayController extends LiveContainer {
   }
 
   /** Разбирает выигрыш по линиям: линия с символом, затем рамки с той же анимацией символа. */
-  async playWinLines(grid: SymbolAnimation[][], signal?: AbortSignal): Promise<void> {
+  async playWinLines(symbolContainers: SymbolAnimation[][], signal?: AbortSignal): Promise<void> {
     try {
       for (const payline of this.paylines) {
-        this.showWinSymbols(this.getPaylineSymbols(payline, grid))
+        this.showWinSymbols(this.getPaylineSymbols(payline, symbolContainers))
         this.showPayline(payline)
 
         await this.ticker.waitTicks(PAYLINE_VISIBLE_MS, signal)

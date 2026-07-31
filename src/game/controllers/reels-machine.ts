@@ -41,7 +41,7 @@ export class ReelsMachineController extends LiveContainer {
     this.reels = Array.from({ length: REELS_COUNT }, () => new ReelController(ticker, pool))
     this.setupReelsLayer()
 
-    this.reelsWinOverlay = new ReelsWinOverlayController(ticker, sceneStore)
+    this.reelsWinOverlay = new ReelsWinOverlayController(ticker, pool, sceneStore)
     this.reelsWinOverlay.position.set(CELLS_ORIGIN_X, CELLS_ORIGIN_Y)
 
     this.reelsFrameAnimation = new ReelsFrameAnimation(pool)

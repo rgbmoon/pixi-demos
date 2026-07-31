@@ -51,8 +51,8 @@ export const REELS_MACHINE_SCALE = 0.4
 export const WIN_SHOWCASE_MS = 1500
 /** Сколько линия выплат видна в цикле до смены на рамки, мс. */
 export const PAYLINE_VISIBLE_MS = 700
-/** Сколько рамки висят на символах после ухода линии, мс. */
-export const WIN_FRAMES_VISIBLE_MS = 900
+/** Сколько рамки висят на символах после ухода линии, мс: длина анимации `show` вин-рамки. */
+export const WIN_FRAMES_VISIBLE_MS = 1000
 /** Коэффициент отката канонической easeOutBack (значение с easings.net). */
 export const REFERENCE_BACK_FACTOR = 1.70158
 /** Заброс канонической кривой: её пик превышает цель на 9.99% дистанции. Служит нормировкой для `backStrength`. */

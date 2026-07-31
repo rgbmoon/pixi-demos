@@ -1,6 +1,8 @@
 import { Assets, type UnresolvedAsset } from 'pixi.js'
 import { SymbolKey } from 'src/types/game'
 
+import { REELS_COUNT } from './constants'
+
 // Единый манифест игровых ассетов: все URL в одном месте. `preloadGameAssets` грузит их
 // одним `Assets.load` на бутстрапе, до материализации сцены; классы читают их из кэша
 // синхронно (`Spine.from` / `Assets.get`). Другого `Assets.load` в проекте нет.
@@ -81,6 +83,8 @@ const SYMBOL_POOL_SIZE = 6
 export const SPINE_WARM_UP: { asset: SpineAsset; count: number }[] = [
   ...Object.values(SYMBOL_ASSETS).map((asset) => ({ asset, count: SYMBOL_POOL_SIZE })),
   { asset: FRAME_ASSET, count: 1 },
+  // Линия берёт не больше одной ячейки с барабана, поэтому пик спроса на рамку — число барабанов
+  { asset: EFFECT_ASSETS.winFrame, count: REELS_COUNT },
 ]
 
 const GRAPHIC_DIR = '/game-assets/graphic'
