@@ -1,6 +1,7 @@
 import { inject, injectable } from 'inversify'
 import { Application } from 'pixi.js'
 import { TOKENS } from 'src/constants/tokens'
+import { notifyFatal } from 'src/errors/utils'
 import type { Fsm } from 'src/flow/fsm'
 import type { GameTicker } from 'src/game/game-ticker'
 import type { GameScene } from 'src/game/scenes/game-scene'
@@ -43,6 +44,13 @@ export class GameRoot {
     this.scene.layout(width, height)
   }
 
+  // Потеря контекста останавливает отрисовку насовсем: восстановление сцены не реализовано, показываем оверлей
+  private handleContextLost = () => {
+    this.ticker.stop()
+
+    notifyFatal(new Error('WebGL-контекст потерян'), 'Графика остановлена, обновите страницу')
+  }
+
   /**
    * Инициализирует PIXI-приложение внутри `container`, показывает сцену и запускает автомат.
    * Повторный вызов до завершения предыдущего игнорируется, провал загрузки данных раунда — ошибка.
@@ -61,14 +69,23 @@ export class GameRoot {
 
     this.pending = app
 
-    // autoStart: false — свой тикер приложение не запускает
-    await app.init({
-      autoStart: false,
-      background: '#475569',
-      resizeTo: container,
-      resolution: window.devicePixelRatio,
-      autoDensity: true,
-    })
+    try {
+      // autoStart: false — свой тикер приложение не запускает
+      await app.init({
+        autoStart: false,
+        background: '#475569',
+        resizeTo: container,
+        resolution: window.devicePixelRatio,
+        autoDensity: true,
+      })
+    } catch (error) {
+      // Без сброса pending повторный mount молча ничего не сделает
+      if (this.pending === app) {
+        this.pending = null
+      }
+
+      throw error
+    }
 
     if (this.pending !== app) {
       app.destroy(true, { children: true })
@@ -81,6 +98,7 @@ export class GameRoot {
     this.ticker.start()
 
     container.appendChild(app.canvas)
+    app.canvas.addEventListener('webglcontextlost', this.handleContextLost)
 
     this.app = app
 
@@ -112,6 +130,7 @@ export class GameRoot {
     this.pending = null
 
     if (this.app) {
+      this.app.canvas.removeEventListener('webglcontextlost', this.handleContextLost)
       this.app.renderer.off('resize', this.layout)
       this.app.destroy(true, { children: true })
       this.app = null

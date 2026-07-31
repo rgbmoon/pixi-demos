@@ -1,5 +1,7 @@
 import { inject, injectable, multiInject } from 'inversify'
 import { TOKENS } from 'src/constants/tokens'
+import { FATAL_MESSAGE } from 'src/errors/constants'
+import { createAbortError, notifyFatal } from 'src/errors/utils'
 import type { FlowStore } from 'src/stores/flow-store'
 import { PhaseName } from 'src/types/game'
 
@@ -8,8 +10,8 @@ import type { Phase } from './types'
 import { tracePhase } from './utils'
 
 /**
- * Движок конечного автомата: крутит петлю фаз, публикует активную фазу и фатальную
- * ошибку в FlowStore. Граф переходов держат сами фазы — движок не знает их порядка.
+ * Движок конечного автомата: крутит петлю фаз, публикует активную фазу в FlowStore,
+ * а фатальную ошибку — уведомлением. Граф переходов держат сами фазы — движок не знает их порядка.
  */
 @injectable()
 export class Fsm {
@@ -44,23 +46,26 @@ export class Fsm {
     let next = INITIAL_PHASE
 
     while (!this.abortController.signal.aborted) {
-      const phase = this.getPhase(next)
-
-      this.flowStore.setPhase(phase.name)
-      tracePhase?.(phase.name)
+      // getPhase внутри try: неизвестное имя фазы — такая же фатальная ошибка, петля не должна реджектиться
+      let phase: Phase | undefined
 
       try {
+        phase = this.getPhase(next)
+
+        this.flowStore.setPhase(phase.name)
+        tracePhase?.(phase.name)
+
         next = await phase.enter(this.abortController.signal)
       } catch (error) {
         if (this.abortController.signal.aborted) {
           return
         }
 
-        this.flowStore.setFatalError(error)
+        notifyFatal(error, FATAL_MESSAGE)
 
         return
       } finally {
-        phase.exit?.()
+        phase?.exit?.()
       }
     }
   }
@@ -70,6 +75,6 @@ export class Fsm {
    * внутри них (события, анимации, запросы), а петля останавливается, не начав следующую фазу.
    */
   dispose(): void {
-    this.abortController.abort(new Error('Игровой автомат остановлен'))
+    this.abortController.abort(createAbortError('Игровой автомат остановлен'))
   }
 }

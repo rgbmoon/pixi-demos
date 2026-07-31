@@ -11,13 +11,8 @@ export class FlowStore {
   }
 
   @observable phase: PhaseName = INITIAL_PHASE
-  @observable.ref fatalError: unknown = undefined
 
   @action setPhase(phase: PhaseName) {
     this.phase = phase
-  }
-
-  @action setFatalError(error: unknown) {
-    this.fatalError = error
   }
 }

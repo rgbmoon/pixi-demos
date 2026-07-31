@@ -33,6 +33,7 @@ export const destroyGameContainer = (): void => {
 
   // Порядкозависимые анбинды, выполняем отдельно от unbindAll
   gameContainer.unbind(TOKENS.Fsm)
+  gameContainer.unbind(TOKENS.SpinePool)
   gameContainer.unbind(TOKENS.GameRoot)
   // unbindAll уничтожает все биндинги
   gameContainer.unbindAll()

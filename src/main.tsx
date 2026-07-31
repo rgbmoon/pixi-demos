@@ -1,4 +1,5 @@
 import { createRoot } from 'react-dom/client'
+import { installGlobalHandlers, notifyError, traceError } from 'src/errors/utils'
 
 import './styles/index.css'
 
@@ -15,6 +16,21 @@ const startMocking = async (): Promise<void> => {
   await worker.start({ onUnhandledRequest: 'bypass' })
 }
 
-void startMocking().then(() => {
-  createRoot(document.getElementById('root')!).render(<App />)
-})
+// Последний рубеж для всего, что не поймано локально; ставится до рендера
+installGlobalHandlers()
+
+const start = async (): Promise<void> => {
+  try {
+    await startMocking()
+  } catch (error) {
+    traceError?.(error, 'Моки не запустились')
+  }
+
+  createRoot(document.getElementById('root')!, {
+    onUncaughtError: (error) => notifyError(error, 'Ошибка интерфейса'),
+    onCaughtError: (error) => traceError?.(error),
+    onRecoverableError: (error) => traceError?.(error),
+  }).render(<App />)
+}
+
+void start()

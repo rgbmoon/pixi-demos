@@ -1,6 +1,7 @@
 import { Link, Outlet } from 'react-router-dom'
 import { LogoIcon } from 'src/assets/icons'
 import { BackgroundCanvas } from 'src/components/BackgroundCanvas'
+import { Snackbars } from 'src/components/Snackbars'
 
 export const Layout = () => {
   return (
@@ -17,6 +18,7 @@ export const Layout = () => {
       <main className="flex-1 w-full overflow-auto pt-(--header-height)">
         <Outlet />
       </main>
+      <Snackbars />
     </div>
   )
 }

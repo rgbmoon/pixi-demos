@@ -1,7 +1,8 @@
 import { injectable } from 'inversify'
 import { Ticker } from 'pixi.js'
+import { FATAL_MESSAGE } from 'src/errors/constants'
+import { notifyFatal } from 'src/errors/utils'
 
-// TODO не уверен что нужен отдельный тикер
 /**
  * Игровой тикер: PIXI-Ticker, дополненный игровой паузой `waitTicks`.
  * Экземпляр создаёт game-контейнер до PIXI-init; после init GameRoot переводит на него рендер.
@@ -13,7 +14,17 @@ export class GameTicker extends Ticker {
   override destroy(): void {
     this.destroyed = true
 
-    super.destroy()
+    this.stop()
+  }
+
+  override update(currentTime?: number): void {
+    try {
+      super.update(currentTime)
+    } catch (error) {
+      this.stop()
+
+      notifyFatal(error, FATAL_MESSAGE)
+    }
   }
 
   /**

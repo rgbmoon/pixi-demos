@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid'
 import { WebSocket as ReconnectingWebSocket } from 'partysocket'
+import { notifyError } from 'src/errors/utils'
 import { z } from 'zod'
 
 import type { PendingRequest, PushListener, WsRequestOptions, WsTransportOptions } from './types'
@@ -101,8 +102,8 @@ export class WsTransport {
 
       try {
         listener.handler(parsed.data)
-      } catch {
-        // Ошибка внутри чужого обработчика — не повод глушить остальных подписчиков.
+      } catch (error) {
+        notifyError(error)
       }
     }
   }

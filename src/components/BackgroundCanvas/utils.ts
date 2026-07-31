@@ -1,6 +1,7 @@
 import type * as PixiModule from 'pixi.js'
 import type { Texture, Ticker } from 'pixi.js'
 import { BG_BLOBS, BG_CANVAS_COLOR, BG_SPAWN_DURATION } from 'src/constants/bg-blobs'
+import { traceError } from 'src/errors/utils'
 
 type Pixi = typeof PixiModule
 
@@ -143,7 +144,15 @@ export const mountBackground = (container: HTMLElement): (() => void) => {
     }
   }
 
-  void setup()
+  const start = async (): Promise<void> => {
+    try {
+      await setup()
+    } catch (error) {
+      traceError?.(error, 'Фон не загрузился')
+    }
+  }
+
+  void start()
 
   return () => {
     disposed = true

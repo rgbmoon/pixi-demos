@@ -79,6 +79,21 @@ export default [
     },
   },
   {
+    // Type-aware линтинг включаем только для src: eslint.config.js и прочие js вне tsconfig.app.json им не проверяются
+    files: ['src/**/*.{ts,tsx}'],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      // Промис без await и без обработки — ошибка; осознанный fire-and-forget помечается void
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-misused-promises': 'error',
+    },
+  },
+  {
     files: ['src/game/**/*.ts'],
     ignores: ['src/game/ui/live-container.ts'],
     rules: {

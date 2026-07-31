@@ -1,6 +1,7 @@
 import { inject, injectable } from 'inversify'
 import type { RootApi } from 'src/api/root-api'
 import { TOKENS } from 'src/constants/tokens'
+import { notifyError } from 'src/errors/utils'
 import type { GameEmitter } from 'src/events/game-emitter'
 import type { GameEvents } from 'src/events/types'
 import type { ReelsMachineController } from 'src/game/controllers/reels-machine'
@@ -45,6 +46,7 @@ export class SpinningPhase implements Phase {
 
     if (this.sceneStore.spin.status === RequestStatus.error) {
       this.sceneStore.refundBet()
+      notifyError(this.sceneStore.spin.error, 'Спин не выполнен, ставка возвращена')
 
       return PhaseName.idle
     }
