@@ -1,3 +1,5 @@
+import type { PaylineShape } from './types'
+
 // Количество барабанов и видимых символов фиксировано: reel-frame не позволяет разместить больше
 /** Барабанов в машине. */
 export const REELS_COUNT = 5
@@ -46,13 +48,37 @@ export const CELLS_ORIGIN_Y = (-REELS_ZONE_HEIGHT + CELL_HEIGHT) / 2
 /** Масштаб машины: задаётся один раз, на ресайз экрана машина не реагирует (пока что). */
 export const REELS_MACHINE_SCALE = 0.4
 
+/** Линии выплат: ряд на каждом барабане и вертикальный сдвиг линии. */
+export const PAYLINES: Record<string, PaylineShape> = {
+  '0': { rows: [1, 1, 1, 1, 1], offsetCells: 0 },
+  '1': { rows: [0, 0, 0, 0, 0], offsetCells: 0 },
+  '2': { rows: [2, 2, 2, 2, 2], offsetCells: 0 },
+  '3': { rows: [0, 1, 2, 1, 0], offsetCells: -0.13 },
+  '4': { rows: [2, 1, 0, 1, 2], offsetCells: 0.13 },
+  '5': { rows: [0, 0, 1, 0, 0], offsetCells: 0.13 },
+  '6': { rows: [2, 2, 1, 2, 2], offsetCells: -0.13 },
+  '7': { rows: [1, 0, 0, 0, 1], offsetCells: -0.13 },
+  '8': { rows: [1, 2, 2, 2, 1], offsetCells: -0.26 },
+  '9': { rows: [2, 1, 1, 1, 0], offsetCells: 0.26 },
+}
+
+/** Сколько линии режима видны после нажатия кнопки настройки, мс. */
+export const PAYLINE_PREVIEW_MS = 1000
+/** Толщина линии выплат в нативных пикселях зоны символов. */
+export const PAYLINE_THICKNESS = 10
+/** На столько соседние отрезки заходят друг за друга на изломе: без нахлёста на внешнем углу остаётся вырез. */
+export const PAYLINE_JOINT_OVERLAP = PAYLINE_THICKNESS / 2
+
+/** Масштаб вин-рамки: арт крупнее ячейки, без уменьшения рамка крайнего ряда вылезает за рамку барабанов. */
+export const WIN_FRAME_SCALE = 0.93
+
 // Тайминги показа выигрыша
 /** Сколько все выигравшие линии и символы показываются разом до разбора по линиям, мс. */
 export const WIN_SHOWCASE_MS = 1500
 /** Сколько линия выплат видна в цикле до смены на рамки, мс. */
-export const PAYLINE_VISIBLE_MS = 700
-/** Сколько рамки висят на символах после ухода линии, мс: длина анимации `show` вин-рамки. */
-export const WIN_FRAMES_VISIBLE_MS = 1000
+export const PAYLINE_VISIBLE_MS = 1050
+/** Сколько рамки висят на символах после ухода линии, мс. */
+export const WIN_FRAMES_VISIBLE_MS = 1500
 /** Коэффициент отката канонической easeOutBack (значение с easings.net). */
 export const REFERENCE_BACK_FACTOR = 1.70158
 /** Заброс канонической кривой: её пик превышает цель на 9.99% дистанции. Служит нормировкой для `backStrength`. */

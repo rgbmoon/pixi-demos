@@ -1,4 +1,5 @@
 import { EFFECT_ASSETS } from '../assets'
+import { WIN_FRAME_SCALE } from '../constants'
 import type { SpinePool } from '../spine-pool'
 import { SpineAnimation } from '../ui/spine-animation'
 
@@ -9,6 +10,8 @@ export class WinFrameAnimation extends SpineAnimation {
     super(pool)
 
     this.attach(EFFECT_ASSETS.winFrame)
+
+    this.view.scale.set(WIN_FRAME_SCALE)
   }
 
   show(): void {

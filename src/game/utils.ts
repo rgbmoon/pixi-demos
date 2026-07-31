@@ -1,21 +1,38 @@
+import type { PointData } from 'pixi.js'
 import { SymbolKey } from 'src/types/game'
 
 import {
+  CELL_HEIGHT,
+  CELL_WIDTH,
   LANDING_BACK_STRENGTH,
   LANDING_BRAKE_DISTANCE,
   LANDING_BRAKE_FRAMES,
   LANDING_DECELERATION,
   LANDING_EASE_CELLS,
   LANDING_HANDOVER_SPEED,
+  PAYLINES,
   REFERENCE_BACK_FACTOR,
   REFERENCE_OVERSHOOT,
   SPIN_SPEED,
 } from './constants'
-import type { LandingPlan } from './types'
+import type { LandingPlan, PaylineShape } from './types'
 
 /** Форматирует денежную сумму для HUD: разряды через запятую, два знака после точки. */
 export const formatAmount = (value: number): string =>
   value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+/** Возвращает линии, участвующие в раунде: первые `lines` ключей конфига. */
+export const getActiveLineIds = (lines: number): string[] => Object.keys(PAYLINES).slice(0, lines)
+
+/** Возвращает точки ломаной линии выплат в координатах зоны символов: от левой границы рамки через центры ячеек к правой. */
+export const getPaylinePoints = ({ rows, offsetCells }: PaylineShape): PointData[] => {
+  const offsetY = offsetCells * CELL_HEIGHT
+  const cells = rows.map((row, reel) => ({ x: CELL_WIDTH * reel, y: CELL_HEIGHT * row + offsetY }))
+  const first = cells[0]
+  const last = cells[cells.length - 1]
+
+  return [{ x: first.x - CELL_WIDTH / 2, y: first.y }, ...cells, { x: last.x + CELL_WIDTH / 2, y: last.y }]
+}
 
 const SYMBOL_KEYS = Object.values<SymbolKey>(SymbolKey)
 

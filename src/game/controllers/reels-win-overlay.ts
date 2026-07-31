@@ -13,19 +13,22 @@ import type { SpinePool } from 'src/game/spine-pool'
 import { LiveContainer } from 'src/game/ui/live-container'
 import type { SceneStore } from 'src/stores/scene-store'
 
+import type { PaylinesController } from './paylines'
 import type { SymbolAnimation } from '../animations/symbol-animation'
 import { WinFrameAnimation } from '../animations/win-frame-animation'
 
 export class ReelsWinOverlayController extends LiveContainer {
   private readonly ticker: GameTicker
+  private readonly paylinesController: PaylinesController
   private readonly reparentedSymbols = new Map<SymbolAnimation, Container>()
   private readonly winFrames: WinFrameAnimation[]
   private paylines: SceneStore['spinPaylines'] = []
 
-  constructor(ticker: GameTicker, pool: SpinePool, sceneStore: SceneStore) {
+  constructor(ticker: GameTicker, pool: SpinePool, sceneStore: SceneStore, paylinesController: PaylinesController) {
     super()
 
     this.ticker = ticker
+    this.paylinesController = paylinesController
 
     this.winFrames = Array.from({ length: REELS_COUNT }, () => new WinFrameAnimation(pool))
     this.addChild(...this.winFrames.map((winFrame) => winFrame.view))
@@ -79,10 +82,13 @@ export class ReelsWinOverlayController extends LiveContainer {
     this.hideWinSymbols()
   }
 
-  // TODO линии выплат: ассетов пока нет, порядок вызовов в стадиях уже на месте
-  private showPayline(_payline: Payline): void {}
+  private showPayline(payline: Payline): void {
+    this.paylinesController.show([payline.lineId])
+  }
 
-  private hidePaylines(): void {}
+  private hidePaylines(): void {
+    this.paylinesController.hide()
+  }
 
   private showWinFrames(payline: Payline): void {
     payline.line.forEach((row, reel) => {
@@ -106,7 +112,7 @@ export class ReelsWinOverlayController extends LiveContainer {
 
     try {
       this.showWinSymbols(Array.from(cells))
-      this.paylines.forEach((payline) => this.showPayline(payline))
+      this.paylinesController.show(this.paylines.map((payline) => payline.lineId))
 
       await this.ticker.waitTicks(WIN_SHOWCASE_MS, signal)
     } finally {

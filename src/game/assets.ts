@@ -91,6 +91,7 @@ const GRAPHIC_DIR = '/game-assets/graphic'
 
 export const LOGO_SRC = `${GRAPHIC_DIR}/AL_Logo/AL_logo.png`
 export const PLATE_SRC = `${GRAPHIC_DIR}/AL_Gamble_buttons/plate-bg.svg`
+export const WIN_LINE_SRC = `${GRAPHIC_DIR}/AL_Win_line/winline.png`
 
 const BUTTONS_DIR = `${GRAPHIC_DIR}/AL_Gamble_buttons`
 
@@ -173,7 +174,7 @@ const buttonSources = [
 ]
 
 const GAME_SOURCES: (string | UnresolvedAsset)[] = [
-  ...new Set([...spineSources, LOGO_SRC, PLATE_SRC, ...buttonSources]),
+  ...new Set([...spineSources, LOGO_SRC, PLATE_SRC, WIN_LINE_SRC, ...buttonSources]),
   ...BACKGROUND_SOURCES,
   FONT_SOURCE,
 ]

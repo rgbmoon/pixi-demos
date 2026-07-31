@@ -20,12 +20,14 @@ import { LiveContainer } from 'src/game/ui/live-container'
 import type { SceneStore } from 'src/stores/scene-store'
 import type { SymbolKey } from 'src/types/game'
 
+import { PaylinesController } from './paylines'
 import { ReelController } from './reel'
 import { ReelsWinOverlayController } from './reels-win-overlay'
 
 @injectable()
 export class ReelsMachineController extends LiveContainer {
   private readonly reelsFrameAnimation: ReelsFrameAnimation
+  private readonly paylines: PaylinesController
   private readonly reelsWinOverlay: ReelsWinOverlayController
   private readonly reelsLayer = new Container()
   private readonly maskGraphics = new Graphics()
@@ -41,13 +43,18 @@ export class ReelsMachineController extends LiveContainer {
     this.reels = Array.from({ length: REELS_COUNT }, () => new ReelController(ticker, pool))
     this.setupReelsLayer()
 
-    this.reelsWinOverlay = new ReelsWinOverlayController(ticker, pool, sceneStore)
+    this.paylines = new PaylinesController(ticker, sceneStore)
+    this.paylines.position.set(CELLS_ORIGIN_X, CELLS_ORIGIN_Y)
+
+    this.reelsWinOverlay = new ReelsWinOverlayController(ticker, pool, sceneStore, this.paylines)
     this.reelsWinOverlay.position.set(CELLS_ORIGIN_X, CELLS_ORIGIN_Y)
 
     this.reelsFrameAnimation = new ReelsFrameAnimation(pool)
 
     this.reelsFrameAnimation.addChildToSymbolsSlot(this.reelsLayer)
     this.reelsFrameAnimation.addChildToSymbolsWinSlot(this.reelsWinOverlay)
+    // После вин оверлея: линия пересекает поднятый выигравший символ и должна идти поверх него
+    this.reelsFrameAnimation.addChildToSymbolsWinSlot(this.paylines)
 
     this.scale.set(REELS_MACHINE_SCALE)
     this.addChild(this.reelsFrameAnimation.view)
