@@ -7,7 +7,7 @@ import { Button, ButtonSize, ButtonVariant } from 'src/game/ui/button'
 import type { SceneStore } from 'src/stores/scene-store'
 
 /**
- * Кнопка запуска спина: по тапу объявляет `ui:spinRequested` с текущей ставкой;
+ * Кнопка запуска спина: по тапу объявляет `ui:spinRequested`;
  * доступность следует за `sceneStore.canSpin`.
  */
 @injectable()
