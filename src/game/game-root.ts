@@ -8,6 +8,8 @@ import type { GameScene } from 'src/game/scenes/game-scene'
 import type { SceneStore } from 'src/stores/scene-store'
 import { RequestStatus } from 'src/types/network'
 
+import { getCanvasSize } from './utils'
+
 /**
  * Хост жизненного цикла игры: инициализирует PIXI-приложение, монтирует канвас в DOM,
  * показывает сцену и запускает автомат; при уходе со страницы уничтожает PIXI-мир.
@@ -34,7 +36,7 @@ export class GameRoot {
     this.sceneStore = sceneStore
   }
 
-  private layout = () => {
+  private layout() {
     if (!this.app) {
       return
     }
@@ -69,12 +71,16 @@ export class GameRoot {
 
     this.pending = app
 
+    // Размер канваса фиксируется на маунте: игра не пересобирает раскладку на ресайз окна
+    const { width, height } = getCanvasSize(container.clientWidth, container.clientHeight)
+
     try {
       // autoStart: false — свой тикер приложение не запускает
       await app.init({
         autoStart: false,
         background: '#475569',
-        resizeTo: container,
+        width,
+        height,
         resolution: window.devicePixelRatio,
         autoDensity: true,
       })
@@ -105,7 +111,6 @@ export class GameRoot {
     app.stage.addChild(this.scene)
 
     this.layout()
-    app.renderer.on('resize', this.layout)
 
     // Ждём данные раунда: за это время барабаны наполняются реактивно по initialSymbols
     await this.sceneStore.gameLoaded
@@ -131,7 +136,6 @@ export class GameRoot {
 
     if (this.app) {
       this.app.canvas.removeEventListener('webglcontextlost', this.handleContextLost)
-      this.app.renderer.off('resize', this.layout)
       this.app.destroy(true, { children: true })
       this.app = null
     }

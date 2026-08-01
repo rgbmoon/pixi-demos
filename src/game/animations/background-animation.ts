@@ -1,89 +1,26 @@
-import { Assets, Container, Sprite, type Ticker } from 'pixi.js'
-import { SceneBackground } from 'src/types/game'
+import { BACKGROUND_ASSET } from '../assets'
+import { BACKGROUND_CROP_Y, BACKGROUND_HEIGHT, BACKGROUND_WIDTH } from '../constants'
+import type { SpinePool } from '../spine-pool'
+import { SpineAnimation } from '../ui/spine-animation'
 
-import { BACKGROUND_ALIASES } from '../assets'
-import type { GameTicker } from '../game-ticker'
+const TRACK_MAIN = 0
 
-const FADE_DURATION_MS = 200
+export class BackgroundAnimation extends SpineAnimation {
+  constructor(pool: SpinePool, animationName: string) {
+    super(pool)
 
-/**
- * Фон сцены: светлый спрайт снизу, тёмный поверх; смена темы — fade alpha тёмного спрайта.
- */
-export class BackgroundAnimation {
-  readonly view = new Container()
-
-  private readonly ticker: GameTicker
-  private readonly lightSprite = new Sprite()
-  private readonly darkSprite = new Sprite()
-  private fadeStep?: (ticker: Ticker) => void
-  private width = 0
-  private height = 0
-
-  constructor(ticker: GameTicker, initialBg: SceneBackground) {
-    this.ticker = ticker
-
-    this.darkSprite.alpha = initialBg === SceneBackground.light ? 0 : 1
-
-    this.lightSprite.texture = Assets.get(BACKGROUND_ALIASES.light)
-    this.darkSprite.texture = Assets.get(BACKGROUND_ALIASES.dark)
-
-    this.view.addChild(this.lightSprite, this.darkSprite)
+    this.attach(BACKGROUND_ASSET)
+    this.play(TRACK_MAIN, animationName)
   }
 
-  /** Растягивает фон на переданный размер экрана. */
+  /**
+   * Вписывает фон в канвас: по вертикали за кадр уходит `BACKGROUND_CROP_Y` сверху и снизу,
+   * по горизонтали срез больше — канвас уже фона.
+   */
   resize(width: number, height: number): void {
-    this.width = width
-    this.height = height
+    const visibleHeight = BACKGROUND_HEIGHT * (1 - 2 * BACKGROUND_CROP_Y)
 
-    this.applySize()
-  }
-
-  private applySize(): void {
-    for (const sprite of [this.lightSprite, this.darkSprite]) {
-      sprite.width = this.width
-      sprite.height = this.height
-    }
-  }
-
-  /** Плавно ведёт фон к целевой теме; вызов посреди fade разворачивает его с текущего alpha. */
-  fadeTo(isAutospin: boolean): void {
-    if (this.fadeStep) {
-      this.ticker.remove(this.fadeStep)
-      this.fadeStep = undefined
-    }
-
-    const target = Number(isAutospin)
-
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      this.darkSprite.alpha = target
-
-      return
-    }
-
-    const direction = Math.sign(target - this.darkSprite.alpha)
-
-    const step = (ticker: Ticker) => {
-      if (this.view.destroyed) {
-        this.ticker.remove(step)
-
-        return
-      }
-
-      const next = this.darkSprite.alpha + (direction * ticker.deltaMS) / FADE_DURATION_MS
-
-      // direction учитывает знак: условие означает «достигли или проскочили цель»
-      if (direction * (next - target) >= 0) {
-        this.darkSprite.alpha = target
-        this.ticker.remove(step)
-        this.fadeStep = undefined
-
-        return
-      }
-
-      this.darkSprite.alpha = next
-    }
-
-    this.fadeStep = step
-    this.ticker.add(step)
+    this.view.scale.set(Math.max(width / BACKGROUND_WIDTH, height / visibleHeight))
+    this.view.position.set(width / 2, height / 2)
   }
 }

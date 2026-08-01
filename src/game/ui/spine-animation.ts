@@ -29,6 +29,16 @@ export class SpineAnimation {
     this.syncTicking()
   }
 
+  /** Возвращает текущий скелет в пул: поза, собранная без Spine, скелет не занимает. */
+  protected detach(): void {
+    if (!this.spine || !this.asset) return
+
+    this.pool.release(this.asset, this.spine)
+
+    this.spine = null
+    this.asset = null
+  }
+
   protected play(track: number, name: string, loop = true): void {
     this.spine?.state.setAnimation(track, name, loop)
 

@@ -10,7 +10,6 @@ import {
   CELLS_ORIGIN_Y,
   LAND_STAGGER_CELLS,
   REELS_COUNT,
-  REELS_MACHINE_SCALE,
   REELS_ZONE_HEIGHT,
   REELS_ZONE_WIDTH,
 } from 'src/game/constants'
@@ -46,17 +45,16 @@ export class ReelsMachineController extends LiveContainer {
     this.paylines = new PaylinesController(ticker, sceneStore)
     this.paylines.position.set(CELLS_ORIGIN_X, CELLS_ORIGIN_Y)
 
-    this.reelsWinOverlay = new ReelsWinOverlayController(ticker, pool, sceneStore, this.paylines)
+    this.reelsWinOverlay = new ReelsWinOverlayController(ticker, sceneStore, this.paylines)
     this.reelsWinOverlay.position.set(CELLS_ORIGIN_X, CELLS_ORIGIN_Y)
 
-    this.reelsFrameAnimation = new ReelsFrameAnimation(pool)
+    this.reelsFrameAnimation = new ReelsFrameAnimation(ticker)
 
     this.reelsFrameAnimation.addChildToSymbolsSlot(this.reelsLayer)
     this.reelsFrameAnimation.addChildToSymbolsWinSlot(this.reelsWinOverlay)
     // После вин оверлея: линия пересекает поднятый выигравший символ и должна идти поверх него
     this.reelsFrameAnimation.addChildToSymbolsWinSlot(this.paylines)
 
-    this.scale.set(REELS_MACHINE_SCALE)
     this.addChild(this.reelsFrameAnimation.view)
 
     this.watch(

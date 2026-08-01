@@ -1,21 +1,22 @@
 import { inject, injectable } from 'inversify'
 import { TOKENS } from 'src/constants/tokens'
 import { BackgroundAnimation } from 'src/game/animations/background-animation'
-import { BACKGROUND_BACK_ANIMATION } from 'src/game/constants'
+import { BACKGROUND_FRONT_ANIMATION } from 'src/game/constants'
 import type { SpinePool } from 'src/game/spine-pool'
 import { LiveContainer } from 'src/game/ui/live-container'
 
 /**
- * Контроллер заднего слоя фона: стоит первым ребёнком сцены, за машиной барабанов.
+ * Контроллер переднего слоя фона: стоит последним ребёнком сцены и перекрывает машину барабанов.
+ * Трансформ считает тем же cover, что и задний слой, поэтому слои совпадают.
  */
 @injectable()
-export class BackgroundController extends LiveContainer {
+export class ForegroundController extends LiveContainer {
   private readonly animation: BackgroundAnimation
 
   constructor(@inject(TOKENS.SpinePool) pool: SpinePool) {
     super()
 
-    this.animation = new BackgroundAnimation(pool, BACKGROUND_BACK_ANIMATION)
+    this.animation = new BackgroundAnimation(pool, BACKGROUND_FRONT_ANIMATION)
     this.addChild(this.animation.view)
   }
 

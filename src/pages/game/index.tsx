@@ -54,7 +54,7 @@ export const GamePage = () => {
 
   return (
     <div className="h-full flex justify-center">
-      <div ref={containerRef} className="relative h-full max-w-full aspect-9/16">
+      <div ref={containerRef} className="relative h-full w-full flex items-center justify-center">
         {(loading || fatal) && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-800">
             {fatal ? (

@@ -10,12 +10,12 @@ import { Fsm } from 'src/flow/fsm'
 import { IdlePhase } from 'src/flow/phases/idle-phase'
 import { ResultPhase } from 'src/flow/phases/result-phase'
 import { SpinningPhase } from 'src/flow/phases/spinning-phase'
-import { AutospinToggleButton } from 'src/game/controllers/autospin-toggle-button'
 import { BackgroundController } from 'src/game/controllers/background'
 import { BetMinusButton } from 'src/game/controllers/bet-minus-button'
 import { BetPanel } from 'src/game/controllers/bet-panel'
 import { BetPlusButton } from 'src/game/controllers/bet-plus-button'
 import { CreditLabel } from 'src/game/controllers/credit-label'
+import { ForegroundController } from 'src/game/controllers/foreground'
 import { GameModeMinusButton } from 'src/game/controllers/game-mode-minus-button'
 import { GameModePanel } from 'src/game/controllers/game-mode-panel'
 import { GameModePlusButton } from 'src/game/controllers/game-mode-plus-button'
@@ -88,6 +88,13 @@ const bindScene = (container: Container): void => {
     })
 
   container
+    .bind(TOKENS.ForegroundController)
+    .to(ForegroundController)
+    .onDeactivation((foreground) => {
+      if (!foreground.destroyed) foreground.destroy({ children: true })
+    })
+
+  container
     .bind(TOKENS.ReelsMachineController)
     .to(ReelsMachineController)
     .onDeactivation((reels) => {
@@ -104,13 +111,6 @@ const bindScene = (container: Container): void => {
   container
     .bind(TOKENS.SoundToggleButton)
     .to(SoundToggleButton)
-    .onDeactivation((button) => {
-      if (!button.destroyed) button.destroy({ children: true })
-    })
-
-  container
-    .bind(TOKENS.AutospinToggleButton)
-    .to(AutospinToggleButton)
     .onDeactivation((button) => {
       if (!button.destroyed) button.destroy({ children: true })
     })

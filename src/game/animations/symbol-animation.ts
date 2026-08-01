@@ -1,55 +1,110 @@
-import { SymbolKey } from 'src/types/game'
+import { Assets, Sprite } from 'pixi.js'
+import type { SymbolKey } from 'src/types/game'
 
-import { SYMBOL_ASSETS } from '../assets'
+import { SYMBOL_ASSETS, SYMBOL_BG_BLUR_SRC, SYMBOL_BG_SRC, SYMBOL_SPRITES } from '../assets'
+import { SYMBOL_SCALE } from '../constants'
+import type { SpinePool } from '../spine-pool'
+import type { SymbolFit } from '../types'
 import { SpineAnimation } from '../ui/spine-animation'
+import { getSymbolFit } from '../utils'
 
 const TRACK_MAIN = 0
 
 export class SymbolAnimation extends SpineAnimation {
-  private key: SymbolKey | null = null
+  private readonly bgSprite = new Sprite()
+  private readonly artSprite = new Sprite()
 
-  private get isScatter(): boolean {
-    return this.key === SymbolKey.S
+  private key: SymbolKey | null = null
+  private pose: 'idle' | 'blur' | 'win' = 'idle'
+  private attachedKey: SymbolKey | null = null
+  private fit: SymbolFit = { scale: 1, offsetX: 0, offsetY: 0 }
+
+  constructor(pool: SpinePool) {
+    super(pool)
+
+    this.bgSprite.anchor.set(0.5)
+    this.artSprite.anchor.set(0.5)
+
+    this.view.scale.set(SYMBOL_SCALE)
+    this.view.addChild(this.bgSprite, this.artSprite)
   }
 
   setKey(key: SymbolKey): void {
     if (key === this.key) return
 
     this.key = key
+    this.fit = getSymbolFit(key)
 
-    this.attach(SYMBOL_ASSETS[key])
+    this.artSprite.scale.set(this.fit.scale)
+    // Сдвиг ставит центр контента спрайта в центр ячейки: холсты артов отцентрованы по-разному
+    this.artSprite.position.set(this.fit.offsetX, this.fit.offsetY)
+
+    this.applyPose()
   }
 
   blur(): void {
-    this.play(TRACK_MAIN, 'blur')
+    this.pose = 'blur'
+
+    this.applyPose()
   }
 
   idle(): void {
-    this.play(TRACK_MAIN, this.isScatter ? 'idle_1' : 'idle')
+    this.pose = 'idle'
+
+    this.applyPose()
   }
 
   win(): void {
-    this.play(TRACK_MAIN, this.isScatter ? 'win_1' : 'win')
+    this.pose = 'win'
+
+    this.applyPose()
   }
 
-  /** Скаттер: простой с надписью free games. У остальных символов ничего не делает. */
-  idleFreeGames(): void {
-    if (!this.isScatter) return
+  /** Приводит подложку, спрайт и скелет к текущей паре «ключ + поза». */
+  private applyPose(): void {
+    const { key, pose } = this
 
-    this.play(TRACK_MAIN, 'idle_2')
-  }
+    if (!key) return
 
-  /** Скаттер: переход во free games один раз, дальше — `winFreeGamesLoop`. У остальных символов ничего не делает. */
-  winToFreeGames(signal?: AbortSignal): Promise<void> {
-    if (!this.isScatter) return Promise.resolve()
+    this.bgSprite.texture = Assets.get(pose === 'blur' ? SYMBOL_BG_BLUR_SRC : SYMBOL_BG_SRC)
 
-    return this.playOnce(TRACK_MAIN, 'win_2', signal)
-  }
+    const spriteSrc = pose === 'win' ? undefined : SYMBOL_SPRITES[key][pose]
 
-  /** Скаттер: циклическая выигрышная анимация во free games. У остальных символов ничего не делает. */
-  winFreeGamesLoop(): void {
-    if (!this.isScatter) return
+    if (spriteSrc) {
+      if (this.attachedKey) {
+        this.detach()
+        this.attachedKey = null
+      }
 
-    this.play(TRACK_MAIN, 'win_3')
+      this.artSprite.visible = true
+      this.artSprite.texture = Assets.get(spriteSrc)
+
+      return
+    }
+
+    // Позу держит скелет: выигрышная анимация либо setup-поза у символа без спрайта покоя
+    this.artSprite.visible = false
+
+    // attach добавляет скелет последним ребёнком: он идёт поверх подложки
+    if (this.attachedKey !== key) {
+      this.attach(SYMBOL_ASSETS[key])
+      this.attachedKey = key
+
+      this.spine?.scale.set(this.fit.scale)
+
+      // Поправка нужна скелету, только когда он же рисует покой: у остальных символов бокс
+      // замерен по холсту спрайта, а выигрышная анимация строится вокруг origin скелета
+      if (!SYMBOL_SPRITES[key].idle) {
+        this.spine?.position.set(this.fit.offsetX, this.fit.offsetY)
+      }
+    }
+
+    if (pose === 'win') {
+      this.play(TRACK_MAIN, 'win')
+
+      return
+    }
+
+    this.clearTrack(TRACK_MAIN)
   }
 }

@@ -1,39 +1,50 @@
-import { Container } from 'pixi.js'
+import { Assets, Container, Graphics, Sprite } from 'pixi.js'
 
-import { FRAME_ASSET } from '../assets'
-import type { SpinePool } from '../spine-pool'
-import { SpineAnimation } from '../ui/spine-animation'
+import { REELS_FRAME_SRC } from '../assets'
+import {
+  REELS_ZONE_HEIGHT,
+  REELS_ZONE_OFFSET_X,
+  REELS_ZONE_OFFSET_Y,
+  REELS_ZONE_WIDTH,
+  TINT_ALPHA,
+  TINT_FADE_MS,
+} from '../constants'
+import type { GameTicker } from '../game-ticker'
+import { tweenAlpha } from '../utils'
 
-const TRACK_MAIN = 0
-const TRACK_TINT = 1
+export class ReelsFrameAnimation {
+  readonly view = new Container()
 
-export class ReelsFrameAnimation extends SpineAnimation {
-  private readonly symbolsContainer: Container = new Container()
-  private readonly symbolsWinContainer: Container = new Container()
-  private readonly popupContainer: Container = new Container()
+  private readonly ticker: GameTicker
+  private readonly symbolsContainer = new Container()
+  private readonly symbolsWinContainer = new Container()
+  private readonly popupContainer = new Container()
+  private readonly tint = new Graphics()
 
-  constructor(pool: SpinePool) {
-    super(pool)
+  constructor(ticker: GameTicker) {
+    this.ticker = ticker
 
-    this.attach(FRAME_ASSET)
+    const frameSprite = new Sprite(Assets.get(REELS_FRAME_SRC))
 
-    this.play(TRACK_MAIN, 'idle')
+    frameSprite.anchor.set(0.5)
 
-    this.spine?.addSlotObject('symbols_placeholder', this.symbolsContainer)
-    this.spine?.addSlotObject('symbols_win_placeholder', this.symbolsWinContainer)
-    this.spine?.addSlotObject('popup_placeholder', this.popupContainer)
+    this.tint.rect(-REELS_ZONE_WIDTH / 2, -REELS_ZONE_HEIGHT / 2, REELS_ZONE_WIDTH, REELS_ZONE_HEIGHT).fill(0x000000)
+    this.tint.alpha = 0
+
+    // Слоты живут в координатах зоны символов: её центр смещён относительно центра арта рамки
+    for (const layer of [this.symbolsContainer, this.tint, this.symbolsWinContainer, this.popupContainer]) {
+      layer.position.set(REELS_ZONE_OFFSET_X, REELS_ZONE_OFFSET_Y)
+    }
+
+    this.view.addChild(frameSprite, this.symbolsContainer, this.tint, this.symbolsWinContainer, this.popupContainer)
   }
 
-  async showTint(signal?: AbortSignal): Promise<void> {
-    await this.playOnce(TRACK_TINT, 'tint_show', signal)
-
-    this.play(TRACK_TINT, 'tint_idle')
+  showTint(signal?: AbortSignal): Promise<void> {
+    return tweenAlpha(this.ticker, this.tint, TINT_ALPHA, TINT_FADE_MS, signal)
   }
 
-  async hideTint(signal?: AbortSignal): Promise<void> {
-    await this.playOnce(TRACK_TINT, 'tint_hide', signal)
-
-    this.clearTrack(TRACK_TINT)
+  hideTint(signal?: AbortSignal): Promise<void> {
+    return tweenAlpha(this.ticker, this.tint, 0, TINT_FADE_MS, signal)
   }
 
   addChildToSymbolsSlot(container: Container) {

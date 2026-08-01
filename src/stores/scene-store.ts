@@ -23,7 +23,6 @@ export class SceneStore {
   }
 
   @observable isSoundOn = true
-  @observable isAutospin = false
   @observable betIndex = 0
   @observable gameMode: string = DEFAULT_GAME_MODE
   @observable credit = 0
@@ -170,7 +169,4 @@ export class SceneStore {
     this.isSoundOn = !this.isSoundOn
   }
 
-  @action toggleAutospin() {
-    this.isAutospin = !this.isAutospin
-  }
 }

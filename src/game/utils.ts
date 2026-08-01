@@ -1,9 +1,10 @@
-import type { PointData } from 'pixi.js'
+import type { Container, PointData, Ticker } from 'pixi.js'
 import { SymbolKey } from 'src/types/game'
 
 import {
   CELL_HEIGHT,
   CELL_WIDTH,
+  GAME_ASPECT_RATIO,
   LANDING_BACK_STRENGTH,
   LANDING_BRAKE_DISTANCE,
   LANDING_BRAKE_FRAMES,
@@ -14,8 +15,33 @@ import {
   REFERENCE_BACK_FACTOR,
   REFERENCE_OVERSHOOT,
   SPIN_SPEED,
+  SYMBOL_ART_BOXES,
+  SYMBOL_FIT_HEIGHT,
+  SYMBOL_FIT_WIDTH,
 } from './constants'
-import type { LandingPlan, PaylineShape } from './types'
+import type { GameTicker } from './game-ticker'
+import type { CanvasSize, LandingPlan, PaylineShape, SymbolFit } from './types'
+
+/**
+ * Размер канваса: `GAME_ASPECT_RATIO`-бокс во всю высоту доступной области.
+ * Считается один раз на маунте — на ресайз окна канвас не отвечает.
+ */
+export const getCanvasSize = (availableWidth: number, availableHeight: number): CanvasSize => {
+  const height = Math.min(availableHeight, availableWidth / GAME_ASPECT_RATIO)
+
+  return { width: height * GAME_ASPECT_RATIO, height }
+}
+
+/**
+ * Считает посадку арта символа в подложку: контент от 228 до 483 единиц, поэтому крупные
+ * уменьшаются до `SYMBOL_FIT_*`, а смещённый относительно холста центр возвращается в центр ячейки.
+ */
+export const getSymbolFit = (key: SymbolKey): SymbolFit => {
+  const box = SYMBOL_ART_BOXES[key]
+  const scale = Math.min(1, SYMBOL_FIT_WIDTH / box.width, SYMBOL_FIT_HEIGHT / box.height)
+
+  return { scale, offsetX: box.offsetX * scale, offsetY: box.offsetY * scale }
+}
 
 /** Форматирует денежную сумму для HUD: разряды через запятую, два знака после точки. */
 export const formatAmount = (value: number): string =>
@@ -33,6 +59,68 @@ export const getPaylinePoints = ({ rows, offsetCells }: PaylineShape): PointData
 
   return [{ x: first.x - CELL_WIDTH / 2, y: first.y }, ...cells, { x: last.x + CELL_WIDTH / 2, y: last.y }]
 }
+
+/**
+ * Ведёт alpha объекта к цели за `durationMs` на игровом тикере; промис резолвится на последнем кадре,
+ * реджектится по `signal`. При `prefers-reduced-motion` значение выставляется сразу.
+ */
+export const tweenAlpha = (
+  ticker: GameTicker,
+  target: Container,
+  to: number,
+  durationMs: number,
+  signal?: AbortSignal
+): Promise<void> =>
+  new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(signal.reason as Error)
+
+      return
+    }
+
+    const from = target.alpha
+    const distance = to - from
+
+    if (distance === 0 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      target.alpha = to
+      resolve()
+
+      return
+    }
+
+    const settle = (finish: () => void) => {
+      ticker.remove(step)
+      signal?.removeEventListener('abort', handleAbort)
+
+      finish()
+    }
+
+    const step = (frameTicker: Ticker) => {
+      if (target.destroyed) {
+        settle(resolve)
+
+        return
+      }
+
+      const next = target.alpha + (distance * frameTicker.deltaMS) / durationMs
+
+      // Знак distance учтён: условие означает «достигли или проскочили цель»
+      if (Math.sign(distance) * (next - to) >= 0) {
+        target.alpha = to
+        settle(resolve)
+
+        return
+      }
+
+      target.alpha = next
+    }
+
+    const handleAbort = () => settle(() => reject(signal?.reason as Error))
+
+    signal?.addEventListener('abort', handleAbort, { once: true })
+
+    ticker.add(step)
+  })
 
 const SYMBOL_KEYS = Object.values<SymbolKey>(SymbolKey)
 

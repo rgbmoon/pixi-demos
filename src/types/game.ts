@@ -1,10 +1,3 @@
-export const SceneBackground = {
-  light: 'light',
-  dark: 'dark',
-} as const
-
-export type SceneBackground = (typeof SceneBackground)[keyof typeof SceneBackground]
-
 export const PhaseName = {
   idle: 'idle',
   spinning: 'spinning',

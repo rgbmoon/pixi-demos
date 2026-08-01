@@ -42,6 +42,9 @@ export class SpinePool {
 
     spine.removeFromParent()
     spine.autoUpdate = false
+    // Владелец мог вписывать скелет в ячейку: без сброса трансформ достанется следующему
+    spine.position.set(0, 0)
+    spine.scale.set(1)
     // Без сброса слот-объектов следующий владелец получит вставленные предыдущим контейнеры
     spine.removeSlotObjects()
     spine.state.clearTracks()

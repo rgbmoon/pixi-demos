@@ -10,7 +10,7 @@ import tseslint from 'typescript-eslint'
 
 export default [
   {
-    ignores: ['**/node_modules/**', '**/dist/**', '**/.husky/**', 'vite.config.ts'],
+    ignores: ['**/node_modules/**', '**/dist/**', '**/.husky/**', 'public/**', 'vite.config.ts'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

@@ -1,24 +1,29 @@
-import { EFFECT_ASSETS } from '../assets'
-import { WIN_FRAME_SCALE } from '../constants'
-import type { SpinePool } from '../spine-pool'
-import { SpineAnimation } from '../ui/spine-animation'
+import { Container, Graphics } from 'pixi.js'
+import { PALETTE } from 'src/constants/palette'
 
-const TRACK_MAIN = 0
+import { CELL_HEIGHT, CELL_WIDTH, WIN_FRAME_INSET, WIN_FRAME_RADIUS, WIN_FRAME_THICKNESS } from '../constants'
 
-export class WinFrameAnimation extends SpineAnimation {
-  constructor(pool: SpinePool) {
-    super(pool)
+/** Рамка выигравшей ячейки: обводка по её границам, готового арта под неё в паке нет. */
+export class WinFrameAnimation {
+  readonly view = new Container()
 
-    this.attach(EFFECT_ASSETS.winFrame)
+  constructor() {
+    const width = CELL_WIDTH - WIN_FRAME_INSET * 2
+    const height = CELL_HEIGHT - WIN_FRAME_INSET * 2
 
-    this.view.scale.set(WIN_FRAME_SCALE)
+    const frame = new Graphics()
+      .roundRect(-width / 2, -height / 2, width, height, WIN_FRAME_RADIUS)
+      .stroke({ width: WIN_FRAME_THICKNESS, color: PALETTE.gold })
+
+    this.view.visible = false
+    this.view.addChild(frame)
   }
 
   show(): void {
-    this.play(TRACK_MAIN, 'show', false)
+    this.view.visible = true
   }
 
   hide(): void {
-    this.clearTrack(TRACK_MAIN)
+    this.view.visible = false
   }
 }

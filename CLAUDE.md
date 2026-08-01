@@ -29,13 +29,13 @@
 
 ## Команды
 
-| Команда           | Что делает                                                                          |
-| ----------------- | ----------------------------------------------------------------------------------- |
-| `npm run dev`     | Vite dev-сервер                                                                     |
-| `npm run build`   | `tsc -b && vite build`                                                              |
-| `npm run lint`    | `eslint --quiet --fix .` + `tsc --noEmit -p tsconfig.app.json` (автофикс + тайпчек) |
-| `npm run preview` | превью прод-сборки                                                                  |
-| `npm run preview:mocks` | сборка с `VITE_USE_MOCKS=true` + превью — прод-сборка с работающими MSW-моками |
+| Команда                 | Что делает                                                                          |
+| ----------------------- | ----------------------------------------------------------------------------------- |
+| `npm run dev`           | Vite dev-сервер                                                                     |
+| `npm run build`         | `tsc -b && vite build`                                                              |
+| `npm run lint`          | `eslint --quiet --fix .` + `tsc --noEmit -p tsconfig.app.json` (автофикс + тайпчек) |
+| `npm run preview`       | превью прод-сборки                                                                  |
+| `npm run preview:mocks` | сборка с `VITE_USE_MOCKS=true` + превью — прод-сборка с работающими MSW-моками      |
 
 - Husky `pre-commit` запускает `npm run lint` — линт с автофиксом и тайпчек проходят на каждом коммите.
 - Тестов и тест-раннера в проекте нет.
@@ -74,7 +74,7 @@ src/
   assets/
     icons/index.ts         # баррель SVG-иконок как React-компонентов
 public/
-  game-assets/             # ⚠️ ассеты игры — в .gitignore, не коммитить (см. ниже)
+  game-assets/         # ⚠️ ассеты игры — в .gitignore, не коммитить (см. ниже)
 ```
 
 ---
@@ -168,7 +168,7 @@ public/
 - **Асинхронно-рождающиеся ресурсы в граф не кладём.** PIXI `Application` обретает поля только после `await init()` — им владеет `GameRoot` (создаёт, уничтожает, держит pending-guard). Игровой тикер (`GameTicker`, подкласс PIXI-`Ticker` с паузой `waitTicks`) поэтому создаёт контейнер (валиден с рождения), а после init `GameRoot` переводит рендер на него: `app.ticker = ticker` (штатный сеттер `TickerPlugin`), дальше тикером владеет приложение.
 - **`container.get()` — только в точках входа**: `app/` и роут-страницы. `GamePage` создаёт game-контейнер и одним `get(TOKENS.GameRoot)` материализует весь граф по конструкторам; cleanup вызывает `destroyGameContainer`. Слои получают зависимости конструктором и импортируют только значение `TOKENS`; классы зависимостей — строго `import type`.
 - **Смерть — через контейнер**: `onDeactivation` пишется рядом с `bind()` (автомату — `dispose()`, контроллерам и сцене — guard-`destroy()`, хосту — `unmount()`, транспорту — `disconnect()`). Деактивации **синхронные** (появится async — вызов меняется на `unbindAsync`), **идемпотентные и порядконезависимые**: destroy — под guard'ом `if (!x.destroyed)`. Порядкозависимые смерти зашиты в `destroyGameContainer`: `unbind(Fsm)` → `unbind(SpinePool)` (свободные скелеты живут вне дерева сцены, их нельзя уничтожать после рендерера — см. «PIXI / канвас») → `unbind(GameRoot)` (его `app.destroy` каскадом уничтожает сцену с контроллерами — унаследованный от `LiveContainer` `destroy` чистит их подписки) → `unbindAll()` — хвост для остальных деактиваций (нужен графу, не доехавшему до сцены из-за StrictMode-гонки). В эту цепочку попадает только то, что держит PIXI-объекты вне сцены; остальные сущности разборку не меняют.
-- **GameRoot — хост жизненного цикла** (биндинг в game-контейнере): за ним только то, что невозможно до конца `init` — PIXI-init с pending-guard, перевод рендера на игровой тикер, канвас в DOM, сцена на stage, ресайз, запуск автомата. Сборкой графа не занимается: сцену, тикер и автомат получает `@inject`, контейнера не видит.
+- **GameRoot — хост жизненного цикла** (биндинг в game-контейнере): за ним только то, что невозможно до конца `init` — расчёт размера канваса, PIXI-init с pending-guard, перевод рендера на игровой тикер, канвас в DOM, сцена на stage, раскладка, запуск автомата. Сборкой графа не занимается: сцену, тикер и автомат получает `@inject`, контейнера не видит.
 - **Как расширять.** Контроллер: класс → токен → строка `bind` + guard-деактивация в своей bind-функции (`bindScene` и т.п.) → `@inject` в `GameScene`, она же ставит его на место в `layout`; `destroyGameContainer` не трогается. Кнопка: наследуй `Button` из `game/ui/` (подложка, `active`, размер-пресет и иконка уже в нём), дальше — как контроллер. Подписки контроллера — только `this.watch`/`this.listen` (наследуются от `LiveContainer`), свой `destroy` для отписок не нужен. Анимация: класс в `animations/`, создаёт контроллер — композиция не меняется. Фаза: класс → имя в `PhaseName` → `bind(TOKENS.Phase).to(X)` → `return`-переходы соседних фаз; `Fsm` не меняется. Сцена: класс в `scenes/` + токен + `bind`; сцене с приватным состоянием — свой child-контейнер по образцу game. Вырастет `bindings.ts` — режется на `app/bindings/*.ts`, `bindGame` остаётся оглавлением.
 
 **Событийная модель** — [events/](src/events/): `GameEmitter` (тонкая обёртка над `EventEmitter` из `pixi.js` — это eventemitter3, он уже в бандле; ожидание события промисом — его метод `waitFor`) и карта событий [types.ts](src/events/types.ts). Единственный экземпляр эмиттера создаёт app-контейнер (фабричный биндинг — класс generic-параметризован `GameEvents`); слои получают его через `@inject`/контекст, а не импортом.
@@ -237,8 +237,8 @@ useEffect(() => {
 
 ## PIXI / канвас
 
-- PIXI **v8**. Инициализация асинхронная: `const app = new Application(); await app.init({ resizeTo: container, ... }); container.appendChild(app.canvas)`.
-- Ресайз — только через опцию `resizeTo`, ручных listener'ов нет.
+- PIXI **v8**. Инициализация асинхронная: `const app = new Application(); await app.init({ width, height, ... }); container.appendChild(app.canvas)`.
+- **Размер канваса фиксирован.** `resizeTo` не используем: `GameRoot.mount` считает размер один раз через `getCanvasSize` ([game/utils.ts](src/game/utils.ts)) — бокс `GAME_ASPECT_RATIO` (4/3) во всю высоту области под канвас, — и передаёт его в `app.init`. `GameScene.layout` вызывается один раз следом, слушателя `renderer.on('resize')` нет; центрирует канвас на странице CSS ([GamePage](src/pages/game/index.tsx)). Фон вписывается в этот бокс с обрезкой: `BACKGROUND_CROP_Y` сверху и снизу, по бокам срез больше — канвас уже фона.
 - Игровой цикл — `ticker.add(fn)`; `fn` хранится как стабильная ссылка (поле класса или локальная `const`), чтобы её можно было удалить из тикера при teardown. Игровой тикер приходит из game-контейнера (`@inject(TOKENS.GameTicker)`), рендер PIXI переводится на него после `init` — см. «Композиция и DI».
 - **`GameTicker.destroy` не зовёт `super.destroy()`** — только `stop()`. `Application.destroy` уничтожает плагины **до** сцены: тикер умирает первым, а идущий следом каскад `stage.destroy` доходит до `Spine.destroy`, сеттера `spine.autoUpdate` и `ReelController.destroy` — все они зовут `ticker.remove`, а `super.destroy()` к тому моменту обнулил внутренний список слушателей (`TypeError: Cannot read properties of null (reading 'next')` при уходе с `/game`). Тикер живёт один маунт и уходит в мусор вместе с game-контейнером, поэтому останова достаточно.
 - **Всё, что PIXI не уничтожает каскадом, обязано умереть до `app.destroy`.** Свободные скелеты [SpinePool](src/game/spine-pool.ts) лежат вне дерева сцены, поэтому их биндинг снимается **до** `GameRoot` ([container.ts](src/app/container.ts)): `renderer.destroy` обнуляет данные `SpinePipe`, а `spine.destroy` эмитит в него `destroyed` (`TypeError: Cannot set properties of null (setting '<uid>')`). Объекты дерева сцены этой проблемы не знают: `Application.destroy` уничтожает stage раньше рендерера.
@@ -252,16 +252,18 @@ useEffect(() => {
 
 ## Ассеты и .gitignore
 
-- Ассеты игры лежат в **`public/game-assets/`** (~7.5 МБ) и игнорятся в [.gitignore](.gitignore) правилом `public/game-assets/` — **не коммить их в remote**.
+- Ассеты игры лежат в **`public/game-assets/`** (~8.8 МБ) и игнорятся в [.gitignore](.gitignore) — **не коммить их в remote**. Тем же правилом закрыты `public/game-assets/` (предыдущий пак) и `public/game-assets-new/` (исходная поставка Laddoo Palace, из которой собран текущий пак). `public/**` целиком исключён из линта — в поставках лежит чужой js.
+- **Раскладка `game-assets`** — два корня: `animations/` (Spine: `background/background.*`, `symbols/symbol_N/symbol-N.*`) и `graphic/` (webp/svg/шрифт: `reels/`, `symbols/`, `fonts/`, `buttons/`, `win-line/`, `icons/`). Имена без префиксов и без хешей вида `__f0ea48b9`; атласы поставки ссылаются на страницы уже без хеша, поэтому переименование их не ломает.
+- **Линия выплат перекрашена**: `win-line/winline.png` — исходный градиент со сменённым тоном на малиновый `#d80040` из логотипа, светлота пикселей сохранена.
 - **Почему `public/`, а не `src/`**: их грузит `Assets.load` по строковому URL в рантайме, ESM-импорта нет, поэтому в граф сборки Vite они не попадают. Содержимое `public/` копируется в `dist/` как есть, без хеширования имён; из `src/` в прод-сборке они были бы недоступны (в dev это работало, потому что dev-сервер отдаёт исходники по их путям).
-- **Корень URL — `/game-assets`**, задан тремя константами в [assets.ts](src/game/assets.ts) (`SYMBOLS_DIR`, `ANIMATIONS_DIR`, `GRAPHIC_DIR`), остальные пути собираются из них. Каталог назван не `game`, чтобы не пересекаться с роутом `/game` в SPA-фолбэке.
+- **Корень URL — `/game-assets`**, задан двумя константами в [assets.ts](src/game/assets.ts) (`ANIMATIONS_DIR`, `GRAPHIC_DIR`), остальные пути собираются из них. Каталог назван не `game`, чтобы не пересекаться с роутом `/game` в SPA-фолбэке.
 - **Вложенность внутри `game-assets/` не менять**: `.atlas` ссылается на свою страницу голым именем файла, PIXI резолвит его относительно URL атласа.
 - **Регистр в путях сверяй с диском.** APFS на macOS регистронезависима, поэтому в `npm run dev` опечатка в регистре не проявляется; `sirv` в `vite preview` (и любая прод-раздача) ищет по реальным именам, не находит файл и отдаёт SPA-фолбэк — PIXI получает `index.html` вместо ассета и падает с `InvalidStateError: The source image could not be decoded`. Ошибка указывает на существующий файл, но проблема в регистре. Проверка полного манифеста:
   ```bash
   cd public/game-assets && find . -type f | sed 's|^\./||' | sort > /tmp/real.txt
   # каждый путь из assets.ts должен находиться: grep -qxF "<путь>" /tmp/real.txt
   ```
-- **SVG-иконки игры (`graphic/Icons/`) — всегда белые**: tint PIXI умножает цвет (белому источнику можно задать любой цвет, чёрному — никакой), поэтому у новой иконки правь `stroke`/`fill` на `#ffffff` прямо в файле.
+- **SVG-иконки игры (`graphic/icons/`) — всегда белые**: tint PIXI умножает цвет (белому источнику можно задать любой цвет, чёрному — никакой), поэтому у новой иконки правь `stroke`/`fill` на `#ffffff` прямо в файле.
 
 ---
 
@@ -272,13 +274,21 @@ useEffect(() => {
 1. **Сторы (MobX)** — игровое состояние. Держим **независимые сторы** (по singleton-биндингу на каждый в контейнере его скоупа); RootStore/store-of-stores не вводим, координация между сторами — в фазах автомата. _(есть)_
 2. **Сетевой слой** — запросы и парсинг ответов; результат в сторы кладут фазы. Бэкенд мокаем через [MSW](https://mswjs.io/). _(есть)_
 3. **Event emitter** — центр регистрации имён событий; связывает логику и сторы с презентацией. _(есть)_
-4. **Класс анимации** — обёртка над визуальной сущностью: внешний код работает с методами с игровой семантикой (`spin`, `land`), а не с сырым объектом, поэтому замена `Graphics`-заглушки на Spine не потребует изменений ни в контроллере, ни в фазах. _(есть: база [SpineAnimation](src/game/ui/spine-animation.ts), рамка барабанов, символы; вращение и посадка — в [reel.ts](src/game/controllers/reel.ts), сумма выигрыша выводится в [win-label.ts](src/game/controllers/win-label.ts); линия выплат — [payline-animation.ts](src/game/animations/payline-animation.ts) по конфигу `PAYLINES` из [game/constants.ts](src/game/constants.ts))_
+4. **Класс анимации** — обёртка над визуальной сущностью: внешний код работает с методами с игровой семантикой (`spin`, `land`), а не с сырым объектом, поэтому смена реализации (спрайт ↔ Spine ↔ `Graphics`) не требует изменений ни в контроллере, ни в фазах. _(есть: база [SpineAnimation](src/game/ui/spine-animation.ts), рамка барабанов, символы; вращение и посадка — в [reel.ts](src/game/controllers/reel.ts), сумма выигрыша выводится в [win-label.ts](src/game/controllers/win-label.ts); линия выплат — [payline-animation.ts](src/game/animations/payline-animation.ts) по конфигу `PAYLINES` из [game/constants.ts](src/game/constants.ts))_
 
-> **Единый флоу загрузки.** Все URL игровых ассетов — в одном манифесте [assets.ts](src/game/assets.ts) (Spine-скелеты, текстуры, шрифт). Единственный `Assets.load` в проекте — `preloadGameAssets`, его зовёт [GamePage](src/pages/game/index.tsx) на бутстрапе **до** сборки графа. Дальше всё читается из кэша синхронно: Spine — `SpineAnimation.attach` (берёт готовый скелет из `SpinePool`), текстуры — `Assets.get`, шрифт зарегистрирован. Никакой класс не зовёт `Assets.load` сам; `SpineAnimation` синхронный (только `attach`, без `load`/`onLoaded`). Визуал собирается в конструкторе (рамка, кнопки, фон, лейблы) или в `setKey` (символ) — двухфазного `build()` нет, объект рождается после предзагрузки. Поэтому `SymbolAnimation.setKey` синхронный: подмена скелета и следующий pose-метод (`idle`/`blur`) применяются в одном тике — без гонок, `loadId`, `desiredState`, флагов. Асинхронна только **сеть**: `initGame` (данные, не ассеты) наполняет доску реактивно по `initialSymbols`; `GameRoot.mount` ждёт `sceneStore.gameLoaded` перед стартом автомата и снятием оверлея.
-
-> **Пул скелетов.** `Spine`-инстансы в проекте создаёт и уничтожает только [SpinePool](src/game/spine-pool.ts) (game-контейнер, `TOKENS.SpinePool`) — классы берут их через `SpineAnimation.attach` и возвращают туда же при смене ассета. Причина: `Spine.from` кэширует `SkeletonData`, но на каждый инстанс строит `Skeleton`, `AnimationState` и типизированные массивы на каждый attachment (~35 KB), а лента барабана меняет символ ~83 раза в секунду — пересборка давала мажорные GC и микрофризы. Пул ключуется парой `(skeletonUrl, atlasUrl)` и прогревается в конструкторе по `SPINE_WARM_UP` из [assets.ts](src/game/assets.ts) (число на ассет — пик одновременного спроса). Скоуп — маунт, а не вкладка: инстансы привязаны к `GameTicker`, который умирает вместе с приложением. В `release` обязателен полный сброс — `removeSlotObjects`, `clearTracks`, `setToSetupPose`.
+> **Не всё — Spine.** В текущем паке (Laddoo Palace) скелетов ровно два вида: символы и фон. Остальное собрано в PIXI, и это сознательно: [ReelsFrameAnimation](src/game/animations/reels-frame-animation.ts) — спрайт `reels-bg` плюс слоты содержимого и `Graphics`-прямоугольник затемнения между лентой и оверлеем выигрыша (`showTint`/`hideTint` ведут его alpha через `tweenAlpha` из [game/utils.ts](src/game/utils.ts)); [WinFrameAnimation](src/game/animations/win-frame-animation.ts) — обводка по границам ячейки, готового арта под неё в паке нет.
 >
-> **Статичные позы — с `autoUpdate = false`** (`SpineAnimation.freeze`/`unfreeze`). Поза `blur` у символов задана одним ключом, обновлять по ней скелет каждый кадр незачем: без `_updateAndApplyState` Spine не пересчитывает ни кости, ни вершины. Все `Spine` тикают на `GameTicker` (`Spine.from({ ticker })`), а не на `Ticker.shared` с его отдельным rAF-циклом.
+> **Символ — гибрид** ([SymbolAnimation](src/game/animations/symbol-animation.ts)): подложка и арт держатся спрайтами, скелет из пула поднимается только на позу `win` — единственную анимацию в новых скелетах. Прокрутка при этом не создаёт ни одного `Spine`: `blur` и `idle` меняют две текстуры. Пара «ключ + поза» приводится одним приватным `applyPose`, поэтому `setKey` посреди спина не рассинхронизирует подложку с артом. Арты символов различаются и размером, и центровкой холста (контент от 228 до 483 единиц на холстах 405×293 … 800×800), поэтому каждый вписывается в подложку по замеренному боксу: `SYMBOL_ART_BOXES` в [constants.ts](src/game/constants.ts) хранит габариты непрозрачной области и поправку её центра, `getSymbolFit` ([game/utils.ts](src/game/utils.ts)) переводит их в масштаб «вписать в `SYMBOL_FIT_*`» и сдвиг спрайта. Поправку получает та нода, что рисует арт: спрайт — всегда, скелет — только если он же держит покой (иначе выигрышная анимация уехала бы: она строится вокруг origin скелета). Боксы замеряются по альфа-каналу и пересобираются при смене пака.
+>
+> **Спрайт покоя необязателен.** У вайлда (`SymbolKey.W`, symbol_2) карточка-рамка снята со скелета при сборке пака, а в `single-symbol-2.webp` она впечатана — поэтому спрайта покоя у него нет (`SYMBOL_SPRITES[key].idle` — `undefined`), и покой рисует скелет в setup-позе. `blur` у него остаётся спрайтом с карточкой: на прокрутке она смазана. Бокс вайлда взят по клиппингу скелета, а его `offsetY` сажает персонажа на низ подложки — ноги обрезаны границей анимации. Размытие всех символов масштабируется по боксу покоя, поэтому посадка от позы не зависит.
+>
+> **Фон — один скелет в два слоя** ([BackgroundAnimation](src/game/animations/background-animation.ts)): анимация `background-back` показывает всё, кроме переднего плана, `background-front` — только его. Отсюда два контроллера — `BackgroundController` первым ребёнком сцены и `ForegroundController` после машины барабанов; трансформ оба считают одним cover-ом по `BACKGROUND_WIDTH/HEIGHT`, поэтому слои совпадают. FS-задник из поставки не подключён: его текстуры только в `.basis`.
+
+> **Единый флоу загрузки.** Все URL игровых ассетов — в одном манифесте [assets.ts](src/game/assets.ts) (Spine-скелеты, текстуры, шрифт). Единственный `Assets.load` в проекте — `preloadGameAssets`, его зовёт [GamePage](src/pages/game/index.tsx) на бутстрапе **до** сборки графа. Дальше всё читается из кэша синхронно: Spine — `SpineAnimation.attach` (берёт готовый скелет из `SpinePool`), текстуры — `Assets.get`, шрифт зарегистрирован. Никакой класс не зовёт `Assets.load` сам; `SpineAnimation` синхронный (только `attach`, без `load`/`onLoaded`). Визуал собирается в конструкторе (рамка, кнопки, фон, лейблы) или в `setKey` (символ) — двухфазного `build()` нет, объект рождается после предзагрузки. Поэтому `SymbolAnimation.setKey` синхронный: подмена текстур и следующий pose-метод (`idle`/`blur`) применяются в одном тике — без гонок, `loadId`, `desiredState`, флагов. Асинхронна только **сеть**: `initGame` (данные, не ассеты) наполняет доску реактивно по `initialSymbols`; `GameRoot.mount` ждёт `sceneStore.gameLoaded` перед стартом автомата и снятием оверлея.
+
+> **Пул скелетов.** `Spine`-инстансы в проекте создаёт и уничтожает только [SpinePool](src/game/spine-pool.ts) (game-контейнер, `TOKENS.SpinePool`) — классы берут их через `SpineAnimation.attach` и возвращают туда же через `detach` либо при смене ассета. Причина: `Spine.from` кэширует `SkeletonData`, но на каждый инстанс строит `Skeleton`, `AnimationState` и типизированные массивы на каждый attachment (~35 KB), а лента барабана меняет символ ~83 раза в секунду — пересборка давала мажорные GC и микрофризы. Пул ключуется парой `(skeletonUrl, atlasUrl)` и прогревается в конструкторе по `SPINE_WARM_UP` из [assets.ts](src/game/assets.ts) (число на ассет — пик одновременного спроса: `SYMBOL_POOL_SIZE` на ключ символа и 2 на фон). Скоуп — маунт, а не вкладка: инстансы привязаны к `GameTicker`, который умирает вместе с приложением. В `release` обязателен полный сброс — `removeSlotObjects`, `clearTracks`, `setToSetupPose`.
+>
+> **Статичные позы — с `autoUpdate = false`**: `syncTicking` в [SpineAnimation](src/game/ui/spine-animation.ts) снимает скелет с тикера, пока на треках нет ничего длиннее нулевой длительности. По такой позе Spine не пересчитывает ни кости, ни вершины. Все `Spine` тикают на `GameTicker` (`Spine.from({ ticker })`), а не на `Ticker.shared` с его отдельным rAF-циклом.
 
 5. **Класс-контроллер** — PIXI `Container`: создаёт класс анимации (п.4) и держит подписки на эвенты (п.3). _(есть)_
 
@@ -297,7 +307,7 @@ useEffect(() => {
 
 Причины — в профильных разделах выше; здесь только чек-лист.
 
-- Не коммить `public/game-assets/**`.
+- Не коммить `public/game-assets/**` (как и остальные паки в `public/`).
 - Не вводи `any` и `@ts-ignore`; не оставляй `console.*` (warn) и `debugger` (error) — исключения: `traceEvent` ([events/utils.ts](src/events/utils.ts)), `tracePhase` ([flow/utils.ts](src/flow/utils.ts)) и `traceError` ([errors/utils.ts](src/errors/utils.ts)).
 - Не глуши ошибку пустым `catch` и не оставляй плавающий промис — `notifyError`/`notifyFatal`, а где показывать нечего — `traceError` (см. «Обработка ошибок»).
 - Не добавляй имена уведомлений в карту `GameEvents` и не заводи вторую шину ошибок — уровень выбирается функцией `notifyError` или `notifyFatal`.

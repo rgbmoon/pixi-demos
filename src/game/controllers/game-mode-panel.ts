@@ -14,13 +14,15 @@ const PLATE_HEIGHT = 64
 const BUTTON_GAP = 8
 const CAPTION_SIZE = 16
 const VALUE_SIZE = 20
-const TEXT_SPLIT_Y = -4
 
 /**
  * Панель режима игры: показывает число линий, участвующих в раунде
  */
 @injectable()
 export class GameModePanel extends LiveContainer {
+  /** Полная ширина панели с кнопками по бокам: сцена расставляет ряд по ней. */
+  readonly widthPx: number
+
   private readonly plate = new Sprite()
   private readonly caption = new Label({ color: LabelColor.gold, fontSize: CAPTION_SIZE, text: 'LINES' })
   private readonly value = new Label({ color: LabelColor.white, fontSize: VALUE_SIZE })
@@ -32,14 +34,14 @@ export class GameModePanel extends LiveContainer {
   ) {
     super()
 
+    this.widthPx = PLATE_WIDTH + 2 * (BUTTON_GAP + minusButton.sizePx)
+
     this.plate.anchor.set(0.5)
     this.plate.texture = Assets.get(PLATE_SRC)
     this.plate.setSize(PLATE_WIDTH, PLATE_HEIGHT)
 
-    this.caption.anchor.set(0.5, 1)
-    this.caption.position.set(0, TEXT_SPLIT_Y)
+    this.caption.anchor.set(0.5, 0)
     this.value.anchor.set(0.5, 0)
-    this.value.position.set(0, TEXT_SPLIT_Y)
 
     minusButton.position.set(-(PLATE_WIDTH / 2 + BUTTON_GAP + minusButton.sizePx), -minusButton.sizePx / 2)
     plusButton.position.set(PLATE_WIDTH / 2 + BUTTON_GAP, -plusButton.sizePx / 2)
@@ -50,8 +52,18 @@ export class GameModePanel extends LiveContainer {
       () => sceneStore.lines,
       (lines) => {
         this.value.text = String(lines)
+
+        this.layoutText()
       },
       { fireImmediately: true }
     )
+  }
+
+  /** Центрирует пару строк по высоте плашки: обе меряются по фактическому кеглю шрифта. */
+  private layoutText(): void {
+    const totalHeight = this.caption.height + this.value.height
+
+    this.caption.position.set(0, -totalHeight / 2)
+    this.value.position.set(0, -totalHeight / 2 + this.caption.height)
   }
 }

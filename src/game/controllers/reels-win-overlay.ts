@@ -9,7 +9,6 @@ import {
   WIN_SHOWCASE_MS,
 } from 'src/game/constants'
 import type { GameTicker } from 'src/game/game-ticker'
-import type { SpinePool } from 'src/game/spine-pool'
 import { LiveContainer } from 'src/game/ui/live-container'
 import type { SceneStore } from 'src/stores/scene-store'
 
@@ -24,13 +23,13 @@ export class ReelsWinOverlayController extends LiveContainer {
   private readonly winFrames: WinFrameAnimation[]
   private paylines: SceneStore['spinPaylines'] = []
 
-  constructor(ticker: GameTicker, pool: SpinePool, sceneStore: SceneStore, paylinesController: PaylinesController) {
+  constructor(ticker: GameTicker, sceneStore: SceneStore, paylinesController: PaylinesController) {
     super()
 
     this.ticker = ticker
     this.paylinesController = paylinesController
 
-    this.winFrames = Array.from({ length: REELS_COUNT }, () => new WinFrameAnimation(pool))
+    this.winFrames = Array.from({ length: REELS_COUNT }, () => new WinFrameAnimation())
     this.addChild(...this.winFrames.map((winFrame) => winFrame.view))
 
     this.watch(
