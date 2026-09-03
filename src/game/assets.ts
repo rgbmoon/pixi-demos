@@ -129,10 +129,10 @@ export const BUTTON_ICONS = {
   minus: `${ICONS_DIR}/minus-svgrepo-com.svg`,
 }
 
-export const FONT_FAMILY = 'Chicle'
+export const FONT_FAMILY = 'Roboto'
 
 const FONT_SOURCE: UnresolvedAsset = {
-  src: `${GRAPHIC_DIR}/fonts/Chicle-Regular.woff`,
+  src: `${GRAPHIC_DIR}/fonts/Roboto-Regular.woff`,
   data: { family: FONT_FAMILY },
 }
 
