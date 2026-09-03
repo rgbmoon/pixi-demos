@@ -1,16 +1,24 @@
-# Pixi Game Pet Project
+# Pixi Demos
 
-Small project made for better pixie.js and game development understanding.
+Demo game clients built with PixiJS v8 and React.
 
-## Tech used
+## Games
 
-- **TypeScript** — types
-- **PixiJS** — canvas rendering
-- **Spine** — assets animation
-- **React** — building user interfaces
-- **MobX** — state management
-- **Inversify** — dependency injection
-- **Vite** — bundling
-- **ESLint** — code linting
-- **Husky** — git hooks automation
-- **Tailwind CSS** — CSS framework
+- **Slot machine** — five reels, three rows, up to ten paylines across selectable line modes.
+  Bet and mode controls, autoplay with stop conditions, turbo and slam-stop, wilds, tiered win
+  presentation with sound, and scatter-triggered free spins with retrigger. The server is the
+  source of truth: the client presents the round it receives.
+
+## Stack
+
+TypeScript · PixiJS · Spine · React · MobX · Inversify · zod + partysocket · MSW · Vite · Tailwind.
+Layer rules and conventions live in [CLAUDE.md](CLAUDE.md).
+
+## Getting started
+
+```bash
+npm ci
+npm run dev            # Vite dev server
+npm run lint           # eslint --fix + tsc --noEmit
+npm run preview:mocks  # production build with MSW mocks enabled
+```
