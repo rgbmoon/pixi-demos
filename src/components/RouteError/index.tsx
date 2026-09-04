@@ -14,17 +14,17 @@ export const RouteError = () => {
   const error = useRouteError()
 
   useEffect(() => {
-    traceError?.(error, 'Ошибка страницы')
+    traceError?.(error, 'Page error')
   }, [error])
 
   return (
     <div className="h-full flex flex-col items-center justify-center gap-4 px-6 text-center">
-      <h2 className="text-2xl font-light">Страница не открылась</h2>
+      <h2 className="text-2xl font-light">This page failed to open</h2>
       <p className="max-w-xl text-sm wrap-break-word text-white/60">{toDetail(error)}</p>
       <div className="flex gap-3">
-        <Button onClick={() => window.location.reload()}>Обновить</Button>
+        <Button onClick={() => window.location.reload()}>Reload</Button>
         <Button link href="/">
-          На главную
+          Home
         </Button>
       </div>
     </div>

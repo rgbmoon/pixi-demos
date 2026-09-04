@@ -9,22 +9,20 @@ import type { SceneStore } from 'src/stores/scene-store'
 import type { GameModeMinusButton } from './game-mode-minus-button'
 import type { GameModePlusButton } from './game-mode-plus-button'
 
-const PLATE_WIDTH = 180
-const PLATE_HEIGHT = 64
-const BUTTON_GAP = 8
-const CAPTION_SIZE = 16
-const VALUE_SIZE = 20
+const PLATE_WIDTH = 360
+const PLATE_HEIGHT = 128
+const BUTTON_GAP = 16
+const CAPTION_SIZE = 32
+const VALUE_SIZE = 40
 
 /**
  * Панель режима игры: показывает число линий, участвующих в раунде
  */
 @injectable()
 export class GameModePanel extends LiveContainer {
-  /** Полная ширина панели с кнопками по бокам: сцена расставляет ряд по ней. */
-  readonly widthPx: number
 
   private readonly plate = new Sprite()
-  private readonly caption = new Label({ color: LabelColor.gold, fontSize: CAPTION_SIZE, text: 'LINES' })
+  private readonly caption = new Label({ color: LabelColor.cyan, fontSize: CAPTION_SIZE, text: 'LINES' })
   private readonly value = new Label({ color: LabelColor.white, fontSize: VALUE_SIZE })
 
   constructor(
@@ -34,7 +32,6 @@ export class GameModePanel extends LiveContainer {
   ) {
     super()
 
-    this.widthPx = PLATE_WIDTH + 2 * (BUTTON_GAP + minusButton.sizePx)
 
     this.plate.anchor.set(0.5)
     this.plate.texture = Assets.get(PLATE_SRC)
@@ -43,8 +40,8 @@ export class GameModePanel extends LiveContainer {
     this.caption.anchor.set(0.5, 0)
     this.value.anchor.set(0.5, 0)
 
-    minusButton.position.set(-(PLATE_WIDTH / 2 + BUTTON_GAP + minusButton.sizePx), -minusButton.sizePx / 2)
-    plusButton.position.set(PLATE_WIDTH / 2 + BUTTON_GAP, -plusButton.sizePx / 2)
+    minusButton.position.set(-(PLATE_WIDTH / 2 + BUTTON_GAP + minusButton.sizeUnits), -minusButton.sizeUnits / 2)
+    plusButton.position.set(PLATE_WIDTH / 2 + BUTTON_GAP, -plusButton.sizeUnits / 2)
 
     this.addChild(this.plate, this.caption, this.value, minusButton, plusButton)
 

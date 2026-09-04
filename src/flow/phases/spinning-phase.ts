@@ -46,7 +46,7 @@ export class SpinningPhase implements Phase {
 
     if (this.sceneStore.spin.status === RequestStatus.error) {
       this.sceneStore.refundBet()
-      notifyError(this.sceneStore.spin.error, 'Спин не выполнен, ставка возвращена')
+      notifyError(this.sceneStore.spin.error, 'Spin failed, the bet has been refunded')
 
       return PhaseName.idle
     }

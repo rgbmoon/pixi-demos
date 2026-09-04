@@ -97,7 +97,7 @@ export const handlers = [
         const { bet, gameMode } = parseSpinPayload(args[0])
 
         if (bet <= 0 || bet > balance) {
-          fail('Недостаточно средств для ставки')
+          fail('Insufficient funds for this bet')
 
           return
         }

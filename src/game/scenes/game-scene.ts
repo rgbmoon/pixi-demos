@@ -1,33 +1,50 @@
 import { inject, injectable } from 'inversify'
-import { Container } from 'pixi.js'
+import { Assets, Container, Sprite } from 'pixi.js'
 import { TOKENS } from 'src/constants/tokens'
-import { REELS_FRAME_HEIGHT, REELS_FRAME_WIDTH, REELS_MACHINE_MAX_SCALE } from 'src/game/constants'
+import { LOGO_ALIAS } from 'src/game/assets'
+import {
+  DESIGN_HEIGHT,
+  DESIGN_WIDTH,
+  REELS_FRAME_HEIGHT,
+  REELS_FRAME_WIDTH,
+  REELS_MACHINE_MAX_SCALE,
+} from 'src/game/constants'
 import type { ReelsMachineController } from 'src/game/controllers/reels-machine'
 
 import type { BackgroundController } from '../controllers/background'
 import type { BetPanel } from '../controllers/bet-panel'
 import type { CreditLabel } from '../controllers/credit-label'
-import type { ForegroundController } from '../controllers/foreground'
 import type { GameModePanel } from '../controllers/game-mode-panel'
 import type { SoundToggleButton } from '../controllers/sound-toggle-button'
 import type { SpinButton } from '../controllers/spin-button'
 import type { WinLabel } from '../controllers/win-label'
 
-const SCREEN_MARGIN = 16
-const BOTTOM_MARGIN = 16
-const PANEL_GAP = 40
-const WIN_LABEL_GAP = 16
-const REELS_TOP_MARGIN = 32
-const CREDIT_HEIGHT = 30
-const WIN_LABEL_HEIGHT = 30
+// Все размеры ниже — дизайн-единицы макета 941×1672, а не пиксели канваса
+const SCREEN_MARGIN = 32
+const BOTTOM_MARGIN = 32
+const CONTROLS_GAP = 20
+const WIN_LABEL_GAP = 24
+
+const LOGO_TOP = 16
+const LOGO_WIDTH = 420
+
+// Высоты рядов на экране. Объявлены здесь, потому что bounds лейблов до первой отрисовки текста
+// нулевые, а layout вызывается раньше: логотип — арт 1672×941 при LOGO_WIDTH, строки кредита и
+// выигрыша — кегль лейблов, плашки панелей — bet-panel.ts и game-mode-panel.ts.
+const LOGO_HEIGHT = (LOGO_WIDTH * 941) / 1672
+const CREDIT_HEIGHT = 60
+const BET_PANEL_HEIGHT = 128
+const GAME_MODE_PANEL_HEIGHT = 128
+const WIN_LABEL_HEIGHT = 60
 
 /**
  * Сцена игры: собирает контроллеры в дерево отображения и расставляет их по экрану.
+ * Раскладка ведётся в дизайн-единицах макета, под канвас масштабируется вся сцена целиком.
  * Новый контроллер подключается здесь и в bindings.ts.
  */
 @injectable()
 export class GameScene extends Container {
-  private readonly background: BackgroundController
+  private readonly logo = new Sprite()
   private readonly reelsMachine: ReelsMachineController
   private readonly spinButton: SpinButton
   private readonly soundToggleButton: SoundToggleButton
@@ -35,7 +52,6 @@ export class GameScene extends Container {
   private readonly betPanel: BetPanel
   private readonly gameModePanel: GameModePanel
   private readonly creditLabel: CreditLabel
-  private readonly foreground: ForegroundController
 
   constructor(
     @inject(TOKENS.BackgroundController) background: BackgroundController,
@@ -45,12 +61,11 @@ export class GameScene extends Container {
     @inject(TOKENS.WinLabel) winLabel: WinLabel,
     @inject(TOKENS.BetPanel) betPanel: BetPanel,
     @inject(TOKENS.GameModePanel) gameModePanel: GameModePanel,
-    @inject(TOKENS.CreditLabel) creditLabel: CreditLabel,
-    @inject(TOKENS.ForegroundController) foreground: ForegroundController
+    @inject(TOKENS.CreditLabel) creditLabel: CreditLabel
   ) {
     super()
 
-    this.background = background
+    // Фон в раскладке не участвует: арт нарисован в размер макета и стоит в его начале координат
     this.reelsMachine = reelsMachine
     this.spinButton = spinButton
     this.soundToggleButton = soundToggleButton
@@ -58,13 +73,15 @@ export class GameScene extends Container {
     this.betPanel = betPanel
     this.gameModePanel = gameModePanel
     this.creditLabel = creditLabel
-    this.foreground = foreground
 
-    // Передний слой фона идёт после машины барабанов и перекрывает её; HUD остаётся поверх обоих
+    this.logo.texture = Assets.get(LOGO_ALIAS)
+    this.logo.anchor.set(0.5, 0)
+    this.logo.setSize(LOGO_WIDTH, LOGO_HEIGHT)
+
     this.addChild(
       background,
+      this.logo,
       reelsMachine,
-      foreground,
       spinButton,
       soundToggleButton,
       winLabel,
@@ -75,40 +92,49 @@ export class GameScene extends Container {
   }
 
   layout(screenWidth: number, screenHeight: number): void {
-    this.background.layout(screenWidth, screenHeight)
-    this.foreground.layout(screenWidth, screenHeight)
+    // Канвас повторяет пропорции макета, поэтому по обеим осям выходит один и тот же множитель
+    this.scale.set(Math.min(screenWidth / DESIGN_WIDTH, screenHeight / DESIGN_HEIGHT))
 
-    const centerX = screenWidth / 2
+    const centerX = DESIGN_WIDTH / 2
 
     this.soundToggleButton.position.set(SCREEN_MARGIN, SCREEN_MARGIN)
 
-    // Ряд управления: спин по центру, плашки настроек по бокам от него
-    const controlsCenterY = screenHeight - BOTTOM_MARGIN - this.spinButton.sizePx / 2
-    const panelOffsetX = this.spinButton.sizePx / 2 + PANEL_GAP
+    this.logo.position.set(centerX, LOGO_TOP)
 
-    this.spinButton.position.set(centerX - this.spinButton.sizePx / 2, controlsCenterY - this.spinButton.sizePx / 2)
-    this.betPanel.position.set(centerX - panelOffsetX - this.betPanel.widthPx / 2, controlsCenterY)
-    this.gameModePanel.position.set(centerX + panelOffsetX + this.gameModePanel.widthPx / 2, controlsCenterY)
+    // Нижний блок собирается снизу вверх: кредит, панель режима, панель ставки, кнопка спина
+    this.creditLabel.position.set(centerX, DESIGN_HEIGHT - BOTTOM_MARGIN - CREDIT_HEIGHT / 2)
+    this.gameModePanel.position.set(
+      centerX,
+      this.creditLabel.y - CREDIT_HEIGHT / 2 - CONTROLS_GAP - GAME_MODE_PANEL_HEIGHT / 2
+    )
+    this.betPanel.position.set(
+      centerX,
+      this.gameModePanel.y - GAME_MODE_PANEL_HEIGHT / 2 - CONTROLS_GAP - BET_PANEL_HEIGHT / 2
+    )
 
-    // Машина занимает поле между строкой кредита и строкой выигрыша над рядом управления
-    const playAreaTop = SCREEN_MARGIN + CREDIT_HEIGHT + REELS_TOP_MARGIN
-    const playAreaBottom =
-      controlsCenterY - this.spinButton.sizePx / 2 - WIN_LABEL_GAP - WIN_LABEL_HEIGHT - WIN_LABEL_GAP
-    const playAreaHeight = playAreaBottom - playAreaTop
+    const spinCenterY = this.betPanel.y - BET_PANEL_HEIGHT / 2 - CONTROLS_GAP - this.spinButton.sizeUnits / 2
+
+    this.spinButton.position.set(
+      centerX - this.spinButton.sizeUnits / 2,
+      spinCenterY - this.spinButton.sizeUnits / 2
+    )
+
+    // Машина занимает поле между логотипом и рядом управления, снизу от неё — строка выигрыша
+    const playAreaTop = LOGO_TOP + LOGO_HEIGHT
+    const playAreaBottom = spinCenterY - this.spinButton.sizeUnits / 2
+    const winRowHeight = WIN_LABEL_GAP + WIN_LABEL_HEIGHT + WIN_LABEL_GAP
+    const playAreaHeight = playAreaBottom - playAreaTop - winRowHeight
 
     const reelsScale = Math.min(
       REELS_MACHINE_MAX_SCALE,
       playAreaHeight / REELS_FRAME_HEIGHT,
-      (screenWidth - 2 * SCREEN_MARGIN) / REELS_FRAME_WIDTH
+      (DESIGN_WIDTH - 2 * SCREEN_MARGIN) / REELS_FRAME_WIDTH
     )
     const reelsCenterY = playAreaTop + playAreaHeight / 2
     const reelsHalfHeight = (REELS_FRAME_HEIGHT * reelsScale) / 2
 
     this.reelsMachine.scale.set(reelsScale)
     this.reelsMachine.position.set(centerX, reelsCenterY)
-
-    // Строка кредита делит пополам просвет между верхом канваса и рамкой барабанов
-    this.creditLabel.position.set(centerX, (reelsCenterY - reelsHalfHeight) / 2)
 
     this.winLabel.position.set(centerX, reelsCenterY + reelsHalfHeight + WIN_LABEL_GAP + WIN_LABEL_HEIGHT / 2)
   }

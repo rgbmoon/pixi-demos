@@ -24,9 +24,10 @@ interface BaseButtonOptions {
   iconRatio?: number
 }
 
-const SIZE_PX: Record<ButtonSize, number> = {
-  md: 65,
-  lg: 130,
+// Сторона подложки в дизайн-единицах макета
+const SIZE_UNITS: Record<ButtonSize, number> = {
+  md: 130,
+  lg: 260,
 }
 
 // Доля стороны подложки, которую занимает иконка
@@ -41,7 +42,8 @@ const DISABLED_ALPHA = 0.7
  * Наследники добавляют содержимое и поведение.
  */
 export class Button extends LiveContainer {
-  readonly sizePx: number
+  /** Сторона кнопки в дизайн-единицах: по ней сцена расставляет ряд управления. */
+  readonly sizeUnits: number
 
   private readonly background = new Sprite()
   private readonly icon = new Sprite()
@@ -51,13 +53,13 @@ export class Button extends LiveContainer {
   constructor(options: BaseButtonOptions) {
     super()
 
-    const px = SIZE_PX[options.size]
+    const size = SIZE_UNITS[options.size]
 
-    this.sizePx = px
-    this.boundsArea = new Rectangle(0, 0, px, px)
+    this.sizeUnits = size
+    this.boundsArea = new Rectangle(0, 0, size, size)
 
     this.icon.anchor.set(0.5)
-    this.icon.position.set(px / 2, px / 2)
+    this.icon.position.set(size / 2, size / 2)
 
     this.addChild(this.background, this.icon)
 
@@ -93,11 +95,11 @@ export class Button extends LiveContainer {
   /** Меняет иконку кнопки из кэша Assets. */
   protected setIcon(src: string, iconRatio?: number): void {
     this.icon.texture = Assets.get(src)
-    this.icon.setSize(this.sizePx * (iconRatio ?? ICON_RATIO))
+    this.icon.setSize(this.sizeUnits * (iconRatio ?? ICON_RATIO))
   }
 
   private applyBackground(): void {
     this.background.texture = this.isActive ? this.textures.active : this.textures.normal
-    this.background.setSize(this.sizePx, this.sizePx)
+    this.background.setSize(this.sizeUnits, this.sizeUnits)
   }
 }

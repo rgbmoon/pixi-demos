@@ -33,7 +33,7 @@ export const createBlobTexture = (pixi: Pixi): Texture => {
   const ctx = canvas.getContext('2d')
 
   if (!ctx) {
-    throw new Error('createBlobTexture: 2d context недоступен')
+    throw new Error('createBlobTexture: 2d context unavailable')
   }
 
   const radius = blobTextureSize / 2
@@ -148,7 +148,7 @@ export const mountBackground = (container: HTMLElement): (() => void) => {
     try {
       await setup()
     } catch (error) {
-      traceError?.(error, 'Фон не загрузился')
+      traceError?.(error, 'Background failed to load')
     }
   }
 

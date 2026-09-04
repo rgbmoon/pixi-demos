@@ -39,7 +39,7 @@ export const GamePage = () => {
       } catch (cause) {
         if (disposed) return
 
-        notifyFatal(cause, 'Не удалось загрузить игру')
+        notifyFatal(cause, 'Failed to load the game')
       }
     }
 
@@ -61,7 +61,7 @@ export const GamePage = () => {
               <div className="flex flex-col items-center gap-3 px-6 text-center text-white">
                 <p>{fatal.message}</p>
                 {fatal.detail && <p className="text-sm wrap-break-word text-white/60">{fatal.detail}</p>}
-                <Button onClick={() => window.location.reload()}>Перезагрузить</Button>
+                <Button onClick={() => window.location.reload()}>Reload</Button>
               </div>
             ) : (
               <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/30 border-t-white" />

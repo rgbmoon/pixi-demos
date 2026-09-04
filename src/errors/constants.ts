@@ -2,7 +2,7 @@
 export const NOTICE_EVENT = 'app:notice'
 
 /** Текст уведомления, когда вызывающий код не дал своего. */
-export const DEFAULT_MESSAGE = 'Что-то пошло не так'
+export const DEFAULT_MESSAGE = 'Something went wrong'
 
 /** Текст оверлея, когда рантайм игры остановлен ошибкой. */
-export const FATAL_MESSAGE = 'Игра остановлена из-за ошибки'
+export const FATAL_MESSAGE = 'The game has stopped due to an error'

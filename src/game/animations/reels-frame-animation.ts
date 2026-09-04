@@ -1,6 +1,6 @@
 import { Assets, Container, Graphics, Sprite } from 'pixi.js'
 
-import { REELS_FRAME_SRC } from '../assets'
+import { REELS_FRAME_ALIAS } from '../assets'
 import {
   REELS_ZONE_HEIGHT,
   REELS_ZONE_OFFSET_X,
@@ -24,7 +24,7 @@ export class ReelsFrameAnimation {
   constructor(ticker: GameTicker) {
     this.ticker = ticker
 
-    const frameSprite = new Sprite(Assets.get(REELS_FRAME_SRC))
+    const frameSprite = new Sprite(Assets.get(REELS_FRAME_ALIAS))
 
     frameSprite.anchor.set(0.5)
 

@@ -29,7 +29,7 @@ const Snackbar = ({ entry, onClose }: SnackbarProps) => {
       </div>
       <button
         type="button"
-        aria-label="Закрыть"
+        aria-label="Close"
         onClick={() => onClose(entry.id)}
         className="shrink-0 leading-none text-white/60 hover:text-white transition-colors"
       >

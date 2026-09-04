@@ -23,11 +23,11 @@ const start = async (): Promise<void> => {
   try {
     await startMocking()
   } catch (error) {
-    traceError?.(error, 'Моки не запустились')
+    traceError?.(error, 'Mocks failed to start')
   }
 
   createRoot(document.getElementById('root')!, {
-    onUncaughtError: (error) => notifyError(error, 'Ошибка интерфейса'),
+    onUncaughtError: (error) => notifyError(error, 'Interface error'),
     onCaughtError: (error) => traceError?.(error),
     onRecoverableError: (error) => traceError?.(error),
   }).render(<App />)

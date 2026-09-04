@@ -3,88 +3,70 @@ import { SymbolKey } from 'src/types/game'
 
 // Единый манифест игровых ассетов: все URL в одном месте. `preloadGameAssets` грузит их
 // одним `Assets.load` на бутстрапе, до материализации сцены; классы читают их из кэша
-// синхронно (`Spine.from` / `Assets.get`). Другого `Assets.load` в проекте нет.
+// синхронно (`Assets.get`). Другого `Assets.load` в проекте нет.
 
-export type SpineAsset = {
-  skeletonUrl: string
-  atlasUrl: string
-}
-
-/** Спрайты одной ячейки: покой и размытие на прокрутке. Покоя может не быть — см. SYMBOL_SPRITES. */
+/** Спрайты одной ячейки: покой и размытие на прокрутке. */
 export type SymbolSprites = {
-  idle?: string
+  idle: string
   blur: string
 }
 
-const ANIMATIONS_DIR = '/game-assets/animations'
 const GRAPHIC_DIR = '/game-assets/graphic'
 
-// Номер ассета на ключ символа.
-const SYMBOL_NUMBERS: Record<SymbolKey, number> = {
-  [SymbolKey.S]: 1,
-  [SymbolKey.W]: 2,
-  [SymbolKey.A]: 3,
-  [SymbolKey.E]: 4,
-  [SymbolKey.F]: 5,
-  [SymbolKey.K]: 6,
-  [SymbolKey.L]: 8,
-  [SymbolKey.M]: 9,
-  [SymbolKey.N]: 10,
-  [SymbolKey.O]: 11,
-  [SymbolKey.P]: 12,
-}
+// Растровый арт лежит парами `.webp` + запасной формат, поэтому читается по алиасу: в `src` идёт
+// мультиформатный шаблон, из которого резолвер берёт поддерживаемое браузером расширение.
 
-const symbolEntries = Object.entries(SYMBOL_NUMBERS) as [SymbolKey, number][]
+/**
+ * Тир растрового пака: у символов и рамки барабанов есть папки `1` и `2` с одним и тем же артом
+ * в однократном и двукратном размере. Тир выбирается один раз, дальше `data.resolution` держит
+ * логический размер текстуры в единицах 1x — геометрия сцены от выбора не зависит.
+ */
+const TIER = window.devicePixelRatio > 1 ? 2 : 1
 
-/** Скелеты символов: единственная анимация в них — `win`, `idle` и `blur` идут спрайтами. */
-export const SYMBOL_ASSETS = Object.fromEntries(
-  symbolEntries.map(([key, number]) => [
-    key,
-    {
-      skeletonUrl: `${ANIMATIONS_DIR}/symbols/symbol_${number}/symbol-${number}.json`,
-      atlasUrl: `${ANIMATIONS_DIR}/symbols/symbol_${number}/symbol-${number}.atlas`,
-    },
-  ])
-) as Record<SymbolKey, SpineAsset>
-
-// У wild спрайта покоя нет: в него впечатана карточка-рамка, снятая со скелета.
-// Покой такому символу даёт setup-поза скелета — см. SymbolAnimation
-const WITHOUT_IDLE_SPRITE: SymbolKey[] = [SymbolKey.W]
+const symbolKeys = Object.keys(SymbolKey)
 
 export const SYMBOL_SPRITES = Object.fromEntries(
-  symbolEntries.map(([key, number]) => [
-    key,
-    {
-      idle: WITHOUT_IDLE_SPRITE.includes(key)
-        ? undefined
-        : `${GRAPHIC_DIR}/symbols/symbol_${number}/single-symbol-${number}.webp`,
-      blur: `${GRAPHIC_DIR}/symbols/symbol_${number}/symbol-${number}-blur.webp`,
-    },
-  ])
+  symbolKeys.map((key) => [key, { idle: `symbol-${key}-idle`, blur: `symbol-${key}-blur` }])
 ) as Record<SymbolKey, SymbolSprites>
 
-/** Подложка ячейки: общая для всех символов, меняется вместе с позой. */
-export const SYMBOL_BG_SRC = `${GRAPHIC_DIR}/symbols/symbol-bg.webp`
-export const SYMBOL_BG_BLUR_SRC = `${GRAPHIC_DIR}/symbols/symbol-bg-blur.webp`
+const symbolSources: UnresolvedAsset[] = symbolKeys.flatMap((key) => {
+  const dir = `${GRAPHIC_DIR}/symbols/symbol_${key}/${TIER}`
 
-export const REELS_FRAME_SRC = `${GRAPHIC_DIR}/reels/reels-bg.webp`
+  return [
+    { alias: SYMBOL_SPRITES[key as SymbolKey].idle, src: `${dir}/symbol-${key}.{webp,png}`, data: { resolution: TIER } },
+    {
+      alias: SYMBOL_SPRITES[key as SymbolKey].blur,
+      src: `${dir}/symbol-${key}-blur.{webp,png}`,
+      data: { resolution: TIER },
+    },
+  ]
+})
 
-/** Фон сцены: один скелет на два слоя — `background-back` за машиной и `background-front` перед ней. */
-export const BACKGROUND_ASSET: SpineAsset = {
-  skeletonUrl: `${ANIMATIONS_DIR}/background/background.json`,
-  atlasUrl: `${ANIMATIONS_DIR}/background/background.atlas`,
+export const REELS_FRAME_ALIAS = 'reels-bg'
+
+const REELS_FRAME_SOURCE: UnresolvedAsset = {
+  alias: REELS_FRAME_ALIAS,
+  src: `${GRAPHIC_DIR}/reels/${TIER}/reels-bg.{webp,png}`,
+  data: { resolution: TIER },
 }
 
-// Скелет символа поднимается только под выигрышную анимацию, поэтому пик спроса на ключ —
-// сколько выигравших ячеек одного вида показывается разом; при нехватке пул дорастает сам
-const SYMBOL_POOL_SIZE = 3
+/** Фон сцены: обычный режим и режим фриспинов. Тиров у фона нет, арт нарисован в размер макета. */
+export const BACKGROUND_ALIASES = {
+  default: 'bg-default',
+  fs: 'bg-fs',
+}
 
-/** Сколько инстансов каждого скелета `SpinePool` держит наготове после прогрева. */
-export const SPINE_WARM_UP: { asset: SpineAsset; count: number }[] = [
-  ...Object.values(SYMBOL_ASSETS).map((asset) => ({ asset, count: SYMBOL_POOL_SIZE })),
-  // Задний и передний слой фона — два инстанса одного скелета
-  { asset: BACKGROUND_ASSET, count: 2 },
+const BACKGROUND_SOURCES: UnresolvedAsset[] = [
+  { alias: BACKGROUND_ALIASES.default, src: `${GRAPHIC_DIR}/background/bg_default.{webp,jpg}` },
+  { alias: BACKGROUND_ALIASES.fs, src: `${GRAPHIC_DIR}/background/bg_fs.{webp,jpg}` },
 ]
+
+export const LOGO_ALIAS = 'logo'
+
+const LOGO_SOURCE: UnresolvedAsset = {
+  alias: LOGO_ALIAS,
+  src: `${GRAPHIC_DIR}/logo/logo.{webp,png}`,
+}
 
 export const PLATE_SRC = `${GRAPHIC_DIR}/buttons/plate-bg.svg`
 export const WIN_LINE_SRC = `${GRAPHIC_DIR}/win-line/winline.png`
@@ -136,13 +118,6 @@ const FONT_SOURCE: UnresolvedAsset = {
   data: { family: FONT_FAMILY },
 }
 
-const spineSources = [...Object.values(SYMBOL_ASSETS), BACKGROUND_ASSET].flatMap(({ skeletonUrl, atlasUrl }) => [
-  skeletonUrl,
-  atlasUrl,
-])
-
-const symbolSpriteSources = Object.values(SYMBOL_SPRITES).flatMap(({ idle, blur }) => (idle ? [idle, blur] : [blur]))
-
 const buttonSources = [
   ...Object.values(BUTTON_BACKINGS).flatMap(({ romb, circle }) => [
     romb.normal,
@@ -154,16 +129,11 @@ const buttonSources = [
 ]
 
 const GAME_SOURCES: (string | UnresolvedAsset)[] = [
-  ...new Set([
-    ...spineSources,
-    ...symbolSpriteSources,
-    SYMBOL_BG_SRC,
-    SYMBOL_BG_BLUR_SRC,
-    REELS_FRAME_SRC,
-    PLATE_SRC,
-    WIN_LINE_SRC,
-    ...buttonSources,
-  ]),
+  ...new Set([PLATE_SRC, WIN_LINE_SRC, ...buttonSources]),
+  ...symbolSources,
+  REELS_FRAME_SOURCE,
+  ...BACKGROUND_SOURCES,
+  LOGO_SOURCE,
   FONT_SOURCE,
 ]
 

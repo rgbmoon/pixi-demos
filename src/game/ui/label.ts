@@ -4,7 +4,7 @@ import { PALETTE } from 'src/constants/palette'
 import { FONT_FAMILY } from '../assets'
 
 export const LabelColor = {
-  gold: 'gold',
+  cyan: 'cyan',
   white: 'white',
 } as const
 

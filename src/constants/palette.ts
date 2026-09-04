@@ -5,6 +5,6 @@
 export const PALETTE = {
   primary: '#a98fc3',
   accent: '#6ec3a7',
-  gold: '#f0c452',
+  cyan: '#00e5ff',
   white: '#ffffff',
 } as const

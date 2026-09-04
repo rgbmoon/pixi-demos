@@ -1,28 +1,27 @@
-import type { Spine } from '@esotericsoftware/spine-pixi-v8'
 import { Container } from 'pixi.js'
 
-import type { SpineAsset } from '../assets'
 import type { SpinePool } from '../spine-pool'
+import type { SkeletonLike } from '../types'
 
 export class SpineAnimation {
   readonly view = new Container()
-  protected spine: Spine | null = null
+  protected spine: SkeletonLike | null = null
 
   private readonly pool: SpinePool
-  private asset: SpineAsset | null = null
+  private skeletonName: string | null = null
 
   constructor(pool: SpinePool) {
     this.pool = pool
   }
 
   /** Ставит скелет из пула; предыдущий возвращает туда же. Ассеты предзагружены. */
-  protected attach(asset: SpineAsset): void {
+  protected attach(skeleton: string): void {
     if (this.view.destroyed) return
 
-    if (this.spine && this.asset) this.pool.release(this.asset, this.spine)
+    if (this.spine && this.skeletonName) this.pool.release(this.skeletonName, this.spine)
 
-    this.asset = asset
-    this.spine = this.pool.acquire(asset)
+    this.skeletonName = skeleton
+    this.spine = this.pool.acquire(skeleton)
 
     this.view.addChild(this.spine)
 
@@ -31,12 +30,12 @@ export class SpineAnimation {
 
   /** Возвращает текущий скелет в пул: поза, собранная без Spine, скелет не занимает. */
   protected detach(): void {
-    if (!this.spine || !this.asset) return
+    if (!this.spine || !this.skeletonName) return
 
-    this.pool.release(this.asset, this.spine)
+    this.pool.release(this.skeletonName, this.spine)
 
     this.spine = null
-    this.asset = null
+    this.skeletonName = null
   }
 
   protected play(track: number, name: string, loop = true): void {

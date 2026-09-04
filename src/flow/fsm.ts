@@ -33,7 +33,7 @@ export class Fsm {
     const phase = this.phases.get(name)
 
     if (!phase) {
-      throw new Error(`Fsm: отсутствует биндинг фазы ${name}`)
+      throw new Error(`Fsm: missing binding for phase ${name}`)
     }
 
     return phase
@@ -75,6 +75,6 @@ export class Fsm {
    * внутри них (события, анимации, запросы), а петля останавливается, не начав следующую фазу.
    */
   dispose(): void {
-    this.abortController.abort(createAbortError('Игровой автомат остановлен'))
+    this.abortController.abort(createAbortError('Game state machine stopped'))
   }
 }

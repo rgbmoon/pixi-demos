@@ -15,7 +15,6 @@ import { BetMinusButton } from 'src/game/controllers/bet-minus-button'
 import { BetPanel } from 'src/game/controllers/bet-panel'
 import { BetPlusButton } from 'src/game/controllers/bet-plus-button'
 import { CreditLabel } from 'src/game/controllers/credit-label'
-import { ForegroundController } from 'src/game/controllers/foreground'
 import { GameModeMinusButton } from 'src/game/controllers/game-mode-minus-button'
 import { GameModePanel } from 'src/game/controllers/game-mode-panel'
 import { GameModePlusButton } from 'src/game/controllers/game-mode-plus-button'
@@ -85,13 +84,6 @@ const bindScene = (container: Container): void => {
     .to(BackgroundController)
     .onDeactivation((background) => {
       if (!background.destroyed) background.destroy({ children: true })
-    })
-
-  container
-    .bind(TOKENS.ForegroundController)
-    .to(ForegroundController)
-    .onDeactivation((foreground) => {
-      if (!foreground.destroyed) foreground.destroy({ children: true })
     })
 
   container

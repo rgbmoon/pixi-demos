@@ -10,7 +10,6 @@ import type { BetMinusButton } from 'src/game/controllers/bet-minus-button'
 import type { BetPanel } from 'src/game/controllers/bet-panel'
 import type { BetPlusButton } from 'src/game/controllers/bet-plus-button'
 import type { CreditLabel } from 'src/game/controllers/credit-label'
-import type { ForegroundController } from 'src/game/controllers/foreground'
 import type { GameModeMinusButton } from 'src/game/controllers/game-mode-minus-button'
 import type { GameModePanel } from 'src/game/controllers/game-mode-panel'
 import type { GameModePlusButton } from 'src/game/controllers/game-mode-plus-button'
@@ -50,7 +49,6 @@ export const TOKENS = {
   SceneStore: Symbol('SceneStore') as ServiceIdentifier<SceneStore>,
   // Контроллеры
   BackgroundController: Symbol('BackgroundController') as ServiceIdentifier<BackgroundController>,
-  ForegroundController: Symbol('ForegroundController') as ServiceIdentifier<ForegroundController>,
   ReelsMachineController: Symbol('ReelsMachineController') as ServiceIdentifier<ReelsMachineController>,
   SpinButton: Symbol('SpinButton') as ServiceIdentifier<SpinButton>,
   SoundToggleButton: Symbol('SoundToggleButton') as ServiceIdentifier<SoundToggleButton>,

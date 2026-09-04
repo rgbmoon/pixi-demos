@@ -15,12 +15,9 @@ import {
   REFERENCE_BACK_FACTOR,
   REFERENCE_OVERSHOOT,
   SPIN_SPEED,
-  SYMBOL_ART_BOXES,
-  SYMBOL_FIT_HEIGHT,
-  SYMBOL_FIT_WIDTH,
 } from './constants'
 import type { GameTicker } from './game-ticker'
-import type { CanvasSize, LandingPlan, PaylineShape, SymbolFit } from './types'
+import type { CanvasSize, LandingPlan, PaylineShape } from './types'
 
 /**
  * Размер канваса: `GAME_ASPECT_RATIO`-бокс во всю высоту доступной области.
@@ -30,17 +27,6 @@ export const getCanvasSize = (availableWidth: number, availableHeight: number): 
   const height = Math.min(availableHeight, availableWidth / GAME_ASPECT_RATIO)
 
   return { width: height * GAME_ASPECT_RATIO, height }
-}
-
-/**
- * Считает посадку арта символа в подложку: контент от 228 до 483 единиц, поэтому крупные
- * уменьшаются до `SYMBOL_FIT_*`, а смещённый относительно холста центр возвращается в центр ячейки.
- */
-export const getSymbolFit = (key: SymbolKey): SymbolFit => {
-  const box = SYMBOL_ART_BOXES[key]
-  const scale = Math.min(1, SYMBOL_FIT_WIDTH / box.width, SYMBOL_FIT_HEIGHT / box.height)
-
-  return { scale, offsetX: box.offsetX * scale, offsetY: box.offsetY * scale }
 }
 
 /** Форматирует денежную сумму для HUD: разряды через запятую, два знака после точки. */

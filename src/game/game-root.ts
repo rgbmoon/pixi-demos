@@ -50,7 +50,7 @@ export class GameRoot {
   private handleContextLost = () => {
     this.ticker.stop()
 
-    notifyFatal(new Error('WebGL-контекст потерян'), 'Графика остановлена, обновите страницу')
+    notifyFatal(new Error('WebGL context lost'), 'Rendering has stopped, please reload the page')
   }
 
   /**
@@ -121,7 +121,7 @@ export class GameRoot {
 
     // Без данных раунда барабаны пустые: автомат не запускаем, ошибку показывает страница
     if (this.sceneStore.game.status === RequestStatus.error) {
-      throw new Error('Не удалось загрузить данные игры', { cause: this.sceneStore.game.error })
+      throw new Error('Failed to load game data', { cause: this.sceneStore.game.error })
     }
 
     void this.fsm.start()

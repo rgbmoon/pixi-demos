@@ -7,8 +7,8 @@ import type { FlowStore } from 'src/stores/flow-store'
 import type { SceneStore } from 'src/stores/scene-store'
 import { PhaseName } from 'src/types/game'
 
-const FONT_SIZE = 24
-const GAP = 8
+const FONT_SIZE = 48
+const GAP = 16
 const WIN_CAPTION = 'WIN'
 const IDLE_MESSAGE = 'MAKE YOUR BET'
 const SPIN_MESSAGE = 'GOOD LUCK'
@@ -19,7 +19,7 @@ export class WinLabel extends LiveContainer {
   private readonly sceneStore: SceneStore
   private readonly flowStore: FlowStore
 
-  private readonly caption = new Label({ color: LabelColor.gold, fontSize: FONT_SIZE })
+  private readonly caption = new Label({ color: LabelColor.cyan, fontSize: FONT_SIZE })
   private readonly value = new Label({ color: LabelColor.white, fontSize: FONT_SIZE })
 
   constructor(@inject(TOKENS.SceneStore) sceneStore: SceneStore, @inject(TOKENS.FlowStore) flowStore: FlowStore) {

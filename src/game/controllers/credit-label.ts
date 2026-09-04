@@ -5,14 +5,14 @@ import { LiveContainer } from 'src/game/ui/live-container'
 import { formatAmount } from 'src/game/utils'
 import type { SceneStore } from 'src/stores/scene-store'
 
-const FONT_SIZE = 24
-const GAP = 8
+const FONT_SIZE = 48
+const GAP = 16
 const CAPTION = 'CREDIT'
 
 /** Строка над барабанами: подпись и баланс в одну строку, выровнены по центру. */
 @injectable()
 export class CreditLabel extends LiveContainer {
-  private readonly caption = new Label({ color: LabelColor.gold, fontSize: FONT_SIZE, text: CAPTION })
+  private readonly caption = new Label({ color: LabelColor.cyan, fontSize: FONT_SIZE, text: CAPTION })
   private readonly value = new Label({ color: LabelColor.white, fontSize: FONT_SIZE })
 
   constructor(@inject(TOKENS.SceneStore) sceneStore: SceneStore) {

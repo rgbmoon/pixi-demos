@@ -75,7 +75,7 @@ export class GameEmitter<E extends EventMap> {
         timeoutMs !== undefined
           ? setTimeout(() => {
               cleanup()
-              reject(new Error(`waitFor: событие "${event}" не пришло за ${timeoutMs} мс`))
+              reject(new Error(`waitFor: event "${event}" did not arrive within ${timeoutMs} ms`))
             }, timeoutMs)
           : undefined
 

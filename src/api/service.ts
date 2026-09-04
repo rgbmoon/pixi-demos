@@ -145,7 +145,7 @@ export class WsTransport {
     })
 
     activeSocket.addEventListener('close', () => {
-      this.rejectAllPending(new Error('WS-соединение закрыто'))
+      this.rejectAllPending(new Error('WS connection closed'))
     })
 
     return activeSocket
@@ -203,7 +203,7 @@ export class WsTransport {
       const timeoutId = setTimeout(() => {
         this.takePending(invocationId)
 
-        reject(new Error(`WS-запрос "${target}" не ответил за ${this.timeoutMs} мс`))
+        reject(new Error(`WS request "${target}" timed out after ${this.timeoutMs} ms`))
       }, this.timeoutMs)
 
       signal?.addEventListener(

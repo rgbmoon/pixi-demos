@@ -1,6 +1,16 @@
 import { SymbolKey } from 'src/types/game'
 
-import type { PaylineShape, SymbolArtBox } from './types'
+import type { PaylineShape } from './types'
+
+// Сцена раскладывается в координатах макета, а не в пикселях канваса: арт пака нарисован под этот
+// размер, поэтому рамка барабанов и фон ложатся в него один к одному. GameScene масштабируется
+// одним числом, все остальные размеры сцены — дизайн-единицы.
+/** Ширина макета сцены: нативная ширина фона. */
+export const DESIGN_WIDTH = 941
+/** Высота макета сцены: нативная высота фона. */
+export const DESIGN_HEIGHT = 1672
+/** Пропорции игрового поля: канвас повторяет макет, поэтому фон встаёт без полей и обрезки. */
+export const GAME_ASPECT_RATIO = DESIGN_WIDTH / DESIGN_HEIGHT
 
 // Количество барабанов и видимых символов фиксировано: reel-frame не позволяет разместить больше
 /** Барабанов в машине. */
@@ -28,20 +38,20 @@ export const LANDING_EASE_CELLS = 0.25
 /** Сила отскока в терминах `easeOutBack`: заброс за точку посадки растёт быстрее этого числа, см. её JSDoc. */
 export const LANDING_BACK_STRENGTH = 0.35
 
-/** Нативная ширина арта рамки (reels-bg.webp). */
-export const REELS_FRAME_WIDTH = 1394
+/** Нативная ширина арта рамки (reels-bg): ровно ширина макета. */
+export const REELS_FRAME_WIDTH = 941
 /** Нативная высота арта рамки. */
-export const REELS_FRAME_HEIGHT = 955
+export const REELS_FRAME_HEIGHT = 697
 
-// Зона символов внутри рамки: её непрозрачная область, x 137…1252 и y 66…857 в нативных пикселях
+// Зона символов внутри рамки: замерена по альфе арта — пять полупрозрачных колонок, шаг 174.85
 /** Ширина зоны символов в нативных пикселях рамки. */
-export const REELS_ZONE_WIDTH = 1116
+export const REELS_ZONE_WIDTH = 874.25
 /** Высота зоны символов в нативных пикселях рамки. */
-export const REELS_ZONE_HEIGHT = 792
-/** Смещение центра зоны от центра рамки: нижний орнамент рамки выше верхнего. */
-export const REELS_ZONE_OFFSET_X = -2
-/** Смещение центра зоны от центра рамки по вертикали. */
-export const REELS_ZONE_OFFSET_Y = -15.5
+export const REELS_ZONE_HEIGHT = 610
+/** Смещение центра зоны от центра рамки по горизонтали. */
+export const REELS_ZONE_OFFSET_X = -0.25
+/** Смещение центра зоны от центра рамки по вертикали: нижняя кромка рамки толще верхней. */
+export const REELS_ZONE_OFFSET_Y = -5.75
 /** Ширина ячейки символа: зона делится поровну между барабанами. */
 export const CELL_WIDTH = REELS_ZONE_WIDTH / REELS_COUNT
 /** Высота ячейки символа: зона делится поровну между видимыми символами. */
@@ -59,61 +69,30 @@ export const CELLS_ORIGIN_Y = (-REELS_ZONE_HEIGHT + CELL_HEIGHT) / 2
 /** Потолок масштаба машины: арт рамки растровый, выше нативного размера он мылит. */
 export const REELS_MACHINE_MAX_SCALE = 1
 
-/** Нативная ширина подложки ячейки (symbol-bg.webp 432×520). */
-export const SYMBOL_BG_WIDTH = 432
-/** Нативная высота подложки ячейки. */
-export const SYMBOL_BG_HEIGHT = 520
-/** Просвет между подложками соседних ячеек в пикселях зоны. */
-export const SYMBOL_GAP = 12
-// Подложка садится в ячейку за вычетом просвета; спрайты символов и их скелеты лежат
-// в тех же единицах, поэтому весь контент ячейки масштабируется одним числом
+/** Нативная ширина холста символа: у всех символов пака он одинаковый. */
+export const SYMBOL_ART_WIDTH = 176
+/** Нативная высота холста символа. */
+export const SYMBOL_ART_HEIGHT = 208
+// Арт нарисован в размер ячейки, поэтому вписывается целиком; спрайты и скелеты символа лежат
+// в тех же единицах, и весь контент ячейки масштабируется одним числом
 /** Масштаб содержимого ячейки: из нативных единиц символа в пиксели зоны. */
-export const SYMBOL_SCALE = Math.min(
-  (CELL_WIDTH - SYMBOL_GAP) / SYMBOL_BG_WIDTH,
-  (CELL_HEIGHT - SYMBOL_GAP) / SYMBOL_BG_HEIGHT
+export const SYMBOL_SCALE = Math.min(CELL_WIDTH / SYMBOL_ART_WIDTH, CELL_HEIGHT / SYMBOL_ART_HEIGHT)
+
+// Скелет — имя набора анимаций: по нему пул раскладывает инстансы, а реализация скелета ищет своё
+// описание. Единственная анимация скелета символа — `win`, покой и размытие идут спрайтами.
+/** Скелет символа на его ключ. */
+export const SYMBOL_SKELETONS: Record<SymbolKey, string> = Object.fromEntries(
+  Object.keys(SymbolKey).map((key) => [key, `symbol-${key}`])
+) as Record<SymbolKey, string>
+
+// Скелет символа поднимается только под выигрышную анимацию, поэтому пик спроса на ключ —
+// сколько выигравших ячеек одного вида показывается разом; при нехватке пул дорастает сам
+const SYMBOL_POOL_SIZE = 3
+
+/** Сколько инстансов каждого скелета `SpinePool` держит наготове после прогрева. */
+export const SPINE_WARM_UP: { skeleton: string; count: number }[] = Object.values(SYMBOL_SKELETONS).map(
+  (skeleton) => ({ skeleton, count: SYMBOL_POOL_SIZE })
 )
-// Арты символов разного размера (контент от 228 до 483 единиц), поэтому каждый ещё
-// вписывается в подложку с общим отступом — иначе крупные вылезают за её края
-/** Отступ арта символа от края подложки в нативных единицах. */
-export const SYMBOL_INSET = 24
-/** Ширина поля, в которое вписывается арт символа. */
-export const SYMBOL_FIT_WIDTH = SYMBOL_BG_WIDTH - 2 * SYMBOL_INSET
-/** Высота поля, в которое вписывается арт символа. */
-export const SYMBOL_FIT_HEIGHT = SYMBOL_BG_HEIGHT - 2 * SYMBOL_INSET
-
-// Непрозрачный бокс спрайта single-symbol-N.webp: размер контента и сдвиг его центра от центра
-// холста. Холсты экспортированы по-разному (405×293 … 800×800), поэтому размер текстуры для
-// посадки арта не годится. Замеряется скриптом по альфа-каналу, пересобирать при смене пака.
-/** Габариты арта символа и поправка центра, нативные единицы. */
-export const SYMBOL_ART_BOXES: Record<SymbolKey, SymbolArtBox> = {
-  [SymbolKey.S]: { width: 448, height: 416, offsetX: 10, offsetY: -28 },
-  // Вайлд: покой рисует скелет, бокс взят по его клиппингу — карточка-рамка с него снята.
-  // Сдвиг вниз сажает персонажа на низ подложки: ноги обрезаны границей анимации
-  [SymbolKey.W]: { width: 435, height: 525, offsetX: 0, offsetY: 28 },
-  [SymbolKey.A]: { width: 400, height: 290, offsetX: -0.5, offsetY: 1.5 },
-  [SymbolKey.E]: { width: 400, height: 292, offsetX: -0.5, offsetY: 0.5 },
-  [SymbolKey.F]: { width: 400, height: 290, offsetX: -0.5, offsetY: 1.5 },
-  [SymbolKey.K]: { width: 400, height: 290, offsetX: -0.5, offsetY: 1.5 },
-  [SymbolKey.L]: { width: 362, height: 397, offsetX: 0, offsetY: -11.5 },
-  [SymbolKey.M]: { width: 362, height: 398, offsetX: 0, offsetY: -9 },
-  [SymbolKey.N]: { width: 351, height: 418, offsetX: -0.5, offsetY: -25 },
-  [SymbolKey.O]: { width: 228, height: 414, offsetX: 6, offsetY: -14 },
-  [SymbolKey.P]: { width: 422, height: 399, offsetX: 0, offsetY: -20.5 },
-}
-
-// Нативный бокс скелета фона из background.json: по нему считается cover-масштаб под экран
-/** Нативная ширина фона. */
-export const BACKGROUND_WIDTH = 2547.76
-/** Нативная высота фона. */
-export const BACKGROUND_HEIGHT = 1100.26
-/** Доля высоты фона, срезаемая сверху и снизу при вписывании в канвас. */
-export const BACKGROUND_CROP_Y = 0.03
-/** Пропорции игрового поля: фон обрезается по бокам до этого соотношения. */
-export const GAME_ASPECT_RATIO = 4 / 3
-/** Анимация заднего слоя фона: показывает всё, кроме переднего плана. */
-export const BACKGROUND_BACK_ANIMATION = 'background-back'
-/** Анимация переднего слоя фона: показывает только передний план. */
-export const BACKGROUND_FRONT_ANIMATION = 'background-front'
 
 /** Непрозрачность затемнения поля на разборе выигрыша. */
 export const TINT_ALPHA = 0.55
@@ -137,17 +116,15 @@ export const PAYLINES: Record<string, PaylineShape> = {
 /** Сколько линии режима видны после нажатия кнопки настройки, мс. */
 export const PAYLINE_PREVIEW_MS = 1000
 /** Толщина линии выплат в нативных пикселях зоны символов. */
-export const PAYLINE_THICKNESS = 10
+export const PAYLINE_THICKNESS = 8
 /** На столько соседние отрезки заходят друг за друга на изломе: без нахлёста на внешнем углу остаётся вырез. */
 export const PAYLINE_JOINT_OVERLAP = PAYLINE_THICKNESS / 2
 
 // Вин-рамка рисуется по границам ячейки: готового арта под неё в паке нет
-/** Радиус скругления вин-рамки в нативных пикселях зоны символов. */
-export const WIN_FRAME_RADIUS = 24
 /** Толщина обводки вин-рамки в нативных пикселях зоны символов. */
-export const WIN_FRAME_THICKNESS = 8
+export const WIN_FRAME_THICKNESS = 6
 /** На столько обводка вин-рамки отступает внутрь ячейки, чтобы не наезжать на соседей. */
-export const WIN_FRAME_INSET = 6
+export const WIN_FRAME_INSET = 5
 
 // Тайминги показа выигрыша
 /** Сколько все выигравшие линии и символы показываются разом до разбора по линиям, мс. */
