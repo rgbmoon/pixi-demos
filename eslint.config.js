@@ -8,6 +8,184 @@ import unusedImports from 'eslint-plugin-unused-imports'
 import prettierConfig from 'eslint-config-prettier'
 import tseslint from 'typescript-eslint'
 
+// Каждая папка верхнего уровня — будущий npm-пакет, поэтому направление импортов между ними
+// проверяется линтером. `allowTypeImports` оставляет развязку через `import type`, на ней стоит DI.
+//
+// Важно: в flat-config правила одного имени не складываются, а заменяются целиком. Поэтому каждый
+// блок объявляет ПОЛНЫЙ набор ограничений для своих файлов (пакетные + слоевые + paths), а блоки
+// идут от общего к частному — побеждает последний совпавший.
+const boundary = (files, { patterns = [], paths = [] }) => ({
+  files,
+  rules: {
+    '@typescript-eslint/no-restricted-imports': ['error', { patterns, paths }],
+  },
+})
+
+const under = (...roots) => roots.flatMap((root) => [root, `${root}/**`])
+
+/** Запрет на пакеты по их корням: и сам модуль, и всё под ним. */
+const forbid = (roots, message, allowTypeImports = false) => ({ group: under(...roots), message, allowTypeImports })
+
+const NO_REACT = {
+  group: ['react', 'react-dom', 'react-dom/*'],
+  message: 'Пакет обязан оставаться без React.',
+}
+
+const NO_PIXI = {
+  group: ['pixi.js', 'pixi.js/*'],
+  message: 'Пакет обязан оставаться чистым: без PIXI.',
+}
+
+// Типы PIXI стираются компилятором, в чанк попадает только рантайм-импорт
+const NO_PIXI_RUNTIME = {
+  ...NO_PIXI,
+  message: 'PIXI в React-ките — только динамическим import(), иначе он попадёт в стартовый чанк.',
+  allowTypeImports: true,
+}
+
+// Подписки в дереве сцены ставятся через watch/listen базы LiveContainer: она снимает их сама
+const NO_RAW_SUBSCRIBE = [
+  {
+    name: 'mobx',
+    importNames: ['reaction', 'autorun', 'when'],
+    message: 'В дереве сцены подписки — через watch/listen базы LiveContainer.',
+  },
+]
+
+const NOT_A_GAME = forbid(['src/components', 'src/pages', 'src/app'], 'Игра не знает ни React-кита, ни страниц, ни композиции.')
+
+const packageBoundaries = [
+  boundary(['src/core/**/*.ts'], {
+    patterns: [
+      forbid(
+        ['src/net', 'src/components', 'src/engine', 'src/games', 'src/pages', 'src/app'],
+        'core — лист графа: остальных пакетов он не знает.'
+      ),
+      NO_PIXI,
+      NO_REACT,
+    ],
+  }),
+  boundary(['src/net/**/*.ts'], {
+    patterns: [
+      forbid(['src/components', 'src/engine', 'src/games', 'src/pages', 'src/app'], 'net знает только core.'),
+      NO_PIXI,
+      NO_REACT,
+    ],
+  }),
+  boundary(['src/components/**/*.{ts,tsx}'], {
+    patterns: [
+      forbid(['src/engine', 'src/games', 'src/pages', 'src/app'], 'components знает только core и net.'),
+      NO_PIXI_RUNTIME,
+    ],
+  }),
+  boundary(['src/engine/**/*.ts'], {
+    patterns: [
+      forbid(['src/components', 'src/games', 'src/pages', 'src/app'], 'engine — общий PIXI-рантайм: игр и React-кита он не знает.'),
+      NO_REACT,
+    ],
+    paths: NO_RAW_SUBSCRIBE,
+  }),
+  // LiveContainer — единственное место, где подписка ставится напрямую: она и есть их владелец
+  boundary(['src/engine/live-container.ts'], {
+    patterns: [
+      forbid(['src/components', 'src/games', 'src/pages', 'src/app'], 'engine — общий PIXI-рантайм: игр и React-кита он не знает.'),
+      NO_REACT,
+    ],
+  }),
+  boundary(['src/app/**/*.{ts,tsx}'], {
+    patterns: [
+      forbid(['src/games'], 'Композиционный корень не знает игру статически — её знает только её страница.'),
+      {
+        // Токены — лист графа из одних Symbol; всё остальное в engine тянет PIXI в стартовый чанк
+        group: ['src/engine/**', '!src/engine/tokens'],
+        message: 'app не тянет PIXI-рантайм: из engine ему доступны только токены.',
+      },
+    ],
+  }),
+  // Агрегатор моков по определению перечисляет все игры; в прод-бандл он не попадает (флаг USE_MOCKS)
+  boundary(['src/app/mocks/**/*.ts'], {
+    patterns: [
+      {
+        group: ['src/engine/**', '!src/engine/tokens'],
+        message: 'app не тянет PIXI-рантайм: из engine ему доступны только токены.',
+      },
+    ],
+  }),
+  // Лендинг и 404 — общий бандл: игра и PIXI приезжают только с ленивым чанком страницы игры
+  boundary(['src/pages/main/**/*.{ts,tsx}', 'src/pages/not-found/**/*.{ts,tsx}'], {
+    patterns: [
+      forbid(['src/engine', 'src/games'], 'Страницы вне игры не тянут ни игру, ни PIXI — иначе они уедут в стартовый чанк.'),
+      NO_PIXI_RUNTIME,
+    ],
+  }),
+]
+
+// Уровни внутри игры: вниз импортировать можно, вверх — только `import type`.
+// Каждый блок повторяет пакетный набор, иначе он его затрёт.
+const GAME_BASE = [NOT_A_GAME, NO_REACT]
+
+const gameLayers = [
+  boundary(['src/games/**/*.ts'], { patterns: GAME_BASE, paths: NO_RAW_SUBSCRIBE }),
+  boundary(['src/games/*/ui/**/*.ts'], {
+    patterns: [
+      ...GAME_BASE,
+      forbid(
+        ['src/games/*/stores', 'src/games/*/api', 'src/games/*/phases', 'src/games/*/controllers', 'src/games/*/scenes'],
+        'ui — то, что рисуется: сторов, сети, контроллеров и сцены он не знает.'
+      ),
+      { group: under('src/games/*/events'), message: 'ui не подписывается на события — это работа контроллера.' },
+    ],
+    paths: NO_RAW_SUBSCRIBE,
+  }),
+  boundary(['src/games/*/api/**/*.ts'], {
+    patterns: [
+      ...GAME_BASE,
+      forbid(
+        ['src/games/*/stores', 'src/games/*/phases', 'src/games/*/controllers', 'src/games/*/ui', 'src/games/*/scenes'],
+        'api знает только листовые типы и константы игры.'
+      ),
+    ],
+    paths: NO_RAW_SUBSCRIBE,
+  }),
+  boundary(['src/games/*/stores/**/*.ts'], {
+    patterns: [
+      ...GAME_BASE,
+      forbid(
+        ['src/games/*/phases', 'src/games/*/controllers', 'src/games/*/ui', 'src/games/*/scenes'],
+        'Стор не знает ни автомата, ни сцены.'
+      ),
+    ],
+    paths: NO_RAW_SUBSCRIBE,
+  }),
+  boundary(['src/games/*/controllers/**/*.ts'], {
+    patterns: [
+      ...GAME_BASE,
+      // DTO живут рядом со своими схемами, поэтому тип ответа контроллеру доступен — вызов нет
+      forbid(['src/games/*/api'], 'Контроллер читает данные из стора, в сеть он не ходит.', true),
+      forbid(['src/games/*/phases', 'src/games/*/scenes'], 'Контроллер не знает ни автомата, ни сцены: они дёргают его методы сами.'),
+    ],
+    paths: NO_RAW_SUBSCRIBE,
+  }),
+  boundary(['src/games/*/phases/**/*.ts'], {
+    patterns: [
+      ...GAME_BASE,
+      forbid(
+        ['src/games/*/controllers', 'src/games/*/scenes', 'src/games/*/ui'],
+        'Фаза получает контроллеры через DI: сцену и виды — только import type.',
+        true
+      ),
+    ],
+    paths: NO_RAW_SUBSCRIBE,
+  }),
+  boundary(['src/games/*/scenes/**/*.ts'], {
+    patterns: [
+      ...GAME_BASE,
+      forbid(['src/games/*/api', 'src/games/*/phases'], 'Сцена — раскладка контроллеров: ни сети, ни автомата она не знает.'),
+    ],
+    paths: NO_RAW_SUBSCRIBE,
+  }),
+]
+
 export default [
   {
     ignores: ['**/node_modules/**', '**/dist/**', '**/.husky/**', 'public/**', 'vite.config.ts'],
@@ -57,7 +235,7 @@ export default [
       'import/order': [
         'error',
         {
-          groups: ['builtin', 'external', 'internal'],
+          groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
           pathGroups: [{ pattern: 'react', group: 'external', position: 'before' }],
           pathGroupsExcludedImportTypes: ['react'],
           'newlines-between': 'always',
@@ -93,23 +271,6 @@ export default [
       '@typescript-eslint/no-misused-promises': 'error',
     },
   },
-  {
-    files: ['src/game/**/*.ts'],
-    ignores: ['src/game/ui/live-container.ts'],
-    rules: {
-      // Это правило нужно для запрета импортов reaction и autorun из mobx в коде игры, чтобы подписки делались через LiveContainer.
-      'no-restricted-imports': [
-        'error',
-        {
-          paths: [
-            {
-              name: 'mobx',
-              importNames: ['reaction', 'autorun', 'when'],
-              message: 'В дереве сцены подписки — через watch/listen базы LiveContainer.',
-            },
-          ],
-        },
-      ],
-    },
-  },
+  ...packageBoundaries,
+  ...gameLayers,
 ]

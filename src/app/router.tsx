@@ -20,12 +20,12 @@ export const router = createBrowserRouter([
             },
           },
           {
-            path: '/game',
+            path: '/slot',
             lazy: async () => {
-              const module = await import('src/pages/game')
-              const { GamePage } = module
+              const module = await import('src/pages/slot')
+              const { SlotPage } = module
               return {
-                element: <GamePage />,
+                element: <SlotPage />,
               }
             },
           },

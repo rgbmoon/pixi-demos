@@ -1,5 +1,5 @@
 import { createRoot } from 'react-dom/client'
-import { installGlobalHandlers, notifyError, traceError } from 'src/errors/utils'
+import { installGlobalHandlers, notifyError, traceError } from 'src/core/errors/utils'
 
 import './styles/index.css'
 
@@ -12,7 +12,7 @@ const startMocking = async (): Promise<void> => {
     return
   }
 
-  const { worker } = await import('src/mocks/browser')
+  const { worker } = await import('src/app/mocks/browser')
   await worker.start({ onUnhandledRequest: 'bypass' })
 }
 

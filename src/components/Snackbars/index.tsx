@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { type Notice, NoticeSeverity } from 'src/errors/types'
-import { onNotice } from 'src/errors/utils'
+import { type Notice, NoticeSeverity } from 'src/core/errors/types'
+import { onNotice } from 'src/core/errors/utils'
 
 const AUTO_HIDE_MS = 6000
 

@@ -1,6 +1,6 @@
 import { Link, Outlet } from 'react-router-dom'
-import { LogoIcon } from 'src/assets/icons'
 import { BackgroundCanvas } from 'src/components/BackgroundCanvas'
+import { LogoIcon } from 'src/components/icons'
 import { Snackbars } from 'src/components/Snackbars'
 
 export const Layout = () => {

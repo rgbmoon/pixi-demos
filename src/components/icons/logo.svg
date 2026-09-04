@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="Logo">
+  <!--
+    Стеклянная призма «play». Рамка — обводка одного треугольного пути:
+    stroke-linejoin="miter" сам достраивает и вырез, и острые углы огранки,
+    отдельный контур выреза не нужен. Узкая тёмная обводка поверх широкой
+    затемняет середину полосы и оставляет по краям светлые фаски — грани стекла.
+    Градиент идёт по токенам палитры: accent → cyan → primary.
+  -->
+  <defs>
+    <linearGradient id="logo-edge" x1="6%" y1="92%" x2="100%" y2="45%">
+      <stop offset="0%" stop-color="#6ec3a7"/>
+      <stop offset="45%" stop-color="#00e5ff"/>
+      <stop offset="100%" stop-color="#a98fc3"/>
+    </linearGradient>
+
+    <path id="logo-mark" d="M31 27 L94 60 L31 93 Z"/>
+  </defs>
+
+  <g fill="none" stroke-linejoin="miter" stroke-miterlimit="6">
+    <use href="#logo-mark" stroke="url(#logo-edge)" stroke-width="13.8"/>
+    <use href="#logo-mark" stroke="#0f172a" stroke-width="5.4" opacity="0.6"/>
+    <path d="M38.4 25 L90.1 52.1" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" opacity="0.45"/>
+    <path d="M38.4 95 L90.1 67.9" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round" opacity="0.22"/>
+  </g>
+</svg>

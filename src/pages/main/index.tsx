@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { LinkOutIcon } from 'src/assets/icons'
+import { LinkOutIcon } from 'src/components/icons'
 
 export const MainPage = () => {
   return (
@@ -25,25 +25,25 @@ export const MainPage = () => {
       </section>
 
       <section className="flex flex-col gap-6">
-        <h2 className="text-4xl font-extralight">Demo games</h2>
+        <h2 className="text-4xl font-extralight">Demo</h2>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <Link
-            to="/game"
+            to="/slot"
             className="group block overflow-hidden rounded-xl border border-white/15 bg-white/5 backdrop-blur-xs hover:border-brand-accent hover:shadow-[0_0_30px_-10px_var(--color-brand-accent)] transition-all duration-150"
           >
             <div className="relative aspect-video">
               <picture>
-                <source srcSet="/game-assets/graphic/background/bg_default.webp" type="image/webp" />
+                <source srcSet="/games/slot/graphic/background/bg_default.webp" type="image/webp" />
                 <img
-                  src="/game-assets/graphic/background/bg_default.jpg"
+                  src="/games/slot/graphic/background/bg_default.jpg"
                   alt=""
                   className="absolute inset-0 w-full h-full object-cover"
                 />
               </picture>
               <picture>
-                <source srcSet="/game-assets/graphic/logo/logo.webp" type="image/webp" />
+                <source srcSet="/games/slot/graphic/logo/logo.webp" type="image/webp" />
                 <img
-                  src="/game-assets/graphic/logo/logo.png"
+                  src="/games/slot/graphic/logo/logo.png"
                   alt="Slot machine"
                   className="absolute top-1/2 left-1/2 w-[70%] -translate-x-1/2 -translate-y-1/2"
                 />
@@ -53,8 +53,8 @@ export const MainPage = () => {
               <h3 className="text-xl font-light">Slot machine</h3>
               <p className="text-sm font-extralight text-slate-300">
                 Reel mechanics demo — the spin itself is the subject: independent reels, cascades, held reels, nudge and
-                reverse spin, turbo and slam stop. Rounds are server-authoritative; the client presents the result it
-                receives.
+                reverse spin, turbo and slam stop, double reel cells. Rounds are server-authoritative; the client
+                presents the result it receives.
               </p>
             </div>
           </Link>

@@ -1,7 +1,8 @@
 import type * as PixiModule from 'pixi.js'
 import type { Texture, Ticker } from 'pixi.js'
-import { BG_BLOBS, BG_CANVAS_COLOR, BG_SPAWN_DURATION } from 'src/constants/bg-blobs'
-import { traceError } from 'src/errors/utils'
+import { BG_BLOBS, BG_CANVAS_COLOR, BG_SPAWN_DURATION } from 'src/components/BackgroundCanvas/constants'
+import { easeOutBack } from 'src/core/easing'
+import { traceError } from 'src/core/errors/utils'
 
 type Pixi = typeof PixiModule
 
@@ -13,13 +14,6 @@ const wander = (elapsed: number, speed: number, phase: number): number =>
 const spawnFinishedAt = BG_SPAWN_DURATION + Math.max(...BG_BLOBS.map((blob) => blob.spawnDelay))
 
 const easeOutCubic = (t: number): number => 1 - (1 - t) ** 3
-
-const easeOutBack = (t: number): number => {
-  const c1 = 1.70158
-  const c3 = c1 + 1
-
-  return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2
-}
 
 const clamp = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max)
 

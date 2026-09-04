@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 
 import { isRouteErrorResponse, useRouteError } from 'react-router-dom'
 import { Button } from 'src/components/Button'
-import { describeError, traceError } from 'src/errors/utils'
+import { describeError, traceError } from 'src/core/errors/utils'
 
 const toDetail = (error: unknown): string =>
   isRouteErrorResponse(error) ? `${error.status} ${error.statusText}` : describeError(error)
