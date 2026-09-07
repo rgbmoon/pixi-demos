@@ -16,7 +16,7 @@ export const GAME_ASPECT_RATIO = DESIGN_WIDTH / DESIGN_HEIGHT
 export const REELS_COUNT = 5
 /** Видимых символов в барабане. */
 export const VISIBLE_SYMBOLS_COUNT = 3
-/** Ячейка сверх видимых: держит символ, въезжающий в зону сверху. */
+/** Ячеек сверх видимых: запас, внутри которого символ успевает сменить текстуру вне маски. */
 export const BUFFER_SYMBOLS_COUNT = 1
 /** Лесенка остановки: на столько ячеек каждый следующий барабан крутится дольше предыдущего. */
 export const LAND_STAGGER_CELLS = 2
@@ -89,9 +89,10 @@ export const SYMBOL_SKELETONS: Record<SymbolKey, string> = Object.fromEntries(
 const SYMBOL_POOL_SIZE = 3
 
 /** Сколько инстансов каждого скелета `SpinePool` держит наготове после прогрева. */
-export const SPINE_WARM_UP: { skeleton: string; count: number }[] = Object.values(SYMBOL_SKELETONS).map(
-  (skeleton) => ({ skeleton, count: SYMBOL_POOL_SIZE })
-)
+export const SPINE_WARM_UP: { skeleton: string; count: number }[] = Object.values(SYMBOL_SKELETONS).map((skeleton) => ({
+  skeleton,
+  count: SYMBOL_POOL_SIZE,
+}))
 
 /** Непрозрачность затемнения поля на разборе выигрыша. */
 export const TINT_ALPHA = 0.55

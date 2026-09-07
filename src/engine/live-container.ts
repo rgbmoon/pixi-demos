@@ -5,7 +5,7 @@ import type { GameEmitter } from 'src/core/events/game-emitter'
 import type { EventMap, EventName } from 'src/core/events/types'
 
 /**
- * База view-классов с внешними подписками: watch/listen сами регистрируют
+ * База контроллеров — узлов сцены с внешними подписками: watch/listen сами регистрируют
  * функцию отписки, destroy снимает все подписки разом.
  */
 export class LiveContainer extends Container {
@@ -23,7 +23,7 @@ export class LiveContainer extends Container {
     }
   }
 
-  /** Реакция на MobX-выражение; отписка привязана к destroy. */
+  /** Реакция на MobX-выражение; отписка привязана к destroy. На уничтоженном контейнере — no-op. */
   protected watch<T>(expression: () => T, effect: (value: T) => void, options?: IReactionOptions<T, boolean>): void {
     if (this.destroyed) return
 
@@ -38,7 +38,7 @@ export class LiveContainer extends Container {
     )
   }
 
-  /** Подписка на событие эмиттера; отписка привязана к destroy. */
+  /** Подписка на событие эмиттера; отписка привязана к destroy. На уничтоженном контейнере — no-op. */
   protected listen<E extends EventMap, K extends EventName<E>>(
     emitter: GameEmitter<E>,
     event: K,

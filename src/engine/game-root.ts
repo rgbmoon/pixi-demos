@@ -7,6 +7,7 @@ import type { GameTicker } from 'src/engine/game-ticker'
 import { ENGINE_TOKENS } from 'src/engine/tokens'
 import type { CanvasConfig, SceneLike } from 'src/engine/types'
 
+import { MAX_RESOLUTION } from './constants'
 import { connectDevtools, getCanvasSize } from './utils'
 
 /**
@@ -66,7 +67,11 @@ export class GameRoot {
     this.pending = app
 
     // Размер канваса фиксируется на маунте: игра не пересобирает раскладку на ресайз окна
-    const { width, height } = getCanvasSize(container.clientWidth, container.clientHeight, this.canvasConfig.aspectRatio)
+    const { width, height } = getCanvasSize(
+      container.clientWidth,
+      container.clientHeight,
+      this.canvasConfig.aspectRatio
+    )
 
     try {
       // autoStart: false — свой тикер приложение не запускает
@@ -75,7 +80,7 @@ export class GameRoot {
         background: '#475569',
         width,
         height,
-        resolution: window.devicePixelRatio,
+        resolution: Math.min(window.devicePixelRatio || 1, MAX_RESOLUTION),
         autoDensity: true,
       })
     } catch (error) {
@@ -108,7 +113,6 @@ export class GameRoot {
 
     this.layout()
 
-    // Данные раунда грузит стартовая фаза: хост отвечает только за PIXI-мир
     void this.fsm.start()
   }
 

@@ -4,8 +4,7 @@ import type { SpinePool } from './spine-pool'
 import type { SkeletonLike } from './types'
 
 /**
- * База визуальных классов на скелете: держит скелет из пула и даёт методы работы с треками.
- * Сам по себе — контейнер сцены, поэтому владелец добавляет его как обычного ребёнка.
+ * База классов анимаций на основе Spine.
  */
 export class SpineAnimation extends Container {
   protected spine: SkeletonLike | null = null

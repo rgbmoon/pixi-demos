@@ -4,16 +4,17 @@ import { FATAL_MESSAGE } from 'src/core/errors/constants'
 import { notifyFatal } from 'src/core/errors/utils'
 
 /**
- * Игровой тикер: PIXI-Ticker, дополненный игровой паузой `waitTicks`.
+ * Игровой тикер: PIXI-Ticker, которым игра владеет сама, а не берёт у приложения. Причины —
+ * время жизни (`app.ticker` появляется только после `await app.init()`, а конструкторам графа
+ * тикер нужен раньше), игровая пауза `waitTicks` в кадрах вместо системного времени, перехват
+ * исключений кадровых шагов и уничтожение вместе с game-контейнером, а не со вкладкой.
  * Экземпляр создаёт game-контейнер до PIXI-init; после init GameRoot переводит на него рендер.
  */
 @injectable()
 export class GameTicker extends Ticker {
-  destroyed = false
-
   override destroy(): void {
-    this.destroyed = true
-
+    // Без super.destroy(): Application.destroy зовёт его до разбора сцены, а каскад stage.destroy
+    // дальше снимает колбэки сам через ticker.remove
     this.stop()
   }
 
@@ -59,6 +60,7 @@ export class GameTicker extends Ticker {
       const handleAbort = () => settle(() => reject(signal?.reason as Error))
 
       signal?.addEventListener('abort', handleAbort, { once: true })
+
       this.add(step)
     })
   }

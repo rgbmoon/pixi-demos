@@ -1,5 +1,4 @@
-import { Assets, Rectangle, Sprite, type Texture } from 'pixi.js'
-import { LiveContainer } from 'src/engine/live-container'
+import { Assets, Container, Rectangle, Sprite, type Texture } from 'pixi.js'
 import { BUTTON_BACKINGS } from 'src/games/slot/assets'
 import { BUTTON_SIZE_UNITS, ICON_RATIO, DISABLED_ALPHA } from 'src/games/slot/constants'
 import type { ButtonOptions } from 'src/games/slot/types'
@@ -8,7 +7,7 @@ import type { ButtonOptions } from 'src/games/slot/types'
  * Кнопка сцены: спрайт-подложка с обычным и active-состоянием, SVG-иконка по центру.
  * Размер задаётся пресетом, арт берётся из манифеста игры.
  */
-export class Button extends LiveContainer {
+export class Button extends Container {
   /** Сторона кнопки в дизайн-единицах: по ней сцена расставляет ряд управления. */
   readonly sizeUnits: number
 

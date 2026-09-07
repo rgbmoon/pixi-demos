@@ -22,7 +22,10 @@ const ServerInvocationSchema = z.object({
 })
 
 /**
- * Обертка вокруг partysocket, предоставляющая методы для удобной работы с сетью
+ * Транспорт игрового WebSocket: превращает поток сообщений в запрос-ответ и push-подписки.
+ * Ответы сводятся с запросами по `invocationId`; серверная ошибка и невалидный конверт реджектят
+ * запрос. Запросы переживают переподключение — их снимает только собственный таймаут, `signal`
+ * или явный `disconnect`.
  */
 export class WsTransport {
   private socket: ReconnectingWebSocket | null = null
@@ -53,7 +56,18 @@ export class WsTransport {
   }
 
   /**
-   * Реджектит все запросы, ждущие ответа, указанной причиной — используется при закрытии сокета.
+   * Отправляет кадры всех ждущих запросов в открытый сокет. Зовётся на каждом `open`, поэтому
+   * запрос, начатый до подключения, и запрос, переживший переподключение, уходят одним путём.
+   * `invocationId` при повторе тот же: сервер, дедуплицирующий по нему, раунд не исполнит дважды.
+   */
+  private flushPending(activeSocket: ReconnectingWebSocket): void {
+    for (const entry of this.pending.values()) {
+      activeSocket.send(entry.frame)
+    }
+  }
+
+  /**
+   * Реджектит все запросы, ждущие ответа, указанной причиной — используется при явном разрыве.
    */
   private rejectAllPending(reason: Error): void {
     for (const entry of this.pending.values()) {
@@ -110,7 +124,7 @@ export class WsTransport {
 
   /**
    * Открывает соединение с сервером и разбирает всё, что по нему приходит: ответ на запрос уходит в `settlePending`,
-   * серверная invocation — в `dispatchPush`, закрытие соединения — в `rejectAllPending`.
+   * серверная invocation — в `dispatchPush`, открытие соединения — в `flushPending`.
    */
   private createSocket(): ReconnectingWebSocket {
     const activeSocket = new ReconnectingWebSocket(this.url)
@@ -144,8 +158,11 @@ export class WsTransport {
       }
     })
 
-    activeSocket.addEventListener('close', () => {
-      this.rejectAllPending(new Error('WS connection closed'))
+    // На `close` запросы не реджектим: partysocket шлёт его и на транзиентном переподключении,
+    // а обрыв посреди раунда не значит, что сервер его не исполнил. Безнадёжный запрос снимет
+    // собственный таймаут, живой — уйдёт повторно на ближайшем `open`
+    activeSocket.addEventListener('open', () => {
+      this.flushPending(activeSocket)
     })
 
     return activeSocket
@@ -163,24 +180,9 @@ export class WsTransport {
   }
 
   /**
-   * Ждёт, пока сокет откроется, — чтобы запрос, начатый раньше подключения, не потерялся.
-   * Реджектится, если запрос завершился (`lifetime`) до открытия.
-   */
-  private whenOpen(activeSocket: ReconnectingWebSocket, lifetime: AbortSignal): Promise<void> {
-    if (activeSocket.readyState === activeSocket.OPEN) {
-      return Promise.resolve()
-    }
-
-    return new Promise((resolve, reject) => {
-      activeSocket.addEventListener('open', () => resolve(), { once: true, signal: lifetime })
-
-      lifetime.addEventListener('abort', () => reject(lifetime.reason as Error), { once: true })
-    })
-  }
-
-  /**
    * Шлёт invocation `target` с аргументами `args` и отдаёт промис с ответом сервера, разобранным по `schema`.
    * Реджектится ошибкой сервера, невалидным ответом, отменой через `signal` или таймаутом ожидания.
+   * Обрыв связи запрос не роняет: после переподключения кадр уходит повторно.
    */
   request<S extends z.ZodType>(
     target: string,
@@ -216,29 +218,23 @@ export class WsTransport {
         { once: true, signal: lifetime.signal }
       )
 
+      const frame = JSON.stringify({ type: 1, invocationId, target, arguments: args })
+
       this.pending.set(invocationId, {
         resolve: resolve as (value: unknown) => void,
         reject,
         schema,
+        frame,
         dispose: () => {
           clearTimeout(timeoutId)
           lifetime.abort()
         },
       })
 
-      const send = async (): Promise<void> => {
-        try {
-          await this.whenOpen(activeSocket, lifetime.signal)
-
-          activeSocket.send(JSON.stringify({ type: 1, invocationId, target, arguments: args }))
-        } catch (error) {
-          this.takePending(invocationId)
-
-          reject(error)
-        }
+      // Запрос, начатый до подключения, отправит слушатель `open` вместе с остальной очередью
+      if (activeSocket.readyState === activeSocket.OPEN) {
+        activeSocket.send(frame)
       }
-
-      void send()
     })
   }
 
@@ -265,9 +261,12 @@ export class WsTransport {
 
   /**
    * Закрывает соединение; висящие запросы реджектятся, следующий `request`/`subscribe` подключится заново.
+   * Реджект идёт здесь, а не по событию `close`: только явный разрыв означает, что ответа не будет.
    */
   disconnect(): void {
     this.socket?.close()
     this.socket = null
+
+    this.rejectAllPending(new Error('WS transport disconnected'))
   }
 }

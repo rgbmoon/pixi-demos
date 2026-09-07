@@ -13,6 +13,7 @@ export type PendingRequest = {
   resolve: (value: unknown) => void
   reject: (error: unknown) => void
   schema: ZodType
+  frame: string
   dispose: () => void
 }
 

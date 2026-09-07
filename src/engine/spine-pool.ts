@@ -6,7 +6,7 @@ import type { GameTicker } from './game-ticker'
 import type { SkeletonLike, SpinePoolConfig } from './types'
 
 /**
- * Склад готовых скелетов по именам: единственное место в проекте, где скелеты
+ * Пул готовых Spine анимаций по именам: единственное место в проекте, где скелеты
  * создаются и уничтожаются. Состав и прогрев приходят конфигом от игры.
  */
 @injectable()
@@ -32,43 +32,6 @@ export class SpinePool {
     }
   }
 
-  /** Скелет, готовый к показу: свободный из пула либо новый. */
-  acquire(skeleton: string): SkeletonLike {
-    const spine = this.instancesOf(skeleton).pop() ?? this.create(skeleton)
-
-    spine.autoUpdate = true
-
-    return spine
-  }
-
-  /** Возвращает скелет в пул: снимает со сцены и с тикера, сбрасывает позу, треки и слот-объекты. */
-  release(skeleton: string, spine: SkeletonLike): void {
-    if (spine.destroyed) return
-
-    spine.removeFromParent()
-    spine.autoUpdate = false
-    // Владелец мог вписывать скелет в ячейку: без сброса трансформ достанется следующему
-    spine.position.set(0, 0)
-    spine.scale.set(1)
-    // Без сброса слот-объектов следующий владелец получит вставленные предыдущим контейнеры
-    spine.removeSlotObjects()
-    spine.state.clearTracks()
-    spine.skeleton.setToSetupPose()
-
-    this.instancesOf(skeleton).push(spine)
-  }
-
-  /** Уничтожает свободные скелеты; занятые уничтожает каскад destroy их владельцев. */
-  destroy(): void {
-    for (const instances of this.free.values()) {
-      for (const spine of instances) {
-        if (!spine.destroyed) spine.destroy()
-      }
-    }
-
-    this.free.clear()
-  }
-
   private create(skeleton: string): SkeletonLike {
     const data = this.config.skeletons.get(skeleton)
 
@@ -91,5 +54,40 @@ export class SpinePool {
     this.free.set(skeleton, created)
 
     return created
+  }
+
+  /** Скелет, готовый к показу: свободный из пула либо новый. */
+  acquire(skeleton: string): SkeletonLike {
+    const spine = this.instancesOf(skeleton).pop() ?? this.create(skeleton)
+
+    spine.autoUpdate = true
+
+    return spine
+  }
+
+  /** Возвращает скелет в пул: снимает со сцены и с тикера, сбрасывает позу, треки и слот-объекты. */
+  release(skeleton: string, spine: SkeletonLike): void {
+    if (spine.destroyed) return
+
+    spine.removeFromParent()
+    spine.autoUpdate = false
+    spine.position.set(0, 0)
+    spine.scale.set(1)
+    spine.removeSlotObjects()
+    spine.state.clearTracks()
+    spine.skeleton.setToSetupPose()
+
+    this.instancesOf(skeleton).push(spine)
+  }
+
+  /** Уничтожает свободные скелеты; занятые уничтожает каскад destroy их владельцев. */
+  destroy(): void {
+    for (const instances of this.free.values()) {
+      for (const spine of instances) {
+        if (!spine.destroyed) spine.destroy()
+      }
+    }
+
+    this.free.clear()
   }
 }

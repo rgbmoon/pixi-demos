@@ -208,10 +208,10 @@ export class Reel extends Container {
   /**
    * Ловит барабан: докручивает ленту до ровной посадки символов в слоты и подставляет финальные символы.
    * `offsetCells` — дополнительные ячейки прокрутки до торможения, ими барабаны стопятся лесенкой.
-   * Барабан, который не крутится, резолвится сразу.
+   * Барабан, который не крутится или уже садится, резолвится сразу.
    */
   land(symbolKeys: SymbolKey[], offsetCells: number, signal?: AbortSignal): Promise<void> {
-    if (!this.isSpinning) return Promise.resolve()
+    if (!this.isSpinning || this.isLanding) return Promise.resolve()
 
     this.removeSpinStep()
 

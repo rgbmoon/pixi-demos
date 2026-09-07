@@ -40,6 +40,16 @@ export class ReelsMachine extends Container {
     this.addChild(this.frame)
   }
 
+  private setupReelsLayer(): void {
+    this.maskGraphics.rect(-CELL_WIDTH / 2, -CELL_HEIGHT / 2, REELS_ZONE_WIDTH, REELS_ZONE_HEIGHT).fill(0xffffff)
+
+    this.reelsLayer.position.set(CELLS_ORIGIN_X, CELLS_ORIGIN_Y)
+    this.reelsLayer.mask = this.maskGraphics
+    this.reelsLayer.addChild(this.maskGraphics, ...this.reels)
+
+    this.reels.forEach((reel, index) => reel.position.set(CELL_WIDTH * index, 0))
+  }
+
   /** Кладёт слой поверх символов: разбор выигрыша и линии приходят снаружи, порядок вызовов — их порядок. */
   addOverlay(overlay: Container): void {
     overlay.position.set(CELLS_ORIGIN_X, CELLS_ORIGIN_Y)
@@ -73,15 +83,5 @@ export class ReelsMachine extends Container {
 
   hideTint(signal?: AbortSignal): Promise<void> {
     return this.frame.hideTint(signal)
-  }
-
-  private setupReelsLayer(): void {
-    this.maskGraphics.rect(-CELL_WIDTH / 2, -CELL_HEIGHT / 2, REELS_ZONE_WIDTH, REELS_ZONE_HEIGHT).fill(0xffffff)
-
-    this.reelsLayer.position.set(CELLS_ORIGIN_X, CELLS_ORIGIN_Y)
-    this.reelsLayer.mask = this.maskGraphics
-    this.reelsLayer.addChild(this.maskGraphics, ...this.reels)
-
-    this.reels.forEach((reel, index) => reel.position.set(CELL_WIDTH * index, 0))
   }
 }
