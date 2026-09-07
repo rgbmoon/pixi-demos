@@ -7,7 +7,7 @@ import type { GameTicker } from 'src/engine/game-ticker'
 import { ENGINE_TOKENS } from 'src/engine/tokens'
 import type { CanvasConfig, SceneLike } from 'src/engine/types'
 
-import { getCanvasSize } from './utils'
+import { connectDevtools, getCanvasSize } from './utils'
 
 /**
  * Хост жизненного цикла игры: инициализирует PIXI-приложение, монтирует канвас в DOM,
@@ -63,11 +63,6 @@ export class GameRoot {
 
     const app = new Application()
 
-    // Подключение PIXI devtools
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error
-    globalThis.__PIXI_APP__ = app
-
     this.pending = app
 
     // Размер канваса фиксируется на маунте: игра не пересобирает раскладку на ресайз окна
@@ -107,6 +102,8 @@ export class GameRoot {
 
     this.app = app
 
+    void connectDevtools(app)
+
     app.stage.addChild(this.scene)
 
     this.layout()
@@ -123,6 +120,8 @@ export class GameRoot {
     this.pending = null
 
     if (this.app) {
+      void connectDevtools(null)
+
       this.app.canvas.removeEventListener('webglcontextlost', this.handleContextLost)
       this.app.destroy(true, { children: true })
       this.app = null
