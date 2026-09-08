@@ -1,4 +1,5 @@
 import { Assets, Sprite } from 'pixi.js'
+import type { CellView } from 'src/engine/reels/types'
 import { SpineAnimation } from 'src/engine/spine-animation'
 import type { SpinePool } from 'src/engine/spine-pool'
 import { SYMBOL_SPRITES } from 'src/games/slot/assets'
@@ -8,7 +9,7 @@ import type { SymbolKey } from 'src/games/slot/types'
 const TRACK_MAIN = 0
 
 /** Символ барабана: спрайт нужной позы плюс скелет из пула на выигрышной анимации. */
-export class ReelSymbol extends SpineAnimation {
+export class ReelSymbol extends SpineAnimation implements CellView<SymbolKey> {
   private readonly artSprite = new Sprite()
 
   private key: SymbolKey | null = null
@@ -24,7 +25,7 @@ export class ReelSymbol extends SpineAnimation {
     this.addChild(this.artSprite)
   }
 
-  setKey(key: SymbolKey): void {
+  setValue(key: SymbolKey): void {
     if (key === this.key) return
 
     this.key = key
@@ -32,20 +33,26 @@ export class ReelSymbol extends SpineAnimation {
     this.applyPose()
   }
 
-  blur(): void {
-    this.pose = 'blur'
+  /** Ведёт позу движения. Выигрышную позу не трогает: её ставит и снимает оверлей. */
+  setMoving(moving: boolean): void {
+    if (this.pose === 'win') return
 
-    this.applyPose()
+    this.setPose(moving ? 'blur' : 'idle')
   }
 
   idle(): void {
-    this.pose = 'idle'
-
-    this.applyPose()
+    this.setPose('idle')
   }
 
   win(): void {
-    this.pose = 'win'
+    this.setPose('win')
+  }
+
+  /** Единственная точка смены позы. */
+  private setPose(pose: ReelSymbol['pose']): void {
+    if (pose === this.pose) return
+
+    this.pose = pose
 
     this.applyPose()
   }

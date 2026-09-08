@@ -53,15 +53,15 @@ src/
   main.tsx      вход; сюда же подключён styles/index.css
   app/          composition root: контейнеры, биндинги, роутер, провайдеры
   pages/        роут-страницы; каждая — граница ленивого чанка
-  core/         чистый TS: errors/, events/, fsm/ (движок), palette, easing, tokens
+  core/         чистый TS: errors/, events/, fsm/ и reels/ (движки), palette, easing, tokens
   net/          транспорт WS, конверт, msw-хелпер; без PIXI и React
   components/   React-кит: Layout, Button, Snackbars, RouteError, BackgroundCanvas,
                 GameCanvas, ApiProvider, icons/
-  engine/       PIXI-рантайм: хост, тикер, пул скелетов, skeleton/ и базы сцены —
-                LiveContainer и SpineAnimation
+  engine/       PIXI-рантайм: хост, тикер, пул скелетов, skeleton/, адаптер reels/
+                и базы сцены — LiveContainer и SpineAnimation
   games/slot/   сама игра: api/ stores/ phases/ scenes/ mocks/ + листовые tokens, types,
-                constants, events, assets, utils, skeletons; ui/ и controllers/ внутри
-                разбиты по зонам сцены: hud/ и reels/
+                constants, events, assets, utils, skeletons, reels; ui/ и controllers/
+                внутри разбиты по зонам сцены: hud/ и reels/
   styles/       глобальный стиль и @theme-токены Tailwind
 ```
 
@@ -103,7 +103,7 @@ stores       →  api, лист
 phases       →  stores, api, лист;   controllers — только type
 scenes       →  controllers, ui, лист
 controllers  →  ui, stores, events, лист;   api — только type DTO
-ui           →  лист и engine.  Не знает stores, api, events, phases, controllers
+ui           →  лист, core и engine.  Не знает stores, api, events, phases, controllers
 ```
 
 Последняя строка и есть граница ui/controller в машинной форме: **вид не может подписаться на стор,
@@ -239,13 +239,23 @@ result → idle`, по файлу на фазу. Движок имён игры 
 текста выбирает контроллер по стору. Показ вне раунда (превью линий при смене режима) принадлежит
 контроллеру, а не автомату.
 
+**`core/reels/` и `engine/reels/`** — барабаны разнесены на модель и рендер по образцу
+headless-таблиц: ядро в `core/` держит данные раунда, состав барабанов и движение ленты, адаптер
+в `engine/` переносит слоты модели в PIXI-view. Доступа к тикеру у модели нет: величину шага
+приносит адаптер вызовом `advance` из своего тикер-колбэка, одного на всю машину. Считает она в
+абстрактных единицах длины: `cellHeight` приходит конфигом, единицу выбирает игра. Два понятия ячейки: `Cell` —
+стабильный адрес `(барабан, ряд)` с `getValue`/`getContext`, его адресуют линии и оверлеи;
+`StripSlot` — движущийся слот ленты, с ним работает рендер. Состав барабанов приносит игра значением
+`ReelsConfig`, view ячейки — фабрикой `createCellView`: своего арта у `engine/reels/` нет. Новая
+механика — это стратегия (`SpinStrategy`, `LandingStrategy`) или правка модели, адаптер не трогается.
+
 **`engine/` и сцена игры** — PIXI-слой. Контроллер — наследник `LiveContainer`: создаёт виды и
 держит подписки через `watch`/`listen` (свой `destroy` для отписок не нужен). Вид — наследник
 `Container` с методами игровой семантики (`spin`, `land`), поэтому смена реализации
 (спрайт ↔ Spine ↔ `Graphics`) не задевает ни контроллер, ни фазы. Не всё рисуется скелетами: часть
 собрана из спрайтов и `Graphics` — выбор за видом. В `engine/` лежат только те базы, которые не
-зависят от арта: `LiveContainer` и `SpineAnimation`. Кнопка и текст со своим артом и геометрией
-общими не бывают — они живут в `<game>/ui/`.
+зависят от арта: `LiveContainer`, `SpineAnimation` и адаптер барабанов `reels/`. Кнопка и текст со
+своим артом и геометрией общими не бывают — они живут в `<game>/ui/`.
 
 **Мост React ↔ PIXI** — общий компонент `GameCanvas` (место под канвас в React-дереве; сам
 PIXI-мир держит `GameRoot` на стороне движка): `useRef` + `useEffect` с очисткой, callback-ref

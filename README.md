@@ -12,7 +12,12 @@ Demo game clients built with PixiJS v8 and React.
 ## Stack
 
 TypeScript · PixiJS · Spine · React · MobX · Inversify · zod + partysocket · MSW · Vite · Tailwind.
-Layer rules and conventions live in [CLAUDE.md](CLAUDE.md).
+
+## Docs
+
+- [Reel machine](docs/reel-machine-doc.md) — headless reels model and its PIXI adapter:
+  architecture, API, usage, extension.
+- [CLAUDE.md](CLAUDE.md) — layer rules and conventions.
 
 ## Getting started
 

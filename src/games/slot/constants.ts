@@ -16,26 +16,6 @@ export const GAME_ASPECT_RATIO = DESIGN_WIDTH / DESIGN_HEIGHT
 export const REELS_COUNT = 5
 /** Видимых символов в барабане. */
 export const VISIBLE_SYMBOLS_COUNT = 3
-/** Ячеек сверх видимых: запас, внутри которого символ успевает сменить текстуру вне маски. */
-export const BUFFER_SYMBOLS_COUNT = 1
-/** Лесенка остановки: на столько ячеек каждый следующий барабан крутится дольше предыдущего. */
-export const LAND_STAGGER_CELLS = 2
-
-// Скорости и ускорение — на кадр приведённой частоты (deltaTime = 1 при 60 fps)
-/** Скорость прокрутки ленты, px/кадр. */
-export const SPIN_SPEED = 60
-/** На столько падает скорость ленты за кадр торможения, px/кадр². */
-export const LANDING_DECELERATION = 2
-/** Скорость, до которой линейное торможение доводит ленту перед отскоком, px/кадр. */
-export const LANDING_HANDOVER_SPEED = 30
-/** Длительность торможения в кадрах: за неё скорость падает с `SPIN_SPEED` до `LANDING_HANDOVER_SPEED`. */
-export const LANDING_BRAKE_FRAMES = (SPIN_SPEED - LANDING_HANDOVER_SPEED) / LANDING_DECELERATION
-/** Путь торможения: интеграл скорости по `LANDING_BRAKE_FRAMES`. */
-export const LANDING_BRAKE_DISTANCE = (SPIN_SPEED ** 2 - LANDING_HANDOVER_SPEED ** 2) / (2 * LANDING_DECELERATION)
-/** Хвост посадки, который лента проходит отскоком, в долях ячейки. */
-export const LANDING_EASE_CELLS = 0.25
-/** Сила отскока в терминах `easeOutBack`: заброс за точку посадки растёт быстрее этого числа, см. её JSDoc. */
-export const LANDING_BACK_STRENGTH = 0.35
 
 /** Нативная ширина арта рамки (reels-bg): ровно ширина макета. */
 export const REELS_FRAME_WIDTH = 941
@@ -55,10 +35,6 @@ export const REELS_ZONE_OFFSET_Y = -5.75
 export const CELL_WIDTH = REELS_ZONE_WIDTH / REELS_COUNT
 /** Высота ячейки символа: зона делится поровну между видимыми символами. */
 export const CELL_HEIGHT = REELS_ZONE_HEIGHT / VISIBLE_SYMBOLS_COUNT
-/** Высота видимой зоны барабана: за её нижней границей символ уходит в буферную ячейку. */
-export const VISIBLE_REEL_HEIGHT = VISIBLE_SYMBOLS_COUNT * CELL_HEIGHT
-/** Длина ленты барабана: период прокрутки, через который повторяются позиции символов. */
-export const STRIP_HEIGHT = (VISIBLE_SYMBOLS_COUNT + BUFFER_SYMBOLS_COUNT) * CELL_HEIGHT
 // Начало координат зоны символов — центр левой верхней ячейки: ячейка (барабан, ряд) лежит
 // в (CELL_WIDTH * reel, CELL_HEIGHT * row), origin арта символа — его центр
 /** Смещение зоны символов внутри рамки по горизонтали. */
