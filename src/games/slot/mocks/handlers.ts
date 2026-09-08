@@ -3,6 +3,7 @@ import { WS_URL } from 'src/net/constants'
 import { createWsHandler } from 'src/net/mocks/create-ws-handler'
 
 import { INITIAL_BALANCE, PAY_TABLE, PAYLINES } from './constants'
+import { MockScenario, type MockOptions } from './types'
 import { buildSpinResponse, generateSpinOutcome, parseSpinPayload, randomHash, roundMoney } from './utils'
 
 const GAME_INIT_RESULT: GameInitResult = {
@@ -68,52 +69,65 @@ const GAME_INIT_RESULT: GameInitResult = {
   isDemo: false,
 }
 
-let balance = INITIAL_BALANCE
-let totalWin = 0
-let lastBet = GAME_INIT_RESULT.round.bet
+/**
+ * Собирает хендлеры мок-сервера со своим состоянием раунда: каждый вызов даёт чистый баланс.
+ * Состояние живёт в замыкании, поэтому два прогона подряд не влияют друг на друга.
+ */
+export const createHandlers = (options: MockOptions) => {
+  let balance = INITIAL_BALANCE
+  let totalWin = 0
+  let lastBet = GAME_INIT_RESULT.round.bet
 
-export const handlers = [
-  createWsHandler({
-    url: WS_URL,
-    // Инициализация запускается раньше PIXI-init, поэтому короткая латентность истекает до первого кадра —
-    // держим её дольше спина, чтобы экран загрузки успевал отрисоваться.
-    delays: { initGame: { min: 150, max: 250 } },
-    endpoints: {
-      initGame: (_args, reply) => {
-        reply({
-          ...GAME_INIT_RESULT,
-          securityHash: randomHash(),
-          round: {
-            ...GAME_INIT_RESULT.round,
-            roundId: crypto.randomUUID(),
-            endedUtc: new Date().toISOString(),
-            bet: lastBet,
-            balance,
-            totalWin,
-          },
-        })
+  return [
+    createWsHandler({
+      url: WS_URL,
+      random: options.random,
+      // Инициализация запускается раньше PIXI-init, поэтому короткая латентность истекает до первого кадра —
+      // держим её дольше спина, чтобы экран загрузки успевал отрисоваться.
+      delays: { initGame: { min: 150, max: 250 } },
+      endpoints: {
+        initGame: (_args, reply) => {
+          reply({
+            ...GAME_INIT_RESULT,
+            securityHash: randomHash(),
+            round: {
+              ...GAME_INIT_RESULT.round,
+              roundId: crypto.randomUUID(),
+              endedUtc: new Date().toISOString(),
+              bet: lastBet,
+              balance,
+              totalWin,
+            },
+          })
+        },
+        spin: (args, reply, fail) => {
+          const { bet, gameMode } = parseSpinPayload(args[0])
+
+          if (options.scenario === MockScenario.error) {
+            fail('Spin failed on the server')
+
+            return
+          }
+
+          if (bet <= 0 || bet > balance) {
+            fail('Insufficient funds for this bet')
+
+            return
+          }
+
+          lastBet = bet
+          balance = roundMoney(balance - bet)
+
+          const { transformations, win } = generateSpinOutcome(bet, gameMode, options)
+
+          if (win > 0) {
+            balance = roundMoney(balance + win)
+            totalWin = roundMoney(totalWin + win)
+          }
+
+          reply(buildSpinResponse({ bet, balance, totalWin, transformations }))
+        },
       },
-      spin: (args, reply, fail) => {
-        const { bet, gameMode } = parseSpinPayload(args[0])
-
-        if (bet <= 0 || bet > balance) {
-          fail('Insufficient funds for this bet')
-
-          return
-        }
-
-        lastBet = bet
-        balance = roundMoney(balance - bet)
-
-        const { transformations, win } = generateSpinOutcome(bet, gameMode)
-
-        if (win > 0) {
-          balance = roundMoney(balance + win)
-          totalWin = roundMoney(totalWin + win)
-        }
-
-        reply(buildSpinResponse({ bet, balance, totalWin, transformations }))
-      },
-    },
-  }),
-]
+    }),
+  ]
+}

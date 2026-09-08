@@ -188,7 +188,16 @@ const gameLayers = [
 
 export default [
   {
-    ignores: ['**/node_modules/**', '**/dist/**', '**/.husky/**', 'public/**', 'vite.config.ts'],
+    ignores: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/.husky/**',
+      'public/**',
+      'vite.config.ts',
+      'coverage/**',
+      'playwright-report/**',
+      'test-results/**',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -257,8 +266,8 @@ export default [
     },
   },
   {
-    // Type-aware линтинг включаем только для src: eslint.config.js и прочие js вне tsconfig.app.json им не проверяются
-    files: ['src/**/*.{ts,tsx}'],
+    // Type-aware линтинг для всего, что есть в references корневого tsconfig: eslint.config.js и прочие js им не проверяются
+    files: ['src/**/*.{ts,tsx}', 'tests/**/*.ts', 'vitest.config.ts', 'playwright.config.ts'],
     languageOptions: {
       parserOptions: {
         projectService: true,

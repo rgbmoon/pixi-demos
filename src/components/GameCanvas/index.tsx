@@ -64,13 +64,17 @@ export const GameCanvas = ({ boot, dispose }: GameCanvasProps) => {
         {(loading || fatal) && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-800">
             {fatal ? (
-              <div className="flex flex-col items-center gap-3 px-6 text-center text-white">
+              <div role="alert" className="flex flex-col items-center gap-3 px-6 text-center text-white">
                 <p>{fatal.message}</p>
                 {fatal.detail && <p className="text-sm wrap-break-word text-white/60">{fatal.detail}</p>}
                 <Button onClick={() => window.location.reload()}>Reload</Button>
               </div>
             ) : (
-              <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/30 border-t-white" />
+              <div
+                role="status"
+                aria-label="Loading game"
+                className="h-10 w-10 animate-spin rounded-full border-4 border-white/30 border-t-white"
+              />
             )}
           </div>
         )}

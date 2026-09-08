@@ -1,3 +1,5 @@
+import type { Random } from 'src/core/types'
+
 export type WsReply = (result: unknown) => void
 export type WsFail = (error: string) => void
 export type WsEndpoint = (args: unknown[], reply: WsReply, fail: WsFail) => void
@@ -15,4 +17,6 @@ export type CreateWsHandlerOptions = {
   /** Задержка ответа по имени эндпоинта; неперечисленные отвечают с дефолтной латентностью. */
   delays?: Record<string, WsDelayRange>
   onConnect?: (context: WsConnectionContext) => void
+  /** Источник случайности для латентности: сид делает прогон воспроизводимым. */
+  random?: Random
 }

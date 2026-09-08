@@ -26,6 +26,7 @@ export class SpinButtonController extends LiveContainer {
       variant: ButtonVariant.circle,
       size: ButtonSize.lg,
       icon: BUTTON_ICONS.spin,
+      label: 'Spin',
       iconRatio: 0.6,
       onTap: () => emitter.emit('ui:spinRequested'),
     })

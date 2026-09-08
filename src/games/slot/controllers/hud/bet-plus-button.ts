@@ -18,6 +18,7 @@ export class BetPlusButtonController extends LiveContainer {
       variant: ButtonVariant.circle,
       size: ButtonSize.md,
       icon: BUTTON_ICONS.plus,
+      label: 'Increase bet',
       onTap: () => slotStore.stepBet(StepDirection.forward),
     })
 

@@ -18,6 +18,7 @@ export class GameModePlusButtonController extends LiveContainer {
       variant: ButtonVariant.romb,
       size: ButtonSize.md,
       icon: BUTTON_ICONS.plus,
+      label: 'More lines',
       onTap: () => slotStore.stepGameMode(StepDirection.forward),
     })
 

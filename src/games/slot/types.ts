@@ -49,6 +49,7 @@ export type ButtonOptions = {
   icon: string
   iconRatio?: number
   onTap?: () => void
+  label?: string
 }
 
 export const LabelColor = {
@@ -62,12 +63,6 @@ export type LabelOptions = {
   color: LabelColor
   fontSize: number
   text?: string
-}
-
-/** Ячейка поля: барабан и ряд в нём. */
-export type WinCell = {
-  reel: number
-  row: number
 }
 
 /** Направление шага по упорядоченному списку значений: ставки, режимы, страницы. */

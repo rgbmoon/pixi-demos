@@ -104,6 +104,7 @@ export class GameRoot {
 
     container.appendChild(app.canvas)
     app.canvas.addEventListener('webglcontextlost', this.handleContextLost)
+    app.renderer.accessibility.setAccessibilityEnabled(true)
 
     this.app = app
 

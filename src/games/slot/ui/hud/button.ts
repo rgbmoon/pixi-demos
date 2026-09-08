@@ -33,6 +33,11 @@ export class Button extends Container {
     this.eventMode = 'static'
     this.cursor = 'pointer'
 
+    // Слой доступности PIXI кладёт поверх канваса настоящий <button> с этим именем и транслирует его click в pointertap
+    this.accessible = true
+    this.accessibleType = 'button'
+    this.accessibleHint = options.label
+
     if (options.onTap) {
       this.on('pointertap', options.onTap)
     }
@@ -59,6 +64,8 @@ export class Button extends Container {
     this.eventMode = enabled ? 'static' : 'none'
     this.cursor = enabled ? 'pointer' : 'default'
     this.alpha = enabled ? 1 : DISABLED_ALPHA
+    // Недоступность кнопки должна быть видна и снаружи канваса
+    this.accessible = enabled
   }
 
   /** Меняет иконку кнопки из кэша Assets. */

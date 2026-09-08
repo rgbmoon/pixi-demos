@@ -18,6 +18,7 @@ export class BetMinusButtonController extends LiveContainer {
       variant: ButtonVariant.circle,
       size: ButtonSize.md,
       icon: BUTTON_ICONS.minus,
+      label: 'Decrease bet',
       onTap: () => slotStore.stepBet(StepDirection.backward),
     })
 

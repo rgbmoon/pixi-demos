@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js'
+import type { CellIndex } from 'src/core/reels/types'
 import { CELL_HEIGHT, CELL_WIDTH, REELS_COUNT } from 'src/games/slot/constants'
-import type { WinCell } from 'src/games/slot/types'
 
 import type { ReelSymbol } from './reel-symbol'
 import { WinFrame } from './win-frame'
@@ -45,7 +45,7 @@ export class WinOverlay extends Container {
     this.raised.clear()
   }
 
-  showFrames(cells: WinCell[]): void {
+  showFrames(cells: CellIndex[]): void {
     cells.forEach(({ reel, row }) => {
       const frame = this.frames[reel]
 

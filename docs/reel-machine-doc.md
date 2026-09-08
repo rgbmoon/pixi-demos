@@ -4,7 +4,8 @@
 
 - Модель — [`src/core/reels/`](../src/core/reels), чистый TS без PIXI и React.
 - Адаптер — [`src/engine/reels/`](../src/engine/reels), PIXI.
-- Игра — [`src/games/slot/reels.ts`](../src/games/slot/reels.ts) (конфиг) и `ui/reels/` (арт).
+- Со стороны игры — конфиг барабанов и арт ячейки; как это выглядит, разобрано в
+  [§5 «Как подключить»](#5-как-подключить) на примере слота.
 
 ---
 
@@ -35,7 +36,7 @@
 | `ReelsConfig`                      | конфиг  | состав машины и значения по умолчанию для барабанов       |
 | `SpinStrategy` / `LandingStrategy` | конфиг  | как барабан крутится и как садится                        |
 | `ReelsView` / `ReelView`           | адаптер | PIXI-обёртка: маска, ленты view, единственный такт        |
-| `CellView`                         | игра    | контракт view ячейки: `setValue` и `setMoving`            |
+| `CellView`                         | адаптер | контракт view ячейки, который реализует игра: `setValue` и `setMoving` |
 
 Что это даёт: новая механика — это стратегия или правка модели, рендер не меняется; модель —
 чистая функция от кадров и воспроизводится без канваса; ядро выносится в отдельный пакет одной
@@ -50,28 +51,21 @@
 
 ```
 src/core/reels/                 headless: ни PIXI, ни React, ни тикера
-  types.ts                      контракты: ReelDef, ReelsConfig, StripSlot, стратегии
-  constants.ts                  DEFAULT_BUFFER, WRAP_EPSILON
-  utils.ts                      getAlignmentGap, wrapOffset, getLap
+  types.ts                      контракты: описания барабанов, слот ленты, стратегии
+  constants.ts                  умолчания модели и допуск на границе ленты
+  utils.ts                      математика замкнутой ленты: выравнивание и свёртка позиций
   reels-machine.ts              ReelsMachine — данные раунда, состав барабанов, такт
   reel.ts                       Reel — лента, движение, посадка
   cell.ts                       Cell — стабильный адрес (барабан, ряд)
   row.ts                        Row — поперечный ряд
-  strategies/
-    linear-spin.ts              LinearSpinStrategy
-    planned-landing.ts          PlannedLandingStrategy
-    types.ts                    настройки стратегий
+  strategies/                   готовые стратегии прокрутки и посадки со своими настройками
 
 src/engine/reels/               PIXI-адаптер
   types.ts                      CellView, ReelsViewConfig
   reels-view.ts                 ReelsView — маска, ленты, единственный тикер-колбэк
   reel-view.ts                  ReelView — view слотов одной ленты
 
-src/games/slot/
-  reels.ts                      SLOT_REELS: ReelsConfig — состав и числа слота
-  ui/reels/reel-symbol.ts       ReelSymbol implements CellView<SymbolKey> — арт ячейки
-  ui/reels/reels-board.ts       ReelsBoard — рамка, ReelsView внутрь неё, слои поверх
-  controllers/reels/reels-machine.ts   ReelsMachineController — DI, стор, методы для фаз
+<игра>/                         конфиг барабанов, view ячейки, контроллер для фаз — см. §5
 ```
 
 Зависимости строго вниз: `игра → engine/reels → core/reels`. Ядро не зависит ни от адаптера, ни от
@@ -115,8 +109,8 @@ GameTicker
 ### Единицы измерения
 
 Ядро считает в **абстрактных единицах длины**. `cellHeight` — число из конфига, физический смысл
-которого ядро не интерпретирует. Слот-машина передаёт нативные пиксели зоны символов (`203.33`),
-поэтому адаптер переносит `slot.offset` прямо в `view.y` без пересчёта. Игре, которой удобнее
+которого ядро не интерпретирует. Игра, передающая нативные пиксели зоны символов, получает
+`slot.offset`, который адаптер переносит прямо в `view.y` без пересчёта; игре, которой удобнее
 считать в ячейках, достаточно передать `cellHeight: 1` и умножать на своей стороне.
 
 Скорости и ускорения — **на кадр приведённой частоты**: `deltaFrames = 1` при 60 fps, как
@@ -135,7 +129,7 @@ GameTicker
 Буферные ячейки лежат **над** зоной: в них слот успевает сменить значение вне маски.
 
 ```
-offset = 0, rows = 3, buffer = 1, cellHeight = h
+пример: offset = 0, rows = 3, buffer = 1, cellHeight = h
 
   -h  ┌─────────┐  слот вне зоны: здесь меняется значение
       ├─────────┤
@@ -227,8 +221,9 @@ type LandingContext = ReelContext & {
 }
 ```
 
-Готовые: `LinearSpinStrategy({ speed })` и
-`PlannedLandingStrategy({ speed, deceleration, handoverSpeed, easeCells, backStrength, staggerCells })`.
+Готовые: `LinearSpinStrategy` — равномерная прокрутка, и `PlannedLandingStrategy` — посадка
+из трёх участков (равномерный ход, торможение, отскок). Их настройки объявлены рядом с ними
+в `strategies/types.ts`; пример заполнения — в [§5](#шаг-1-конфиг-барабанов).
 
 ### `ReelsView<TData, TValue, TView>`
 
@@ -259,7 +254,7 @@ export const SLOT_REELS: ReelsConfig<SlotReelsData, SymbolKey> = {
   buffer: BUFFER_SYMBOLS_COUNT,
   cellHeight: CELL_HEIGHT,
   accessorFn: (data, { reel, row }) => data[reel]?.[row],
-  getFillerValue: getRandomSymbolKey,
+  getFillerValue: () => getRandomSymbolKey(),
   spinStrategy: new LinearSpinStrategy({ speed: SPIN_SPEED }),
   landingStrategy: new PlannedLandingStrategy({
     speed: SPIN_SPEED,
@@ -311,6 +306,8 @@ this.reelsView = new ReelsView(ticker, machine, {
 })
 
 this.reelsView.position.set(CELLS_ORIGIN_X, CELLS_ORIGIN_Y)
+
+this.frame = new ReelsFrame(ticker)
 this.frame.addChildToSymbolsSlot(this.reelsView)
 ```
 
@@ -323,7 +320,9 @@ this.machine = new ReelsMachine(SLOT_REELS)
 this.board = new ReelsBoard(ticker, this.machine, pool)
 
 // стартовая доска: данные приходят из стора, писать в него может только автомат
-this.watch(() => slotStore.initialSymbols, (symbols) => this.setSymbols(symbols), { fireImmediately: true })
+this.watch(() => slotStore.initialSymbols, (initialSymbols) => this.setSymbols(initialSymbols), {
+  fireImmediately: true,
+})
 
 private setSymbols(symbols: SlotReelsData | undefined): void {
   if (!symbols) return
@@ -343,8 +342,8 @@ land(symbolKeys: SlotReelsData | undefined, signal?: AbortSignal): Promise<void>
 }
 ```
 
-Фазы дальше зовут только контроллер: `reels.spin()` в `spinning`,
-`await reels.land(slotStore.spinSymbols, signal)` в `result`.
+Фазы дальше зовут только контроллер: `spin()` — когда раунд начался, `await land(данные, signal)` —
+когда пришёл результат сервера. Ядра и адаптера они не видят вовсе.
 
 ---
 
@@ -490,17 +489,17 @@ export class TurboLandingStrategy implements LandingStrategy {
 
 **Сверка по ревизии — не оптимизация.** `Reel.getRevision()` растёт на каждой правке ленты, адаптер
 помнит последнее отрисованное значение и пропускает барабаны, где ничего не изменилось. Так сделано
-потому, что **пока барабан стоит, его view забирает оверлей выигрыша**: поднимает их поверх
-затемнения, чтобы они не попали под маску и тинт. Запись позиций в это время перебила бы положение,
-выставленное оверлеем. В прежней реализации это обеспечивалось само: у неподвижного барабана не было
-тикер-колбэка.
+потому, что **у остановленного барабана его view может временно забрать сцена** — например, поднять
+выигравшие символы поверх затемнения, чтобы они не попали под маску. Запись позиций в это время
+перебила бы положение, выставленное сценой. В прежней реализации это обеспечивалось само:
+у неподвижного барабана не было тикер-колбэка.
 
 **Граница диапазона ленты.** Позиции слотов выводятся из одного числа через `%`, и точка покоя слота
 может попасть ровно на границу диапазона. С какой её стороны окажется результат, решает порядок
 ошибок округления: слот встаёт под зоной вместо буфера над ней, а соответствие «слот → ряд»
-смещается на единицу. Замер: **1636 из 16000** точек покоя оказывались на неверном конце ленты.
-Устраняется допуском
-`WRAP_EPSILON`, согласованным в `wrapOffset` и `getLap`: границу они обязаны трактовать одинаково.
+смещается на единицу. На замере это давало примерно каждую десятую точку покоя — то есть промах
+раз в несколько спинов. Устраняется допуском `WRAP_EPSILON`, согласованным в `wrapOffset` и
+`getLap`: границу они обязаны трактовать одинаково. Регрессия закрыта тестом свёртки ленты.
 
 **`snap()` намеренно не меняет позы.** Покой каждый слот получает на своём последнем обороте;
 повторное переключение сбросило бы фазу idle-анимации.

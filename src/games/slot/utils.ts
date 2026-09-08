@@ -1,4 +1,6 @@
 import type { PointData } from 'pixi.js'
+import { pickRandom } from 'src/core/random'
+import type { Random } from 'src/core/types'
 import { SymbolKey } from 'src/games/slot/types'
 
 import { CELL_HEIGHT, CELL_WIDTH, PAYLINES } from './constants'
@@ -19,7 +21,7 @@ export const getPaylinePoints = ({ rows, offsetCells }: PaylineShape): PointData
 
 const SYMBOL_KEYS = Object.values<SymbolKey>(SymbolKey)
 
-export const getRandomSymbolKey = (): SymbolKey => SYMBOL_KEYS[Math.floor(Math.random() * SYMBOL_KEYS.length)]
+export const getRandomSymbolKey = (random: Random = Math.random): SymbolKey => pickRandom(SYMBOL_KEYS, random)
 
 /** Форматирует денежную сумму для HUD: разряды через запятую, два знака после точки. */
 export const formatAmount = (value: number): string =>

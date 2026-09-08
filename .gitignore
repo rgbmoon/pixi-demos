@@ -3,3 +3,6 @@ dist
 *.local
 .DS_Store
 ROADMAP.md
+coverage
+playwright-report
+test-results

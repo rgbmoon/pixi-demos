@@ -18,6 +18,7 @@ export class SoundToggleButtonController extends LiveContainer {
       variant: ButtonVariant.romb,
       size: ButtonSize.md,
       icon: BUTTON_ICONS.soundOn,
+      label: 'Toggle sound',
       onTap: () => slotStore.toggleSound(),
     })
 

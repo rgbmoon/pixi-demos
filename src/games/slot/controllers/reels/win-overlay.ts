@@ -1,9 +1,9 @@
+import type { CellIndex } from 'src/core/reels/types'
 import type { GameTicker } from 'src/engine/game-ticker'
 import { LiveContainer } from 'src/engine/live-container'
 import type { Payline } from 'src/games/slot/api/slot'
 import { PAYLINE_VISIBLE_MS, WIN_FRAMES_VISIBLE_MS, WIN_SHOWCASE_MS } from 'src/games/slot/constants'
 import type { SlotStore } from 'src/games/slot/stores/slot'
-import type { WinCell } from 'src/games/slot/types'
 import type { ReelSymbol } from 'src/games/slot/ui/reels/reel-symbol'
 import { WinOverlay } from 'src/games/slot/ui/reels/win-overlay'
 
@@ -44,7 +44,7 @@ export class WinOverlayController extends LiveContainer {
   }
 
   /** Ячейки линии для рамок: барабан без выигрыша пропускается. */
-  private getPaylineCells(payline: Payline): WinCell[] {
+  private getPaylineCells(payline: Payline): CellIndex[] {
     return payline.line.flatMap((row, reel) => (row === null ? [] : [{ reel, row }]))
   }
 

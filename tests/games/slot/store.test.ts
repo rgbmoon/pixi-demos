@@ -1,0 +1,150 @@
+import { configure } from 'mobx'
+import { SlotStore } from 'src/games/slot/stores/slot'
+import { PhaseName, StepDirection } from 'src/games/slot/types'
+import { beforeAll, describe, expect, it } from 'vitest'
+
+import { BETS, createInitResult, createPayline, createSpinResult, createSymbols, DEFAULT_BET_INDEX, INITIAL_BALANCE } from '../../setup/slot-data'
+
+/** Стор поднимается в idle с данными раунда: дальше проверяются правила поверх них. */
+const createStore = (init = createInitResult()): SlotStore => {
+  const store = new SlotStore()
+
+  store.applyInit(init)
+  store.setPhase(PhaseName.idle)
+
+  return store
+}
+
+describe('SlotStore', () => {
+  beforeAll(() => {
+    // Как в проде: мутация вне экшена должна быть ошибкой, иначе тест мягче боевого рантайма
+    configure({ enforceActions: 'always' })
+  })
+
+  describe('приём данных раунда', () => {
+    it('берёт баланс сервера и позицию прошлой ставки', () => {
+      const store = createStore(createInitResult({ bet: BETS[1], balance: 500 }))
+
+      expect(store.credit).toBe(500)
+      expect(store.betIndex).toBe(1)
+      expect(store.bet).toBe(BETS[1])
+    })
+
+    it('откатывается к ставке по умолчанию, если прошлой нет в списке', () => {
+      const store = createStore(createInitResult({ bet: 999 }))
+
+      expect(store.betIndex).toBe(DEFAULT_BET_INDEX)
+    })
+  })
+
+  describe('деньги раунда', () => {
+    it('возвращает кредит ровно при откате ставки', () => {
+      const store = createStore()
+
+      store.chargeBet()
+      expect(store.credit).toBe(INITIAL_BALANCE - store.bet)
+
+      store.refundBet()
+      expect(store.credit).toBe(INITIAL_BALANCE)
+    })
+
+    it('закрывает раунд серверным балансом и гасит выигрыш', () => {
+      const store = createStore()
+
+      store.chargeBet()
+      store.setWin(300)
+      store.settleRound(1250)
+
+      expect(store.credit).toBe(1250)
+      expect(store.win).toBe(0)
+    })
+  })
+
+  describe('доступность спина', () => {
+    it('разрешает спин в idle при достаточном балансе', () => {
+      expect(createStore().canSpin).toBe(true)
+    })
+
+    it('запрещает спин вне idle', () => {
+      const store = createStore()
+
+      store.setPhase(PhaseName.spinning)
+
+      expect(store.canSpin).toBe(false)
+    })
+
+    it('запрещает спин, когда ставка больше кредита', () => {
+      const store = createStore(createInitResult({ balance: 1 }))
+
+      expect(store.canSpin).toBe(false)
+    })
+  })
+
+  describe('шаги по спискам', () => {
+    it('не выпускает индекс ставки за края списка', () => {
+      const store = createStore(createInitResult({ bet: BETS[0] }))
+
+      expect(store.canStepBet(StepDirection.backward)).toBe(false)
+      store.stepBet(StepDirection.backward)
+      expect(store.betIndex).toBe(0)
+
+      store.stepBet(StepDirection.forward)
+      expect(store.betIndex).toBe(1)
+    })
+
+    it('запрещает менять ставку вне idle', () => {
+      const store = createStore()
+
+      store.setPhase(PhaseName.spinning)
+      store.stepBet(StepDirection.forward)
+
+      expect(store.betIndex).toBe(DEFAULT_BET_INDEX)
+    })
+
+    it('переносит индекс ставки при смене режима и пересчитывает линии', () => {
+      const store = createStore()
+
+      expect(store.gameMode).toBe('4')
+      expect(store.lines).toBe(10)
+
+      store.stepGameMode(StepDirection.backward)
+
+      expect(store.gameMode).toBe('3')
+      expect(store.lines).toBe(7)
+      expect(store.betIndex).toBe(DEFAULT_BET_INDEX)
+      expect(store.bet).toBe(BETS[DEFAULT_BET_INDEX])
+    })
+  })
+
+  describe('чтение результата спина', () => {
+    it('отдаёт пустые значения, пока результата нет', () => {
+      const store = createStore()
+
+      expect(store.spinSymbols).toBeUndefined()
+      expect(store.spinPaylines).toEqual([])
+      expect(store.spinWin).toBe(0)
+    })
+
+    it('разбирает трансформации ответа', () => {
+      const store = createStore()
+      const symbols = createSymbols()
+      const paylines = [createPayline()]
+
+      store.applySpin(createSpinResult({ win: 300, paylines, symbols }))
+
+      expect(store.spinSymbols).toEqual(symbols)
+      expect(store.spinPaylines).toEqual(paylines)
+      expect(store.spinWin).toBe(300)
+    })
+
+    it('гасит прошлый результат перед новым запросом', () => {
+      const store = createStore()
+
+      store.applySpin(createSpinResult({ win: 300 }))
+      store.clearSpin()
+
+      expect(store.spinResult).toBeNull()
+      expect(store.spinWin).toBe(0)
+    })
+  })
+})

@@ -18,6 +18,7 @@ export class GameModeMinusButtonController extends LiveContainer {
       variant: ButtonVariant.romb,
       size: ButtonSize.md,
       icon: BUTTON_ICONS.minus,
+      label: 'Fewer lines',
       onTap: () => slotStore.stepGameMode(StepDirection.backward),
     })
 

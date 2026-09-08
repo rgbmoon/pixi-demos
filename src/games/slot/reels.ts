@@ -25,7 +25,7 @@ export const SLOT_REELS: ReelsConfig<SlotReelsData, SymbolKey> = {
   buffer: BUFFER_SYMBOLS_COUNT,
   cellHeight: CELL_HEIGHT,
   accessorFn: (data, { reel, row }) => data[reel]?.[row],
-  getFillerValue: getRandomSymbolKey,
+  getFillerValue: () => getRandomSymbolKey(),
   spinStrategy: new LinearSpinStrategy({ speed: SPIN_SPEED }),
   landingStrategy: new PlannedLandingStrategy({
     speed: SPIN_SPEED,

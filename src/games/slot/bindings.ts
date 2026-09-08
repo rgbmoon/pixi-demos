@@ -31,9 +31,17 @@ import { SlotStore } from './stores/slot'
 import { SLOT_TOKENS } from './tokens'
 import { PhaseName } from './types'
 
-/** Автомат раунда: эндпоинты, эмиттер, конфиг набора фаз и сами фазы на общем токене. */
-const bindFlow = (container: Container): void => {
+/**
+ * Автомат раунда: эндпоинты, эмиттер, состояние, конфиг набора фаз и сами фазы на общем токене.
+ * Самодостаточен и не тянет сцену: этим же составом раунд собирается в тестах.
+ */
+export const bindFlow = (container: Container): void => {
   container.bind(SLOT_TOKENS.SlotApi).to(SlotApi)
+
+  container.bind(SLOT_TOKENS.SlotStore).to(SlotStore)
+
+  // Автомат публикует активную фазу в стор игры: он один её пишет, вью читают через него же
+  container.bind(CORE_TOKENS.PhaseSink).toDynamicValue(({ get }) => get(SLOT_TOKENS.SlotStore))
 
   // События игры живут один маунт: контейнер уносит эмиттер вместе с подписчиками
   container.bind(SLOT_TOKENS.GameEmitter).toDynamicValue(() => new GameEmitter<GameEvents>(traceEvent))
@@ -47,10 +55,9 @@ const bindFlow = (container: Container): void => {
   container.bind(CORE_TOKENS.Phase).to(IdlePhase)
   container.bind(CORE_TOKENS.Phase).to(SpinningPhase)
   container.bind(CORE_TOKENS.Phase).to(ResultPhase)
-
 }
 
-/** Картинка: контроллеры и собирающая их сцена. А так-же сторы сцены */
+/** Картинка: контроллеры и собирающая их сцена. */
 const bindScene = (container: Container): void => {
   // Пропорции макета — знание игры: по ним общий хост считает размер канваса
   container.bind(ENGINE_TOKENS.CanvasConfig).toDynamicValue(() => ({ aspectRatio: GAME_ASPECT_RATIO }))
@@ -59,11 +66,6 @@ const bindScene = (container: Container): void => {
   container
     .bind(ENGINE_TOKENS.SpinePoolConfig)
     .toDynamicValue(() => ({ warmUp: SPINE_WARM_UP, skeletons: STUB_SKELETONS }))
-
-  container.bind(SLOT_TOKENS.SlotStore).to(SlotStore)
-
-  // Автомат публикует активную фазу в стор игры: он один её пишет, вью читают через него же
-  container.bind(CORE_TOKENS.PhaseSink).toDynamicValue(({ get }) => get(SLOT_TOKENS.SlotStore))
 
   container
     .bind(ENGINE_TOKENS.Scene)
