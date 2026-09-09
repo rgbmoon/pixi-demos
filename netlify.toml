@@ -1,0 +1,8 @@
+# Сборку и деплой ведёт GitHub Actions: publish-каталог читает netlify-cli при загрузке готового
+# dist, команда сборки нужна только на случай сборки на стороне Netlify.
+[build]
+  command = "npm run build:mocks"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
