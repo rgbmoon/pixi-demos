@@ -32,11 +32,14 @@ const WIN_LABEL_HEIGHT = 60
 
 /**
  * Сцена игры: собирает контроллеры в дерево отображения и расставляет их по экрану.
- * Раскладка ведётся в дизайн-единицах макета, под канвас масштабируется вся сцена целиком.
- * Новый контроллер подключается здесь и в bindings.ts.
+ * Раскладка ведётся в дизайн-единицах макета: контент вписывается в канвас целиком и центрируется,
+ * фон масштабируется до полного покрытия. Новый контроллер подключается здесь и в bindings.ts.
  */
 @injectable()
 export class GameScene extends Container {
+  // Пропорции канваса могут отличаться от макета, поэтому фон и контент масштабируются раздельно
+  private readonly background: BackgroundController
+  private readonly content = new Container()
   private readonly logo = new Sprite()
   private readonly reelsMachine: ReelsMachineController
   private readonly spinButton: SpinButtonController
@@ -58,7 +61,7 @@ export class GameScene extends Container {
   ) {
     super()
 
-    // Фон в раскладке не участвует: арт нарисован в размер макета и стоит в его начале координат
+    this.background = background
     this.reelsMachine = reelsMachine
     this.spinButton = spinButton
     this.soundToggleButton = soundToggleButton
@@ -71,8 +74,7 @@ export class GameScene extends Container {
     this.logo.anchor.set(0.5, 0)
     this.logo.setSize(LOGO_WIDTH, LOGO_HEIGHT)
 
-    this.addChild(
-      background,
+    this.content.addChild(
       this.logo,
       reelsMachine,
       spinButton,
@@ -82,11 +84,26 @@ export class GameScene extends Container {
       gameModePanel,
       creditLabel
     )
+
+    this.addChild(background, this.content)
   }
 
   layout(screenWidth: number, screenHeight: number): void {
-    // Канвас повторяет пропорции макета, поэтому по обеим осям выходит один и тот же множитель
-    this.scale.set(Math.min(screenWidth / DESIGN_WIDTH, screenHeight / DESIGN_HEIGHT))
+    // Фон масштабируется до полного покрытия канваса с обрезкой по краям, контент — до вписывания
+    const coverScale = Math.max(screenWidth / DESIGN_WIDTH, screenHeight / DESIGN_HEIGHT)
+    const contentScale = Math.min(screenWidth / DESIGN_WIDTH, screenHeight / DESIGN_HEIGHT)
+
+    this.background.scale.set(coverScale)
+    this.background.position.set(
+      (screenWidth - DESIGN_WIDTH * coverScale) / 2,
+      (screenHeight - DESIGN_HEIGHT * coverScale) / 2
+    )
+
+    this.content.scale.set(contentScale)
+    this.content.position.set(
+      (screenWidth - DESIGN_WIDTH * contentScale) / 2,
+      (screenHeight - DESIGN_HEIGHT * contentScale) / 2
+    )
 
     const centerX = DESIGN_WIDTH / 2
 

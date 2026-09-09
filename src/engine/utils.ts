@@ -2,7 +2,7 @@ import type { Application, Container, Ticker } from 'pixi.js'
 import { traceError } from 'src/core/errors/utils'
 
 import type { GameTicker } from './game-ticker'
-import type { CanvasSize } from './types'
+import type { CanvasConfig, CanvasSize } from './types'
 
 /**
  * Отдаёт приложение расширению PixiJS DevTools и добавляет к нему свои GPU-метрики.
@@ -35,10 +35,18 @@ export const connectDevtools = async (app: Application | null): Promise<void> =>
 }
 
 /**
- * Размер канваса: бокс с пропорциями макета игры во всю высоту доступной области.
- * Считается один раз на маунте — на ресайз окна канвас не отвечает.
+ * Размер канваса: до `fillMaxWidth` канвас занимает всю доступную область, выше — бокс
+ * с пропорциями макета во всю её высоту. Пропорции канваса учитывает `layout` сцены.
  */
-export const getCanvasSize = (availableWidth: number, availableHeight: number, aspectRatio: number): CanvasSize => {
+export const getCanvasSize = (
+  availableWidth: number,
+  availableHeight: number,
+  { aspectRatio, fillMaxWidth }: CanvasConfig
+): CanvasSize => {
+  if (availableWidth <= fillMaxWidth) {
+    return { width: availableWidth, height: availableHeight }
+  }
+
   const height = Math.min(availableHeight, availableWidth / aspectRatio)
 
   return { width: height * aspectRatio, height }
