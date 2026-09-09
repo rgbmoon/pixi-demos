@@ -34,10 +34,33 @@ React Compiler включён для JSX-файлов
 | `npm run dev`           | Vite dev-сервер                                                                |
 | `npm run build`         | `tsc -b && vite build`                                                         |
 | `npm run lint`          | `eslint --quiet --fix .` + `tsc --noEmit -p tsconfig.app.json`                 |
+| `npm run lint:ci`       | `eslint --quiet .` + `tsc -b` — версия для CI, без `--fix`                     |
 | `npm run preview`       | превью прод-сборки                                                             |
 | `npm run preview:mocks` | сборка с `VITE_USE_MOCKS=true` + превью — прод-сборка с работающими MSW-моками |
+| `npm test`              | vitest: модульные тесты и сценарии раунда                                      |
+| `npm run coverage`      | vitest с покрытием (v8)                                                        |
+| `npm run e2e`           | сборка с моками + Playwright, проект `chromium`                                |
 
-Husky `pre-commit` запускает `npm run lint`. Тестов и тест-раннера в проекте нет.
+Husky `pre-commit` запускает `npm run lint && npm run test`. E2E в хук не заведены: им нужны
+прод-сборка и браузер, для pre-commit это слишком долго. Их гоняет CI.
+
+---
+
+## Деплой
+
+Прод-хостинг — Netlify, сборку и публикацию ведёт GitHub Actions
+([.github/workflows/ci.yml](.github/workflows/ci.yml)).
+
+- **Деплой только из `main` и только после зелёных `checks` и `e2e`.** Релизом служит мёрдж PR;
+  второй вход — кнопка Run workflow на `main`, она гоняет те же проверки перед деплоем.
+  Джоб деплоя забирает артефакт `dist` из джоба e2e, поэтому публикуется проверенная сборка.
+- **Бэкенда нет**: прод собирается `npm run build:mocks`. MSW перехватывает WebSocket в самой
+  странице, поэтому демо целиком статическое.
+- **`VITE_WS_URL` держит `.env` в репозитории.** Значение не секрет: его перехватывает мок, и оно
+  обязано совпадать у транспорта и у хендлера. `.env.local` переопределяет его локально.
+- **Правила раздачи — `public/_redirects` и `public/_headers`.** Actions публикует готовый каталог,
+  поэтому правила обязаны попасть в `dist/` вместе с ассетами. SPA-фолбэк обязателен:
+  `createBrowserRouter` без него отдаёт 404 на `/slot` и на перезагрузку страницы.
 
 ---
 

@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint --quiet --fix . && tsc -b",
+    "lint:ci": "eslint --quiet . && tsc -b",
     "preview": "vite preview",
     "build:mocks": "VITE_USE_MOCKS=true vite build",
     "preview:mocks": "npm run build:mocks && vite preview",
