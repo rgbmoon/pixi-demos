@@ -8,7 +8,7 @@ const FADE_DURATION_MS = 200
 
 /**
  * Фон сцены: обычный спрайт снизу, фриспиновый поверх; смена режима — fade alpha верхнего.
- * Арт нарисован в размер макета, поэтому вписывать его в канвас не нужно.
+ * Оба спрайта имеют размер макета; масштаб под размер канваса задаёт сцена.
  */
 export class Background extends Container {
   private readonly ticker: GameTicker

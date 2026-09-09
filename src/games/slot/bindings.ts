@@ -7,7 +7,7 @@ import { bindEngine } from 'src/engine/bindings'
 import { ENGINE_TOKENS } from 'src/engine/tokens'
 
 import { SlotApi } from './api/slot'
-import { GAME_ASPECT_RATIO, INITIAL_PHASE, SPINE_WARM_UP } from './constants'
+import { CANVAS_FILL_MAX_WIDTH, GAME_ASPECT_RATIO, INITIAL_PHASE, SPINE_WARM_UP } from './constants'
 import { BackgroundController } from './controllers/background'
 import { BetMinusButtonController } from './controllers/hud/bet-minus-button'
 import { BetPanelController } from './controllers/hud/bet-panel'
@@ -59,8 +59,10 @@ export const bindFlow = (container: Container): void => {
 
 /** Картинка: контроллеры и собирающая их сцена. */
 const bindScene = (container: Container): void => {
-  // Пропорции макета — знание игры: по ним общий хост считает размер канваса
-  container.bind(ENGINE_TOKENS.CanvasConfig).toDynamicValue(() => ({ aspectRatio: GAME_ASPECT_RATIO }))
+  // Пропорции макета и порог заполнения — знание игры: по ним общий хост считает размер канваса
+  container
+    .bind(ENGINE_TOKENS.CanvasConfig)
+    .toDynamicValue(() => ({ aspectRatio: GAME_ASPECT_RATIO, fillMaxWidth: CANVAS_FILL_MAX_WIDTH }))
 
   // Состав скелетов игры для общего пула
   container

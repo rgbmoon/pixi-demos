@@ -8,8 +8,10 @@ import type { ButtonSize, PaylineShape } from './types'
 export const DESIGN_WIDTH = 941
 /** Высота макета сцены: нативная высота фона. */
 export const DESIGN_HEIGHT = 1672
-/** Пропорции игрового поля: канвас повторяет макет, поэтому фон встаёт без полей и обрезки. */
+/** Пропорции игрового поля: выше CANVAS_FILL_MAX_WIDTH канвас повторяет их, и фон не обрезается. */
 export const GAME_ASPECT_RATIO = DESIGN_WIDTH / DESIGN_HEIGHT
+
+export const CANVAS_FILL_MAX_WIDTH = 640
 
 // Количество барабанов и видимых символов фиксировано: reel-frame не позволяет разместить больше
 /** Барабанов в машине. */

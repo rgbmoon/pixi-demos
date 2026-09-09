@@ -23,6 +23,7 @@ export class GameRoot {
 
   private app: Application | null = null
   private pending: Application | null = null
+  private resizeObserver: ResizeObserver | null = null
 
   constructor(
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
@@ -46,6 +47,26 @@ export class GameRoot {
     this.scene.layout(width, height)
   }
 
+  /**
+   * Приводит канвас к текущему размеру контейнера и пересчитывает раскладку сцены.
+   * Нулевой и неизменившийся размер пропускаются: `renderer.resize` пересоздаёт буфер.
+   */
+  private resize(container: HTMLElement) {
+    if (!this.app) {
+      return
+    }
+
+    const { width, height } = getCanvasSize(container.clientWidth, container.clientHeight, this.canvasConfig)
+
+    if (width <= 0 || height <= 0 || (width === this.app.screen.width && height === this.app.screen.height)) {
+      return
+    }
+
+    this.app.renderer.resize(width, height)
+
+    this.layout()
+  }
+
   // Потеря контекста останавливает отрисовку насовсем: восстановление сцены не реализовано, показываем оверлей
   private handleContextLost = () => {
     this.ticker.stop()
@@ -66,12 +87,8 @@ export class GameRoot {
 
     this.pending = app
 
-    // Размер канваса фиксируется на маунте: игра не пересобирает раскладку на ресайз окна
-    const { width, height } = getCanvasSize(
-      container.clientWidth,
-      container.clientHeight,
-      this.canvasConfig.aspectRatio
-    )
+    // Стартовый размер; последующие изменения отслеживает ResizeObserver контейнера
+    const { width, height } = getCanvasSize(container.clientWidth, container.clientHeight, this.canvasConfig)
 
     try {
       // autoStart: false — свой тикер приложение не запускает
@@ -114,6 +131,10 @@ export class GameRoot {
 
     this.layout()
 
+    // observe вызывает колбэк сразу, с уже установленным размером: проверка в resize его отсечёт
+    this.resizeObserver = new ResizeObserver(() => this.resize(container))
+    this.resizeObserver.observe(container)
+
     void this.fsm.start()
   }
 
@@ -123,6 +144,9 @@ export class GameRoot {
    */
   unmount() {
     this.pending = null
+
+    this.resizeObserver?.disconnect()
+    this.resizeObserver = null
 
     if (this.app) {
       void connectDevtools(null)

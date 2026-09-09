@@ -5,7 +5,7 @@ import { Snackbars } from 'src/components/Snackbars'
 
 export const Layout = () => {
   return (
-    <div className="flex relative flex-col items-center h-screen">
+    <div className="flex relative flex-col items-center h-dvh">
       <div className="fixed inset-0 -z-10">
         <BackgroundCanvas />
       </div>
