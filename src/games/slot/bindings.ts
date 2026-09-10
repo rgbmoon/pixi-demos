@@ -16,6 +16,8 @@ import { CreditLabelController } from './controllers/hud/credit-label'
 import { GameModeMinusButtonController } from './controllers/hud/game-mode-minus-button'
 import { GameModePanelController } from './controllers/hud/game-mode-panel'
 import { GameModePlusButtonController } from './controllers/hud/game-mode-plus-button'
+import { SettingsButtonController } from './controllers/hud/settings-button'
+import { SettingsModalController } from './controllers/hud/settings-modal'
 import { SoundToggleButtonController } from './controllers/hud/sound-toggle-button'
 import { SpinButtonController } from './controllers/hud/spin-button'
 import { WinLabelController } from './controllers/hud/win-label'
@@ -144,6 +146,20 @@ const bindScene = (container: Container): void => {
     .to(GameModePanelController)
     .onDeactivation((panel) => {
       if (!panel.destroyed) panel.destroy({ children: true })
+    })
+
+  container
+    .bind(SLOT_TOKENS.SettingsButtonController)
+    .to(SettingsButtonController)
+    .onDeactivation((button) => {
+      if (!button.destroyed) button.destroy({ children: true })
+    })
+
+  container
+    .bind(SLOT_TOKENS.SettingsModalController)
+    .to(SettingsModalController)
+    .onDeactivation((modal) => {
+      if (!modal.destroyed) modal.destroy({ children: true })
     })
 
   container

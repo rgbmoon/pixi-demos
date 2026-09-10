@@ -69,6 +69,8 @@ const LOGO_SOURCE: UnresolvedAsset = {
 }
 
 export const PLATE_SRC = `${GRAPHIC_DIR}/buttons/plate-bg.svg`
+/** Подложка модалки. Рисуется через NineSliceSprite: кромка с обводкой не масштабируется. */
+export const MODAL_BG_SRC = `${GRAPHIC_DIR}/modal/modal-bg.svg`
 export const WIN_LINE_SRC = `${GRAPHIC_DIR}/win-line/winline.png`
 
 const BUTTONS_DIR = `${GRAPHIC_DIR}/buttons`
@@ -109,6 +111,8 @@ export const BUTTON_ICONS = {
   soundOff: `${ICONS_DIR}/sound-off-svgrepo-com.svg`,
   plus: `${ICONS_DIR}/plus-svgrepo-com.svg`,
   minus: `${ICONS_DIR}/minus-svgrepo-com.svg`,
+  settings: `${ICONS_DIR}/gear.svg`,
+  close: `${ICONS_DIR}/cross.svg`,
 }
 
 export const FONT_FAMILY = 'Roboto'
@@ -129,7 +133,7 @@ const buttonSources = [
 ]
 
 const GAME_SOURCES: (string | UnresolvedAsset)[] = [
-  ...new Set([PLATE_SRC, WIN_LINE_SRC, ...buttonSources]),
+  ...new Set([PLATE_SRC, MODAL_BG_SRC, WIN_LINE_SRC, ...buttonSources]),
   ...symbolSources,
   REELS_FRAME_SOURCE,
   ...BACKGROUND_SOURCES,

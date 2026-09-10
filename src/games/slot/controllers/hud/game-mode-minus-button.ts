@@ -15,7 +15,7 @@ export class GameModeMinusButtonController extends LiveContainer {
     super()
 
     this.button = new Button({
-      variant: ButtonVariant.romb,
+      variant: ButtonVariant.circle,
       size: ButtonSize.md,
       icon: BUTTON_ICONS.minus,
       label: 'Fewer lines',

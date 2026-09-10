@@ -10,6 +10,8 @@ import type { CreditLabelController } from './controllers/hud/credit-label'
 import type { GameModeMinusButtonController } from './controllers/hud/game-mode-minus-button'
 import type { GameModePanelController } from './controllers/hud/game-mode-panel'
 import type { GameModePlusButtonController } from './controllers/hud/game-mode-plus-button'
+import type { SettingsButtonController } from './controllers/hud/settings-button'
+import type { SettingsModalController } from './controllers/hud/settings-modal'
 import type { SoundToggleButtonController } from './controllers/hud/sound-toggle-button'
 import type { SpinButtonController } from './controllers/hud/spin-button'
 import type { WinLabelController } from './controllers/hud/win-label'
@@ -36,6 +38,8 @@ export const SLOT_TOKENS = {
   GameModePlusButtonController: Symbol('GameModePlusButtonController') as ServiceIdentifier<GameModePlusButtonController>,
   GameModeMinusButtonController: Symbol('GameModeMinusButtonController') as ServiceIdentifier<GameModeMinusButtonController>,
   GameModePanelController: Symbol('GameModePanelController') as ServiceIdentifier<GameModePanelController>,
+  SettingsButtonController: Symbol('SettingsButtonController') as ServiceIdentifier<SettingsButtonController>,
+  SettingsModalController: Symbol('SettingsModalController') as ServiceIdentifier<SettingsModalController>,
   WinLabelController: Symbol('WinLabelController') as ServiceIdentifier<WinLabelController>,
   CreditLabelController: Symbol('CreditLabelController') as ServiceIdentifier<CreditLabelController>,
 } as const
