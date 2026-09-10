@@ -3,35 +3,35 @@ import { LiveContainer } from 'src/engine/live-container'
 import { BUTTON_ICONS } from 'src/games/slot/assets'
 import type { SlotStore } from 'src/games/slot/stores/slot'
 import { SLOT_TOKENS } from 'src/games/slot/tokens'
-import { ButtonSize, ButtonVariant, StepDirection } from 'src/games/slot/types'
+import { ButtonSize, ButtonVariant } from 'src/games/slot/types'
 import { Button } from 'src/games/slot/ui/hud/button'
 
-/** Кнопка шага вперёд по режимам игры. */
+/** Кнопка открытия настроек; при открытой модалке недоступна. */
 @injectable()
-export class GameModePlusButtonController extends LiveContainer {
+export class SettingsButtonController extends LiveContainer {
   private readonly button: Button
 
   constructor(@inject(SLOT_TOKENS.SlotStore) slotStore: SlotStore) {
     super()
 
     this.button = new Button({
-      variant: ButtonVariant.circle,
+      variant: ButtonVariant.romb,
       size: ButtonSize.md,
-      icon: BUTTON_ICONS.plus,
-      label: 'More lines',
-      onTap: () => slotStore.stepGameMode(StepDirection.forward),
+      icon: BUTTON_ICONS.settings,
+      label: 'Settings',
+      onTap: () => slotStore.openSettings(),
     })
 
     this.addChild(this.button)
 
     this.watch(
-      () => slotStore.canStepGameMode(StepDirection.forward),
-      (canStep) => this.button.setEnabled(canStep),
+      () => slotStore.isSettingsOpen,
+      (isOpen) => this.button.setEnabled(!isOpen),
       { fireImmediately: true }
     )
   }
 
-  /** Сторона кнопки в дизайн-единицах: по ней панель расставляет ряд управления. */
+  /** Сторона кнопки в дизайн-единицах: по ней сцена расставляет верхний ряд. */
   get sizeUnits(): number {
     return this.button.sizeUnits
   }

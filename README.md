@@ -21,7 +21,7 @@ TypeScript · PixiJS · Spine · React · MobX · Inversify · zod + partysocket
 
 ## Deploy
 
-Live demo: https://abrashkin.netlify.app
+Live demo: https://pixi-demo.netlify.app
 
 The published site is a production build with MSW mocks enabled: there is no backend, the mock
 service worker answers the game protocol in the browser.

@@ -14,6 +14,7 @@ export class SlotStore {
   @observable phase: PhaseName = INITIAL_PHASE
 
   @observable isSoundOn = true
+  @observable isSettingsOpen = false
   @observable betIndex = 0
   @observable gameMode: string = DEFAULT_GAME_MODE
   @observable credit = 0
@@ -54,8 +55,10 @@ export class SlotStore {
     return this.phase === PhaseName.idle
   }
 
+  // При открытой модалке спин недоступен: затемнение перехватывает только события указателя,
+  // DOM-кнопки слоя доступности PIXI остаются в табуляции, поэтому прописываем флаг явно
   @computed get canSpin(): boolean {
-    return this.isIdle && this.bet > 0 && this.bet <= this.credit
+    return this.isIdle && !this.isSettingsOpen && this.bet > 0 && this.bet <= this.credit
   }
 
   @computed get initialSymbols(): SymbolKey[][] | undefined {
@@ -79,9 +82,11 @@ export class SlotStore {
     return this.spinTransformations.find((transformation) => transformation.type === 'win')?.value ?? 0
   }
 
-  /** Доступен ли шаг по списку ставок: вне idle и за краями списка — нет. */
+  /** Доступен ли шаг по списку ставок: вне idle, при открытой модалке и за краями списка — нет. */
   canStepBet(direction: StepDirection): boolean {
-    return this.isIdle && this.isInBounds(this.betIndex + this.toDelta(direction), this.bets.length)
+    return (
+      this.isIdle && !this.isSettingsOpen && this.isInBounds(this.betIndex + this.toDelta(direction), this.bets.length)
+    )
   }
 
   /** Доступен ли шаг по списку режимов: вне idle и за краями списка — нет. */
@@ -161,5 +166,13 @@ export class SlotStore {
 
   @action toggleSound() {
     this.isSoundOn = !this.isSoundOn
+  }
+
+  @action openSettings() {
+    this.isSettingsOpen = true
+  }
+
+  @action closeSettings() {
+    this.isSettingsOpen = false
   }
 }

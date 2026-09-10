@@ -134,7 +134,35 @@ export const ICON_RATIO = 0.5
 export const DISABLED_ALPHA = 0.7
 
 /** Ширина плашки панели HUD в дизайн-единицах. */
-export const PANEL_WIDTH = 360
+export const PANEL_WIDTH = 440
 
 /** Высота плашки панели HUD. */
 export const PANEL_HEIGHT = 128
+
+/** Отступ элементов сцены и плашки модалки от края видимой области. */
+export const SCREEN_MARGIN = 32
+
+/** Отступ содержимого модалки от края её плашки. */
+export const MODAL_PADDING = 64
+
+/** Высота шапки модалки: кнопка закрытия плюс MODAL_PADDING сверху и снизу. */
+export const MODAL_HEADER_HEIGHT = 2 * MODAL_PADDING + BUTTON_SIZE_UNITS.md
+
+// Цвет и прозрачность разделителя шапки совпадают с обводкой в modal-bg.svg
+/** Цвет разделителя шапки. */
+export const MODAL_BORDER_COLOR = 0xa05a72
+
+/** Прозрачность разделителя шапки. */
+export const MODAL_BORDER_ALPHA = 0.55
+
+/** Толщина разделителя шапки в дизайн-единицах. */
+export const MODAL_DIVIDER_THICKNESS = 6
+
+/** Непрозрачность затемнения сцены под модалкой. */
+export const MODAL_BACKDROP_ALPHA = 0.6
+
+/** Длительность появления и скрытия модалки, мс. */
+export const MODAL_FADE_MS = 200
+
+/** Ширина немасштабируемой кромки подложки модалки в NineSliceSprite, пиксели арта. */
+export const MODAL_NINE_SLICE = 24

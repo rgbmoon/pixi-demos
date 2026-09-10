@@ -15,6 +15,7 @@ export class PaylinesController extends LiveContainer {
   private readonly slotStore: SlotStore
   private readonly paylines = new Paylines()
   private previewAbort?: AbortController
+  private pendingPreview = false
 
   constructor(ticker: GameTicker, slotStore: SlotStore) {
     super()
@@ -24,9 +25,29 @@ export class PaylinesController extends LiveContainer {
 
     this.addChild(this.paylines)
 
+    // Барабаны за открытой модалкой не видны, поэтому показ откладывается до её закрытия
     this.watch(
       () => slotStore.gameMode,
-      () => void this.preview()
+      () => {
+        if (slotStore.isSettingsOpen) {
+          this.pendingPreview = true
+
+          return
+        }
+
+        void this.preview()
+      }
+    )
+
+    this.watch(
+      () => slotStore.isSettingsOpen,
+      (isOpen) => {
+        if (isOpen || !this.pendingPreview) return
+
+        this.pendingPreview = false
+
+        void this.preview()
+      }
     )
 
     this.watch(

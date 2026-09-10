@@ -59,26 +59,25 @@ export const GameCanvas = ({ boot, dispose }: GameCanvasProps) => {
   }, [boot, dispose])
 
   return (
-    <div className="h-full flex justify-center">
-      <div ref={containerRef} className="relative h-full w-full flex items-center justify-center">
-        {(loading || fatal) && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-800">
-            {fatal ? (
-              <div role="alert" className="flex flex-col items-center gap-3 px-6 text-center text-white">
-                <p>{fatal.message}</p>
-                {fatal.detail && <p className="text-sm wrap-break-word text-white/60">{fatal.detail}</p>}
-                <Button onClick={() => window.location.reload()}>Reload</Button>
-              </div>
-            ) : (
-              <div
-                role="status"
-                aria-label="Loading game"
-                className="h-10 w-10 animate-spin rounded-full border-4 border-white/30 border-t-white"
-              />
-            )}
-          </div>
-        )}
-      </div>
+    <div className="grid h-full w-full">
+      <div ref={containerRef} className="col-start-1 row-start-1 flex items-center justify-center overflow-hidden" />
+      {(loading || fatal) && (
+        <div className="col-start-1 row-start-1 z-10 flex items-center justify-center bg-slate-800">
+          {fatal ? (
+            <div role="alert" className="flex flex-col items-center gap-3 px-6 text-center text-white">
+              <p>{fatal.message}</p>
+              {fatal.detail && <p className="text-sm wrap-break-word text-white/60">{fatal.detail}</p>}
+              <Button onClick={() => window.location.reload()}>Reload</Button>
+            </div>
+          ) : (
+            <div
+              role="status"
+              aria-label="Loading game"
+              className="h-10 w-10 animate-spin rounded-full border-4 border-white/30 border-t-white"
+            />
+          )}
+        </div>
+      )}
     </div>
   )
 }
