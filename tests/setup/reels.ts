@@ -1,6 +1,7 @@
 import { ReelsMachine } from 'src/core/reels/reels-machine'
 import { LinearSpinStrategy } from 'src/core/reels/strategies/linear-spin'
 import { PlannedLandingStrategy } from 'src/core/reels/strategies/planned-landing'
+import type { PlannedLandingOptions } from 'src/core/reels/strategies/types'
 import { ReelPhase, type ReelsConfig } from 'src/core/reels/types'
 
 /** Сетка раунда: значение ячейки `[барабан][ряд]`. */
@@ -19,6 +20,16 @@ const SPIN_SPEED = 60
 /** Страховка от бесконечного цикла, если посадка не завершится. */
 const MAX_FRAMES = 100_000
 
+/** Боевые настройки посадки слота. */
+export const LANDING_OPTIONS: PlannedLandingOptions = {
+  speed: SPIN_SPEED,
+  deceleration: 2,
+  handoverSpeed: 30,
+  easeCells: 0.25,
+  backStrength: 0.35,
+  staggerCells: 2,
+}
+
 export const createConfig = (): ReelsConfig<TestData, string> => ({
   reels: Array.from({ length: REELS }, (_, index) => ({ id: `reel-${index}` })),
   rows: ROWS,
@@ -27,14 +38,7 @@ export const createConfig = (): ReelsConfig<TestData, string> => ({
   accessorFn: (data, { reel, row }) => data[reel]?.[row],
   getFillerValue: () => FILLER,
   spinStrategy: new LinearSpinStrategy({ speed: SPIN_SPEED }),
-  landingStrategy: new PlannedLandingStrategy({
-    speed: SPIN_SPEED,
-    deceleration: 2,
-    handoverSpeed: 30,
-    easeCells: 0.25,
-    backStrength: 0.35,
-    staggerCells: 2,
-  }),
+  landingStrategy: new PlannedLandingStrategy(LANDING_OPTIONS),
 })
 
 export const createMachine = (): ReelsMachine<TestData, string> => new ReelsMachine(createConfig())

@@ -1,6 +1,13 @@
 import type { Container } from 'pixi.js'
 import type { StubSkeletonData } from 'src/engine/skeleton/types'
 
+/** Настройки тряски: размах по x в единицах родителя, длительность и число полных колебаний. */
+export type ShakeOptions = {
+  readonly amplitude: number
+  readonly durationMs: number
+  readonly oscillations: number
+}
+
 /**
  * Слушатель трека. Параметр объявлен `never`, потому что колбэк вызывается с записью конкретной
  * реализации: по контравариантности параметров сюда подходит и `AnimationStateListener` Spine,

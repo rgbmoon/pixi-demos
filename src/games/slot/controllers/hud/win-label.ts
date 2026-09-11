@@ -2,15 +2,20 @@ import { inject, injectable } from 'inversify'
 import { LiveContainer } from 'src/engine/live-container'
 import type { SlotStore } from 'src/games/slot/stores/slot'
 import { SLOT_TOKENS } from 'src/games/slot/tokens'
-import { PhaseName } from 'src/games/slot/types'
+import { LabelColor, PhaseName } from 'src/games/slot/types'
 import { ValueLabel } from 'src/games/slot/ui/hud/value-label'
 import { formatAmount } from 'src/games/slot/utils'
 
 const WIN_CAPTION = 'WIN'
 const IDLE_MESSAGE = 'MAKE YOUR BET'
 const SPIN_MESSAGE = 'GOOD LUCK'
+const TURBO_IDLE_MESSAGE = 'HOLD FOR SPIN'
+const TURBO_SPIN_MESSAGE = 'TURBO!'
 
-/** Строка под барабанами: сумма выигрыша, а между раундами — подсказка по текущей фазе. */
+/**
+ * Строка под барабанами: сумма выигрыша (в турбо-серии — накопленная), а между раундами — подсказка
+ * по фазе. В турбо-режиме подсказки свои: в покое зовёт зажать спин, во вращении объявляет турбо.
+ */
 @injectable()
 export class WinLabelController extends LiveContainer {
   private readonly slotStore: SlotStore
@@ -23,7 +28,7 @@ export class WinLabelController extends LiveContainer {
 
     this.addChild(this.valueLabel)
 
-    // Две подписки за данными на один render: содержимое строки зависит и от суммы, и от фазы раунда
+    // Подписки за данными на один render: содержимое строки зависит от суммы, фазы и режима
     this.watch(
       () => slotStore.win,
       () => this.render(),
@@ -33,15 +38,35 @@ export class WinLabelController extends LiveContainer {
       () => slotStore.phase,
       () => this.render()
     )
+    this.watch(
+      () => slotStore.isTurboEnabled,
+      () => this.render()
+    )
   }
 
   private render(): void {
-    const { win } = this.slotStore
+    const { win, isTurboEnabled } = this.slotStore
 
-    this.valueLabel.setText(win > 0 ? WIN_CAPTION : '', win > 0 ? formatAmount(win) : this.message())
-  }
+    if (win > 0) {
+      this.valueLabel.setText(WIN_CAPTION, formatAmount(win))
 
-  private message(): string {
-    return this.slotStore.phase === PhaseName.idle ? IDLE_MESSAGE : SPIN_MESSAGE
+      return
+    }
+
+    const isIdle = this.slotStore.phase === PhaseName.idle
+
+    if (!isTurboEnabled) {
+      this.valueLabel.setText('', isIdle ? IDLE_MESSAGE : SPIN_MESSAGE)
+
+      return
+    }
+
+    if (isIdle) {
+      this.valueLabel.setText('', TURBO_IDLE_MESSAGE, LabelColor.cyan)
+
+      return
+    }
+
+    this.valueLabel.setText('', TURBO_SPIN_MESSAGE, LabelColor.red)
   }
 }

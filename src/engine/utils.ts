@@ -2,7 +2,7 @@ import type { Application, Container, Ticker } from 'pixi.js'
 import { traceError } from 'src/core/errors/utils'
 
 import type { GameTicker } from './game-ticker'
-import type { CanvasConfig, CanvasSize } from './types'
+import type { CanvasConfig, CanvasSize, ShakeOptions } from './types'
 
 /**
  * Отдаёт приложение расширению PixiJS DevTools и добавляет к нему свои GPU-метрики.
@@ -105,6 +105,62 @@ export const tweenAlpha = (
       }
 
       target.alpha = next
+    }
+
+    const handleAbort = () => settle(() => reject(signal?.reason as Error))
+
+    signal?.addEventListener('abort', handleAbort, { once: true })
+
+    ticker.add(step)
+  })
+
+/**
+ * Трясёт объект по x затухающей синусоидой вокруг его позиции за `durationMs` на игровом тикере.
+ * Позиция возвращается на место в конце и при отмене по `signal`. При `prefers-reduced-motion` резолвится сразу.
+ */
+export const tweenShake = (
+  ticker: GameTicker,
+  target: Container,
+  { amplitude, durationMs, oscillations }: ShakeOptions,
+  signal?: AbortSignal
+): Promise<void> =>
+  new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(signal.reason as Error)
+
+      return
+    }
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      resolve()
+
+      return
+    }
+
+    const originX = target.x
+    let elapsed = 0
+
+    const settle = (finish: () => void) => {
+      ticker.remove(step)
+      signal?.removeEventListener('abort', handleAbort)
+
+      if (!target.destroyed) target.x = originX
+
+      finish()
+    }
+
+    const step = (frameTicker: Ticker) => {
+      elapsed += frameTicker.deltaMS
+
+      if (target.destroyed || elapsed >= durationMs) {
+        settle(resolve)
+
+        return
+      }
+
+      const progress = elapsed / durationMs
+
+      target.x = originX + amplitude * (1 - progress) * Math.sin(progress * oscillations * 2 * Math.PI)
     }
 
     const handleAbort = () => settle(() => reject(signal?.reason as Error))

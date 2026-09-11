@@ -1,6 +1,6 @@
 import { inject, injectable } from 'inversify'
 import { LiveContainer } from 'src/engine/live-container'
-import { PANEL_WIDTH } from 'src/games/slot/constants'
+import { PANEL_BUTTON_GAP, PANEL_WIDTH } from 'src/games/slot/constants'
 import type { SlotStore } from 'src/games/slot/stores/slot'
 import { SLOT_TOKENS } from 'src/games/slot/tokens'
 import { Panel } from 'src/games/slot/ui/hud/panel'
@@ -8,7 +8,6 @@ import { Panel } from 'src/games/slot/ui/hud/panel'
 import type { GameModeMinusButtonController } from './game-mode-minus-button'
 import type { GameModePlusButtonController } from './game-mode-plus-button'
 
-const BUTTON_GAP = 16
 
 /**
  * Панель режима игры: показывает число линий, участвующих в раунде,
@@ -25,8 +24,8 @@ export class GameModePanelController extends LiveContainer {
   ) {
     super()
 
-    minusButton.position.set(-(PANEL_WIDTH / 2 + BUTTON_GAP + minusButton.sizeUnits), -minusButton.sizeUnits / 2)
-    plusButton.position.set(PANEL_WIDTH / 2 + BUTTON_GAP, -plusButton.sizeUnits / 2)
+    minusButton.position.set(-(PANEL_WIDTH / 2 + PANEL_BUTTON_GAP + minusButton.sizeUnits), -minusButton.sizeUnits / 2)
+    plusButton.position.set(PANEL_WIDTH / 2 + PANEL_BUTTON_GAP, -plusButton.sizeUnits / 2)
 
     this.addChild(this.panel, minusButton, plusButton)
 

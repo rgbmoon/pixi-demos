@@ -1,4 +1,5 @@
 import { Assets, Container, Rectangle, Sprite, type Texture } from 'pixi.js'
+import { PALETTE } from 'src/core/palette'
 import { BUTTON_BACKINGS } from 'src/games/slot/assets'
 import { BUTTON_SIZE_UNITS, ICON_RATIO, DISABLED_ALPHA } from 'src/games/slot/constants'
 import type { ButtonOptions } from 'src/games/slot/types'
@@ -42,6 +43,17 @@ export class Button extends Container {
       this.on('pointertap', options.onTap)
     }
 
+    if (options.onPress) {
+      this.on('pointerdown', options.onPress)
+    }
+
+    const { onRelease } = options
+
+    if (onRelease) {
+      this.on('pointerup', () => onRelease(true))
+      this.on('pointerupoutside', () => onRelease(false))
+    }
+
     this.textures = { normal: Assets.get(backing.normal), active: Assets.get(backing.active) }
     this.applyBackground()
     this.setIcon(options.icon, options.iconRatio)
@@ -68,10 +80,18 @@ export class Button extends Container {
     this.accessible = enabled
   }
 
-  /** Меняет иконку кнопки из кэша Assets. */
-  setIcon(src: string, iconRatio?: number): void {
+  /** Меняет иконку кнопки из кэша Assets; `tint` красит белую иконку, по умолчанию она остаётся белой. */
+  setIcon(src: string, iconRatio?: number, tint: string = PALETTE.white): void {
     this.icon.texture = Assets.get(src)
+    this.icon.tint = tint
     this.icon.setSize(this.sizeUnits * (iconRatio ?? ICON_RATIO))
+  }
+
+  /** Меняет имя кнопки в слое доступности. */
+  setLabel(label: string): void {
+    this.accessibleHint = label
+    // PIXI пишет aria-label только при создании DOM-кнопки, у живой кнопки имя обновляем сами
+    this._accessibleDiv?.setAttribute('aria-label', label)
   }
 
   private applyBackground(): void {

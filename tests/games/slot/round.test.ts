@@ -61,6 +61,37 @@ describe('раунд', () => {
     expect(round.log).not.toContain('showAllWins')
   })
 
+  it('по Stop сажает барабаны сразу на серверную сетку и закрывает раунд серверным балансом', async () => {
+    round = await startRound({ scenario: MockScenario.bigwin })
+
+    const { store, emitter } = round
+    const reels = round.container.get(SLOT_TOKENS.ReelsMachineController) as unknown as ReelsStub
+
+    round.requestSpin()
+    await round.waitForPhase(PhaseName.spinning)
+
+    // Stop приходит раньше ответа сервера: посадка ждёт данные и начинается сразу с промотки
+    expect(store.canStop).toBe(true)
+    emitter.emit('ui:stopRequested')
+
+    await round.waitForPhase(PhaseName.idle)
+
+    expect(round.log).toEqual(expect.arrayContaining(['slam', 'land']))
+    expect(reels.readGrid()).toEqual(store.spinSymbols)
+    expect(store.credit).toBe(store.spinResult?.balance)
+    // Сигнал Stop живёт только фазу вращения
+    expect(emitter.listenerCounts()['ui:stopRequested'] ?? 0).toBe(0)
+  })
+
+  it('не переносит Stop, нажатый вне вращения, в следующий раунд', async () => {
+    round = await startRound({ scenario: MockScenario.bigwin })
+
+    round.emitter.emit('ui:stopRequested')
+    await round.playSpin()
+
+    expect(round.log).not.toContain('slam')
+  })
+
   it('ведёт презентацию выигрыша в объявленном порядке', async () => {
     round = await startRound({ scenario: MockScenario.bigwin })
 
@@ -73,5 +104,78 @@ describe('раунд', () => {
     // Событие в прошедшем времени эмитится после посадки, презентация — следом за ним
     expect(round.log).toEqual(['spin', 'land', 'showAllWins', 'showTint', 'playWinLines', 'hideTint', 'waitTicks'])
     expect(landed).toEqual(['spin:landed'])
+  })
+})
+
+describe('турбо-режим', () => {
+  /** Ждёт `count` посадок подряд: столько спинов серия прошла с момента вызова. */
+  const waitForLandings = async (count: number): Promise<void> => {
+    for (let landed = 0; landed < count; landed += 1) {
+      await round?.emitter.waitFor('spin:landed', { timeoutMs: 5000 })
+    }
+  }
+
+  it('по тапу проводит один турбо-спин с коротким показом выигрыша', async () => {
+    round = await startRound({ scenario: MockScenario.bigwin })
+
+    const { store, log } = round
+
+    store.toggleTurboEnabled()
+    await round.playSpin()
+
+    expect(log).toContain('showAllWins')
+    expect(log).not.toContain('playWinLines')
+    expect(store.isTurboSeries).toBe(false)
+    expect(store.credit).toBe(store.spinResult?.balance)
+  })
+
+  it('держит выигрыши серии в строке WIN и зачисляет их по отпусканию', async () => {
+    round = await startRound({ scenario: MockScenario.bigwin })
+
+    const { store, emitter, log } = round
+    const creditBefore = store.credit
+
+    store.toggleTurboEnabled()
+    store.holdSpin()
+    emitter.emit('ui:spinRequested')
+
+    await waitForLandings(3)
+
+    // Серия идёт, выигрыши копятся отдельно: банк видит только списанные ставки
+    expect(store.isTurboSeries).toBe(true)
+    expect(store.win).toBeGreaterThan(0)
+    expect(store.credit).toBeLessThan(creditBefore)
+
+    store.releaseSpin()
+    await round.waitForPhase(PhaseName.idle)
+
+    expect(store.isTurboSeries).toBe(false)
+    expect(store.win).toBe(0)
+    expect(store.credit).toBe(store.spinResult?.balance)
+    expect(log).not.toContain('playWinLines')
+  })
+
+  it('зачисляет выигрыши и продолжает серию, когда банк кончился', async () => {
+    round = await startRound({ scenario: MockScenario.bigwin })
+
+    const { store, emitter } = round
+    const { init, bet } = store
+
+    if (!init) throw new Error('init is missing after boot')
+
+    // Кредита ровно на одну ставку: без зачисления выигрышей второго спина серии не будет
+    store.applyInit({ ...init, round: { ...init.round, balance: bet, bet } })
+    store.toggleTurboEnabled()
+    store.holdSpin()
+    emitter.emit('ui:spinRequested')
+
+    await waitForLandings(2)
+
+    expect(store.isTurboSeries).toBe(true)
+
+    store.releaseSpin()
+    await round.waitForPhase(PhaseName.idle)
+
+    expect(store.credit).toBe(store.spinResult?.balance)
   })
 })

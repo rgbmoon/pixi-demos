@@ -17,4 +17,6 @@ export type PlannedLandingOptions = {
   readonly backStrength: number
   /** Лесенка остановки: на столько ячеек каждый следующий барабан крутится дольше предыдущего. */
   readonly staggerCells: number
+  /** Минимум кадров вращения до начала торможения, считая кадры до посадки; по умолчанию 0. */
+  readonly minSpinFrames?: number
 }

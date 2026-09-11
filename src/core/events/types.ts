@@ -9,6 +9,13 @@ export type WaitForOptions<P> = {
   filter?: (payload: P) => boolean
 }
 
+export type SignalOnOptions<P> = {
+  // Время жизни подписки: без него сигнал, так и не дождавшийся события, держал бы подписчика вечно.
+  signal: AbortSignal
+  // Срабатывать не на любое событие, а на подходящее.
+  filter?: (payload: P) => boolean
+}
+
 export type EventMap = Record<string, unknown>
 
 export type EventName<E extends EventMap> = keyof E & string

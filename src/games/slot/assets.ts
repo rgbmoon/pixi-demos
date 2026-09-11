@@ -50,15 +50,15 @@ const REELS_FRAME_SOURCE: UnresolvedAsset = {
   data: { resolution: TIER },
 }
 
-/** Фон сцены: обычный режим и режим фриспинов. Тиров у фона нет, арт нарисован в размер макета. */
+/** Фон сцены: обычный режим и турбо. Тиров у фона нет, арт нарисован в размер макета. */
 export const BACKGROUND_ALIASES = {
   default: 'bg-default',
-  fs: 'bg-fs',
+  turbo: 'bg-turbo',
 }
 
 const BACKGROUND_SOURCES: UnresolvedAsset[] = [
   { alias: BACKGROUND_ALIASES.default, src: `${GRAPHIC_DIR}/background/bg_default.{webp,jpg}` },
-  { alias: BACKGROUND_ALIASES.fs, src: `${GRAPHIC_DIR}/background/bg_fs.{webp,jpg}` },
+  { alias: BACKGROUND_ALIASES.turbo, src: `${GRAPHIC_DIR}/background/bg_turbo.{webp,jpg}` },
 ]
 
 export const LOGO_ALIAS = 'logo'
@@ -113,6 +113,20 @@ export const BUTTON_ICONS = {
   minus: `${ICONS_DIR}/minus-svgrepo-com.svg`,
   settings: `${ICONS_DIR}/gear.svg`,
   close: `${ICONS_DIR}/cross.svg`,
+  stop: `${ICONS_DIR}/square.svg`,
+  turbo: `${ICONS_DIR}/bolt.svg`,
+}
+
+export const CHECKBOX_ICONS = {
+  mark: `${ICONS_DIR}/check.svg`,
+}
+
+const CHECKBOX_DIR = `${GRAPHIC_DIR}/checkbox`
+
+/** Подложка чекбокса: своя, меньше и тоньше кнопочной, чтобы чекбокс не читался как кнопка. */
+export const CHECKBOX_BACKING: ButtonBacking = {
+  normal: `${CHECKBOX_DIR}/checkbox-bg.svg`,
+  active: `${CHECKBOX_DIR}/checkbox-bg-active.svg`,
 }
 
 export const FONT_FAMILY = 'Roboto'
@@ -130,6 +144,9 @@ const buttonSources = [
     circle.active,
   ]),
   ...Object.values(BUTTON_ICONS),
+  ...Object.values(CHECKBOX_ICONS),
+  CHECKBOX_BACKING.normal,
+  CHECKBOX_BACKING.active,
 ]
 
 const GAME_SOURCES: (string | UnresolvedAsset)[] = [

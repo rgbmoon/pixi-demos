@@ -1,7 +1,7 @@
 import { Text } from 'pixi.js'
 import { PALETTE } from 'src/core/palette'
 import { FONT_FAMILY } from 'src/games/slot/assets'
-import type { LabelOptions } from 'src/games/slot/types'
+import type { LabelColor, LabelOptions } from 'src/games/slot/types'
 
 /** Текст сцены: шрифт из манифеста игры, цвет — из палитры по имени. */
 export class Label extends Text {
@@ -10,5 +10,10 @@ export class Label extends Text {
       text: options.text ?? '',
       style: { fontFamily: FONT_FAMILY, fontSize: options.fontSize, fill: PALETTE[options.color] },
     })
+  }
+
+  /** Перекрашивает текст в цвет палитры по имени. */
+  setColor(color: LabelColor): void {
+    this.style.fill = PALETTE[color]
   }
 }

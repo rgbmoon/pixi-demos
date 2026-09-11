@@ -75,7 +75,7 @@ export const SPINE_WARM_UP: { skeleton: string; count: number }[] = Object.value
 /** Непрозрачность затемнения поля на разборе выигрыша. */
 export const TINT_ALPHA = 0.55
 /** Длительность появления и снятия затемнения, мс. */
-export const TINT_FADE_MS = 200
+export const TINT_FADE_MS = 133
 
 /** Линии выплат: ряд на каждом барабане и вертикальный сдвиг линии. */
 export const PAYLINES: Record<string, PaylineShape> = {
@@ -106,11 +106,11 @@ export const WIN_FRAME_INSET = 5
 
 // Тайминги показа выигрыша
 /** Сколько все выигравшие линии и символы показываются разом до разбора по линиям, мс. */
-export const WIN_SHOWCASE_MS = 1500
+export const WIN_SHOWCASE_MS = 1000
 /** Сколько линия выплат видна в цикле до смены на рамки, мс. */
-export const PAYLINE_VISIBLE_MS = 1050
+export const PAYLINE_VISIBLE_MS = 700
 /** Сколько рамки висят на символах после ухода линии, мс. */
-export const WIN_FRAMES_VISIBLE_MS = 1500
+export const WIN_FRAMES_VISIBLE_MS = 1000
 
 /** Режим игры до ответа initGame: максимум линий из набора мока (Line10). */
 export const DEFAULT_GAME_MODE = '4'
@@ -119,7 +119,25 @@ export const DEFAULT_GAME_MODE = '4'
 export const INITIAL_PHASE: PhaseName = PhaseName.booting
 
 /** Сколько сумма выигрыша висит в WinLabelController после анимаций, прежде чем уйти в кредит. */
-export const WIN_DISPLAY_MS = 1000
+export const WIN_DISPLAY_MS = 667
+
+/** Показ всех выигравших линий в турбо-режиме: одна короткая вспышка вместо разбора по линиям. */
+export const TURBO_WIN_SHOWCASE_MS = 400
+
+/** Сколько кнопку спина нужно держать, чтобы в турбо-режиме началась серия. */
+export const HOLD_MS = 400
+
+/** Размах тряски строки кредита при пополнении, в дизайн-единицах. */
+export const SHAKE_AMPLITUDE = 12
+
+/** Длительность тряски строки кредита, мс. */
+export const SHAKE_MS = 400
+
+/** Сколько полных колебаний делает строка кредита за тряску. */
+export const SHAKE_OSCILLATIONS = 4
+
+/** Доля подложки под молнию турбо-спина. */
+export const TURBO_ICON_RATIO = 0.7
 
 /** Сторона подложки кнопки в дизайн-единицах на каждый пресет размера. */
 export const BUTTON_SIZE_UNITS: Record<ButtonSize, number> = {
@@ -130,6 +148,12 @@ export const BUTTON_SIZE_UNITS: Record<ButtonSize, number> = {
 /** Доля стороны подложки, которую занимает иконка. */
 export const ICON_RATIO = 0.5
 
+/** Доля подложки под иконку спина. */
+export const SPIN_ICON_RATIO = 0.6
+
+/** Доля подложки под иконку остановки. */
+export const STOP_ICON_RATIO = 0.6
+
 /** Прозрачность погашенной кнопки. */
 export const DISABLED_ALPHA = 0.7
 
@@ -138,6 +162,12 @@ export const PANEL_WIDTH = 440
 
 /** Высота плашки панели HUD. */
 export const PANEL_HEIGHT = 128
+
+/** Зазор между плашкой панели HUD и кнопками шага по бокам. */
+export const PANEL_BUTTON_GAP = 16
+
+/** Ширина строки панели вместе с кнопками шага: по ней выравниваются строки модалки. */
+export const PANEL_ROW_WIDTH = PANEL_WIDTH + 2 * (PANEL_BUTTON_GAP + BUTTON_SIZE_UNITS.md)
 
 /** Отступ элементов сцены и плашки модалки от края видимой области. */
 export const SCREEN_MARGIN = 32
@@ -166,3 +196,13 @@ export const MODAL_FADE_MS = 200
 
 /** Ширина немасштабируемой кромки подложки модалки в NineSliceSprite, пиксели арта. */
 export const MODAL_NINE_SLICE = 24
+
+/** Зазор между строками содержимого модалки. */
+export const MODAL_ROW_GAP = 48
+
+
+/** Кегль подписи чекбокса. */
+export const CHECKBOX_FONT_SIZE = 48
+
+/** Сторона подложки чекбокса: в полтора раза меньше средней кнопки. */
+export const CHECKBOX_SIZE = BUTTON_SIZE_UNITS.md / 1.5

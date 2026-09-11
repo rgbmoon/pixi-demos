@@ -21,13 +21,14 @@ const STRIP_HEIGHT = (ROWS + BUFFER) * CELL_HEIGHT
 // Стартовые позиции ленты: ноль, доли ячейки, точная граница и отрицательная сторона диапазона
 const START_OFFSETS = [0, 1, CELL_HEIGHT / 3, CELL_HEIGHT / 2, CELL_HEIGHT, STRIP_HEIGHT - 0.001, -CELL_HEIGHT / 4]
 
-const createContext = (fromOffset: number, index = 0): LandingContext => ({
+const createContext = (fromOffset: number, index = 0, spunFrames = 0): LandingContext => ({
   index,
   rows: ROWS,
   buffer: BUFFER,
   cellHeight: CELL_HEIGHT,
   stripHeight: STRIP_HEIGHT,
   fromOffset,
+  spunFrames,
 })
 
 /** Насколько лента промахнулась мимо ближайшей границы ячейки. */
@@ -90,6 +91,23 @@ describe('PlannedLandingStrategy', () => {
     }
 
     expect(peak).toBeGreaterThan(distance)
+  })
+
+  it.each([0, 10, 29, 30, 60])('не начинает торможение раньше минимума вращения, если до посадки прошло %d кадров', (spunFrames) => {
+    const minSpinFrames = 30
+    const brakeFrames = (OPTIONS.speed - OPTIONS.handoverSpeed) / OPTIONS.deceleration
+    const { settleFrames } = new PlannedLandingStrategy({ ...OPTIONS, minSpinFrames }).plan(
+      createContext(0, 0, spunFrames)
+    )
+
+    // Торможение кончается на settleFrames, значит начинается за brakeFrames до него
+    expect(spunFrames + settleFrames - brakeFrames).toBeGreaterThanOrEqual(minSpinFrames - 1e-9)
+  })
+
+  it('оставляет после точки промотки только хвост отскока', () => {
+    const { distance, settleFrames, positionAt } = strategy.plan(createContext(0))
+
+    expect(distance - positionAt(settleFrames)).toBeCloseTo(OPTIONS.easeCells * CELL_HEIGHT, 9)
   })
 
   it('разносит остановку барабанов лесенкой', () => {

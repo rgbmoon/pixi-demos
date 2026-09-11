@@ -49,11 +49,14 @@ export type ButtonOptions = {
   icon: string
   iconRatio?: number
   onTap?: () => void
+  onPress?: () => void
+  onRelease?: (inside: boolean) => void
   label?: string
 }
 
 export const LabelColor = {
   cyan: 'cyan',
+  red: 'red',
   white: 'white',
 } as const
 
@@ -64,6 +67,20 @@ export type LabelOptions = {
   fontSize: number
   text?: string
 }
+
+export type CheckboxOptions = {
+  label: string
+  width: number
+  onTap?: () => void
+}
+
+export const SpinButtonMode = {
+  spin: 'spin',
+  stop: 'stop',
+  turbo: 'turbo',
+} as const
+
+export type SpinButtonMode = (typeof SpinButtonMode)[keyof typeof SpinButtonMode]
 
 /** Направление шага по упорядоченному списку значений: ставки, режимы, страницы. */
 export const StepDirection = {

@@ -14,6 +14,12 @@ export class SlotStore {
   @observable phase: PhaseName = INITIAL_PHASE
 
   @observable isSoundOn = true
+  /** Настройка игрока: турбо-режим — быстрые спины по тапу и серия по удержанию спина. */
+  @observable isTurboEnabled = false
+  /** Ввод игрока: кнопка спина зажата дольше порога удержания. Пишет кнопка, отпускание принимается в любой фазе. */
+  @observable isSpinHeld = false
+  /** Идёт турбо-серия: выигрыши копятся в `win` и уходят в кредит по её закрытию. Пишет автомат. */
+  @observable isTurboSeries = false
   @observable isSettingsOpen = false
   @observable betIndex = 0
   @observable gameMode: string = DEFAULT_GAME_MODE
@@ -55,10 +61,34 @@ export class SlotStore {
     return this.phase === PhaseName.idle
   }
 
+  /** Барабаны в движении: фаза `spinning` длится от старта прокрутки до посадки. */
+  @computed get isSpinning(): boolean {
+    return this.phase === PhaseName.spinning
+  }
+
+  /** Хватает ли кредита на ставку. */
+  @computed get canAffordBet(): boolean {
+    return this.bet > 0 && this.bet <= this.credit
+  }
+
   // При открытой модалке спин недоступен: затемнение перехватывает только события указателя,
   // DOM-кнопки слоя доступности PIXI остаются в табуляции, поэтому прописываем флаг явно
   @computed get canSpin(): boolean {
-    return this.isIdle && !this.isSettingsOpen && this.bet > 0 && this.bet <= this.credit
+    return this.isIdle && !this.isSettingsOpen && this.canAffordBet
+  }
+
+  /** Можно ли зажать спин под турбо-серию: только в турбо-режиме и когда спин доступен. */
+  @computed get canHoldSpin(): boolean {
+    return this.canSpin && this.isTurboEnabled
+  }
+
+  /** Доступна ли остановка барабанов: в обычном режиме, пока они в движении и модалка закрыта. */
+  @computed get canStop(): boolean {
+    return this.isSpinning && !this.isTurboEnabled && !this.isSettingsOpen
+  }
+
+  @computed get canToggleTurbo(): boolean {
+    return this.isIdle
   }
 
   @computed get initialSymbols(): SymbolKey[][] | undefined {
@@ -164,8 +194,37 @@ export class SlotStore {
     this.win = win
   }
 
+  /** Добавляет выигрыш спина к сумме турбо-серии. */
+  @action accrueWin(win: number) {
+    this.win += win
+  }
+
+  @action startSeries() {
+    this.isTurboSeries = true
+  }
+
+  @action endSeries() {
+    this.isTurboSeries = false
+  }
+
   @action toggleSound() {
     this.isSoundOn = !this.isSoundOn
+  }
+
+  @action toggleTurboEnabled() {
+    if (!this.canToggleTurbo) return
+
+    this.isTurboEnabled = !this.isTurboEnabled
+  }
+
+  @action holdSpin() {
+    if (!this.canHoldSpin) return
+
+    this.isSpinHeld = true
+  }
+
+  @action releaseSpin() {
+    this.isSpinHeld = false
   }
 
   @action openSettings() {

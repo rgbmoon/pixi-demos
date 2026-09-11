@@ -4,7 +4,7 @@ import type { GameTicker } from 'src/engine/game-ticker'
 import { LiveContainer } from 'src/engine/live-container'
 import type { SpinePool } from 'src/engine/spine-pool'
 import { ENGINE_TOKENS } from 'src/engine/tokens'
-import { SLOT_REELS, type SlotReelsData } from 'src/games/slot/reels'
+import { SLOT_REELS, SLOT_STRATEGIES, SLOT_TURBO_STRATEGIES, type SlotReelsData } from 'src/games/slot/reels'
 import type { SlotStore } from 'src/games/slot/stores/slot'
 import { SLOT_TOKENS } from 'src/games/slot/tokens'
 import type { SymbolKey } from 'src/games/slot/types'
@@ -14,8 +14,8 @@ import { PaylinesController } from './paylines'
 import { WinOverlayController } from './win-overlay'
 
 /**
- * Машина барабанов: держит модель лент и её поле, наполняет доску стартовыми символами по стору
- * и открывает фазам методы раунда — прокрутку, посадку и показ выигрыша.
+ * Машина барабанов: держит модель лент и её поле, наполняет доску стартовыми символами по стору,
+ * переключает стратегии движения по турбо-режиму и открывает фазам методы раунда — прокрутку, посадку и показ выигрыша.
  */
 @injectable()
 export class ReelsMachineController extends LiveContainer {
@@ -50,6 +50,12 @@ export class ReelsMachineController extends LiveContainer {
         fireImmediately: true,
       }
     )
+
+    this.watch(
+      () => slotStore.isTurboEnabled,
+      (isTurbo) => this.machine.setStrategies(isTurbo ? SLOT_TURBO_STRATEGIES : SLOT_STRATEGIES),
+      { fireImmediately: true }
+    )
   }
 
   private setSymbols(symbols: SlotReelsData | undefined): void {
@@ -63,10 +69,26 @@ export class ReelsMachineController extends LiveContainer {
     this.machine.spin()
   }
 
-  land(symbolKeys: SlotReelsData | undefined, signal?: AbortSignal): Promise<void> {
+  /**
+   * Сажает барабаны на символы раунда. `stopSignal` проматывает посадку к финалу: сработавший
+   * до вызова — с первого кадра, сработавший по ходу — с момента срабатывания.
+   */
+  async land(symbolKeys: SlotReelsData | undefined, signal?: AbortSignal, stopSignal?: AbortSignal): Promise<void> {
     this.machine.setData(symbolKeys ?? null)
 
-    return this.machine.land(signal)
+    const landing = this.machine.land(signal)
+
+    if (stopSignal?.aborted) {
+      this.machine.slam()
+    }
+
+    stopSignal?.addEventListener('abort', this.slam, { once: true })
+
+    try {
+      await landing
+    } finally {
+      stopSignal?.removeEventListener('abort', this.slam)
+    }
   }
 
   showTint(signal?: AbortSignal): Promise<void> {
@@ -77,11 +99,15 @@ export class ReelsMachineController extends LiveContainer {
     return this.board.hideTint(signal)
   }
 
-  showAllWins(signal?: AbortSignal): Promise<void> {
-    return this.winOverlay.showAllWins(this.board.getGridViews(), signal)
+  showAllWins(signal?: AbortSignal, durationMs?: number): Promise<void> {
+    return this.winOverlay.showAllWins(this.board.getGridViews(), signal, durationMs)
   }
 
   playWinLines(signal?: AbortSignal): Promise<void> {
     return this.winOverlay.playWinLines(this.board.getGridViews(), signal)
+  }
+
+  private slam = (): void => {
+    this.machine.slam()
   }
 }

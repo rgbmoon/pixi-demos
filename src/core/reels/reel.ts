@@ -1,6 +1,6 @@
 import { Cell } from './cell'
 import type { ReelsMachine } from './reels-machine'
-import type { LandingPlan, ReelContext, ReelDef, ReelOptions, StripSlot } from './types'
+import type { LandingPlan, ReelContext, ReelDef, ReelOptions, ReelStrategies, StripSlot } from './types'
 import { ReelPhase } from './types'
 import { getLap, wrapOffset } from './utils'
 
@@ -33,6 +33,10 @@ export class Reel<TData, TValue> {
   /** Накопленный путь ленты: позиции слотов — производные от него. */
   private offset = 0
   private revision = 0
+  /** Стратегии текущего раунда: фиксируются на старте спина. */
+  private strategies: ReelStrategies
+  /** Сколько кадров барабан крутится в текущем раунде до начала посадки. */
+  private spunFrames = 0
 
   private plan: LandingPlan | null = null
   private landingStart = 0
@@ -72,6 +76,7 @@ export class Reel<TData, TValue> {
       moving: false,
     }))
     this.laps = this.strip.map(() => 0)
+    this.strategies = this.resolveStrategies()
   }
 
   getPhase(): ReelPhase {
@@ -140,11 +145,13 @@ export class Reel<TData, TValue> {
     this.revision += 1
   }
 
-  /** Запускает бесконечную прокрутку: слоты переходят в размытую позу. */
+  /** Запускает бесконечную прокрутку: слоты переходят в размытую позу, стратегии раунда фиксируются. */
   spin(): void {
     if (this.phase !== ReelPhase.idle) return
 
     this.phase = ReelPhase.spinning
+    this.strategies = this.resolveStrategies()
+    this.spunFrames = 0
 
     for (const slot of this.strip) {
       slot.moving = true
@@ -163,7 +170,11 @@ export class Reel<TData, TValue> {
     this.phase = ReelPhase.landing
     this.landingStart = this.offset
     this.elapsed = 0
-    this.plan = this.options.landingStrategy.plan({ ...this.context, fromOffset: this.offset })
+    this.plan = this.strategies.landingStrategy.plan({
+      ...this.context,
+      fromOffset: this.offset,
+      spunFrames: this.spunFrames,
+    })
 
     return new Promise<void>((resolve, reject) => {
       if (signal?.aborted) {
@@ -179,6 +190,16 @@ export class Reel<TData, TValue> {
 
       signal?.addEventListener('abort', this.handleAbort, { once: true })
     })
+  }
+
+  /**
+   * Проматывает посадку к финальному участку расписания. План не меняется, двигается только время,
+   * поэтому слоты получают значения раунда так же, как на обычной посадке. Барабан не на посадке не трогает.
+   */
+  slam(): void {
+    if (this.phase !== ReelPhase.landing || !this.plan) return
+
+    this.elapsed = Math.max(this.elapsed, this.plan.settleFrames)
   }
 
   /** Шаг модели: сдвигает ленту и наполняет обёрнутые слоты. Зовётся владельцем раз в кадр. */
@@ -197,8 +218,19 @@ export class Reel<TData, TValue> {
     return this.options.cellHeight * (slotIndex - this.options.buffer)
   }
 
+  /** Стратегии барабана: описание барабана перекрывает текущие стратегии машины. */
+  private resolveStrategies(): ReelStrategies {
+    const { spinStrategy, landingStrategy } = this.machine.getStrategies()
+
+    return {
+      spinStrategy: this.def.spinStrategy ?? spinStrategy,
+      landingStrategy: this.def.landingStrategy ?? landingStrategy,
+    }
+  }
+
   private advanceSpin(deltaFrames: number): void {
-    this.offset += this.options.spinStrategy.step(deltaFrames, this.context)
+    this.spunFrames += deltaFrames
+    this.offset += this.strategies.spinStrategy.step(deltaFrames, this.context)
 
     this.syncStrip((slot) => this.fill(slot))
   }

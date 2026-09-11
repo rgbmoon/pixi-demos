@@ -1,15 +1,16 @@
 import EventEmitter from 'eventemitter3'
 
-import type { AnyHandler, EmitArgs, EventMap, EventName, WaitForOptions } from './types'
+import type { AnyHandler, EmitArgs, EventMap, EventName, SignalOnOptions, WaitForOptions } from './types'
 
 /**
  * Типизированный эмиттер игровых событий: имена и payload'ы типизированы, эмит произвольной строки невозможен.
  *
  * Под капотом — eventemitter3: PIXI тянет его же, поэтому в бандле он один, а слой событий обходится без PIXI.
- * Обёртка добавляет к нему три недостающие вещи:
+ * Обёртка добавляет к нему четыре недостающие вещи:
  *   1. on() отдаёт функцию отписки вместо `this` — не нужно хранить ссылку на колбэк ради off();
  *   2. ожидание события промисом (метод waitFor);
- *   3. точку, куда вешается общий лог всех событий: wildcard-подписки у ee3 нет.
+ *   3. сигнал события — AbortSignal, который срабатывает на событие (метод signalOn);
+ *   4. точку, куда вешается общий лог всех событий: wildcard-подписки у ee3 нет.
  */
 export class GameEmitter<E extends EventMap> {
   private readonly emitter = new EventEmitter<Record<string, [unknown]>>()
@@ -85,6 +86,36 @@ export class GameEmitter<E extends EventMap> {
         clearTimeout(timeoutId)
       }
     })
+  }
+
+  /**
+   * Отдаёт сигнал события: `AbortSignal`, который срабатывает на первое событие `event`, прошедшее `filter`.
+   * Подписка снимается по событию или по `signal` владельца — смотря что наступит раньше.
+   */
+  signalOn<K extends EventName<E>>(event: K, { signal, filter }: SignalOnOptions<E[K]>): AbortSignal {
+    const eventSignal = new AbortController()
+
+    if (signal.aborted) {
+      return eventSignal.signal
+    }
+
+    const offEvent = this.on(event, (payload) => {
+      if (filter && !filter(payload)) {
+        return
+      }
+
+      cleanup()
+      eventSignal.abort()
+    })
+
+    signal.addEventListener('abort', cleanup, { once: true })
+
+    function cleanup() {
+      offEvent()
+      signal.removeEventListener('abort', cleanup)
+    }
+
+    return eventSignal.signal
   }
 
   /**

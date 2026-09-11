@@ -7,7 +7,7 @@ import { SLOT_TOKENS } from 'src/games/slot/tokens'
 import { Background } from 'src/games/slot/ui/background'
 
 /**
- * Контроллер фона: стоит первым ребёнком сцены и по режиму игры переключает вариант фона fade-ом.
+ * Контроллер фона: стоит первым ребёнком сцены и переключает фон на турбо fade-ом, пока игрок держит спин.
  */
 @injectable()
 export class BackgroundController extends LiveContainer {
@@ -16,12 +16,12 @@ export class BackgroundController extends LiveContainer {
   constructor(@inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker, @inject(SLOT_TOKENS.SlotStore) slotStore: SlotStore) {
     super()
 
-    // Фриспиновый фон закреплён за последним режимом списка: отдельного признака у режима нет
-    const isFs = () => slotStore.gameMode === slotStore.gameModes.at(-1)?.gameMode
-
-    this.animation = new Background(ticker, isFs())
+    this.animation = new Background(ticker, slotStore.isSpinHeld)
     this.addChild(this.animation)
 
-    this.watch(isFs, (value) => this.animation.fadeTo(value))
+    this.watch(
+      () => slotStore.isSpinHeld,
+      (isTurbo) => this.animation.fadeTo(isTurbo)
+    )
   }
 }

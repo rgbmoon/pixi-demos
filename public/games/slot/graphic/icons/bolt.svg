@@ -1,0 +1,4 @@
+<svg width="800px" height="800px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<!-- Иконка рисуется крупнее спина и стопа (TURBO_ICON_RATIO 0.7 против 0.6): контур тоньше в той же пропорции, чтобы на экране совпасть с ними -->
+<path d="M13 2L4 14H12L11 22L20 10H12L13 2Z" stroke="#ffffff" stroke-width="1.714" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

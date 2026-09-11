@@ -10,6 +10,7 @@ import type { SpinResult } from 'src/games/slot/api/slot'
 export type GameEvents = {
   'game:booted': void
   'ui:spinRequested': void
+  'ui:stopRequested': void
   'spin:started': void
   'spin:landed': SpinResult
 }
