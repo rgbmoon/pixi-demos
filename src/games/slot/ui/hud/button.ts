@@ -38,6 +38,8 @@ export class Button extends Container {
     this.accessible = true
     this.accessibleType = 'button'
     this.accessibleHint = options.label
+    // На тач-устройствах слой не снимается, и его DOM-кнопка перехватила бы pointerdown у канваса
+    this.accessiblePointerEvents = 'none'
 
     if (options.onTap) {
       this.on('pointertap', options.onTap)

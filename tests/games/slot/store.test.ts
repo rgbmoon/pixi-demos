@@ -1,9 +1,18 @@
 import { configure } from 'mobx'
+import { SOUND_STORAGE_KEY } from 'src/games/slot/constants'
 import { SlotStore } from 'src/games/slot/stores/slot'
 import { PhaseName, StepDirection } from 'src/games/slot/types'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
-import { BETS, createInitResult, createPayline, createSpinResult, createSymbols, DEFAULT_BET_INDEX, INITIAL_BALANCE } from '../../setup/slot-data'
+import {
+  BETS,
+  createInitResult,
+  createPayline,
+  createSpinResult,
+  createSymbols,
+  DEFAULT_BET_INDEX,
+  INITIAL_BALANCE,
+} from '../../setup/slot-data'
 
 /** Стор поднимается в idle с данными раунда: дальше проверяются правила поверх них. */
 const createStore = (init = createInitResult()): SlotStore => {
@@ -13,6 +22,20 @@ const createStore = (init = createInitResult()): SlotStore => {
   store.setPhase(PhaseName.idle)
 
   return store
+}
+
+/** Подменяет localStorage мапой в памяти; её же возвращает для проверки записей. */
+const stubStorage = (initial: Record<string, string> = {}): Map<string, string> => {
+  const values = new Map(Object.entries(initial))
+
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      values.set(key, value)
+    },
+  })
+
+  return values
 }
 
 describe('SlotStore', () => {
@@ -212,6 +235,33 @@ describe('SlotStore', () => {
 
       expect(store.spinResult).toBeNull()
       expect(store.spinWin).toBe(0)
+    })
+  })
+
+  describe('настройка звука', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    it('поднимается с сохранённым значением', () => {
+      stubStorage({ [SOUND_STORAGE_KEY]: 'false' })
+
+      expect(new SlotStore().isSoundOn).toBe(false)
+    })
+
+    it('сохраняет переключение для следующего запуска', () => {
+      const values = stubStorage()
+
+      new SlotStore().toggleSound()
+
+      expect(values.get(SOUND_STORAGE_KEY)).toBe('false')
+      expect(new SlotStore().isSoundOn).toBe(false)
+    })
+
+    it('включён, если в хранилище не булево значение', () => {
+      stubStorage({ [SOUND_STORAGE_KEY]: 'not-json' })
+
+      expect(new SlotStore().isSoundOn).toBe(true)
     })
   })
 })

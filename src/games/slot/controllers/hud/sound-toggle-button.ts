@@ -1,6 +1,8 @@
 import { inject, injectable } from 'inversify'
+import type { GameEmitter } from 'src/core/events/game-emitter'
 import { LiveContainer } from 'src/engine/live-container'
 import { BUTTON_ICONS } from 'src/games/slot/assets'
+import type { GameEvents } from 'src/games/slot/events'
 import type { SlotStore } from 'src/games/slot/stores/slot'
 import { SLOT_TOKENS } from 'src/games/slot/tokens'
 import { ButtonSize, ButtonVariant } from 'src/games/slot/types'
@@ -11,7 +13,10 @@ import { Button } from 'src/games/slot/ui/hud/button'
 export class SoundToggleButtonController extends LiveContainer {
   private readonly button: Button
 
-  constructor(@inject(SLOT_TOKENS.SlotStore) slotStore: SlotStore) {
+  constructor(
+    @inject(SLOT_TOKENS.SlotStore) slotStore: SlotStore,
+    @inject(SLOT_TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>
+  ) {
     super()
 
     this.button = new Button({
@@ -19,7 +24,10 @@ export class SoundToggleButtonController extends LiveContainer {
       size: ButtonSize.md,
       icon: BUTTON_ICONS.soundOn,
       label: 'Toggle sound',
-      onTap: () => slotStore.toggleSound(),
+      onTap: () => {
+        slotStore.toggleSound()
+        emitter.emit('ui:buttonTapped')
+      },
     })
 
     this.addChild(this.button)

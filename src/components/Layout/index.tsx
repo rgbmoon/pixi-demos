@@ -9,7 +9,7 @@ export const Layout = () => {
       <div className="fixed inset-0 -z-10">
         <BackgroundCanvas />
       </div>
-      <header className="shrink-0 fixed top-0 z-10 w-full h-(--header-height) bg-slate-900/40 backdrop-blur-xl border-b border-white/10">
+      <header className="shrink-0 select-none fixed top-0 z-10 w-full h-(--header-height) bg-slate-900/40 backdrop-blur-xl border-b border-white/10">
         <div className="mx-auto flex h-full w-full max-w-5xl items-center justify-between gap-4 px-6">
           <Link className="flex items-center gap-2" to="/">
             <LogoIcon width={40} height={40} />

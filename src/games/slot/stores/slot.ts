@@ -1,7 +1,8 @@
 import { injectable } from 'inversify'
 import { action, computed, makeObservable, observable } from 'mobx'
+import { readStoredFlag, writeStoredFlag } from 'src/core/storage'
 import type { GameInitResult, Payline, RoundTransformation, SpinResult } from 'src/games/slot/api/slot'
-import { DEFAULT_GAME_MODE, INITIAL_PHASE } from 'src/games/slot/constants'
+import { DEFAULT_GAME_MODE, INITIAL_PHASE, SOUND_STORAGE_KEY } from 'src/games/slot/constants'
 import { PhaseName, StepDirection, type SymbolKey } from 'src/games/slot/types'
 
 @injectable()
@@ -13,7 +14,8 @@ export class SlotStore {
   /** Активная фаза раунда. Единственный писатель — движок автомата через `setPhase`. */
   @observable phase: PhaseName = INITIAL_PHASE
 
-  @observable isSoundOn = true
+  /** Настройка игрока: звук включён. Переживает перезагрузку через localStorage. */
+  @observable isSoundOn = readStoredFlag(SOUND_STORAGE_KEY, true)
   /** Настройка игрока: турбо-режим — быстрые спины по тапу и серия по удержанию спина. */
   @observable isTurboEnabled = false
   /** Ввод игрока: кнопка спина зажата дольше порога удержания. Пишет кнопка, отпускание принимается в любой фазе. */
@@ -209,6 +211,8 @@ export class SlotStore {
 
   @action toggleSound() {
     this.isSoundOn = !this.isSoundOn
+
+    writeStoredFlag(SOUND_STORAGE_KEY, this.isSoundOn)
   }
 
   @action toggleTurboEnabled() {

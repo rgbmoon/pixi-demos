@@ -1,5 +1,6 @@
 import type { Container } from 'inversify'
 
+import { AudioSynth } from './audio/audio-synth'
 import { GameRoot } from './game-root'
 import { GameTicker } from './game-ticker'
 import { SpinePool } from './spine-pool'
@@ -23,4 +24,9 @@ export const bindEngine = (container: Container): void => {
     .bind(ENGINE_TOKENS.GameRoot)
     .to(GameRoot)
     .onDeactivation((root) => root.unmount())
+
+  container
+    .bind(ENGINE_TOKENS.AudioSynth)
+    .to(AudioSynth)
+    .onDeactivation((synth) => synth.destroy())
 }

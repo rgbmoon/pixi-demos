@@ -113,6 +113,7 @@ export class SpinButtonController extends LiveContainer {
     }
 
     this.emitter.emit(this.slotStore.canStop ? 'ui:stopRequested' : 'ui:spinRequested')
+    this.emitter.emit('ui:buttonTapped')
   }
 
   private handlePress = (): void => {

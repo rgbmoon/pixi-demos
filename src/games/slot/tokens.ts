@@ -17,11 +17,12 @@ import type { SpinButtonController } from './controllers/hud/spin-button'
 import type { TurboCheckboxController } from './controllers/hud/turbo-checkbox'
 import type { WinLabelController } from './controllers/hud/win-label'
 import type { ReelsMachineController } from './controllers/reels/reels-machine'
+import type { SoundController } from './controllers/sound'
 import type { GameEvents } from './events'
 import type { SlotStore } from './stores/slot'
 
 /**
- * Токены слота: эндпоинты, эмиттер с картой событий игры, сторы и контроллеры сцены.
+ * Токены слота: эндпоинты, эмиттер с картой событий игры, сторы и контроллеры сцены, включая звук.
  *
  * В рантайме файл обязан оставаться листом графа импортов: только `Symbol(...)`.
  */
@@ -44,4 +45,5 @@ export const SLOT_TOKENS = {
   SettingsModalController: Symbol('SettingsModalController') as ServiceIdentifier<SettingsModalController>,
   WinLabelController: Symbol('WinLabelController') as ServiceIdentifier<WinLabelController>,
   CreditLabelController: Symbol('CreditLabelController') as ServiceIdentifier<CreditLabelController>,
+  SoundController: Symbol('SoundController') as ServiceIdentifier<SoundController>,
 } as const

@@ -6,7 +6,7 @@ test.describe('раунд', () => {
 
     await expect(page.getByRole('status', { name: 'Loading game' })).toBeHidden({ timeout: 30_000 })
 
-    // Слой доступности PIXI поднимается по Tab и снимается движением мыши, поэтому клик диспатчим напрямую
+    // Слой доступности PIXI поднимается по Tab; указатель его DOM-кнопки не принимают, поэтому клик диспатчим напрямую
     await page.keyboard.press('Tab')
 
     const spin = page.getByRole('button', { name: 'Spin' })
@@ -62,9 +62,8 @@ test.describe('раунд', () => {
     const centerY = box.y + box.height / 2
 
     // Удержание — только настоящими событиями указателя: клик слоя доступности даёт один tap.
-    // Слой снимается движением мыши с ненулевым смещением, поэтому к кнопке подводим в несколько шагов
-    await page.mouse.move(centerX - 40, centerY - 40)
-    await page.mouse.move(centerX, centerY, { steps: 5 })
+    // DOM-кнопки слоя указатель пропускают, поэтому нажатие попадает в канвас под ними
+    await page.mouse.move(centerX, centerY)
     await page.mouse.down()
     await page.waitForTimeout(1500)
 

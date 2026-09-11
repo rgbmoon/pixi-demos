@@ -1,9 +1,11 @@
 import { inject, injectable } from 'inversify'
+import type { GameEmitter } from 'src/core/events/game-emitter'
 import { ReelsMachine } from 'src/core/reels/reels-machine'
 import type { GameTicker } from 'src/engine/game-ticker'
 import { LiveContainer } from 'src/engine/live-container'
 import type { SpinePool } from 'src/engine/spine-pool'
 import { ENGINE_TOKENS } from 'src/engine/tokens'
+import type { GameEvents } from 'src/games/slot/events'
 import { SLOT_REELS, SLOT_STRATEGIES, SLOT_TURBO_STRATEGIES, type SlotReelsData } from 'src/games/slot/reels'
 import type { SlotStore } from 'src/games/slot/stores/slot'
 import { SLOT_TOKENS } from 'src/games/slot/tokens'
@@ -19,6 +21,7 @@ import { WinOverlayController } from './win-overlay'
  */
 @injectable()
 export class ReelsMachineController extends LiveContainer {
+  private readonly emitter: GameEmitter<GameEvents>
   private readonly machine: ReelsMachine<SlotReelsData, SymbolKey>
   private readonly board: ReelsBoard
   private readonly paylines: PaylinesController
@@ -27,9 +30,12 @@ export class ReelsMachineController extends LiveContainer {
   constructor(
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
     @inject(ENGINE_TOKENS.SpinePool) pool: SpinePool,
-    @inject(SLOT_TOKENS.SlotStore) slotStore: SlotStore
+    @inject(SLOT_TOKENS.SlotStore) slotStore: SlotStore,
+    @inject(SLOT_TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>
   ) {
     super()
+
+    this.emitter = emitter
 
     this.machine = new ReelsMachine(SLOT_REELS)
     this.board = new ReelsBoard(ticker, this.machine, pool)
@@ -72,11 +78,12 @@ export class ReelsMachineController extends LiveContainer {
   /**
    * Сажает барабаны на символы раунда. `stopSignal` проматывает посадку к финалу: сработавший
    * до вызова — с первого кадра, сработавший по ходу — с момента срабатывания.
+   * Каждый вставший барабан объявляется событием `reel:landed`.
    */
   async land(symbolKeys: SlotReelsData | undefined, signal?: AbortSignal, stopSignal?: AbortSignal): Promise<void> {
     this.machine.setData(symbolKeys ?? null)
 
-    const landing = this.machine.land(signal)
+    const landing = this.machine.land(signal, this.announceReelLanded)
 
     if (stopSignal?.aborted) {
       this.machine.slam()
@@ -109,5 +116,9 @@ export class ReelsMachineController extends LiveContainer {
 
   private slam = (): void => {
     this.machine.slam()
+  }
+
+  private announceReelLanded = (reel: number): void => {
+    this.emitter.emit('reel:landed', { reel })
   }
 }

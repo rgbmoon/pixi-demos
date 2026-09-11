@@ -7,10 +7,12 @@ interface ButtonProps {
   onClick?: () => void
   link?: boolean
   href?: string
+  target?: string
+  rel?: string
   className?: string
 }
 
-export const Button = ({ children, onClick, link, href, className = '' }: ButtonProps) => {
+export const Button = ({ children, onClick, link, href, target, rel, className = '' }: ButtonProps) => {
   const baseStyles = `
     h-10
     inline-flex items-center justify-center gap-2
@@ -24,7 +26,7 @@ export const Button = ({ children, onClick, link, href, className = '' }: Button
 
   if (link && href) {
     return (
-      <Link to={href} className={baseStyles}>
+      <Link to={href} target={target} rel={rel} className={baseStyles}>
         {children}
       </Link>
     )

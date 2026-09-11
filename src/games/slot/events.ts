@@ -11,6 +11,9 @@ export type GameEvents = {
   'game:booted': void
   'ui:spinRequested': void
   'ui:stopRequested': void
+  'ui:buttonTapped': void
   'spin:started': void
+  'reel:landed': { reel: number }
+  'credit:toppedUp': void
   'spin:landed': SpinResult
 }
