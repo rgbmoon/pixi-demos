@@ -93,6 +93,11 @@ export class SlotStore {
     return this.isIdle
   }
 
+  /** Настройки открываются только в idle: посреди раунда их контролы всё равно недоступны. */
+  @computed get canOpenSettings(): boolean {
+    return this.isIdle && !this.isSettingsOpen
+  }
+
   @computed get initialSymbols(): SymbolKey[][] | undefined {
     return this.init?.round.SpinResponse.transformations.find((transformation) => transformation.type === 'frameInit')
       ?.value
@@ -232,6 +237,8 @@ export class SlotStore {
   }
 
   @action openSettings() {
+    if (!this.canOpenSettings) return
+
     this.isSettingsOpen = true
   }
 

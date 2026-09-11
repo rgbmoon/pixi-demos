@@ -8,7 +8,7 @@ import { SLOT_TOKENS } from 'src/games/slot/tokens'
 import { ButtonSize, ButtonVariant } from 'src/games/slot/types'
 import { Button } from 'src/games/slot/ui/hud/button'
 
-/** Кнопка открытия настроек; при открытой модалке недоступна. */
+/** Кнопка открытия настроек; доступна только в idle при закрытой модалке. */
 @injectable()
 export class SettingsButtonController extends LiveContainer {
   private readonly button: Button
@@ -33,8 +33,8 @@ export class SettingsButtonController extends LiveContainer {
     this.addChild(this.button)
 
     this.watch(
-      () => slotStore.isSettingsOpen,
-      (isOpen) => this.button.setEnabled(!isOpen),
+      () => slotStore.canOpenSettings,
+      (enabled) => this.button.setEnabled(enabled),
       { fireImmediately: true }
     )
   }
