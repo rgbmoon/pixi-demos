@@ -15,8 +15,8 @@ import type { SlotStore } from 'src/games/slot/stores/slot'
 import { SLOT_TOKENS } from 'src/games/slot/tokens'
 import { PhaseName } from 'src/games/slot/types'
 
-import { createReelsStub, createTickerStub, type PresentationLog } from './doubles'
-import { server } from './msw-server'
+import { createBackgroundStub, createReelsStub, createTickerStub, type PresentationLog } from './doubles'
+import { server, wsLink } from './msw-server'
 
 export type RoundOptions = {
   /** Форсированный исход мока: по нему сценарий получает предсказуемый раунд. */
@@ -54,7 +54,7 @@ export const createRound = ({
   seed = 1,
   withHandlers = true,
 }: RoundOptions = {}): Round => {
-  if (withHandlers) server.use(...createHandlers({ random: createRandom(seed), scenario }))
+  if (withHandlers) server.use(...createHandlers({ random: createRandom(seed), scenario }, wsLink))
 
   const container = new Container({ defaultScope: 'Singleton' })
 
@@ -66,6 +66,7 @@ export const createRound = ({
   const log: PresentationLog = []
 
   container.bind(SLOT_TOKENS.ReelsMachineController).toConstantValue(createReelsStub(log))
+  container.bind(SLOT_TOKENS.BackgroundController).toConstantValue(createBackgroundStub(log))
   container.bind(ENGINE_TOKENS.GameTicker).toConstantValue(createTickerStub(log))
 
   const fsm = container.get(CORE_TOKENS.Fsm)

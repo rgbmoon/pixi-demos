@@ -35,7 +35,7 @@ export class SpinningPhase implements Phase<PhaseName> {
   }
 
   async enter(signal: AbortSignal): Promise<typeof PhaseName.idle | typeof PhaseName.result> {
-    const { bet, gameMode } = this.slotStore
+    const { bet, gameMode, isAnticipationForced } = this.slotStore
     // Доска до спина: на неё барабаны вернутся, если сервер не ответит
     const board = this.slotStore.spinSymbols ?? this.slotStore.initialSymbols
     // Прошлый ответ сервера: его балансом закрывается серия, если спин провалится
@@ -63,7 +63,7 @@ export class SpinningPhase implements Phase<PhaseName> {
       let result: SpinResult
 
       try {
-        result = await this.api.spin(bet, gameMode, signal)
+        result = await this.api.spin({ bet, gameMode, forceAnticipation: isAnticipationForced }, signal)
       } catch (error) {
         // Отмена — не провал раунда: её разбирает движок, откатывать ставку остановленному автомату незачем
         if (signal.aborted) {
@@ -80,14 +80,14 @@ export class SpinningPhase implements Phase<PhaseName> {
         this.slotStore.endSeries()
         notifyError(error, 'Spin failed, the bet has been refunded')
 
-        await this.reels.land(board, signal, stopSignal)
+        await this.reels.land(board, [], signal, stopSignal)
 
         return PhaseName.idle
       }
 
       this.slotStore.applySpin(result)
 
-      await this.reels.land(this.slotStore.spinSymbols, signal, stopSignal)
+      await this.reels.land(this.slotStore.spinSymbols, this.slotStore.presentedAnticipation, signal, stopSignal)
 
       // Событие в прошедшем времени эмитится после посадки: подписчик (звук, аналитика) видит реально остановленные барабаны
       this.emitter.emit('spin:landed', result)

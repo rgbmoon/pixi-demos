@@ -16,6 +16,7 @@ import {
   SPINE_WARM_UP,
 } from './constants'
 import { BackgroundController } from './controllers/background'
+import { AnticipationCheckboxController } from './controllers/hud/anticipation-checkbox'
 import { BetMinusButtonController } from './controllers/hud/bet-minus-button'
 import { BetPanelController } from './controllers/hud/bet-panel'
 import { BetPlusButtonController } from './controllers/hud/bet-plus-button'
@@ -179,6 +180,13 @@ const bindScene = (container: Container): void => {
   container
     .bind(SLOT_TOKENS.TurboCheckboxController)
     .to(TurboCheckboxController)
+    .onDeactivation((checkbox) => {
+      if (!checkbox.destroyed) checkbox.destroy({ children: true })
+    })
+
+  container
+    .bind(SLOT_TOKENS.AnticipationCheckboxController)
+    .to(AnticipationCheckboxController)
     .onDeactivation((checkbox) => {
       if (!checkbox.destroyed) checkbox.destroy({ children: true })
     })

@@ -20,6 +20,7 @@ import { ButtonSize, ButtonVariant } from 'src/games/slot/types'
 import { Button } from 'src/games/slot/ui/hud/button'
 import { Modal } from 'src/games/slot/ui/hud/modal'
 
+import type { AnticipationCheckboxController } from './anticipation-checkbox'
 import type { GameModePanelController } from './game-mode-panel'
 import type { TurboCheckboxController } from './turbo-checkbox'
 
@@ -33,6 +34,7 @@ export class SettingsModalController extends LiveContainer {
   private readonly closeButton: Button
   private readonly gameModePanel: GameModePanelController
   private readonly turboCheckbox: TurboCheckboxController
+  private readonly anticipationCheckbox: AnticipationCheckboxController
   private fadeAbort?: AbortController
 
   constructor(
@@ -40,6 +42,7 @@ export class SettingsModalController extends LiveContainer {
     @inject(SLOT_TOKENS.SlotStore) slotStore: SlotStore,
     @inject(SLOT_TOKENS.GameModePanelController) gameModePanel: GameModePanelController,
     @inject(SLOT_TOKENS.TurboCheckboxController) turboCheckbox: TurboCheckboxController,
+    @inject(SLOT_TOKENS.AnticipationCheckboxController) anticipationCheckbox: AnticipationCheckboxController,
     @inject(SLOT_TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>
   ) {
     super()
@@ -47,6 +50,7 @@ export class SettingsModalController extends LiveContainer {
     this.ticker = ticker
     this.gameModePanel = gameModePanel
     this.turboCheckbox = turboCheckbox
+    this.anticipationCheckbox = anticipationCheckbox
 
     this.closeButton = new Button({
       variant: ButtonVariant.circle,
@@ -61,6 +65,7 @@ export class SettingsModalController extends LiveContainer {
 
     this.modal.addContent(gameModePanel)
     this.modal.addContent(turboCheckbox)
+    this.modal.addContent(anticipationCheckbox)
     this.modal.addContent(this.closeButton)
 
     this.addChild(this.modal)
@@ -87,11 +92,11 @@ export class SettingsModalController extends LiveContainer {
       this.modal.plateWidth - MODAL_PADDING - this.closeButton.sizeUnits,
       (MODAL_HEADER_HEIGHT - this.closeButton.sizeUnits) / 2
     )
+    const turboY = MODAL_HEADER_HEIGHT + MODAL_PADDING + PANEL_HEIGHT + MODAL_ROW_GAP + CHECKBOX_SIZE / 2
+
     this.gameModePanel.position.set(this.modal.plateWidth / 2, MODAL_HEADER_HEIGHT + MODAL_PADDING + PANEL_HEIGHT / 2)
-    this.turboCheckbox.position.set(
-      this.modal.plateWidth / 2,
-      MODAL_HEADER_HEIGHT + MODAL_PADDING + PANEL_HEIGHT + MODAL_ROW_GAP + CHECKBOX_SIZE / 2
-    )
+    this.turboCheckbox.position.set(this.modal.plateWidth / 2, turboY)
+    this.anticipationCheckbox.position.set(this.modal.plateWidth / 2, turboY + MODAL_ROW_GAP + CHECKBOX_SIZE)
   }
 
   /**

@@ -1,4 +1,3 @@
-import { ws } from 'msw'
 import type { Random } from 'src/core/types'
 
 import type { CreateWsHandlerOptions, WsDelayRange } from './types'
@@ -8,8 +7,8 @@ const DEFAULT_RESPONSE_DELAY: WsDelayRange = { min: 100, max: 300 }
 
 const randomDelay = ({ min, max }: WsDelayRange, random: Random) => min + random() * (max - min)
 
-export const createWsHandler = ({ url, endpoints, delays, onConnect, random = Math.random }: CreateWsHandlerOptions) =>
-  ws.link(url).addEventListener('connection', ({ client }) => {
+export const createWsHandler = ({ link, endpoints, delays, onConnect, random = Math.random }: CreateWsHandlerOptions) =>
+  link.addEventListener('connection', ({ client }) => {
     onConnect?.({
       push: (target, args) => client.send(JSON.stringify({ type: 1, target, arguments: args })),
       onClose: (cleanup) => client.addEventListener('close', () => cleanup()),

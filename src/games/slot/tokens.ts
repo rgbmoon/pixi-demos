@@ -3,6 +3,7 @@ import type { GameEmitter } from 'src/core/events/game-emitter'
 
 import type { SlotApi } from './api/slot'
 import type { BackgroundController } from './controllers/background'
+import type { AnticipationCheckboxController } from './controllers/hud/anticipation-checkbox'
 import type { BetMinusButtonController } from './controllers/hud/bet-minus-button'
 import type { BetPanelController } from './controllers/hud/bet-panel'
 import type { BetPlusButtonController } from './controllers/hud/bet-plus-button'
@@ -35,6 +36,9 @@ export const SLOT_TOKENS = {
   SpinButtonController: Symbol('SpinButtonController') as ServiceIdentifier<SpinButtonController>,
   SoundToggleButtonController: Symbol('SoundToggleButtonController') as ServiceIdentifier<SoundToggleButtonController>,
   TurboCheckboxController: Symbol('TurboCheckboxController') as ServiceIdentifier<TurboCheckboxController>,
+  AnticipationCheckboxController: Symbol(
+    'AnticipationCheckboxController'
+  ) as ServiceIdentifier<AnticipationCheckboxController>,
   BetPlusButtonController: Symbol('BetPlusButtonController') as ServiceIdentifier<BetPlusButtonController>,
   BetMinusButtonController: Symbol('BetMinusButtonController') as ServiceIdentifier<BetMinusButtonController>,
   BetPanelController: Symbol('BetPanelController') as ServiceIdentifier<BetPanelController>,

@@ -5,8 +5,8 @@ Demo game clients built with PixiJS v8 and React.
 ## Games
 
 - **Slot machine** — a reel mechanics demo: five reels, three rows, up to ten paylines across
-  selectable line modes. Bet and line-mode controls, win line presentation, slam stop and
-  hold-to-spin turbo. Next up: anticipation spins, cascades, held reels and respins, nudges,
+  selectable line modes. Bet and line-mode controls, win line presentation, slam stop,
+  hold-to-spin turbo and anticipation spins. Next up: cascades, held reels and respins, nudges,
   hold-and-win cells and tall symbols. The server is the source of truth: the client presents the
   round it receives.
 

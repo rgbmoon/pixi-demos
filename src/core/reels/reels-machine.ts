@@ -2,7 +2,7 @@ import type { Cell } from './cell'
 import { DEFAULT_BUFFER } from './constants'
 import { Reel } from './reel'
 import { Row } from './row'
-import type { CellIndex, ReelDef, ReelOptions, ReelsConfig, ReelStrategies } from './types'
+import type { CellIndex, LandOptions, ReelDef, ReelOptions, ReelsConfig, ReelStrategies } from './types'
 import { ReelPhase } from './types'
 
 /**
@@ -87,11 +87,22 @@ export class ReelsMachine<TData, TValue> {
     }
   }
 
-  /** Сажает все барабаны; `onReelLanded` зовётся с номером барабана, как только он встал. */
-  async land(signal?: AbortSignal, onReelLanded?: (reel: number) => void): Promise<void> {
+  /**
+   * Сажает все барабаны. Барабан получает паузу за каждый барабан anticipation слева от себя и за
+   * себя, если он в списке: так он не встанет раньше соседа, который ещё ждёт. Собственная пауза
+   * есть только у барабанов из списка — о входе в неё сообщает `onReelAnticipated`.
+   */
+  async land(options: LandOptions = {}): Promise<void> {
+    const { signal, anticipation = [], onReelLanded, onReelAnticipated } = options
+
     await Promise.all(
       this.reels.map(async (reel) => {
-        await reel.land(signal)
+        await reel.land({
+          signal,
+          anticipation: anticipation.filter((index) => index <= reel.index).length,
+          anticipating: anticipation.includes(reel.index),
+          onAnticipated: () => onReelAnticipated?.(reel.index),
+        })
 
         onReelLanded?.(reel.index)
       })

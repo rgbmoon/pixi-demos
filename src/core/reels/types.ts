@@ -39,6 +39,8 @@ export type LandingPlan = {
   readonly totalFrames: number
   /** Начало финального участка посадки: до этого кадра `slam` проматывает расписание. */
   readonly settleFrames: number
+  /** Начало собственной паузы anticipation: кадр, с которого барабан крутится сверх расписания без неё. */
+  readonly anticipationFrames?: number
   /** Позиция ленты через `frames` кадров после начала посадки, в единицах машины от её старта. */
   positionAt(frames: number): number
 }
@@ -48,6 +50,32 @@ export type LandingContext = ReelContext & {
   readonly fromOffset: number
   /** Сколько кадров барабан крутился до начала посадки. */
   readonly spunFrames: number
+  /** Число пауз anticipation до посадки барабана, включая его собственную; 0 — обычное расписание. */
+  readonly anticipation: number
+  /** У барабана есть собственная пауза anticipation, а не только сдвиг за соседей слева. */
+  readonly anticipating: boolean
+}
+
+/** Настройки посадки одного барабана. */
+export type ReelLandOptions = {
+  readonly signal?: AbortSignal
+  /** Число пауз anticipation до посадки барабана, включая его собственную. */
+  readonly anticipation?: number
+  /** У барабана есть собственная пауза anticipation. */
+  readonly anticipating?: boolean
+  /** Зовётся синхронно из `advance`, когда барабан вошёл в собственную паузу; после `slam` не зовётся. */
+  readonly onAnticipated?: () => void
+}
+
+/** Настройки посадки машины на раунд. */
+export type LandOptions = {
+  readonly signal?: AbortSignal
+  /** Индексы барабанов, которые садятся с паузой anticipation. */
+  readonly anticipation?: readonly number[]
+  /** Зовётся с номером барабана, как только он встал. */
+  readonly onReelLanded?: (reel: number) => void
+  /** Зовётся синхронно из `advance` с номером барабана, вошедшего в паузу anticipation; после `slam` не зовётся. */
+  readonly onReelAnticipated?: (reel: number) => void
 }
 
 /** Как барабан садится: строит расписание пути от текущей позиции ленты. */

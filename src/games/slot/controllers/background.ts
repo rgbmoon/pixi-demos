@@ -8,6 +8,7 @@ import { Background } from 'src/games/slot/ui/background'
 
 /**
  * Контроллер фона: стоит первым ребёнком сцены и переключает фон на турбо fade-ом, пока игрок держит спин.
+ * Фазам открывает вспышку фона.
  */
 @injectable()
 export class BackgroundController extends LiveContainer {
@@ -23,5 +24,9 @@ export class BackgroundController extends LiveContainer {
       () => slotStore.isSpinHeld,
       (isTurbo) => this.animation.fadeTo(isTurbo)
     )
+  }
+
+  flash(signal?: AbortSignal): Promise<void> {
+    return this.animation.flash(signal)
   }
 }

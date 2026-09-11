@@ -156,13 +156,31 @@ GameTicker
 | `getStrategies() / setStrategies(strategies)`     | стратегии машины по умолчанию; смена действует со следующего спина     |
 | `reset(): void`                                   | мгновенно ставит ленты по текущим данным — стартовая доска             |
 | `spin(): void`                                    | запускает прокрутку всех барабанов                                     |
-| `land(signal?): Promise<void>`                    | сажает все барабаны, `Promise.all` по лентам                           |
+| `land(options?: LandOptions): Promise<void>`      | сажает все барабаны, `Promise.all` по лентам — см. ниже                |
 | `slam(): void`                                    | проматывает посадку садящихся барабанов к финальному участку           |
 | `advance(deltaFrames): void`                      | шаг модели; зовёт владелец такта                                       |
 | `getReels() / getReel(i)`                         | барабаны                                                               |
 | `getRows()`                                       | поперечные ряды                                                        |
 | `getCell(index) / getGrid()`                      | ячейка по адресу / сетка `[барабан][ряд]`                              |
 | `getPhase(): ReelPhase`                           | `landing`, если садится хоть один; `spinning`, если крутится хоть один |
+
+```ts
+type LandOptions = {
+  readonly signal?: AbortSignal // отмена: реджектит посадку и возвращает барабаны в покой
+  readonly anticipation?: readonly number[] // индексы барабанов, которые садятся с паузой
+  readonly onReelLanded?: (reel: number) => void // зовётся, как только барабан встал
+  readonly onReelAnticipated?: (reel: number) => void // барабан из списка вошёл в свою паузу
+}
+```
+
+Барабан получает паузу за каждый барабан из `anticipation` с индексом не больше своего. Поэтому
+барабан правее ждущего соседа тоже сдвигается, даже если сам в списке не стоит: иначе он встал бы
+раньше соседа. Собственная пауза есть только у барабанов из списка.
+
+`onReelAnticipated` приходит синхронно из `advance` в кадре, где барабан встал бы без своей паузы, —
+на лесенку позже соседа слева. Этот кадр план называет сам (`anticipationFrames`), поэтому о
+соседях колбэку знать не нужно. Slam двигает время посадки вне `advance` и перескакивает этот кадр
+молча: промотанная пауза не объявляется.
 
 ### `Reel<TData, TValue>`
 
@@ -176,7 +194,8 @@ GameTicker
 | `getVisibleSlotIndices(): number[]`              | индексы слотов внутри зоны сверху вниз                                      |
 | `getSlotAt(row)`                                 | слот, занимающий ряд сейчас                                                 |
 | `readValue(row)`                                 | значение ряда в данных раунда                                               |
-| `reset() / spin() / land(signal?) / slam() / advance(dt)` | то же, что у машины, но на одной ленте                             |
+| `reset() / spin() / slam() / advance(dt)`        | то же, что у машины, но на одной ленте                                      |
+| `land(options?: ReelLandOptions)`                | посадка ленты: `signal`, число пауз, своя пауза и колбэк входа в неё        |
 
 ### `Cell<TData, TValue>`
 
@@ -208,6 +227,7 @@ type LandingPlan = {
   readonly distance: number // полный путь до остановки
   readonly totalFrames: number // длительность посадки в кадрах
   readonly settleFrames: number // начало финального участка: до него slam проматывает посадку
+  readonly anticipationFrames?: number // начало собственной паузы anticipation, если она есть
   positionAt(frames: number): number
 }
 
@@ -228,6 +248,8 @@ type ReelContext = {
 type LandingContext = ReelContext & {
   readonly fromOffset: number // позиция ленты в момент начала посадки
   readonly spunFrames: number // сколько кадров барабан крутился до посадки
+  readonly anticipation: number // число пауз anticipation до остановки, включая свою; 0 — без пауз
+  readonly anticipating: boolean // у барабана есть собственная пауза, а не только сдвиг за соседей
 }
 ```
 
@@ -353,10 +375,20 @@ spin(): void {
   this.machine.spin()
 }
 
-async land(symbolKeys: SlotReelsData | undefined, signal?: AbortSignal, stopSignal?: AbortSignal): Promise<void> {
+async land(
+  symbolKeys: SlotReelsData | undefined,
+  anticipation: readonly number[],
+  signal?: AbortSignal,
+  stopSignal?: AbortSignal
+): Promise<void> {
   this.machine.setData(symbolKeys ?? null)
 
-  const landing = this.machine.land(signal)
+  const landing = this.machine.land({
+    signal,
+    anticipation,
+    onReelLanded: this.handleReelLanded, // гасит подсветку, эмитит reel:landed
+    onReelAnticipated: this.handleReelAnticipated, // включает подсветку, эмитит reel:anticipationStarted
+  })
 
   if (stopSignal?.aborted) this.machine.slam()
 
@@ -371,7 +403,7 @@ async land(symbolKeys: SlotReelsData | undefined, signal?: AbortSignal, stopSign
 ```
 
 Фазы дальше зовут только контроллер: `spin()` — когда раунд начался,
-`await land(данные, signal, stopSignal)` — когда пришёл результат сервера. Ядра и адаптера они не
+`await land(данные, anticipation, signal, stopSignal)` — когда пришёл результат сервера. Ядра и адаптера они не
 видят вовсе. `stopSignal` — сигнал нажатия Stop: фаза получает его из эмиттера (`signalOn`) и отдаёт
 вниз так же, как `signal` отмены. Сработавший до вызова сигнал проматывает посадку с первого кадра,
 сработавший по ходу — с момента нажатия.
@@ -396,12 +428,14 @@ async land(symbolKeys: SlotReelsData | undefined, signal?: AbortSignal, stopSign
 Каждый кадр `advanceSpin` двигает `offset` на `spinStrategy.step(...)`, копит `spunFrames` и
 пересчитывает позиции. Слот, сменивший круг, получает `getFillerValue(reel)` и `moving = true`.
 
-### `land(signal)` — посадка
+### `land(options)` — посадка
 
 1. Барабан не в `spinning` — промис резолвится сразу.
-2. `landingStrategy.plan({ ...context, fromOffset, spunFrames })` считает расписание один раз.
+2. `landingStrategy.plan({ ...context, fromOffset, spunFrames, anticipation, anticipating })`
+   считает расписание один раз.
 3. Каждый кадр `advanceLanding` берёт `plan.positionAt(elapsed)` и ставит `offset` в него.
    Шаг может быть **отрицательным** — на отскоке лента возвращается из-за точки посадки.
+   Кадр, перешагнувший `plan.anticipationFrames`, зовёт `onAnticipated`.
 4. Слот, сменивший круг, узнаёт своё финальное значение (ниже).
 5. На последнем кадре — `snap()`, и промис резолвится.
 
@@ -438,6 +472,7 @@ slot.moving = false
 
 ```
 путь = оборот ленты + недокрученный минимум вращения + лесенка (index * staggerCells)
+       + паузы anticipation (anticipation * anticipationCells)
        + тормозной путь + хвост отскока + добор до границы ячейки
 
   скорость
@@ -456,6 +491,11 @@ slot.moving = false
 Минимум вращения (`minSpinFrames`) считается вместе с кадрами до посадки (`spunFrames`): если ответ
 сервера пришёл раньше минимума, недостающие кадры лента докручивает на равномерном участке. Поэтому
 длительность спина не зависит от скорости сети, а slam перескакивает минимум без отдельной логики.
+
+Паузы anticipation (`anticipationCells` на каждую) тоже идут на равномерном участке: барабан крутится
+дольше с той же скоростью, торможение и отскок не меняются. Поэтому slam проматывает паузы вместе с
+круизом, и ждущие барабаны встают одновременно с остальными. Промежуток между двумя ждущими
+барабанами — `staggerCells + anticipationCells`.
 
 ---
 
@@ -518,7 +558,7 @@ export const SLOT_TURBO_STRATEGIES: ReelStrategies = {
 | Турбо                  | есть    | второй набор стратегий на турбо-режим, серия по удержанию спина | —                                                      |
 | Slam stop              | есть    | `Reel.slam()`, точка промотки — `plan.settleFrames`  | —                                                                 |
 | Минимум вращения       | есть    | `minSpinFrames` у `PlannedLandingStrategy`           | —                                                                 |
-| Anticipation           | в плане | удлинённая посадка отдельных барабанов по раунду     | план считается на барабан, номер барабана уже в контексте         |
+| Anticipation           | есть    | `LandOptions.anticipation`, `anticipationCells` у `PlannedLandingStrategy` | —                                           |
 | Каскады                | в плане | трансформация ленты между раундами                   | `Cell` отделена от `StripSlot` — точка расширения готова          |
 | Held-барабаны, респин  | в плане | флаг барабана на раунд, проверка в `Reel.spin()`     | `spin` и `land` уже работают на барабан                           |
 | Nudge                  | в плане | `SpinStrategy` / дополнительная посадка на ячейку    | обёртка по кругу, направление не зашито                           |

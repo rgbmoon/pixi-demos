@@ -18,6 +18,8 @@ export class SlotStore {
   @observable isSoundOn = readStoredFlag(SOUND_STORAGE_KEY, true)
   /** Настройка игрока: турбо-режим — быстрые спины по тапу и серия по удержанию спина. */
   @observable isTurboEnabled = false
+  /** Настройка игрока: каждый спин просит сервер о раунде с anticipation. */
+  @observable isAnticipationForced = false
   /** Ввод игрока: кнопка спина зажата дольше порога удержания. Пишет кнопка, отпускание принимается в любой фазе. */
   @observable isSpinHeld = false
   /** Идёт турбо-серия: выигрыши копятся в `win` и уходят в кредит по её закрытию. Пишет автомат. */
@@ -93,6 +95,10 @@ export class SlotStore {
     return this.isIdle
   }
 
+  @computed get canToggleAnticipationForced(): boolean {
+    return this.isIdle
+  }
+
   /** Настройки открываются только в idle: посреди раунда их контролы всё равно недоступны. */
   @computed get canOpenSettings(): boolean {
     return this.isIdle && !this.isSettingsOpen
@@ -117,6 +123,21 @@ export class SlotStore {
 
   @computed get spinWin(): number {
     return this.spinTransformations.find((transformation) => transformation.type === 'win')?.value ?? 0
+  }
+
+  /** Барабаны спина, которые сервер отправил в anticipation. */
+  @computed get spinAnticipation(): number[] {
+    return this.spinTransformations.find((transformation) => transformation.type === 'anticipation')?.value ?? []
+  }
+
+  /** Барабаны, которые садятся с паузой anticipation: турбо паузы пропускает. */
+  @computed get presentedAnticipation(): number[] {
+    return this.isTurboEnabled ? [] : this.spinAnticipation
+  }
+
+  /** Выигрыш раунда, в котором была пауза anticipation: его показ отличается от обычного. */
+  @computed get isAnticipationWin(): boolean {
+    return this.spinWin > 0 && this.presentedAnticipation.length > 0
   }
 
   /** Доступен ли шаг по списку ставок: вне idle, при открытой модалке и за краями списка — нет. */
@@ -224,6 +245,12 @@ export class SlotStore {
     if (!this.canToggleTurbo) return
 
     this.isTurboEnabled = !this.isTurboEnabled
+  }
+
+  @action toggleAnticipationForced() {
+    if (!this.canToggleAnticipationForced) return
+
+    this.isAnticipationForced = !this.isAnticipationForced
   }
 
   @action holdSpin() {

@@ -15,6 +15,8 @@ const LANDING_EASE_CELLS = 0.25
 const LANDING_BACK_STRENGTH = 0.35
 const LAND_STAGGER_CELLS = 2
 const MIN_SPIN_FRAMES = 30
+// Пауза anticipation на каждый ждущий барабан: около 1.4 с круиза на SPIN_SPEED
+const ANTICIPATION_CELLS = 24
 const BUFFER_SYMBOLS_COUNT = 1
 
 // Турбо ускоряет ленту и сжимает лесенку; торможение растёт квадратом, чтобы тормозной путь рос как у скорости
@@ -33,13 +35,17 @@ const LANDING_OPTIONS: PlannedLandingOptions = {
 /** Данные раунда для лент: сетка символов `[барабан][ряд]`. */
 export type SlotReelsData = SymbolKey[][]
 
-/** Обычное движение: минимум вращения и полная лесенка остановки. */
+/** Обычное движение: минимум вращения, полная лесенка остановки и паузы anticipation. */
 export const SLOT_STRATEGIES: ReelStrategies = {
   spinStrategy: new LinearSpinStrategy({ speed: SPIN_SPEED }),
-  landingStrategy: new PlannedLandingStrategy({ ...LANDING_OPTIONS, minSpinFrames: MIN_SPIN_FRAMES }),
+  landingStrategy: new PlannedLandingStrategy({
+    ...LANDING_OPTIONS,
+    minSpinFrames: MIN_SPIN_FRAMES,
+    anticipationCells: ANTICIPATION_CELLS,
+  }),
 }
 
-/** Турбо: лента быстрее, лесенка сжата, барабан садится сразу по приходу результата. */
+/** Турбо: лента быстрее, лесенка сжата, барабан садится сразу по приходу результата, пауз anticipation нет. */
 export const SLOT_TURBO_STRATEGIES: ReelStrategies = {
   spinStrategy: new LinearSpinStrategy({ speed: SPIN_SPEED * TURBO_SPEED_FACTOR }),
   landingStrategy: new PlannedLandingStrategy({

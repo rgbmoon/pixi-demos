@@ -70,5 +70,9 @@ export const WINNING_SYMBOLS: SymbolKey[] = [
 export const INITIAL_BALANCE = 1865789.73
 
 export const WIN_PROBABILITY = 0.5
+/** Столько скаттеров на вставших барабанах отправляют следующие барабаны в anticipation. */
+export const ANTICIPATION_SCATTERS = 2
+/** Вероятность третьего скаттера в сценарии `anticipation`. */
+export const ANTICIPATION_HIT_PROBABILITY = 0.5
 export const REELS = 5
 export const ROWS = 3
