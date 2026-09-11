@@ -29,6 +29,10 @@ const TransformationsSchema = z.array(
       value: z.number(),
     }),
     z.object({
+      type: z.literal('anticipation'),
+      value: z.array(z.number()),
+    }),
+    z.object({
       type: z.literal('multipliersInit'),
       value: z.array(z.number()),
       context: z.string(),
@@ -118,15 +122,16 @@ const SpinResultSchema = z.object({
 
 export type SpinResult = z.infer<typeof SpinResultSchema>
 
-const SpinResponseSchema = envelope(
-  z.array(
-    z.object({
-      bet: z.number(),
-      gameMode: z.string(),
-    })
-  ),
-  SpinResultSchema
-)
+const SpinRequestSchema = z.object({
+  bet: z.number(),
+  gameMode: z.string(),
+  /** Просит сервер о раунде с anticipation. */
+  forceAnticipation: z.boolean().optional(),
+})
+
+export type SpinRequest = z.infer<typeof SpinRequestSchema>
+
+const SpinResponseSchema = envelope(z.array(SpinRequestSchema), SpinResultSchema)
 
 /**
  * Эндпоинты слота: методы отправляют запрос через транспорт,
@@ -146,8 +151,8 @@ export class SlotApi {
     return response.result
   }
 
-  async spin(bet: number, gameMode: string, signal?: AbortSignal): Promise<SpinResult> {
-    const { response } = await this.transport.request('spin', SpinResponseSchema, [{ bet, gameMode }], { signal })
+  async spin(request: SpinRequest, signal?: AbortSignal): Promise<SpinResult> {
+    const { response } = await this.transport.request('spin', SpinResponseSchema, [request], { signal })
 
     return response.result
   }

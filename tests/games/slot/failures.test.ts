@@ -4,12 +4,11 @@ import { onNotice } from 'src/core/errors/utils'
 import { MockScenario } from 'src/games/slot/mocks/types'
 import { SLOT_TOKENS } from 'src/games/slot/tokens'
 import { PhaseName } from 'src/games/slot/types'
-import { WS_URL } from 'src/net/constants'
 import { createWsHandler } from 'src/net/mocks/create-ws-handler'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import type { ReelsStub } from '../../setup/doubles'
-import { server } from '../../setup/msw-server'
+import { server, wsLink } from '../../setup/msw-server'
 import { createRound, type Round, startRound } from '../../setup/round'
 
 let round: Round | undefined
@@ -86,7 +85,7 @@ describe('отказы раунда', () => {
     // Единственный хендлер на этот URL: штатные не ставим, иначе они спорят за соединение
     server.use(
       createWsHandler({
-        url: WS_URL,
+        link: wsLink,
         endpoints: { initGame: (_args, _reply, fail) => fail('init failed') },
       })
     )

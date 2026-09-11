@@ -2,6 +2,7 @@ import { inject, injectable } from 'inversify'
 import type { Phase } from 'src/core/fsm/types'
 import type { GameTicker } from 'src/engine/game-ticker'
 import { ENGINE_TOKENS } from 'src/engine/tokens'
+import type { BackgroundController } from 'src/games/slot/controllers/background'
 import type { ReelsMachineController } from 'src/games/slot/controllers/reels/reels-machine'
 import type { SlotStore } from 'src/games/slot/stores/slot'
 import { SLOT_TOKENS } from 'src/games/slot/tokens'
@@ -20,15 +21,18 @@ export class ResultPhase implements Phase<PhaseName> {
 
   private readonly slotStore: SlotStore
   private readonly reels: ReelsMachineController
+  private readonly background: BackgroundController
   private readonly ticker: GameTicker
 
   constructor(
     @inject(SLOT_TOKENS.SlotStore) slotStore: SlotStore,
     @inject(SLOT_TOKENS.ReelsMachineController) reels: ReelsMachineController,
+    @inject(SLOT_TOKENS.BackgroundController) background: BackgroundController,
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker
   ) {
     this.slotStore = slotStore
     this.reels = reels
+    this.background = background
     this.ticker = ticker
   }
 
@@ -73,7 +77,10 @@ export class ResultPhase implements Phase<PhaseName> {
     return PhaseName.idle
   }
 
-  /** Показ выигрыша: в турбо-режиме — одна короткая вспышка всех линий, иначе полный разбор по линиям. */
+  /**
+   * Показ выигрыша: в турбо-режиме — одна короткая вспышка всех линий, иначе полный разбор по линиям.
+   * Выигрыш после anticipation открывается вспышкой фона вместе с показом всех линий.
+   */
   private async presentWin(signal: AbortSignal): Promise<void> {
     if (this.slotStore.isTurboEnabled) {
       await this.reels.showAllWins(signal, TURBO_WIN_SHOWCASE_MS)
@@ -81,7 +88,11 @@ export class ResultPhase implements Phase<PhaseName> {
       return
     }
 
-    await this.reels.showAllWins(signal)
+    if (this.slotStore.isAnticipationWin) {
+      await Promise.all([this.background.flash(signal), this.reels.showAllWins(signal)])
+    } else {
+      await this.reels.showAllWins(signal)
+    }
     await this.reels.showTint(signal)
     await this.reels.playWinLines(signal)
     await this.reels.hideTint(signal)

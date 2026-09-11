@@ -1,3 +1,4 @@
+import { type WebSocketLink, ws } from 'msw'
 import type { GameInitResult } from 'src/games/slot/api/slot'
 import { WS_URL } from 'src/net/constants'
 import { createWsHandler } from 'src/net/mocks/create-ws-handler'
@@ -72,15 +73,16 @@ const GAME_INIT_RESULT: GameInitResult = {
 /**
  * Собирает хендлеры мок-сервера со своим состоянием раунда: каждый вызов даёт чистый баланс.
  * Состояние живёт в замыкании, поэтому два прогона подряд не влияют друг на друга.
+ * `link` передаёт тот, кто собирает хендлеры много раз: одна ссылка на все сборки не копит слушателей msw.
  */
-export const createHandlers = (options: MockOptions) => {
+export const createHandlers = (options: MockOptions, link: WebSocketLink = ws.link(WS_URL)) => {
   let balance = INITIAL_BALANCE
   let totalWin = 0
   let lastBet = GAME_INIT_RESULT.round.bet
 
   return [
     createWsHandler({
-      url: WS_URL,
+      link,
       random: options.random,
       // Инициализация запускается раньше PIXI-init, поэтому короткая латентность истекает до первого кадра —
       // держим её дольше спина, чтобы экран загрузки успевал отрисоваться.
@@ -101,7 +103,8 @@ export const createHandlers = (options: MockOptions) => {
           })
         },
         spin: (args, reply, fail) => {
-          const { bet, gameMode } = parseSpinPayload(args[0])
+          const payload = parseSpinPayload(args[0])
+          const { bet } = payload
 
           if (options.scenario === MockScenario.error) {
             fail('Spin failed on the server')
@@ -118,7 +121,7 @@ export const createHandlers = (options: MockOptions) => {
           lastBet = bet
           balance = roundMoney(balance - bet)
 
-          const { transformations, win } = generateSpinOutcome(bet, gameMode, options)
+          const { transformations, win } = generateSpinOutcome(payload, options)
 
           if (win > 0) {
             balance = roundMoney(balance + win)

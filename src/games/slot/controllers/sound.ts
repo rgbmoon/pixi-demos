@@ -19,6 +19,9 @@ export class SoundController extends LiveContainer {
   private readonly synth: AudioSynth
   private readonly slotStore: SlotStore
   private spinLoop?: SynthLoop
+  private anticipationLoop?: SynthLoop
+  /** Барабан, чью паузу anticipation озвучивает `anticipationLoop`. */
+  private anticipatedReel?: number
   private landedReels = 0
 
   constructor(
@@ -41,6 +44,7 @@ export class SoundController extends LiveContainer {
     this.listen(emitter, 'ui:buttonTapped', () => synth.play(SLOT_SOUNDS.click))
     this.listen(emitter, 'spin:started', this.handleSpinStarted)
     this.listen(emitter, 'reel:landed', this.handleReelLanded)
+    this.listen(emitter, 'reel:anticipationStarted', this.handleAnticipationStarted)
     this.listen(emitter, 'spin:landed', this.handleSpinLanded)
     this.listen(emitter, 'credit:toppedUp', () => synth.play(SLOT_SOUNDS.creditTopUp))
 
@@ -48,7 +52,10 @@ export class SoundController extends LiveContainer {
     this.watch(
       () => slotStore.isSpinning,
       (isSpinning) => {
-        if (!isSpinning) this.stopSpinLoop()
+        if (isSpinning) return
+
+        this.stopSpinLoop()
+        this.stopAnticipationLoop()
       }
     )
 
@@ -79,16 +86,32 @@ export class SoundController extends LiveContainer {
 
     this.landedReels += 1
     this.spinLoop?.setLevel(1 - this.landedReels / REELS_COUNT)
+
+    if (reel === this.anticipatedReel) this.stopAnticipationLoop()
   }
 
-  /** Выигрыш озвучивается по сумме спина из стора: в турбо коротко, иначе по крупности. */
+  /** Гул паузы переходит на следующий ждущий барабан: петля перезапускается, а не наслаивается. */
+  private handleAnticipationStarted = ({ reel }: GameEvents['reel:anticipationStarted']): void => {
+    this.stopAnticipationLoop()
+
+    this.anticipationLoop = this.synth.startLoop(SLOT_LOOPS.anticipation)
+    this.anticipatedReel = reel
+  }
+
+  /** Выигрыш озвучивается по сумме спина из стора: в турбо коротко, после anticipation мелодией, иначе по крупности. */
   private handleSpinLanded = (): void => {
-    const { spinWin, bet, isTurboEnabled } = this.slotStore
+    const { spinWin, bet, isTurboEnabled, isAnticipationWin } = this.slotStore
 
     if (spinWin <= 0) return
 
     if (isTurboEnabled) {
       this.synth.play(SLOT_SOUNDS.turboWin)
+
+      return
+    }
+
+    if (isAnticipationWin) {
+      this.synth.play(SLOT_SOUNDS.anticipationWin)
 
       return
     }
@@ -99,5 +122,11 @@ export class SoundController extends LiveContainer {
   private stopSpinLoop(): void {
     this.spinLoop?.stop()
     this.spinLoop = undefined
+  }
+
+  private stopAnticipationLoop(): void {
+    this.anticipationLoop?.stop()
+    this.anticipationLoop = undefined
+    this.anticipatedReel = undefined
   }
 }

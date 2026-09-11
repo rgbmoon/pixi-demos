@@ -10,6 +10,7 @@ import { SLOT_REELS, SLOT_STRATEGIES, SLOT_TURBO_STRATEGIES, type SlotReelsData 
 import type { SlotStore } from 'src/games/slot/stores/slot'
 import { SLOT_TOKENS } from 'src/games/slot/tokens'
 import type { SymbolKey } from 'src/games/slot/types'
+import { AnticipationGlowFrame } from 'src/games/slot/ui/reels/anticipation-glow-frame'
 import { ReelsBoard } from 'src/games/slot/ui/reels/reels-board'
 
 import { PaylinesController } from './paylines'
@@ -24,6 +25,7 @@ export class ReelsMachineController extends LiveContainer {
   private readonly emitter: GameEmitter<GameEvents>
   private readonly machine: ReelsMachine<SlotReelsData, SymbolKey>
   private readonly board: ReelsBoard
+  private readonly anticipationGlowFrame: AnticipationGlowFrame
   private readonly paylines: PaylinesController
   private readonly winOverlay: WinOverlayController
 
@@ -40,9 +42,11 @@ export class ReelsMachineController extends LiveContainer {
     this.machine = new ReelsMachine(SLOT_REELS)
     this.board = new ReelsBoard(ticker, this.machine, pool)
 
+    this.anticipationGlowFrame = new AnticipationGlowFrame(ticker)
     this.paylines = new PaylinesController(ticker, slotStore)
     this.winOverlay = new WinOverlayController(ticker, slotStore, this.paylines)
 
+    this.board.addOverlay(this.anticipationGlowFrame)
     this.board.addOverlay(this.winOverlay)
     // После вин оверлея: линия пересекает поднятый выигравший символ и должна идти поверх него
     this.board.addOverlay(this.paylines)
@@ -76,14 +80,25 @@ export class ReelsMachineController extends LiveContainer {
   }
 
   /**
-   * Сажает барабаны на символы раунда. `stopSignal` проматывает посадку к финалу: сработавший
-   * до вызова — с первого кадра, сработавший по ходу — с момента срабатывания.
-   * Каждый вставший барабан объявляется событием `reel:landed`.
+   * Сажает барабаны на символы раунда; барабаны из `anticipation` садятся с паузой.
+   * `stopSignal` проматывает посадку к финалу: сработавший до вызова — с первого кадра, сработавший
+   * по ходу — с момента срабатывания. Каждый вставший барабан объявляется событием `reel:landed`,
+   * начало паузы — `reel:anticipationStarted`.
    */
-  async land(symbolKeys: SlotReelsData | undefined, signal?: AbortSignal, stopSignal?: AbortSignal): Promise<void> {
+  async land(
+    symbolKeys: SlotReelsData | undefined,
+    anticipation: readonly number[],
+    signal?: AbortSignal,
+    stopSignal?: AbortSignal
+  ): Promise<void> {
     this.machine.setData(symbolKeys ?? null)
 
-    const landing = this.machine.land(signal, this.announceReelLanded)
+    const landing = this.machine.land({
+      signal,
+      anticipation,
+      onReelLanded: this.handleReelLanded,
+      onReelAnticipated: this.handleReelAnticipated,
+    })
 
     if (stopSignal?.aborted) {
       this.machine.slam()
@@ -95,6 +110,7 @@ export class ReelsMachineController extends LiveContainer {
       await landing
     } finally {
       stopSignal?.removeEventListener('abort', this.slam)
+      this.anticipationGlowFrame.hideAll()
     }
   }
 
@@ -118,7 +134,13 @@ export class ReelsMachineController extends LiveContainer {
     this.machine.slam()
   }
 
-  private announceReelLanded = (reel: number): void => {
+  private handleReelLanded = (reel: number): void => {
+    this.anticipationGlowFrame.hide(reel)
     this.emitter.emit('reel:landed', { reel })
+  }
+
+  private handleReelAnticipated = (reel: number): void => {
+    this.anticipationGlowFrame.show(reel)
+    this.emitter.emit('reel:anticipationStarted', { reel })
   }
 }

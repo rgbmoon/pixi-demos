@@ -21,7 +21,13 @@ const STRIP_HEIGHT = (ROWS + BUFFER) * CELL_HEIGHT
 // Стартовые позиции ленты: ноль, доли ячейки, точная граница и отрицательная сторона диапазона
 const START_OFFSETS = [0, 1, CELL_HEIGHT / 3, CELL_HEIGHT / 2, CELL_HEIGHT, STRIP_HEIGHT - 0.001, -CELL_HEIGHT / 4]
 
-const createContext = (fromOffset: number, index = 0, spunFrames = 0): LandingContext => ({
+const createContext = (
+  fromOffset: number,
+  index = 0,
+  spunFrames = 0,
+  anticipation = 0,
+  anticipating = false
+): LandingContext => ({
   index,
   rows: ROWS,
   buffer: BUFFER,
@@ -29,6 +35,8 @@ const createContext = (fromOffset: number, index = 0, spunFrames = 0): LandingCo
   stripHeight: STRIP_HEIGHT,
   fromOffset,
   spunFrames,
+  anticipation,
+  anticipating,
 })
 
 /** Насколько лента промахнулась мимо ближайшей границы ячейки. */
@@ -116,5 +124,28 @@ describe('PlannedLandingStrategy', () => {
     distances.slice(1).forEach((distance, previousIndex) => {
       expect(distance - distances[previousIndex]).toBeCloseTo(OPTIONS.staggerCells * CELL_HEIGHT, 9)
     })
+  })
+
+  it.each([1, 2, 3])('удлиняет круиз на %d паузы anticipation, не трогая торможение и отскок', (anticipation) => {
+    const anticipationCells = 10
+    const withAnticipation = new PlannedLandingStrategy({ ...OPTIONS, anticipationCells })
+    const base = withAnticipation.plan(createContext(0))
+    const delayed = withAnticipation.plan(createContext(0, 0, 0, anticipation))
+    const extraDistance = anticipation * anticipationCells * CELL_HEIGHT
+
+    expect(delayed.distance - base.distance).toBeCloseTo(extraDistance, 9)
+    // Добавка целиком на равномерном участке: slam проматывает её вместе с ним
+    expect(delayed.settleFrames - base.settleFrames).toBeCloseTo(extraDistance / OPTIONS.speed, 9)
+    expect(delayed.totalFrames - delayed.settleFrames).toBeCloseTo(base.totalFrames - base.settleFrames, 9)
+  })
+
+  it('начинает собственную паузу в кадре, где без неё барабан встал бы', () => {
+    const withAnticipation = new PlannedLandingStrategy({ ...OPTIONS, anticipationCells: 10 })
+    const own = withAnticipation.plan(createContext(0, 3, 0, 2, true))
+    const withoutOwn = withAnticipation.plan(createContext(0, 3, 0, 1, false))
+
+    expect(own.anticipationFrames).toBeCloseTo(withoutOwn.totalFrames, 9)
+    // Барабан, сдвинутый только соседями слева, своей паузы не объявляет
+    expect(withoutOwn.anticipationFrames).toBeUndefined()
   })
 })

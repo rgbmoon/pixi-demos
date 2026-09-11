@@ -9,6 +9,7 @@ const E5 = 659.25
 const G5 = 783.99
 const C6 = 1046.5
 const E6 = 1318.51
+const G6 = 1567.98
 const B5 = 987.77
 const D7 = 2349.32
 
@@ -52,6 +53,21 @@ const COIN_TICKS: SynthVoice[] = Array.from({ length: SHAKE_OSCILLATIONS }, (_, 
     { wave: 'sine', frequency: D7 * COIN_OVERTONE_RATIO, attack: 0.001, duration: 0.04, gain: gain / 3, delay },
   ] satisfies SynthVoice[]
 }).flat()
+
+// Мелодия выигрыша после anticipation: быстрый подъём и две долгие ноты наверху; [нота, старт, длина] в секундах
+const ANTICIPATION_WIN_MELODY = [
+  [G5, 0, 0.12],
+  [C6, 0.09, 0.12],
+  [E6, 0.18, 0.12],
+  [G6, 0.3, 0.3],
+  [E6, 0.45, 0.15],
+  [G6, 0.6, 0.5],
+] as const
+
+const ANTICIPATION_WIN_VOICES: SynthVoice[] = ANTICIPATION_WIN_MELODY.flatMap(([frequency, delay, duration]) => [
+  { ...CHIME_VOICE, frequency, delay, duration },
+  { ...CHIME_OVERTONE, frequency, delay, duration },
+])
 
 /** Короткие звуки слота: рецепты синтезатора по моментам игры. */
 export const SLOT_SOUNDS = {
@@ -126,6 +142,10 @@ export const SLOT_SOUNDS = {
       ...createArpeggio([C6, E6, G5 * 2, C6 * 2, E6 * 2], 0.07, { ...CHIME_VOICE, duration: 0.5, gain: 0.03 }),
     ],
   },
+  /** Выигрыш после anticipation: мелодия под вспышки фона, отличает его от обычного выигрыша. */
+  anticipationWin: {
+    voices: ANTICIPATION_WIN_VOICES,
+  },
   /** Выигрыш в турбо: одна короткая пара нот под вспышку линий. */
   turboWin: {
     voices: [
@@ -184,5 +204,15 @@ export const SLOT_LOOPS = {
     tremolo: { rate: 18, depth: 0.4 },
     fadeIn: 0.05,
     fadeOut: 0.1,
+  },
+  // Низкая пила под lowpass с глубоким тремоло: пульсирующий гул барабана на паузе anticipation
+  anticipation: {
+    wave: 'sawtooth',
+    frequency: 110,
+    gain: 0.07,
+    filter: { type: 'lowpass', frequency: 900, q: 4 },
+    tremolo: { rate: 6, depth: 0.7 },
+    fadeIn: 0.25,
+    fadeOut: 0.12,
   },
 } as const satisfies Record<string, LoopRecipe>

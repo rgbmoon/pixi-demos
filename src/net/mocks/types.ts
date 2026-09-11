@@ -1,3 +1,4 @@
+import type { WebSocketLink } from 'msw'
 import type { Random } from 'src/core/types'
 
 export type WsReply = (result: unknown) => void
@@ -12,7 +13,11 @@ export type WsConnectionContext = {
 export type WsDelayRange = { min: number; max: number }
 
 export type CreateWsHandlerOptions = {
-  url: string
+  /**
+   * Ссылка на перехватываемый адрес: `ws.link(url)`. Каждый вызов `ws.link` навсегда вешает слушателя
+   * на общий канал msw, поэтому ссылку создаёт вызывающий — одну на время жизни перехвата.
+   */
+  link: WebSocketLink
   endpoints: Record<string, WsEndpoint>
   /** Задержка ответа по имени эндпоинта; неперечисленные отвечают с дефолтной латентностью. */
   delays?: Record<string, WsDelayRange>

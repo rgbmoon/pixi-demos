@@ -107,6 +107,46 @@ describe('раунд', () => {
   })
 })
 
+describe('anticipation', () => {
+  it('по force сажает барабаны с паузой и открывает выигрыш вспышкой фона', async () => {
+    round = await startRound({ scenario: MockScenario.bigwin })
+
+    const { store, log } = round
+
+    store.toggleAnticipationForced()
+    await round.playSpin()
+
+    expect(store.presentedAnticipation.length).toBeGreaterThan(0)
+    expect(store.isAnticipationWin).toBe(true)
+    // Вспышка идёт вместе с показом всех линий, разбор линий — после них
+    expect(log).toEqual(expect.arrayContaining(['flash', 'showAllWins']))
+    expect(log.indexOf('flash')).toBeLessThan(log.indexOf('playWinLines'))
+  })
+
+  it('показывает выигрыш без паузы обычным порядком, без вспышки', async () => {
+    round = await startRound({ scenario: MockScenario.bigwin })
+
+    await round.playSpin()
+
+    expect(round.store.presentedAnticipation).toEqual([])
+    expect(round.log).not.toContain('flash')
+  })
+
+  it('в турбо пропускает паузу и вспышку, даже если сервер прислал anticipation', async () => {
+    round = await startRound({ scenario: MockScenario.bigwin })
+
+    const { store, log } = round
+
+    store.toggleAnticipationForced()
+    store.toggleTurboEnabled()
+    await round.playSpin()
+
+    expect(store.spinAnticipation.length).toBeGreaterThan(0)
+    expect(store.presentedAnticipation).toEqual([])
+    expect(log).not.toContain('flash')
+  })
+})
+
 describe('турбо-режим', () => {
   /** Ждёт `count` посадок подряд: столько спинов серия прошла с момента вызова. */
   const waitForLandings = async (count: number): Promise<void> => {

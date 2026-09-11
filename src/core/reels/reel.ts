@@ -1,6 +1,14 @@
 import { Cell } from './cell'
 import type { ReelsMachine } from './reels-machine'
-import type { LandingPlan, ReelContext, ReelDef, ReelOptions, ReelStrategies, StripSlot } from './types'
+import type {
+  LandingPlan,
+  ReelContext,
+  ReelDef,
+  ReelLandOptions,
+  ReelOptions,
+  ReelStrategies,
+  StripSlot,
+} from './types'
 import { ReelPhase } from './types'
 import { getLap, wrapOffset } from './utils'
 
@@ -44,6 +52,7 @@ export class Reel<TData, TValue> {
   private landingResolve: (() => void) | null = null
   private landingReject: ((reason: Error) => void) | null = null
   private landingSignal: AbortSignal | null = null
+  private onAnticipated: (() => void) | null = null
 
   constructor(
     machine: ReelsMachine<TData, TValue>,
@@ -162,18 +171,24 @@ export class Reel<TData, TValue> {
 
   /**
    * Ловит барабан: докручивает ленту до ровной посадки слотов и подставляет значения раунда.
-   * Барабан, который не крутится, резолвится сразу.
+   * Барабан, который не крутится, резолвится сразу. Паузы anticipation и колбэк входа
+   * в собственную паузу приходят в `options`.
    */
-  land(signal?: AbortSignal): Promise<void> {
+  land(options: ReelLandOptions = {}): Promise<void> {
+    const { signal, anticipation = 0, anticipating = false, onAnticipated } = options
+
     if (this.phase !== ReelPhase.spinning) return Promise.resolve()
 
     this.phase = ReelPhase.landing
     this.landingStart = this.offset
     this.elapsed = 0
+    this.onAnticipated = onAnticipated ?? null
     this.plan = this.strategies.landingStrategy.plan({
       ...this.context,
       fromOffset: this.offset,
       spunFrames: this.spunFrames,
+      anticipation,
+      anticipating,
     })
 
     return new Promise<void>((resolve, reject) => {
@@ -240,7 +255,14 @@ export class Reel<TData, TValue> {
 
     if (!plan) return
 
+    const previous = this.elapsed
+
     this.elapsed += deltaFrames
+
+    // Вход в паузу ловится только ходом ленты: slam двигает время вне advance и перескакивает его молча
+    if (plan.anticipationFrames !== undefined && previous < plan.anticipationFrames && this.elapsed >= plan.anticipationFrames) {
+      this.onAnticipated?.()
+    }
 
     const position = plan.positionAt(this.elapsed)
     const remaining = plan.distance - position
@@ -346,6 +368,7 @@ export class Reel<TData, TValue> {
     this.landingSignal = null
     this.landingResolve = null
     this.landingReject = null
+    this.onAnticipated = null
     this.plan = null
     this.phase = ReelPhase.idle
   }

@@ -1,4 +1,5 @@
 import type { GameTicker } from 'src/engine/game-ticker'
+import type { BackgroundController } from 'src/games/slot/controllers/background'
 import type { ReelsMachineController } from 'src/games/slot/controllers/reels/reels-machine'
 import type { SlotReelsData } from 'src/games/slot/reels'
 
@@ -26,10 +27,15 @@ export const createReelsStub = (log: PresentationLog): ReelsMachineController & 
       log.push('spin')
       machine.spin()
     },
-    land: async (symbolKeys: SlotReelsData | undefined, _signal?: AbortSignal, stopSignal?: AbortSignal) => {
+    land: async (
+      symbolKeys: SlotReelsData | undefined,
+      anticipation: readonly number[],
+      _signal?: AbortSignal,
+      stopSignal?: AbortSignal
+    ) => {
       machine.setData((symbolKeys ?? null) as never)
 
-      const landing = machine.land()
+      const landing = machine.land({ anticipation })
 
       // Посадка дублёра синхронна: Stop успевает сработать только до её начала
       if (stopSignal?.aborted) {
@@ -59,6 +65,17 @@ export const createReelsStub = (log: PresentationLog): ReelsMachineController & 
 
   // Фазы видят контроллер только как тип и зовут ровно эти методы; остального PIXI-наследия им не нужно
   return stub as unknown as ReelsMachineController & ReelsStub
+}
+
+/** Дублёр фона: вспышка резолвится сразу и отмечается в журнале. */
+export const createBackgroundStub = (log: PresentationLog): BackgroundController => {
+  const stub = {
+    flash: async () => {
+      log.push('flash')
+    },
+  }
+
+  return stub as unknown as BackgroundController
 }
 
 /** Дублёр тикера: игровые паузы проходят мгновенно, но остаются видимыми в журнале. */

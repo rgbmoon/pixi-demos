@@ -181,6 +181,18 @@ describe('SlotStore', () => {
         expect(store.isSettingsOpen).toBe(false)
       }
     })
+
+    it('переключают force anticipation только в idle', () => {
+      const store = createStore()
+
+      store.setPhase(PhaseName.spinning)
+      store.toggleAnticipationForced()
+      expect(store.isAnticipationForced).toBe(false)
+
+      store.setPhase(PhaseName.idle)
+      store.toggleAnticipationForced()
+      expect(store.isAnticipationForced).toBe(true)
+    })
   })
 
   describe('шаги по спискам', () => {

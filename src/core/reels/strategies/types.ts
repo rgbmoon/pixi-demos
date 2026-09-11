@@ -19,4 +19,6 @@ export type PlannedLandingOptions = {
   readonly staggerCells: number
   /** Минимум кадров вращения до начала торможения, считая кадры до посадки; по умолчанию 0. */
   readonly minSpinFrames?: number
+  /** Дополнительный путь на каждую паузу anticipation, в ячейках; по умолчанию 0. */
+  readonly anticipationCells?: number
 }

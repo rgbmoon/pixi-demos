@@ -104,6 +104,26 @@ export const WIN_FRAME_THICKNESS = 6
 /** На столько обводка вин-рамки отступает внутрь ячейки, чтобы не наезжать на соседей. */
 export const WIN_FRAME_INSET = 5
 
+// Подсветка барабана на паузе anticipation рисуется по границам колонки: арта под неё в паке нет
+/** Толщина обводки подсветки anticipation в нативных пикселях зоны символов. */
+export const ANTICIPATION_GLOW_THICKNESS = 10
+/** Непрозрачность заливки колонки под обводкой подсветки. */
+export const ANTICIPATION_GLOW_FILL_ALPHA = 0.18
+/** Появление подсветки, мс. */
+export const ANTICIPATION_GLOW_FADE_MS = 200
+/** Период пульса подсветки, мс. */
+export const ANTICIPATION_GLOW_PULSE_MS = 600
+/** Нижняя граница пульса: до этой доли непрозрачности подсветка гаснет между вспышками. */
+export const ANTICIPATION_GLOW_PULSE_MIN = 0.45
+
+// Выигрыш после anticipation: фон моргает белым слоем поверх спрайтов
+/** Сколько раз моргает фон. */
+export const ANTICIPATION_FLASH_COUNT = 2
+/** Непрозрачность белого слоя на пике вспышки. */
+export const ANTICIPATION_FLASH_ALPHA = 0.45
+/** Нарастание и спад одной вспышки, мс на каждый. */
+export const ANTICIPATION_FLASH_MS = 150
+
 // Тайминги показа выигрыша
 /** Сколько все выигравшие линии и символы показываются разом до разбора по линиям, мс. */
 export const WIN_SHOWCASE_MS = 1000
