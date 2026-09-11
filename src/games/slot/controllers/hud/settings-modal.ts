@@ -1,4 +1,5 @@
 import { inject, injectable } from 'inversify'
+import type { GameEmitter } from 'src/core/events/game-emitter'
 import type { GameTicker } from 'src/engine/game-ticker'
 import { LiveContainer } from 'src/engine/live-container'
 import { ENGINE_TOKENS } from 'src/engine/tokens'
@@ -12,6 +13,7 @@ import {
   MODAL_ROW_GAP,
   PANEL_HEIGHT,
 } from 'src/games/slot/constants'
+import type { GameEvents } from 'src/games/slot/events'
 import type { SlotStore } from 'src/games/slot/stores/slot'
 import { SLOT_TOKENS } from 'src/games/slot/tokens'
 import { ButtonSize, ButtonVariant } from 'src/games/slot/types'
@@ -37,7 +39,8 @@ export class SettingsModalController extends LiveContainer {
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
     @inject(SLOT_TOKENS.SlotStore) slotStore: SlotStore,
     @inject(SLOT_TOKENS.GameModePanelController) gameModePanel: GameModePanelController,
-    @inject(SLOT_TOKENS.TurboCheckboxController) turboCheckbox: TurboCheckboxController
+    @inject(SLOT_TOKENS.TurboCheckboxController) turboCheckbox: TurboCheckboxController,
+    @inject(SLOT_TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>
   ) {
     super()
 
@@ -50,7 +53,10 @@ export class SettingsModalController extends LiveContainer {
       size: ButtonSize.md,
       icon: BUTTON_ICONS.close,
       label: 'Close settings',
-      onTap: () => slotStore.closeSettings(),
+      onTap: () => {
+        slotStore.closeSettings()
+        emitter.emit('ui:buttonTapped')
+      },
     })
 
     this.modal.addContent(gameModePanel)

@@ -7,7 +7,7 @@ import { bindEngine } from 'src/engine/bindings'
 import { ENGINE_TOKENS } from 'src/engine/tokens'
 
 import { SlotApi } from './api/slot'
-import { CANVAS_FILL_MAX_WIDTH, GAME_ASPECT_RATIO, INITIAL_PHASE, SPINE_WARM_UP } from './constants'
+import { CANVAS_FILL_MAX_WIDTH, GAME_ASPECT_RATIO, INITIAL_PHASE, SOUND_MASTER_GAIN, SPINE_WARM_UP } from './constants'
 import { BackgroundController } from './controllers/background'
 import { BetMinusButtonController } from './controllers/hud/bet-minus-button'
 import { BetPanelController } from './controllers/hud/bet-panel'
@@ -23,6 +23,7 @@ import { SpinButtonController } from './controllers/hud/spin-button'
 import { TurboCheckboxController } from './controllers/hud/turbo-checkbox'
 import { WinLabelController } from './controllers/hud/win-label'
 import { ReelsMachineController } from './controllers/reels/reels-machine'
+import { SoundController } from './controllers/sound'
 import type { GameEvents } from './events'
 import { BootingPhase } from './phases/booting'
 import { IdlePhase } from './phases/idle'
@@ -60,7 +61,7 @@ export const bindFlow = (container: Container): void => {
   container.bind(CORE_TOKENS.Phase).to(ResultPhase)
 }
 
-/** Картинка: контроллеры и собирающая их сцена. */
+/** Картинка и звук: контроллеры и собирающая их сцена. */
 const bindScene = (container: Container): void => {
   // Пропорции макета и порог заполнения — знание игры: по ним общий хост считает размер канваса
   container
@@ -71,6 +72,9 @@ const bindScene = (container: Container): void => {
   container
     .bind(ENGINE_TOKENS.SpinePoolConfig)
     .toDynamicValue(() => ({ warmUp: SPINE_WARM_UP, skeletons: STUB_SKELETONS }))
+
+  // Общая громкость — знание игры, синтезатор движка берёт её отсюда
+  container.bind(ENGINE_TOKENS.AudioConfig).toDynamicValue(() => ({ masterGain: SOUND_MASTER_GAIN }))
 
   container
     .bind(ENGINE_TOKENS.Scene)
@@ -182,6 +186,13 @@ const bindScene = (container: Container): void => {
     .to(CreditLabelController)
     .onDeactivation((label) => {
       if (!label.destroyed) label.destroy({ children: true })
+    })
+
+  container
+    .bind(SLOT_TOKENS.SoundController)
+    .to(SoundController)
+    .onDeactivation((sound) => {
+      if (!sound.destroyed) sound.destroy()
     })
 }
 

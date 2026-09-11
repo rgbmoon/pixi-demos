@@ -59,7 +59,8 @@ export const GameCanvas = ({ boot, dispose }: GameCanvasProps) => {
   }, [boot, dispose])
 
   return (
-    <div className="grid h-full w-full">
+    // Долгий тап по канвасу на iOS не должен открывать выделение и callout
+    <div className="grid h-full w-full select-none [-webkit-touch-callout:none]">
       <div ref={containerRef} className="col-start-1 row-start-1 flex items-center justify-center overflow-hidden" />
       {(loading || fatal) && (
         <div className="col-start-1 row-start-1 z-10 flex items-center justify-center bg-slate-800">

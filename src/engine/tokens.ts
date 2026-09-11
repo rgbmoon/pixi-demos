@@ -1,5 +1,7 @@
 import type { ServiceIdentifier } from 'inversify'
 
+import type { AudioSynth } from './audio/audio-synth'
+import type { AudioConfig } from './audio/types'
 import type { GameRoot } from './game-root'
 import type { GameTicker } from './game-ticker'
 import type { SpinePool } from './spine-pool'
@@ -18,4 +20,6 @@ export const ENGINE_TOKENS = {
   Scene: Symbol('Scene') as ServiceIdentifier<SceneLike>,
   CanvasConfig: Symbol('CanvasConfig') as ServiceIdentifier<CanvasConfig>,
   SpinePoolConfig: Symbol('SpinePoolConfig') as ServiceIdentifier<SpinePoolConfig>,
+  AudioSynth: Symbol('AudioSynth') as ServiceIdentifier<AudioSynth>,
+  AudioConfig: Symbol('AudioConfig') as ServiceIdentifier<AudioConfig>,
 } as const

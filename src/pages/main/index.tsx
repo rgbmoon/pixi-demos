@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom'
+import { Button } from 'src/components/Button'
 import { LinkOutIcon } from 'src/components/icons'
 
 export const MainPage = () => {
   return (
-    <div className="mx-auto w-full max-w-5xl flex flex-col gap-12 px-6 py-12">
+    <div className="mx-auto w-full max-w-5xl flex flex-col gap-12 px-6 py-6">
       <section className="flex flex-col items-start gap-4">
         <h1 className="text-4xl font-extralight">About</h1>
         <p className="max-w-3xl text-lg font-extralight text-slate-300">
@@ -13,15 +14,10 @@ export const MainPage = () => {
         <p className="max-w-3xl text-lg font-extralight text-slate-300">
           This site is the demo side of that work: PixiJS clients built to production-client conventions.
         </p>
-        <a
-          href="/cv/CV_Abrashkin_Sergei_EN_iGaming.pdf"
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-2 font-light text-brand-primary hover:text-brand-accent transition-colors duration-100"
-        >
-          CV (PDF)
+        <Button link href="/cv/CV_Abrashkin_Sergei_EN_iGaming.pdf" target="_blank" rel="noreferrer">
+          CV and Contacts (PDF)
           <LinkOutIcon width={16} height={16} />
-        </a>
+        </Button>
       </section>
 
       <section className="flex flex-col gap-6">

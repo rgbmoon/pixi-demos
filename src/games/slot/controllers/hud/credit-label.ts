@@ -1,7 +1,9 @@
 import { inject, injectable } from 'inversify'
+import type { GameEmitter } from 'src/core/events/game-emitter'
 import type { GameTicker } from 'src/engine/game-ticker'
 import { LiveContainer } from 'src/engine/live-container'
 import { ENGINE_TOKENS } from 'src/engine/tokens'
+import type { GameEvents } from 'src/games/slot/events'
 import type { SlotStore } from 'src/games/slot/stores/slot'
 import { SLOT_TOKENS } from 'src/games/slot/tokens'
 import { PhaseName } from 'src/games/slot/types'
@@ -10,20 +12,29 @@ import { formatAmount } from 'src/games/slot/utils'
 
 const CAPTION = 'CREDIT'
 
-/** Строка над барабанами: ведёт значение за балансом игрока и трясётся на каждом его пополнении. */
+/**
+ * Строка над барабанами: ведёт значение за балансом игрока и трясётся на каждом его пополнении.
+ * Начало тряски объявляет событием `credit:toppedUp`.
+ */
 @injectable()
 export class CreditLabelController extends LiveContainer {
   private readonly ticker: GameTicker
   private readonly slotStore: SlotStore
+  private readonly emitter: GameEmitter<GameEvents>
   private readonly valueLabel = new ValueLabel(CAPTION)
   private credit: number
   private shakeAbort?: AbortController
 
-  constructor(@inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker, @inject(SLOT_TOKENS.SlotStore) slotStore: SlotStore) {
+  constructor(
+    @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
+    @inject(SLOT_TOKENS.SlotStore) slotStore: SlotStore,
+    @inject(SLOT_TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>
+  ) {
     super()
 
     this.ticker = ticker
     this.slotStore = slotStore
+    this.emitter = emitter
     this.credit = slotStore.credit
 
     this.addChild(this.valueLabel)
@@ -48,7 +59,10 @@ export class CreditLabelController extends LiveContainer {
     this.credit = credit
     this.valueLabel.setValue(formatAmount(credit))
 
-    if (isTopUp) void this.shake()
+    if (!isTopUp) return
+
+    void this.shake()
+    this.emitter.emit('credit:toppedUp')
   }
 
   /** Трясёт строку; новая тряска прерывает предыдущую, та возвращает строку на место. */

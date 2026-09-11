@@ -18,6 +18,7 @@ import type { SoundToggleButtonController } from 'src/games/slot/controllers/hud
 import type { SpinButtonController } from 'src/games/slot/controllers/hud/spin-button'
 import type { WinLabelController } from 'src/games/slot/controllers/hud/win-label'
 import type { ReelsMachineController } from 'src/games/slot/controllers/reels/reels-machine'
+import type { SoundController } from 'src/games/slot/controllers/sound'
 import { SLOT_TOKENS } from 'src/games/slot/tokens'
 
 // Все размеры ниже — дизайн-единицы макета 941×1672, а не пиксели канваса
@@ -65,7 +66,8 @@ export class GameScene extends Container {
     @inject(SLOT_TOKENS.WinLabelController) winLabel: WinLabelController,
     @inject(SLOT_TOKENS.BetPanelController) betPanel: BetPanelController,
     @inject(SLOT_TOKENS.CreditLabelController) creditLabel: CreditLabelController,
-    @inject(SLOT_TOKENS.SettingsModalController) settingsModal: SettingsModalController
+    @inject(SLOT_TOKENS.SettingsModalController) settingsModal: SettingsModalController,
+    @inject(SLOT_TOKENS.SoundController) sound: SoundController
   ) {
     super()
 
@@ -95,7 +97,8 @@ export class GameScene extends Container {
       settingsModal
     )
 
-    this.addChild(background, this.content)
+    // Звук места на экране не занимает: в дереве он ради владения, layout его не расставляет
+    this.addChild(background, this.content, sound)
   }
 
   layout(screenWidth: number, screenHeight: number): void {

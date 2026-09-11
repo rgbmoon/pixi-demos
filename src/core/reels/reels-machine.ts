@@ -87,8 +87,15 @@ export class ReelsMachine<TData, TValue> {
     }
   }
 
-  async land(signal?: AbortSignal): Promise<void> {
-    await Promise.all(this.reels.map((reel) => reel.land(signal)))
+  /** Сажает все барабаны; `onReelLanded` зовётся с номером барабана, как только он встал. */
+  async land(signal?: AbortSignal, onReelLanded?: (reel: number) => void): Promise<void> {
+    await Promise.all(
+      this.reels.map(async (reel) => {
+        await reel.land(signal)
+
+        onReelLanded?.(reel.index)
+      })
+    )
   }
 
   /** Проматывает посадку всех садящихся барабанов к финальному участку: они встают одновременно. */

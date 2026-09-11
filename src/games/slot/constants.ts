@@ -206,3 +206,16 @@ export const CHECKBOX_FONT_SIZE = 48
 
 /** Сторона подложки чекбокса: в полтора раза меньше средней кнопки. */
 export const CHECKBOX_SIZE = BUTTON_SIZE_UNITS.md / 1.5
+
+// Звук
+/** Общая громкость синтезатора: голоса рецептов звучат относительно неё. */
+export const SOUND_MASTER_GAIN = 0.5
+
+/** Ключ флага звука в localStorage. */
+export const SOUND_STORAGE_KEY = 'pixi-demos:slot:sound-on'
+
+/** Выигрыш от стольких ставок озвучивается как крупный. */
+export const BIG_WIN_MULTIPLIER = 10
+
+/** Шаг высоты удара посадки: каждый следующий барабан звучит на эту долю выше. */
+export const REEL_STOP_PITCH_STEP = 0.05

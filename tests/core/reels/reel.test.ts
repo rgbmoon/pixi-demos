@@ -9,6 +9,7 @@ import {
   createMachine,
   LANDING_OPTIONS,
   readVisibleGrid,
+  REELS,
   type TestData,
 } from '../../setup/reels'
 
@@ -90,6 +91,39 @@ describe('Reel', () => {
 
     await expect(landing).rejects.toThrow('round cancelled')
     expect(machine.getPhase()).toBe(ReelPhase.idle)
+  })
+
+  it('объявляет посадку каждого барабана по лесенке', async () => {
+    const machine = createMachine()
+    const landed: number[] = []
+
+    machine.spin()
+    machine.advance(25)
+    machine.setData(createGrid())
+
+    const landing = machine.land(undefined, (reel) => landed.push(reel))
+
+    advanceUntilIdle(machine)
+    await landing
+
+    expect(landed).toEqual(Array.from({ length: REELS }, (_, reel) => reel))
+  })
+
+  it('не объявляет посадку, прерванную отменой', async () => {
+    const machine = createMachine()
+    const controller = new AbortController()
+    const landed: number[] = []
+
+    machine.spin()
+    machine.advance(10)
+
+    const landing = machine.land(controller.signal, (reel) => landed.push(reel))
+
+    machine.advance(5)
+    controller.abort(new Error('round cancelled'))
+
+    await expect(landing).rejects.toThrow('round cancelled')
+    expect(landed).toEqual([])
   })
 
   it.each([0, 5, 20, 40, 60])('после slam на %d-м кадре посадки сажает ленту на значения раунда', async (landingFrames) => {
