@@ -62,8 +62,23 @@ export type LoopRecipe = {
   readonly fadeOut: number
 }
 
+/** Категория аудиосессии Audio Session API: от неё зависит, глушит ли звук беззвучный режим iOS. */
+export type AudioSessionType = 'auto' | 'playback' | 'transient' | 'transient-solo' | 'ambient' | 'play-and-record'
+
+// Audio Session API есть только в WebKit (Safari 16.4+), в lib.dom его нет
+declare global {
+  interface Navigator {
+    readonly audioSession?: { type: AudioSessionType }
+  }
+}
+
 /** Настройки синтезатора от игры. */
 export type AudioConfig = {
   /** Общая громкость всех звуков. */
   readonly masterGain: number
+  /**
+   * Категория аудиосессии при включённом звуке; при выключенном сессия переходит в `ambient`
+   * и не прерывает чужое аудио. Без значения синтезатор сессию не трогает.
+   */
+  readonly sessionType?: AudioSessionType
 }

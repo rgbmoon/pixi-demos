@@ -4,7 +4,7 @@ import { ENGINE_TOKENS } from 'src/engine/tokens'
 
 import { MUTE_TIME_CONSTANT, NOISE_BUFFER_S, STOP_MARGIN_S } from './constants'
 import { SynthLoop } from './synth-loop'
-import type { AudioConfig, LoopRecipe, PlayOptions, SoundRecipe, SynthVoice } from './types'
+import type { AudioConfig, AudioSessionType, LoopRecipe, PlayOptions, SoundRecipe, SynthVoice } from './types'
 import { createFilter, createNoiseBuffer, createSource, scheduleEnvelope } from './utils'
 
 /** Живой контекст: узел общей громкости и буфер шума для голосов. */
@@ -70,9 +70,11 @@ export class AudioSynth {
     return loop
   }
 
-  /** Плавно гасит или возвращает общую громкость. */
+  /** Плавно гасит или возвращает общую громкость и переключает категорию аудиосессии. */
   setMuted(muted: boolean): void {
     this.muted = muted
+
+    this.applySessionType(muted ? 'ambient' : (this.config.sessionType ?? 'auto'))
 
     if (!this.output) return
 
@@ -92,6 +94,9 @@ export class AudioSynth {
     }
 
     this.loops.clear()
+
+    // Сессия общая на вкладку: остальные страницы получают её в исходной категории
+    this.applySessionType('auto')
 
     if (!this.output) return
 
@@ -153,6 +158,15 @@ export class AudioSynth {
     if (context.state !== 'running') void this.switchState('resume')
 
     return this.output
+  }
+
+  /** Выставляет категорию аудиосессии, если игра её задала и браузер поддерживает Audio Session API. */
+  private applySessionType(type: AudioSessionType): void {
+    const session = globalThis.navigator?.audioSession
+
+    if (!this.config.sessionType || !session) return
+
+    session.type = type
   }
 
   private handleVisibilityChange = (): void => {

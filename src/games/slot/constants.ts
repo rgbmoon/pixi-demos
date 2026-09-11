@@ -211,6 +211,9 @@ export const CHECKBOX_SIZE = BUTTON_SIZE_UNITS.md / 1.5
 /** Общая громкость синтезатора: голоса рецептов звучат относительно неё. */
 export const SOUND_MASTER_GAIN = 0.5
 
+/** Категория аудиосессии: `playback` звучит и в беззвучном режиме iOS, пока звук не выключен в игре. */
+export const SOUND_SESSION_TYPE = 'playback'
+
 /** Ключ флага звука в localStorage. */
 export const SOUND_STORAGE_KEY = 'pixi-demos:slot:sound-on'
 

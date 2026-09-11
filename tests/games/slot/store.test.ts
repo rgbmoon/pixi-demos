@@ -170,6 +170,19 @@ describe('SlotStore', () => {
     })
   })
 
+  describe('настройки', () => {
+    it('не открываются посреди раунда', () => {
+      const store = createStore()
+
+      for (const phase of [PhaseName.spinning, PhaseName.result]) {
+        store.setPhase(phase)
+        store.openSettings()
+
+        expect(store.isSettingsOpen).toBe(false)
+      }
+    })
+  })
+
   describe('шаги по спискам', () => {
     it('не выпускает индекс ставки за края списка', () => {
       const store = createStore(createInitResult({ bet: BETS[0] }))

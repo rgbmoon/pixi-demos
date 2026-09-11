@@ -7,7 +7,14 @@ import { bindEngine } from 'src/engine/bindings'
 import { ENGINE_TOKENS } from 'src/engine/tokens'
 
 import { SlotApi } from './api/slot'
-import { CANVAS_FILL_MAX_WIDTH, GAME_ASPECT_RATIO, INITIAL_PHASE, SOUND_MASTER_GAIN, SPINE_WARM_UP } from './constants'
+import {
+  CANVAS_FILL_MAX_WIDTH,
+  GAME_ASPECT_RATIO,
+  INITIAL_PHASE,
+  SOUND_MASTER_GAIN,
+  SOUND_SESSION_TYPE,
+  SPINE_WARM_UP,
+} from './constants'
 import { BackgroundController } from './controllers/background'
 import { BetMinusButtonController } from './controllers/hud/bet-minus-button'
 import { BetPanelController } from './controllers/hud/bet-panel'
@@ -73,8 +80,10 @@ const bindScene = (container: Container): void => {
     .bind(ENGINE_TOKENS.SpinePoolConfig)
     .toDynamicValue(() => ({ warmUp: SPINE_WARM_UP, skeletons: STUB_SKELETONS }))
 
-  // Общая громкость — знание игры, синтезатор движка берёт её отсюда
-  container.bind(ENGINE_TOKENS.AudioConfig).toDynamicValue(() => ({ masterGain: SOUND_MASTER_GAIN }))
+  // Громкость и категория аудиосессии — знание игры, синтезатор движка берёт их отсюда
+  container
+    .bind(ENGINE_TOKENS.AudioConfig)
+    .toDynamicValue(() => ({ masterGain: SOUND_MASTER_GAIN, sessionType: SOUND_SESSION_TYPE }))
 
   container
     .bind(ENGINE_TOKENS.Scene)
