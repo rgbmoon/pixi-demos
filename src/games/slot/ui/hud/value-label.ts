@@ -1,4 +1,7 @@
 import { Container } from 'pixi.js'
+import type { GameTicker } from 'src/engine/game-ticker'
+import { tweenShake } from 'src/engine/utils'
+import { SHAKE_AMPLITUDE, SHAKE_MS, SHAKE_OSCILLATIONS } from 'src/games/slot/constants'
 import { LabelColor } from 'src/games/slot/types'
 
 import { Label } from './label'
@@ -25,15 +28,27 @@ export class ValueLabel extends Container {
     this.addChild(this.caption, this.value)
   }
 
-  setText(caption: string, value: string): void {
+  /** Ставит подпись и значение; значение красится в `valueColor`, по умолчанию белый. */
+  setText(caption: string, value: string, valueColor: LabelColor = LabelColor.white): void {
     this.caption.text = caption
     this.value.text = value
+    this.value.setColor(valueColor)
 
     this.layoutLabels()
   }
 
   setValue(value: string): void {
     this.setText(this.caption.text, value)
+  }
+
+  /** Трясёт строку по горизонтали: знак пополнения. Промис реджектится по `signal`. */
+  shake(ticker: GameTicker, signal?: AbortSignal): Promise<void> {
+    return tweenShake(
+      ticker,
+      this,
+      { amplitude: SHAKE_AMPLITUDE, durationMs: SHAKE_MS, oscillations: SHAKE_OSCILLATIONS },
+      signal
+    )
   }
 
   /** Собирает строку из подписи и значения и центрирует её по origin; без подписи зазор не нужен. */

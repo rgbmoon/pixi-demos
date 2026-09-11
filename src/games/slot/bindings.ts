@@ -20,6 +20,7 @@ import { SettingsButtonController } from './controllers/hud/settings-button'
 import { SettingsModalController } from './controllers/hud/settings-modal'
 import { SoundToggleButtonController } from './controllers/hud/sound-toggle-button'
 import { SpinButtonController } from './controllers/hud/spin-button'
+import { TurboCheckboxController } from './controllers/hud/turbo-checkbox'
 import { WinLabelController } from './controllers/hud/win-label'
 import { ReelsMachineController } from './controllers/reels/reels-machine'
 import type { GameEvents } from './events'
@@ -160,6 +161,13 @@ const bindScene = (container: Container): void => {
     .to(SettingsModalController)
     .onDeactivation((modal) => {
       if (!modal.destroyed) modal.destroy({ children: true })
+    })
+
+  container
+    .bind(SLOT_TOKENS.TurboCheckboxController)
+    .to(TurboCheckboxController)
+    .onDeactivation((checkbox) => {
+      if (!checkbox.destroyed) checkbox.destroy({ children: true })
     })
 
   container

@@ -54,15 +54,19 @@ export class WinOverlayController extends LiveContainer {
     this.overlay.clear()
   }
 
-  /** Показывает разом все выигравшие линии и их символы, затем гасит показ. */
-  async showAllWins(symbolContainers: ReelSymbol[][], signal?: AbortSignal): Promise<void> {
+  /** Показывает разом все выигравшие линии и их символы на `durationMs`, затем гасит показ. */
+  async showAllWins(
+    symbolContainers: ReelSymbol[][],
+    signal?: AbortSignal,
+    durationMs: number = WIN_SHOWCASE_MS
+  ): Promise<void> {
     const cells = new Set(this.paylines.flatMap((payline) => this.getPaylineSymbols(payline, symbolContainers)))
 
     try {
       this.overlay.raiseSymbols(Array.from(cells))
       this.paylinesController.show(this.paylines.map((payline) => payline.lineId))
 
-      await this.ticker.waitTicks(WIN_SHOWCASE_MS, signal)
+      await this.ticker.waitTicks(durationMs, signal)
     } finally {
       this.reset()
     }

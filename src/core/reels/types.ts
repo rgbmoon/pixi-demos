@@ -37,6 +37,8 @@ export type LandingPlan = {
   readonly distance: number
   /** Длительность посадки в кадрах приведённой частоты. */
   readonly totalFrames: number
+  /** Начало финального участка посадки: до этого кадра `slam` проматывает расписание. */
+  readonly settleFrames: number
   /** Позиция ленты через `frames` кадров после начала посадки, в единицах машины от её старта. */
   positionAt(frames: number): number
 }
@@ -44,11 +46,19 @@ export type LandingPlan = {
 export type LandingContext = ReelContext & {
   /** Позиция ленты в момент начала посадки. */
   readonly fromOffset: number
+  /** Сколько кадров барабан крутился до начала посадки. */
+  readonly spunFrames: number
 }
 
 /** Как барабан садится: строит расписание пути от текущей позиции ленты. */
 export type LandingStrategy = {
   plan(context: LandingContext): LandingPlan
+}
+
+/** Стратегии движения барабана: как он крутится и как садится. */
+export type ReelStrategies = {
+  readonly spinStrategy: SpinStrategy
+  readonly landingStrategy: LandingStrategy
 }
 
 /** Слот ленты: движущаяся ячейка, которую рисует адаптер. */
@@ -81,7 +91,7 @@ export type ReelDef<TData, TValue> = {
 }
 
 /** Конфиг машины: данные раунда, состав барабанов, геометрия и стратегии по умолчанию. */
-export type ReelsConfig<TData, TValue> = {
+export type ReelsConfig<TData, TValue> = ReelStrategies & {
   readonly reels: readonly ReelDef<TData, TValue>[]
   readonly rows: number
   readonly buffer?: number
@@ -92,19 +102,18 @@ export type ReelsConfig<TData, TValue> = {
   readonly accessorFn: (data: TData, index: CellIndex) => TValue | undefined
   /** Значение ячейки вне результата раунда: наполнение ленты во время вращения. */
   readonly getFillerValue: (reel: number) => TValue
-  readonly spinStrategy: SpinStrategy
-  readonly landingStrategy: LandingStrategy
 }
 
-/** Разрешённые опции барабана: конфиг машины, перекрытый описанием барабана. */
+/**
+ * Разрешённые опции барабана: конфиг машины, перекрытый описанием барабана.
+ * Стратегий здесь нет: их можно сменить на ходу, и барабан берёт их у машины на старте спина.
+ */
 export type ReelOptions<TData, TValue> = {
   readonly rows: number
   readonly buffer: number
   readonly cellHeight: number
   readonly accessorFn: (data: TData, index: CellIndex) => TValue | undefined
   readonly getFillerValue: (reel: number) => TValue
-  readonly spinStrategy: SpinStrategy
-  readonly landingStrategy: LandingStrategy
 }
 
 /** Контекст ячейки: машина, барабан и сама ячейка одним объектом для владельца view. */

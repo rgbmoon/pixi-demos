@@ -14,6 +14,7 @@ import type { SettingsButtonController } from './controllers/hud/settings-button
 import type { SettingsModalController } from './controllers/hud/settings-modal'
 import type { SoundToggleButtonController } from './controllers/hud/sound-toggle-button'
 import type { SpinButtonController } from './controllers/hud/spin-button'
+import type { TurboCheckboxController } from './controllers/hud/turbo-checkbox'
 import type { WinLabelController } from './controllers/hud/win-label'
 import type { ReelsMachineController } from './controllers/reels/reels-machine'
 import type { GameEvents } from './events'
@@ -32,6 +33,7 @@ export const SLOT_TOKENS = {
   ReelsMachineController: Symbol('ReelsMachineController') as ServiceIdentifier<ReelsMachineController>,
   SpinButtonController: Symbol('SpinButtonController') as ServiceIdentifier<SpinButtonController>,
   SoundToggleButtonController: Symbol('SoundToggleButtonController') as ServiceIdentifier<SoundToggleButtonController>,
+  TurboCheckboxController: Symbol('TurboCheckboxController') as ServiceIdentifier<TurboCheckboxController>,
   BetPlusButtonController: Symbol('BetPlusButtonController') as ServiceIdentifier<BetPlusButtonController>,
   BetMinusButtonController: Symbol('BetMinusButtonController') as ServiceIdentifier<BetMinusButtonController>,
   BetPanelController: Symbol('BetPanelController') as ServiceIdentifier<BetPanelController>,

@@ -78,6 +78,73 @@ describe('SlotStore', () => {
 
       expect(store.canSpin).toBe(false)
     })
+
+    it('разрешает остановку только во вращении', () => {
+      const store = createStore()
+
+      expect(store.canStop).toBe(false)
+
+      store.setPhase(PhaseName.spinning)
+      expect(store.canStop).toBe(true)
+
+      store.setPhase(PhaseName.result)
+      expect(store.canStop).toBe(false)
+    })
+
+    it('не даёт остановку в турбо-режиме', () => {
+      const store = createStore()
+
+      store.toggleTurboEnabled()
+      store.setPhase(PhaseName.spinning)
+
+      expect(store.canStop).toBe(false)
+    })
+  })
+
+  describe('турбо', () => {
+    it('переключает режим в idle', () => {
+      const store = createStore()
+
+      store.toggleTurboEnabled()
+
+      expect(store.isTurboEnabled).toBe(true)
+    })
+
+    it('не переключает режим посреди раунда', () => {
+      const store = createStore()
+
+      store.setPhase(PhaseName.spinning)
+      store.toggleTurboEnabled()
+
+      expect(store.isTurboEnabled).toBe(false)
+    })
+
+    it('зажимает спин только в турбо-режиме', () => {
+      const store = createStore()
+
+      store.holdSpin()
+      expect(store.isSpinHeld).toBe(false)
+
+      store.toggleTurboEnabled()
+      store.holdSpin()
+      expect(store.isSpinHeld).toBe(true)
+    })
+
+    it('не зажимает спин вне idle и без денег на ставку', () => {
+      const busy = createStore()
+      const broke = createStore(createInitResult({ balance: 0 }))
+
+      for (const store of [busy, broke]) {
+        store.toggleTurboEnabled()
+      }
+
+      busy.setPhase(PhaseName.spinning)
+
+      for (const store of [busy, broke]) {
+        store.holdSpin()
+        expect(store.isSpinHeld).toBe(false)
+      }
+    })
   })
 
   describe('шаги по спискам', () => {

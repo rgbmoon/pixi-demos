@@ -153,9 +153,11 @@ GameTicker
 | `constructor(config: ReelsConfig<TData, TValue>)` | собирает барабаны, ряды и ячейки                                       |
 | `getData(): TData \| null`                        | текущие данные раунда                                                  |
 | `setData(data: TData \| null): void`              | записывает результат раунда; из него читают посадка и `Cell.getValue`  |
+| `getStrategies() / setStrategies(strategies)`     | стратегии машины по умолчанию; смена действует со следующего спина     |
 | `reset(): void`                                   | мгновенно ставит ленты по текущим данным — стартовая доска             |
 | `spin(): void`                                    | запускает прокрутку всех барабанов                                     |
 | `land(signal?): Promise<void>`                    | сажает все барабаны, `Promise.all` по лентам                           |
+| `slam(): void`                                    | проматывает посадку садящихся барабанов к финальному участку           |
 | `advance(deltaFrames): void`                      | шаг модели; зовёт владелец такта                                       |
 | `getReels() / getReel(i)`                         | барабаны                                                               |
 | `getRows()`                                       | поперечные ряды                                                        |
@@ -174,7 +176,7 @@ GameTicker
 | `getVisibleSlotIndices(): number[]`              | индексы слотов внутри зоны сверху вниз                                      |
 | `getSlotAt(row)`                                 | слот, занимающий ряд сейчас                                                 |
 | `readValue(row)`                                 | значение ряда в данных раунда                                               |
-| `reset() / spin() / land(signal?) / advance(dt)` | то же, что у машины, но на одной ленте                                      |
+| `reset() / spin() / land(signal?) / slam() / advance(dt)` | то же, что у машины, но на одной ленте                             |
 
 ### `Cell<TData, TValue>`
 
@@ -205,7 +207,14 @@ type LandingStrategy = {
 type LandingPlan = {
   readonly distance: number // полный путь до остановки
   readonly totalFrames: number // длительность посадки в кадрах
+  readonly settleFrames: number // начало финального участка: до него slam проматывает посадку
   positionAt(frames: number): number
+}
+
+/** Пара стратегий: её содержит конфиг машины и принимает setStrategies. */
+type ReelStrategies = {
+  readonly spinStrategy: SpinStrategy
+  readonly landingStrategy: LandingStrategy
 }
 
 type ReelContext = {
@@ -218,6 +227,7 @@ type ReelContext = {
 
 type LandingContext = ReelContext & {
   readonly fromOffset: number // позиция ленты в момент начала посадки
+  readonly spunFrames: number // сколько кадров барабан крутился до посадки
 }
 ```
 
@@ -248,6 +258,12 @@ type LandingContext = ReelContext & {
 /** Данные раунда для лент: сетка символов `[барабан][ряд]`. */
 export type SlotReelsData = SymbolKey[][]
 
+/** Обычное движение: минимум вращения и полная лесенка остановки. */
+export const SLOT_STRATEGIES: ReelStrategies = {
+  spinStrategy: new LinearSpinStrategy({ speed: SPIN_SPEED }),
+  landingStrategy: new PlannedLandingStrategy({ ...LANDING_OPTIONS, minSpinFrames: MIN_SPIN_FRAMES }),
+}
+
 export const SLOT_REELS: ReelsConfig<SlotReelsData, SymbolKey> = {
   reels: Array.from({ length: REELS_COUNT }, (_, index) => ({ id: `reel-${index}` })),
   rows: VISIBLE_SYMBOLS_COUNT,
@@ -255,17 +271,12 @@ export const SLOT_REELS: ReelsConfig<SlotReelsData, SymbolKey> = {
   cellHeight: CELL_HEIGHT,
   accessorFn: (data, { reel, row }) => data[reel]?.[row],
   getFillerValue: () => getRandomSymbolKey(),
-  spinStrategy: new LinearSpinStrategy({ speed: SPIN_SPEED }),
-  landingStrategy: new PlannedLandingStrategy({
-    speed: SPIN_SPEED,
-    deceleration: LANDING_DECELERATION,
-    handoverSpeed: LANDING_HANDOVER_SPEED,
-    easeCells: LANDING_EASE_CELLS,
-    backStrength: LANDING_BACK_STRENGTH,
-    staggerCells: LAND_STAGGER_CELLS,
-  }),
+  ...SLOT_STRATEGIES,
 }
 ```
+
+Рядом лежит второй набор, `SLOT_TURBO_STRATEGIES`, — его подставляет контроллер, когда игрок включает
+турбо-режим (шаг 4).
 
 Два обязательных колбэка:
 
@@ -324,6 +335,13 @@ this.watch(() => slotStore.initialSymbols, (initialSymbols) => this.setSymbols(i
   fireImmediately: true,
 })
 
+// турбо-режим — настройка игрока: контроллер меняет стратегии машины, фазы о нём не знают
+this.watch(
+  () => slotStore.isTurboEnabled,
+  (isTurbo) => this.machine.setStrategies(isTurbo ? SLOT_TURBO_STRATEGIES : SLOT_STRATEGIES),
+  { fireImmediately: true }
+)
+
 private setSymbols(symbols: SlotReelsData | undefined): void {
   if (!symbols) return
 
@@ -335,15 +353,28 @@ spin(): void {
   this.machine.spin()
 }
 
-land(symbolKeys: SlotReelsData | undefined, signal?: AbortSignal): Promise<void> {
+async land(symbolKeys: SlotReelsData | undefined, signal?: AbortSignal, stopSignal?: AbortSignal): Promise<void> {
   this.machine.setData(symbolKeys ?? null)
 
-  return this.machine.land(signal)
+  const landing = this.machine.land(signal)
+
+  if (stopSignal?.aborted) this.machine.slam()
+
+  stopSignal?.addEventListener('abort', this.slam, { once: true })
+
+  try {
+    await landing
+  } finally {
+    stopSignal?.removeEventListener('abort', this.slam)
+  }
 }
 ```
 
-Фазы дальше зовут только контроллер: `spin()` — когда раунд начался, `await land(данные, signal)` —
-когда пришёл результат сервера. Ядра и адаптера они не видят вовсе.
+Фазы дальше зовут только контроллер: `spin()` — когда раунд начался,
+`await land(данные, signal, stopSignal)` — когда пришёл результат сервера. Ядра и адаптера они не
+видят вовсе. `stopSignal` — сигнал нажатия Stop: фаза получает его из эмиттера (`signalOn`) и отдаёт
+вниз так же, как `signal` отмены. Сработавший до вызова сигнал проматывает посадку с первого кадра,
+сработавший по ходу — с момента нажатия.
 
 ---
 
@@ -359,19 +390,30 @@ land(symbolKeys: SlotReelsData | undefined, signal?: AbortSignal): Promise<void>
 Переводит барабан в `spinning` и помечает все слоты `moving = true`. Значения не меняет: они
 обновятся, когда слоты начнут оборачиваться.
 
-Каждый кадр `advanceSpin` двигает `offset` на `spinStrategy.step(...)` и пересчитывает позиции.
-Слот, сменивший круг, получает `getFillerValue(reel)` и `moving = true`.
+На старте барабан фиксирует стратегии раунда: свои из `ReelDef`, иначе текущие стратегии машины.
+Поэтому `setStrategies` посреди спина до текущего раунда не доходит.
+
+Каждый кадр `advanceSpin` двигает `offset` на `spinStrategy.step(...)`, копит `spunFrames` и
+пересчитывает позиции. Слот, сменивший круг, получает `getFillerValue(reel)` и `moving = true`.
 
 ### `land(signal)` — посадка
 
 1. Барабан не в `spinning` — промис резолвится сразу.
-2. `landingStrategy.plan({ ...context, fromOffset })` считает расписание один раз.
+2. `landingStrategy.plan({ ...context, fromOffset, spunFrames })` считает расписание один раз.
 3. Каждый кадр `advanceLanding` берёт `plan.positionAt(elapsed)` и ставит `offset` в него.
    Шаг может быть **отрицательным** — на отскоке лента возвращается из-за точки посадки.
 4. Слот, сменивший круг, узнаёт своё финальное значение (ниже).
 5. На последнем кадре — `snap()`, и промис резолвится.
 
 `signal` реджектит промис и возвращает барабан в покой.
+
+### `slam()` — промотка посадки
+
+Переводит `elapsed` садящегося барабана вперёд, до `plan.settleFrames`. У барабана не на посадке —
+no-op. План не меняется, двигается только время, поэтому инвариант последнего оборота сохраняется:
+слот, обёрнутый при прыжке, получает значение по новому остатку пути, а необёрнутый своё значение
+уже получил. У `PlannedLandingStrategy` точка промотки — начало отскока: барабаны встают
+одновременно и с тем же толчком, что на обычной посадке.
 
 ### Как слот узнаёт финальное значение
 
@@ -395,8 +437,8 @@ slot.moving = false
 ### Расписание `PlannedLandingStrategy`
 
 ```
-путь = оборот ленты + лесенка (index * staggerCells) + тормозной путь + хвост отскока
-       + добор до границы ячейки
+путь = оборот ленты + недокрученный минимум вращения + лесенка (index * staggerCells)
+       + тормозной путь + хвост отскока + добор до границы ячейки
 
   скорость
      speed ├──────────────┐
@@ -410,6 +452,10 @@ slot.moving = false
 значение раунда. Добор до границы ячейки делает всю дистанцию кратной ячейке, поэтому лента садится
 ровно. Длительность отскока подобрана по производной кривой в нуле, чтобы он подхватил ленту на
 `handoverSpeed` без рывка.
+
+Минимум вращения (`minSpinFrames`) считается вместе с кадрами до посадки (`spunFrames`): если ответ
+сервера пришёл раньше минимума, недостающие кадры лента докручивает на равномерном участке. Поэтому
+длительность спина не зависит от скорости сети, а slam перескакивает минимум без отдельной логики.
 
 ---
 
@@ -436,43 +482,48 @@ export class ReverseSpinStrategy implements SpinStrategy {
 
 Работает без единой правки ядра: обёртка ловится сменой круга, а она не зависит от направления.
 
-### Своя стратегия посадки
+### Смена стратегий на ходу
 
-Турбо — обёртка над готовой:
+Турбо — второй набор готовых стратегий с другими настройками:
 
 ```ts
-/** Сжатое расписание: те же участки, но лента идёт быстрее и тормозит резче. */
-export class TurboLandingStrategy implements LandingStrategy {
-  private readonly planned: PlannedLandingStrategy
-
-  constructor(options: PlannedLandingOptions, factor: number) {
-    this.planned = new PlannedLandingStrategy({
-      ...options,
-      speed: options.speed * factor,
-      deceleration: options.deceleration * factor ** 2,
-      staggerCells: 0,
-    })
-  }
-
-  plan(context: LandingContext): LandingPlan {
-    return this.planned.plan(context)
-  }
+/** Турбо: лента быстрее, лесенка сжата, барабан садится сразу по приходу результата. */
+export const SLOT_TURBO_STRATEGIES: ReelStrategies = {
+  spinStrategy: new LinearSpinStrategy({ speed: SPIN_SPEED * TURBO_SPEED_FACTOR }),
+  landingStrategy: new PlannedLandingStrategy({
+    ...LANDING_OPTIONS,
+    speed: SPIN_SPEED * TURBO_SPEED_FACTOR,
+    deceleration: LANDING_DECELERATION * TURBO_SPEED_FACTOR ** 2,
+    staggerCells: TURBO_STAGGER_CELLS,
+  }),
 }
 ```
 
-Подключение — одна строка в конфиге игры либо в `ReelDef` конкретного барабана.
+Подключение — `machine.setStrategies(SLOT_TURBO_STRATEGIES)`. Смена действует со следующего спина;
+барабан со своими стратегиями в `ReelDef` их по-прежнему перекрывает.
 
-### Место остальных механик
+### Своя стратегия посадки
 
-| Механика             | Где живёт                                  | Что уже готово                                                                  |
-| -------------------- | ------------------------------------------ | ------------------------------------------------------------------------------- |
-| Независимые барабаны | есть                                       | у каждого свой `offset`, фаза и стратегии; `land` — `Promise.all`               |
-| Турбо                | `LandingStrategy`                          | расписание целиком в стратегии                                                  |
-| Slam stop            | `Reel`                                     | перевод `elapsed` в `plan.totalFrames`; расписание уже считает позицию по кадру |
-| Реверс, nudge        | `SpinStrategy`                             | обёртка по кругу, направление не зашито                                         |
-| Held-барабаны        | флаг в `ReelDef`, проверка в `Reel.spin()` | `ReelDef` уже на барабан                                                        |
-| Каскады              | трансформация ленты между раундами         | `Cell` отделена от `StripSlot` — точка расширения готова                        |
-| Двойные ячейки       | `StripSlot.span`                           | позиции считаются от `offset`, а не от `row * cellHeight`                       |
+Реализация `LandingStrategy`: по контексту барабана строит `LandingPlan`. Кроме пути и длительности
+план обязан назвать `settleFrames` — кадр, до которого slam проматывает посадку. Стратегия, у которой
+нет финального участка, отдаёт `totalFrames`: барабан встанет по slam мгновенно.
+
+### Роадмап механик
+
+Порядок строк — порядок работы; тот же список стоит в описании игры на главной.
+
+| Механика               | Статус  | Где живёт                                            | Что уже готово                                                    |
+| ---------------------- | ------- | ---------------------------------------------------- | ----------------------------------------------------------------- |
+| Независимые барабаны   | есть    | `Reel`                                               | у каждого свой `offset`, фаза и стратегии; `land` — `Promise.all` |
+| Турбо                  | есть    | второй набор стратегий на турбо-режим, серия по удержанию спина | —                                                      |
+| Slam stop              | есть    | `Reel.slam()`, точка промотки — `plan.settleFrames`  | —                                                                 |
+| Минимум вращения       | есть    | `minSpinFrames` у `PlannedLandingStrategy`           | —                                                                 |
+| Anticipation           | в плане | удлинённая посадка отдельных барабанов по раунду     | план считается на барабан, номер барабана уже в контексте         |
+| Каскады                | в плане | трансформация ленты между раундами                   | `Cell` отделена от `StripSlot` — точка расширения готова          |
+| Held-барабаны, респин  | в плане | флаг барабана на раунд, проверка в `Reel.spin()`     | `spin` и `land` уже работают на барабан                           |
+| Nudge                  | в плане | `SpinStrategy` / дополнительная посадка на ячейку    | обёртка по кругу, направление не зашито                           |
+| Hold & Win-ячейки      | в плане | машина из барабанов высотой 1                        | `rows` перекрывается в `ReelDef`                                  |
+| Высокие символы        | в плане | `StripSlot.span`                                     | позиции считаются от `offset`, а не от `row * cellHeight`         |
 
 ### Что менять не надо
 

@@ -7,47 +7,47 @@ import { DESIGN_HEIGHT, DESIGN_WIDTH } from '../constants'
 const FADE_DURATION_MS = 200
 
 /**
- * Фон сцены: обычный спрайт снизу, фриспиновый поверх; смена режима — fade alpha верхнего.
+ * Фон сцены: обычный спрайт снизу, турбо поверх; смена режима — fade alpha верхнего.
  * Оба спрайта имеют размер макета; масштаб под размер канваса задаёт сцена.
  */
 export class Background extends Container {
   private readonly ticker: GameTicker
   private readonly defaultSprite = new Sprite()
-  private readonly fsSprite = new Sprite()
+  private readonly turboSprite = new Sprite()
   private fadeStep?: (ticker: Ticker) => void
 
-  constructor(ticker: GameTicker, isFs: boolean) {
+  constructor(ticker: GameTicker, isTurbo: boolean) {
     super()
 
     this.ticker = ticker
 
     this.defaultSprite.texture = Assets.get(BACKGROUND_ALIASES.default)
-    this.fsSprite.texture = Assets.get(BACKGROUND_ALIASES.fs)
-    this.fsSprite.alpha = Number(isFs)
+    this.turboSprite.texture = Assets.get(BACKGROUND_ALIASES.turbo)
+    this.turboSprite.alpha = Number(isTurbo)
 
-    for (const sprite of [this.defaultSprite, this.fsSprite]) {
+    for (const sprite of [this.defaultSprite, this.turboSprite]) {
       sprite.setSize(DESIGN_WIDTH, DESIGN_HEIGHT)
     }
 
-    this.addChild(this.defaultSprite, this.fsSprite)
+    this.addChild(this.defaultSprite, this.turboSprite)
   }
 
   /** Плавно ведёт фон к целевому варианту; вызов посреди fade разворачивает его с текущего alpha. */
-  fadeTo(isFs: boolean): void {
+  fadeTo(isTurbo: boolean): void {
     if (this.fadeStep) {
       this.ticker.remove(this.fadeStep)
       this.fadeStep = undefined
     }
 
-    const target = Number(isFs)
+    const target = Number(isTurbo)
 
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      this.fsSprite.alpha = target
+      this.turboSprite.alpha = target
 
       return
     }
 
-    const direction = Math.sign(target - this.fsSprite.alpha)
+    const direction = Math.sign(target - this.turboSprite.alpha)
 
     const step = (ticker: Ticker) => {
       if (this.destroyed) {
@@ -56,18 +56,18 @@ export class Background extends Container {
         return
       }
 
-      const next = this.fsSprite.alpha + (direction * ticker.deltaMS) / FADE_DURATION_MS
+      const next = this.turboSprite.alpha + (direction * ticker.deltaMS) / FADE_DURATION_MS
 
       // direction учитывает знак: условие означает «достигли или проскочили цель»
       if (direction * (next - target) >= 0) {
-        this.fsSprite.alpha = target
+        this.turboSprite.alpha = target
         this.ticker.remove(step)
         this.fadeStep = undefined
 
         return
       }
 
-      this.fsSprite.alpha = next
+      this.turboSprite.alpha = next
     }
 
     this.fadeStep = step

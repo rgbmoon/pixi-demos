@@ -1,3 +1,4 @@
+import { PlannedLandingStrategy } from 'src/core/reels/strategies/planned-landing'
 import { ReelPhase } from 'src/core/reels/types'
 import { describe, expect, it } from 'vitest'
 
@@ -6,6 +7,7 @@ import {
   CELL_HEIGHT,
   createGrid,
   createMachine,
+  LANDING_OPTIONS,
   readVisibleGrid,
   type TestData,
 } from '../../setup/reels'
@@ -88,6 +90,75 @@ describe('Reel', () => {
 
     await expect(landing).rejects.toThrow('round cancelled')
     expect(machine.getPhase()).toBe(ReelPhase.idle)
+  })
+
+  it.each([0, 5, 20, 40, 60])('после slam на %d-м кадре посадки сажает ленту на значения раунда', async (landingFrames) => {
+    const grid = createGrid()
+    const machine = createMachine()
+
+    machine.spin()
+    machine.advance(25)
+    machine.setData(grid)
+
+    const landing = machine.land()
+
+    for (let frame = 0; frame < landingFrames; frame += 1) {
+      machine.advance(1)
+    }
+
+    machine.slam()
+    advanceUntilIdle(machine)
+    await landing
+
+    expect(readVisibleGrid(machine)).toEqual(grid)
+  })
+
+  it('после slam сажает все барабаны в один кадр', () => {
+    const machine = createMachine()
+
+    machine.spin()
+    machine.advance(25)
+    machine.setData(createGrid())
+    void machine.land()
+    machine.slam()
+
+    const stopFrames = machine.getReels().map(() => 0)
+
+    for (let frame = 1; machine.getPhase() !== ReelPhase.idle; frame += 1) {
+      machine.advance(1)
+
+      machine.getReels().forEach((reel, index) => {
+        if (reel.getPhase() === ReelPhase.idle && stopFrames[index] === 0) stopFrames[index] = frame
+      })
+    }
+
+    expect(new Set(stopFrames).size).toBe(1)
+  })
+
+  it('не меняет движение текущего раунда при смене стратегий посреди спина', async () => {
+    const grid = createGrid()
+    const baseline = createMachine()
+    const switched = createMachine()
+
+    for (const machine of [baseline, switched]) {
+      machine.spin()
+      machine.advance(25)
+    }
+
+    // Вторая машина получает стратегии без лесенки: на текущей посадке это не должно сказаться
+    switched.setStrategies({
+      ...switched.getStrategies(),
+      landingStrategy: new PlannedLandingStrategy({ ...LANDING_OPTIONS, staggerCells: 0 }),
+    })
+
+    const frames = [baseline, switched].map((machine) => {
+      machine.setData(grid)
+      void machine.land()
+
+      return advanceUntilIdle(machine)
+    })
+
+    expect(frames[1]).toBe(frames[0])
   })
 
   it('садится одинаково при любом размере шага', async () => {

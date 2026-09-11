@@ -14,7 +14,8 @@ export type ReelsStub = {
 
 /**
  * Дублёр контроллера барабанов поверх настоящей модели: `land` действительно прокручивает
- * ленты и сажает их на данные раунда, только синхронно и без рендера.
+ * ленты и сажает их на данные раунда, только синхронно и без рендера. Сработавший `stopSignal`
+ * проматывает посадку настоящим `slam` и отмечается в журнале.
  * Методы презентации резолвятся сразу и отмечаются в журнале.
  */
 export const createReelsStub = (log: PresentationLog): ReelsMachineController & ReelsStub => {
@@ -25,10 +26,16 @@ export const createReelsStub = (log: PresentationLog): ReelsMachineController & 
       log.push('spin')
       machine.spin()
     },
-    land: async (symbolKeys: SlotReelsData | undefined) => {
+    land: async (symbolKeys: SlotReelsData | undefined, _signal?: AbortSignal, stopSignal?: AbortSignal) => {
       machine.setData((symbolKeys ?? null) as never)
 
       const landing = machine.land()
+
+      // Посадка дублёра синхронна: Stop успевает сработать только до её начала
+      if (stopSignal?.aborted) {
+        machine.slam()
+        log.push('slam')
+      }
 
       advanceUntilIdle(machine)
       await landing
