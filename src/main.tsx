@@ -12,8 +12,8 @@ const startMocking = async (): Promise<void> => {
     return
   }
 
-  const { worker } = await import('src/app/mocks/browser')
-  await worker.start({ onUnhandledRequest: 'bypass' })
+  const { network } = await import('src/app/mocks/browser')
+  network.enable()
 }
 
 // Последний рубеж для всего, что не поймано локально; ставится до рендера
