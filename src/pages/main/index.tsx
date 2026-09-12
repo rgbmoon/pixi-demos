@@ -49,8 +49,8 @@ export const MainPage = () => {
               <h3 className="text-xl font-light">Slot machine</h3>
               <p className="text-sm font-extralight text-slate-300">
                 Reel mechanics demo — the spin itself is the subject: slam stop and hold-to-spin turbo, anticipation
-                spins, cascades, held reels and respins, nudges, hold-and-win cells and tall symbols. Rounds are
-                server-authoritative; the client presents the result it receives.
+                spins, held reels and respins, hold-and-win cells and cascades. Rounds are server-authoritative; the
+                client presents the result it receives.
               </p>
             </div>
           </Link>

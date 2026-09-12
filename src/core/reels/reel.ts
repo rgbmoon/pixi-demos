@@ -81,7 +81,6 @@ export class Reel<TData, TValue> {
       id: `${this.id}_slot_${slotIndex}`,
       value: options.getFillerValue(index),
       offset: this.getBase(slotIndex),
-      span: 1,
       moving: false,
     }))
     this.laps = this.strip.map(() => 0)
