@@ -1,7 +1,12 @@
 import { Cell } from './cell'
+import { FallMotion } from './motions/fall-motion'
+import { LandingMotion } from './motions/landing-motion'
+import { SpinMotion } from './motions/spin-motion'
+import type { FallingSlot, ReelMotion } from './motions/types'
 import type { ReelsMachine } from './reels-machine'
+import { ReelStrip } from './strip'
 import type {
-  LandingPlan,
+  ReelCascadeOptions,
   ReelContext,
   ReelDef,
   ReelLandOptions,
@@ -10,10 +15,9 @@ import type {
   StripSlot,
 } from './types'
 import { ReelPhase } from './types'
-import { getLap, wrapOffset } from './utils'
 
 /**
- * Барабан: лента слотов, крутящаяся и садящаяся по расписанию стратегии.
+ * Барабан: лента слотов, крутящаяся, садящаяся и падающая на каскаде по расписаниям стратегий.
  * Доступа к тикеру не имеет: величину шага приносит владелец вызовом `advance`.
  * Значения слотов читает из данных машины.
  */
@@ -26,33 +30,16 @@ export class Reel<TData, TValue> {
   private readonly options: ReelOptions<TData, TValue>
   private readonly context: ReelContext
   private readonly cells: Cell<TData, TValue>[]
-  private readonly strip: StripSlot<TValue>[]
-  /**
-   * Номер круга каждого слота: лента замкнута, и позиция слота — это бесконечный путь
-   * `база + offset`, свёрнутый в её длину. Смена номера означает, что слот ушёл за нижнюю
-   * границу и появился сверху заново, — момент, когда ему пора выдать новое значение.
-   * Порог (`позиция >= высоты зоны`) для этого не годится: круг ловит обёртку в обе стороны.
-   */
-  private readonly laps: number[]
-  /** Нижняя граница диапазона позиций: буферные ячейки лежат над зоной. */
-  private readonly min: number
+  private readonly strip: ReelStrip<TValue>
 
-  private phase: ReelPhase = ReelPhase.idle
-  /** Накопленный путь ленты: позиции слотов — производные от него. */
-  private offset = 0
-  private revision = 0
+  /** Текущее движение ленты; `null` — барабан в покое. */
+  private motion: ReelMotion | null = null
   /** Стратегии текущего раунда: фиксируются на старте спина. */
   private strategies: ReelStrategies
-  /** Сколько кадров барабан крутится в текущем раунде до начала посадки. */
-  private spunFrames = 0
 
-  private plan: LandingPlan | null = null
-  private landingStart = 0
-  private elapsed = 0
-  private landingResolve: (() => void) | null = null
-  private landingReject: ((reason: Error) => void) | null = null
-  private landingSignal: AbortSignal | null = null
-  private onAnticipated: (() => void) | null = null
+  private motionResolve: (() => void) | null = null
+  private motionReject: ((reason: Error) => void) | null = null
+  private motionSignal: AbortSignal | null = null
 
   constructor(
     machine: ReelsMachine<TData, TValue>,
@@ -67,7 +54,6 @@ export class Reel<TData, TValue> {
     this.index = index
     this.id = def.id
     this.options = options
-    this.min = -buffer * cellHeight
     this.context = {
       index,
       rows,
@@ -77,18 +63,12 @@ export class Reel<TData, TValue> {
     }
 
     this.cells = Array.from({ length: rows }, (_, row) => new Cell(this, row))
-    this.strip = Array.from({ length: rows + buffer }, (_, slotIndex) => ({
-      id: `${this.id}_slot_${slotIndex}`,
-      value: options.getFillerValue(index),
-      offset: this.getBase(slotIndex),
-      moving: false,
-    }))
-    this.laps = this.strip.map(() => 0)
+    this.strip = new ReelStrip(this.id, this.context, () => options.getFillerValue(index))
     this.strategies = this.resolveStrategies()
   }
 
   getPhase(): ReelPhase {
-    return this.phase
+    return this.motion?.phase ?? ReelPhase.idle
   }
 
   /**
@@ -96,7 +76,7 @@ export class Reel<TData, TValue> {
    * По нему адаптер отличает изменившийся барабан от неподвижного.
    */
   getRevision(): number {
-    return this.revision
+    return this.strip.getRevision()
   }
 
   getCells(): Cell<TData, TValue>[] {
@@ -109,20 +89,18 @@ export class Reel<TData, TValue> {
 
   /** Слоты ленты в порядке создания: он стабилен, поэтому по нему адаптер держит свои view. */
   getStrip(): readonly StripSlot<TValue>[] {
-    return this.strip
+    return this.strip.getSlots()
   }
 
   /** Индексы слотов внутри видимой зоны сверху вниз; порядок берётся из позиций на ленте. */
   getVisibleSlotIndices(): number[] {
-    return [...this.strip.keys()]
-      .sort((a, b) => this.strip[a].offset - this.strip[b].offset)
-      .slice(this.options.buffer)
+    return this.strip.getVisibleSlotIndices()
   }
 
   getSlotAt(row: number): StripSlot<TValue> | undefined {
     const slotIndex = this.getVisibleSlotIndices()[row]
 
-    return slotIndex === undefined ? undefined : this.strip[slotIndex]
+    return slotIndex === undefined ? undefined : this.strip.getSlot(slotIndex)
   }
 
   /** Значение ряда в данных раунда; `undefined` — результата на него нет. */
@@ -136,36 +114,34 @@ export class Reel<TData, TValue> {
 
   /** Ставит ленту в исходную позицию и наполняет видимые ячейки данными раунда. Рассчитан на доску до прокрутки. */
   reset(): void {
-    if (this.phase !== ReelPhase.idle) return
+    if (this.motion) return
 
-    this.offset = 0
-
-    this.syncStrip()
+    this.strip.moveTo(0)
     this.getVisibleSlotIndices().forEach((slotIndex, row) => {
       const value = this.readValue(row)
+      const slot = this.strip.getSlot(slotIndex)
 
       if (value === undefined) return
 
-      this.strip[slotIndex].value = value
-      this.strip[slotIndex].moving = false
+      slot.value = value
+      slot.moving = false
     })
 
-    this.revision += 1
+    this.strip.touch()
   }
 
   /** Запускает бесконечную прокрутку: слоты переходят в размытую позу, стратегии раунда фиксируются. */
   spin(): void {
-    if (this.phase !== ReelPhase.idle) return
+    if (this.motion) return
 
-    this.phase = ReelPhase.spinning
     this.strategies = this.resolveStrategies()
-    this.spunFrames = 0
+    this.motion = new SpinMotion(this.strip, this.strategies.spinStrategy, this.context, (slot) => this.fill(slot))
 
-    for (const slot of this.strip) {
+    for (const slot of this.strip.getSlots()) {
       slot.moving = true
     }
 
-    this.revision += 1
+    this.strip.touch()
   }
 
   /**
@@ -175,134 +151,135 @@ export class Reel<TData, TValue> {
    */
   land(options: ReelLandOptions = {}): Promise<void> {
     const { signal, order = this.index, anticipation = 0, anticipating = false, onAnticipated } = options
+    const { motion } = this
 
-    if (this.phase !== ReelPhase.spinning) return Promise.resolve()
+    if (!(motion instanceof SpinMotion)) return Promise.resolve()
 
-    this.phase = ReelPhase.landing
-    this.landingStart = this.offset
-    this.elapsed = 0
-    this.onAnticipated = onAnticipated ?? null
-    this.plan = this.strategies.landingStrategy.plan({
+    const plan = this.strategies.landingStrategy.plan({
       ...this.context,
       order,
-      fromOffset: this.offset,
-      spunFrames: this.spunFrames,
+      fromOffset: this.strip.getOffset(),
+      spunFrames: motion.getSpunFrames(),
       anticipation,
       anticipating,
     })
 
+    return this.run(
+      new LandingMotion(this.strip, plan, (slot, remaining) => this.fillLanding(slot, remaining), onAnticipated),
+      signal
+    )
+  }
+
+  /**
+   * Каскад: слоты рядов `removedRows` поднимаются над зоной и получают значения новых верхних рядов из данных
+   * раунда, уцелевшие слоты сохраняют порядок и падают на освободившиеся ряды. Работает из покоя;
+   * без убранных рядов резолвится сразу. Данные раунда обязаны повторять значения уцелевших слотов.
+   */
+  cascade(options: ReelCascadeOptions): Promise<void> {
+    const { removedRows, order = this.index, signal } = options
+    const { rows, cellHeight } = this.options
+    const removed = new Set(removedRows.filter((row) => row >= 0 && row < rows))
+
+    if (this.motion || removed.size === 0) return Promise.resolve()
+
+    if (signal?.aborted) return Promise.reject(signal.reason as Error)
+
+    const { fallStrategy } = this.strategies
+
+    if (!fallStrategy) {
+      throw new Error(`Reel ${this.id} has no fall strategy`)
+    }
+
+    const count = removed.size
+    const visible = this.getVisibleSlotIndices()
+    const falling: FallingSlot[] = []
+
+    // Уцелевшие садятся в нижние ряды в прежнем порядке; не сменивший ряд слот не падает
+    visible
+      .filter((_, row) => !removed.has(row))
+      .forEach((slotIndex, survivor) => {
+        const row = count + survivor
+        const from = this.strip.getSlot(slotIndex).offset
+
+        if (visible[row] !== slotIndex) falling.push({ slotIndex, row, from, to: row * cellHeight })
+      })
+
+    // Убранные слоты встают столбиком над зоной с новыми значениями и падают на верхние ряды
+    visible
+      .filter((_, row) => removed.has(row))
+      .forEach((slotIndex, row) => {
+        const slot = this.strip.getSlot(slotIndex)
+        const from = (row - count) * cellHeight
+
+        slot.value = this.readValue(row) ?? this.options.getFillerValue(this.index)
+        slot.moving = false
+
+        this.strip.place(slotIndex, from)
+        falling.push({ slotIndex, row, from, to: row * cellHeight })
+      })
+
+    const plan = fallStrategy.plan({
+      ...this.context,
+      order,
+      drops: falling.map(({ row, from, to }) => ({ row, distance: to - from })),
+    })
+
+    return this.run(new FallMotion(this.strip, plan, falling), signal)
+  }
+
+  /**
+   * Проматывает текущее движение к финальному участку. План не меняется, двигается только время,
+   * поэтому слоты получают значения раунда так же, как без промотки. Барабан в покое не трогает.
+   */
+  slam(): void {
+    this.motion?.slam()
+  }
+
+  /** Шаг модели: двигает текущее движение и снимает его, когда оно кончилось. Зовётся владельцем раз в кадр. */
+  advance(deltaFrames: number): void {
+    const { motion } = this
+
+    if (!motion) return
+
+    motion.advance(deltaFrames)
+
+    // Колбэк движения мог снять его отменой: тогда промис уже реджекнут
+    if (motion !== this.motion || !motion.isDone()) return
+
+    const resolve = this.motionResolve
+
+    this.stopMotion()
+    resolve?.()
+  }
+
+  /** Стратегии барабана: описание барабана перекрывает текущие стратегии машины. */
+  private resolveStrategies(): ReelStrategies {
+    const { spinStrategy, landingStrategy, fallStrategy } = this.machine.getStrategies()
+
+    return {
+      spinStrategy: this.def.spinStrategy ?? spinStrategy,
+      landingStrategy: this.def.landingStrategy ?? landingStrategy,
+      fallStrategy: this.def.fallStrategy ?? fallStrategy,
+    }
+  }
+
+  /** Ставит движение с концом и отдаёт промис его завершения; `signal` реджектит его и возвращает барабан в покой. */
+  private run(motion: ReelMotion, signal?: AbortSignal): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       if (signal?.aborted) {
-        this.stopLanding()
+        this.stopMotion()
         reject(signal.reason as Error)
 
         return
       }
 
-      this.landingResolve = resolve
-      this.landingReject = reject
-      this.landingSignal = signal ?? null
+      this.motion = motion
+      this.motionResolve = resolve
+      this.motionReject = reject
+      this.motionSignal = signal ?? null
 
       signal?.addEventListener('abort', this.handleAbort, { once: true })
     })
-  }
-
-  /**
-   * Проматывает посадку к финальному участку расписания. План не меняется, двигается только время,
-   * поэтому слоты получают значения раунда так же, как на обычной посадке. Барабан не на посадке не трогает.
-   */
-  slam(): void {
-    if (this.phase !== ReelPhase.landing || !this.plan) return
-
-    this.elapsed = Math.max(this.elapsed, this.plan.settleFrames)
-  }
-
-  /** Шаг модели: сдвигает ленту и наполняет обёрнутые слоты. Зовётся владельцем раз в кадр. */
-  advance(deltaFrames: number): void {
-    if (this.phase === ReelPhase.spinning) {
-      this.advanceSpin(deltaFrames)
-
-      return
-    }
-
-    if (this.phase === ReelPhase.landing) this.advanceLanding(deltaFrames)
-  }
-
-  /** Позиция слота на неподвижной ленте: буферные ячейки лежат над видимой зоной. */
-  private getBase(slotIndex: number): number {
-    return this.options.cellHeight * (slotIndex - this.options.buffer)
-  }
-
-  /** Стратегии барабана: описание барабана перекрывает текущие стратегии машины. */
-  private resolveStrategies(): ReelStrategies {
-    const { spinStrategy, landingStrategy } = this.machine.getStrategies()
-
-    return {
-      spinStrategy: this.def.spinStrategy ?? spinStrategy,
-      landingStrategy: this.def.landingStrategy ?? landingStrategy,
-    }
-  }
-
-  private advanceSpin(deltaFrames: number): void {
-    this.spunFrames += deltaFrames
-    this.offset += this.strategies.spinStrategy.step(deltaFrames, this.context)
-
-    this.syncStrip((slot) => this.fill(slot))
-  }
-
-  private advanceLanding(deltaFrames: number): void {
-    const { plan } = this
-
-    if (!plan) return
-
-    const previous = this.elapsed
-
-    this.elapsed += deltaFrames
-
-    // Вход в паузу ловится только ходом ленты: slam двигает время вне advance и перескакивает его молча
-    if (plan.anticipationFrames !== undefined && previous < plan.anticipationFrames && this.elapsed >= plan.anticipationFrames) {
-      this.onAnticipated?.()
-    }
-
-    const position = plan.positionAt(this.elapsed)
-    const remaining = plan.distance - position
-
-    this.offset = this.landingStart + position
-
-    this.syncStrip((slot) => this.fillLanding(slot, remaining))
-
-    if (this.elapsed < plan.totalFrames) return
-
-    this.snap()
-
-    const resolve = this.landingResolve
-
-    this.stopLanding()
-    resolve?.()
-  }
-
-  /**
-   * Пересчитывает позиции слотов из накопленного пути и сообщает об обёртке.
-   * Позиции производны от одного числа, поэтому слоты не расходятся накопленной погрешностью.
-   */
-  private syncStrip(onWrap?: (slot: StripSlot<TValue>) => void): void {
-    const { stripHeight } = this.context
-
-    for (let slotIndex = 0; slotIndex < this.strip.length; slotIndex++) {
-      const slot = this.strip[slotIndex]
-      const position = this.getBase(slotIndex) + this.offset
-      const lap = getLap(position, this.min, stripHeight)
-
-      slot.offset = wrapOffset(position, this.min, stripHeight)
-
-      if (lap === this.laps[slotIndex]) continue
-
-      this.laps[slotIndex] = lap
-
-      onWrap?.(slot)
-    }
-
-    this.revision += 1
   }
 
   /** Наполняет слот значением вне результата раунда. */
@@ -336,40 +313,21 @@ export class Reel<TData, TValue> {
     slot.moving = false
   }
 
-  /**
-   * Добивает ленту точно на границу ячейки, гася накопленную за посадку погрешность.
-   * Позы не меняет: покой каждый слот получил на своём последнем обороте, повтор сбросил бы фазу цикла.
-   */
-  private snap(): void {
-    const { cellHeight } = this.options
-
-    this.offset = Math.round(this.offset / cellHeight) * cellHeight
-
-    this.syncStrip()
-
-    // Свёртка оставляет на позициях остаток округления: добиваем слоты ровно на границы ячеек
-    for (const slot of this.strip) {
-      slot.offset = Math.round(slot.offset / cellHeight) * cellHeight
-    }
-  }
-
   private handleAbort = (): void => {
-    const reject = this.landingReject
-    const reason = this.landingSignal?.reason as Error
+    const reject = this.motionReject
+    const reason = this.motionSignal?.reason as Error
 
-    this.stopLanding()
+    this.stopMotion()
     reject?.(reason)
   }
 
-  /** Снимает посадку и возвращает барабан в покой; идемпотентна. */
-  private stopLanding(): void {
-    this.landingSignal?.removeEventListener('abort', this.handleAbort)
+  /** Снимает движение и возвращает барабан в покой; идемпотентна. */
+  private stopMotion(): void {
+    this.motionSignal?.removeEventListener('abort', this.handleAbort)
 
-    this.landingSignal = null
-    this.landingResolve = null
-    this.landingReject = null
-    this.onAnticipated = null
-    this.plan = null
-    this.phase = ReelPhase.idle
+    this.motionSignal = null
+    this.motionResolve = null
+    this.motionReject = null
+    this.motion = null
   }
 }

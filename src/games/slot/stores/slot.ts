@@ -2,6 +2,7 @@ import { injectable } from 'inversify'
 import { action, computed, makeObservable, observable } from 'mobx'
 import { readStoredFlag, writeStoredFlag } from 'src/core/storage'
 import type {
+  CascadeStep,
   GameInitResult,
   HoldWin,
   HoldWinStep,
@@ -39,6 +40,8 @@ export class SlotStore {
   @observable win = 0
   /** Шаг раунда: 0 — базовый спин, n — n-й респин из ответа сервера. Пишет автомат. */
   @observable roundStep = 0
+  /** Шаг каскада: 0 — кадр базового спина, n — n-й шаг каскада из ответа сервера. Пишет автомат. */
+  @observable cascadeStep = 0
   /** Шаг бонуса Hold & Win: null — бонус не начат, 0 — стартовое поле, n — вставший n-й шаг из ответа. Пишет автомат. */
   @observable holdWinStep: number | null = null
   /** Монеты бонуса собраны: результат раунда показывает выигрыш бонуса. Пишет автомат. */
@@ -79,9 +82,17 @@ export class SlotStore {
     return this.phase === PhaseName.idle
   }
 
-  /** Барабаны в движении: фазы `spinning`, `respin` и `holdWinSpin` длятся от старта прокрутки до посадки. */
+  /**
+   * Барабаны в движении: фазы `spinning`, `respin` и `holdWinSpin` длятся от старта прокрутки до посадки,
+   * `cascade` — от взрыва до конца падения.
+   */
   @computed get isSpinning(): boolean {
-    return this.phase === PhaseName.spinning || this.phase === PhaseName.respin || this.phase === PhaseName.holdWinSpin
+    return (
+      this.phase === PhaseName.spinning ||
+      this.phase === PhaseName.respin ||
+      this.phase === PhaseName.holdWinSpin ||
+      this.phase === PhaseName.cascade
+    )
   }
 
   /** Хватает ли кредита на ставку. */
@@ -148,7 +159,7 @@ export class SlotStore {
 
   /** Выигрыш базового спина, в котором была пауза anticipation: его показ отличается от обычного. */
   @computed get isAnticipationWin(): boolean {
-    return !this.currentRespin && this.spinWin > 0 && this.presentedAnticipation.length > 0
+    return !this.currentRespin && !this.currentCascade && this.spinWin > 0 && this.presentedAnticipation.length > 0
   }
 
   /** Шаги респина из ответа сервера по порядку. */
@@ -166,23 +177,44 @@ export class SlotStore {
     return this.spinRespins[this.roundStep]
   }
 
-  /** Сетка текущего шага раунда: кадр респина или базового спина. */
+  /** Шаги каскада из ответа сервера по порядку. */
+  @computed get spinCascades(): CascadeStep[] {
+    return this.spinTransformations.find((transformation) => transformation.type === 'cascades')?.value ?? []
+  }
+
+  /** Шаг каскада, который показывают барабаны; на кадре базового спина его нет. */
+  @computed get currentCascade(): CascadeStep | undefined {
+    return this.cascadeStep > 0 ? this.spinCascades[this.cascadeStep - 1] : undefined
+  }
+
+  /** Следующий шаг каскада раунда, если сервер его прислал. */
+  @computed get nextCascade(): CascadeStep | undefined {
+    return this.spinCascades[this.cascadeStep]
+  }
+
+  /** Множитель шага каскада на поле; вне каскада и по закрытии раунда его нет. */
+  @computed get cascadeMultiplier(): number | null {
+    return this.isIdle ? null : (this.currentCascade?.multiplier ?? null)
+  }
+
+  // Каскады идут сразу за базовым спином, респины — после них: поэтому шаг респина в приоритете
+  /** Сетка текущего шага раунда: кадр респина, каскада или базового спина. */
   @computed get stepSymbols(): SymbolKey[][] | undefined {
-    return this.currentRespin?.frame ?? this.spinSymbols
+    return this.currentRespin?.frame ?? this.currentCascade?.frame ?? this.spinSymbols
   }
 
   /** Линии текущего шага раунда; у собранного бонуса линий нет. */
   @computed get stepPaylines(): Payline[] {
     if (this.isHoldWinCollected) return []
 
-    return this.currentRespin?.paylines ?? this.spinPaylines
+    return this.currentRespin?.paylines ?? this.currentCascade?.paylines ?? this.spinPaylines
   }
 
-  /** Выигрыш текущего шага раунда: собранного бонуса, респина или базового спина. */
+  /** Выигрыш текущего шага раунда: собранного бонуса, респина, каскада или базового спина. */
   @computed get stepWin(): number {
     if (this.isHoldWinCollected) return this.spinHoldWin?.win ?? 0
 
-    return this.currentRespin?.win ?? this.spinWin
+    return this.currentRespin?.win ?? this.currentCascade?.win ?? this.spinWin
   }
 
   /** Бонус Hold & Win из ответа сервера. */
@@ -195,9 +227,9 @@ export class SlotStore {
     return this.holdWinStep !== null && !this.isHoldWinCollected
   }
 
-  /** Бонус есть в ответе, ещё не начат, и шагов респина перед ним не осталось. */
+  /** Бонус есть в ответе, ещё не начат, и шагов каскада и респина перед ним не осталось. */
   @computed get hasPendingHoldWin(): boolean {
-    return this.spinHoldWin !== undefined && this.holdWinStep === null && !this.nextRespin
+    return this.spinHoldWin !== undefined && this.holdWinStep === null && !this.nextCascade && !this.nextRespin
   }
 
   /** Вставший шаг бонуса; на стартовом поле его нет. */
@@ -280,6 +312,7 @@ export class SlotStore {
   @action clearSpin() {
     this.spinResult = null
     this.roundStep = 0
+    this.cascadeStep = 0
     this.holdWinStep = null
     this.isHoldWinCollected = false
   }
@@ -287,6 +320,11 @@ export class SlotStore {
   /** Переводит раунд на следующий шаг респина. */
   @action advanceRoundStep() {
     this.roundStep += 1
+  }
+
+  /** Переводит раунд на следующий шаг каскада. */
+  @action advanceCascadeStep() {
+    this.cascadeStep += 1
   }
 
   /** Начинает бонус Hold & Win со стартового поля. */

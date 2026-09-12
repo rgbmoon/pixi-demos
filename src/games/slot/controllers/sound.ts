@@ -55,6 +55,9 @@ export class SoundController extends LiveContainer {
     // Фаза шага бонуса идёт подряд, isSpinning между шагами не падает: гул снимает посадка шага
     this.listen(emitter, 'holdWin:landed', () => this.stopSpinLoop())
     this.listen(emitter, 'holdWin:collected', this.handleHoldWinCollected)
+    this.listen(emitter, 'cascade:started', () => synth.play(SLOT_SOUNDS.cascadeBurst))
+    // Удары падения озвучивает reel:landed, выигрыш нового кадра — как у посадки
+    this.listen(emitter, 'cascade:landed', this.handleSpinLanded)
 
     // Фаза покидает spinning и при провале запроса, где spin:landed не эмитится
     this.watch(

@@ -172,6 +172,18 @@ export const HOLD_WIN_EMPTY_SYMBOL_ALPHA = 0.5
 /** Кегль надписи Grand над полным полем. */
 export const HOLD_WIN_GRAND_FONT_SIZE = 96
 
+// Каскад
+/** Кегль множителя каскада в нативных пикселях зоны символов. */
+export const CASCADE_MULTIPLIER_FONT_SIZE = 72
+/** Толщина обводки множителя каскада. */
+export const CASCADE_MULTIPLIER_STROKE = 10
+/** Толчок множителя при смене значения: масштаб в начале толчка. */
+export const CASCADE_MULTIPLIER_POP_SCALE = 1.6
+/** Длительность толчка множителя, мс. */
+export const CASCADE_MULTIPLIER_POP_MS = 300
+/** Сила отскока толчка множителя в терминах `easeOutBack`. */
+export const CASCADE_MULTIPLIER_POP_BACK = 0.6
+
 // Тайминги показа выигрыша
 /** Сколько все выигравшие линии и символы показываются разом до разбора по линиям, мс. */
 export const WIN_SHOWCASE_MS = 1000

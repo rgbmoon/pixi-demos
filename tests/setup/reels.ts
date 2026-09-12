@@ -1,7 +1,8 @@
 import { ReelsMachine } from 'src/core/reels/reels-machine'
+import { GravityFallStrategy } from 'src/core/reels/strategies/gravity-fall'
 import { LinearSpinStrategy } from 'src/core/reels/strategies/linear-spin'
 import { PlannedLandingStrategy } from 'src/core/reels/strategies/planned-landing'
-import type { PlannedLandingOptions } from 'src/core/reels/strategies/types'
+import type { GravityFallOptions, PlannedLandingOptions } from 'src/core/reels/strategies/types'
 import { ReelPhase, type ReelsConfig } from 'src/core/reels/types'
 
 /** Сетка раунда: значение ячейки `[барабан][ряд]`. */
@@ -30,6 +31,15 @@ export const LANDING_OPTIONS: PlannedLandingOptions = {
   staggerCells: 2,
 }
 
+/** Боевые настройки падения каскада слота. */
+export const FALL_OPTIONS: GravityFallOptions = {
+  gravity: 2.5,
+  staggerFrames: 3,
+  rowStaggerFrames: 2,
+  bounceCells: 0.06,
+  bounceFrames: 8,
+}
+
 export const createConfig = (): ReelsConfig<TestData, string> => ({
   reels: Array.from({ length: REELS }, (_, index) => ({ id: `reel-${index}` })),
   rows: ROWS,
@@ -39,6 +49,7 @@ export const createConfig = (): ReelsConfig<TestData, string> => ({
   getFillerValue: () => FILLER,
   spinStrategy: new LinearSpinStrategy({ speed: SPIN_SPEED }),
   landingStrategy: new PlannedLandingStrategy(LANDING_OPTIONS),
+  fallStrategy: new GravityFallStrategy(FALL_OPTIONS),
 })
 
 export const createMachine = (): ReelsMachine<TestData, string> => new ReelsMachine(createConfig())

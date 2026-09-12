@@ -15,7 +15,8 @@ const RESPINS_CAPTION = 'RESPINS'
 
 /**
  * Строка под барабанами: сумма выигрыша (в турбо-серии — накопленная), а между раундами — подсказка
- * по фазе. В турбо-режиме подсказки свои: в покое зовёт зажать спин, во вращении объявляет турбо.
+ * по фазе. В турбо-режиме подсказки свои: в покое зовёт зажать спин, во вращении объявляет турбо;
+ * подпись суммы красная.
  * Пока идёт бонус Hold & Win, строка показывает счётчик его респинов.
  */
 @injectable()
@@ -60,7 +61,13 @@ export class WinLabelController extends LiveContainer {
     }
 
     if (win > 0) {
-      this.valueLabel.setText(WIN_CAPTION, formatAmount(win))
+      // В турбо подпись красная, как объявление TURBO! и множитель каскада
+      this.valueLabel.setText(
+        WIN_CAPTION,
+        formatAmount(win),
+        LabelColor.white,
+        isTurboEnabled ? LabelColor.red : LabelColor.cyan
+      )
 
       return
     }

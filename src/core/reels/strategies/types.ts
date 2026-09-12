@@ -22,3 +22,17 @@ export type PlannedLandingOptions = {
   /** Дополнительный путь на каждую паузу anticipation, в ячейках; по умолчанию 0. */
   readonly anticipationCells?: number
 }
+
+/** Настройки падения каскада под постоянным ускорением. */
+export type GravityFallOptions = {
+  /** Ускорение падения, единиц/кадр². */
+  readonly gravity: number
+  /** Лесенка: на столько кадров каждый следующий падающий барабан стартует позже предыдущего. */
+  readonly staggerFrames: number
+  /** Внутри барабана нижний слот стартует первым, каждый ряд выше — на столько кадров позже. */
+  readonly rowStaggerFrames: number
+  /** Высота отскока после касания ряда, в долях ячейки; по умолчанию 0. */
+  readonly bounceCells?: number
+  /** Длительность отскока в кадрах; по умолчанию 0. */
+  readonly bounceFrames?: number
+}

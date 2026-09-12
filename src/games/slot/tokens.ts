@@ -7,6 +7,7 @@ import type { AnticipationCheckboxController } from './controllers/hud/anticipat
 import type { BetMinusButtonController } from './controllers/hud/bet-minus-button'
 import type { BetPanelController } from './controllers/hud/bet-panel'
 import type { BetPlusButtonController } from './controllers/hud/bet-plus-button'
+import type { CascadeCheckboxController } from './controllers/hud/cascade-checkbox'
 import type { CreditLabelController } from './controllers/hud/credit-label'
 import type { GameModeMinusButtonController } from './controllers/hud/game-mode-minus-button'
 import type { GameModePanelController } from './controllers/hud/game-mode-panel'
@@ -45,6 +46,7 @@ export const SLOT_TOKENS = {
   ) as ServiceIdentifier<AnticipationCheckboxController>,
   RespinCheckboxController: Symbol('RespinCheckboxController') as ServiceIdentifier<RespinCheckboxController>,
   HoldWinCheckboxController: Symbol('HoldWinCheckboxController') as ServiceIdentifier<HoldWinCheckboxController>,
+  CascadeCheckboxController: Symbol('CascadeCheckboxController') as ServiceIdentifier<CascadeCheckboxController>,
   BetPlusButtonController: Symbol('BetPlusButtonController') as ServiceIdentifier<BetPlusButtonController>,
   BetMinusButtonController: Symbol('BetMinusButtonController') as ServiceIdentifier<BetMinusButtonController>,
   BetPanelController: Symbol('BetPanelController') as ServiceIdentifier<BetPanelController>,

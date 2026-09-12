@@ -28,9 +28,18 @@ export class ValueLabel extends Container {
     this.addChild(this.caption, this.value)
   }
 
-  /** Ставит подпись и значение; значение красится в `valueColor`, по умолчанию белый. */
-  setText(caption: string, value: string, valueColor: LabelColor = LabelColor.white): void {
+  /**
+   * Ставит подпись и значение; значение красится в `valueColor`, по умолчанию белый,
+   * подпись — в `captionColor`, по умолчанию циан.
+   */
+  setText(
+    caption: string,
+    value: string,
+    valueColor: LabelColor = LabelColor.white,
+    captionColor: LabelColor = LabelColor.cyan
+  ): void {
     this.caption.text = caption
+    this.caption.setColor(captionColor)
     this.value.text = value
     this.value.setColor(valueColor)
 

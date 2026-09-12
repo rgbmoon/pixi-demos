@@ -73,6 +73,19 @@ test.describe('раунд', () => {
     await expect(spin).toBeVisible({ timeout: 60_000 })
   })
 
+  test('проводит раунд с каскадами через все шаги до нового покоя', async ({ page }) => {
+    // Каждый шаг каскада — показ выигрыша, взрыв и падение: раунд длиннее обычного спина
+    test.setTimeout(90_000)
+
+    const spin = await openGame(page, '?scenario=cascade&seed=1')
+
+    await spin.dispatchEvent('click')
+
+    // Спин недоступен до конца последнего шага: между шагами раунд не возвращается в покой
+    await expect(spin).toBeHidden()
+    await expect(spin).toBeVisible({ timeout: 60_000 })
+  })
+
   test('проводит раунд с бонусом Hold & Win до нового покоя', async ({ page }) => {
     // Бонус — вход, серия шагов и сбор монет: раунд длиннее респина
     test.setTimeout(120_000)

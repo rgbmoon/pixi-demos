@@ -13,7 +13,8 @@ import { TURBO_WIN_SHOWCASE_MS, WIN_DISPLAY_MS } from '../constants'
 
 /**
  * Фаза показа результата: барабаны уже стоят, фаза выставляет выигрыш шага, показывает линии и закрывает раунд.
- * Пока в ответе есть следующий шаг респина, возвращает раунд в `respin`, после респинов — в бонус Hold & Win.
+ * Пока в ответе есть следующий шаг каскада, коротко показывает выигрыш и возвращает раунд в `cascade`;
+ * пока есть шаг респина — в `respin`, после них — в бонус Hold & Win.
  * В турбо-серии возвращает раунд в `spinning`, пока спин зажат и хватает на ставку.
  */
 @injectable()
@@ -40,7 +41,11 @@ export class ResultPhase implements Phase<PhaseName> {
   async enter(
     signal: AbortSignal
   ): Promise<
-    typeof PhaseName.idle | typeof PhaseName.spinning | typeof PhaseName.respin | typeof PhaseName.holdWinIntro
+    | typeof PhaseName.idle
+    | typeof PhaseName.spinning
+    | typeof PhaseName.respin
+    | typeof PhaseName.holdWinIntro
+    | typeof PhaseName.cascade
   > {
     const { spinResult: result } = this.slotStore
 
@@ -49,21 +54,36 @@ export class ResultPhase implements Phase<PhaseName> {
     }
 
     // Сумма встаёт в WinLabelController до анимаций линий и висит там, пока раунд не закроется;
-    // шаги респина, бонус и спины серии её копят
-    if (this.slotStore.isTurboSeries || this.slotStore.currentRespin || this.slotStore.isHoldWinCollected) {
+    // шаги респина и каскада, бонус и спины серии её копят
+    if (
+      this.slotStore.isTurboSeries ||
+      this.slotStore.currentRespin ||
+      this.slotStore.currentCascade ||
+      this.slotStore.isHoldWinCollected
+    ) {
       this.slotStore.accrueWin(this.slotStore.stepWin)
     } else {
       this.slotStore.setWin(this.slotStore.stepWin)
     }
 
+    // Сумму без линий держат собранный бонус со своим выигрышем и цепочка каскадов с выигрышем по ходу
+    const holdsSummary = this.slotStore.isHoldWinCollected
+      ? this.slotStore.stepWin > 0
+      : this.slotStore.currentCascade !== undefined && this.slotStore.win > 0
+
     if (this.slotStore.stepPaylines.length > 0) {
-      await this.presentWin(signal)
-    } else if (this.slotStore.isHoldWinCollected && this.slotStore.stepWin > 0 && !this.slotStore.isTurboEnabled) {
-      // Линий у бонуса нет: сумма стоит в строке WIN, пока не уйдёт в кредит; турбо выдержек не держит
+      await (this.slotStore.nextCascade ? this.presentCascadeWin(signal) : this.presentWin(signal))
+    } else if (holdsSummary && !this.slotStore.isTurboEnabled) {
+      // Линий у бонуса и у последнего шага каскада нет: сумма раунда стоит в строке WIN, пока не уйдёт
+      // в кредит; турбо выдержек не держит
       await this.ticker.waitTicks(WIN_DISPLAY_MS, signal)
     }
 
     // Баланс ответа включает все шаги: раунд закрывается только после последнего
+    if (this.slotStore.nextCascade) {
+      return PhaseName.cascade
+    }
+
     if (this.slotStore.nextRespin) {
       return PhaseName.respin
     }
@@ -115,6 +135,20 @@ export class ResultPhase implements Phase<PhaseName> {
     await this.reels.playWinLines(signal)
     await this.reels.hideTint(signal)
     await this.ticker.waitTicks(WIN_DISPLAY_MS, signal)
+  }
+
+  /**
+   * Показ выигрыша перед каскадом: только все линии разом, в турбо — короткая вспышка. Выигравшие символы
+   * следом взрываются, разбор по линиям их бы задержал. Выигрыш после anticipation открывается вспышкой фона.
+   */
+  private async presentCascadeWin(signal: AbortSignal): Promise<void> {
+    const durationMs = this.slotStore.isTurboEnabled ? TURBO_WIN_SHOWCASE_MS : undefined
+
+    if (this.slotStore.isAnticipationWin) {
+      await Promise.all([this.background.flash(signal), this.reels.showAllWins(signal, durationMs)])
+    } else {
+      await this.reels.showAllWins(signal, durationMs)
+    }
   }
 
   private canContinueSeries(): boolean {

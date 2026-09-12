@@ -24,6 +24,7 @@ import { Label } from 'src/games/slot/ui/hud/label'
 import { Modal } from 'src/games/slot/ui/hud/modal'
 
 import type { AnticipationCheckboxController } from './anticipation-checkbox'
+import type { CascadeCheckboxController } from './cascade-checkbox'
 import type { GameModePanelController } from './game-mode-panel'
 import type { HoldWinCheckboxController } from './hold-win-checkbox'
 import type { RespinCheckboxController } from './respin-checkbox'
@@ -47,6 +48,7 @@ export class SettingsModalController extends LiveContainer {
   private readonly anticipationCheckbox: AnticipationCheckboxController
   private readonly respinCheckbox: RespinCheckboxController
   private readonly holdWinCheckbox: HoldWinCheckboxController
+  private readonly cascadeCheckbox: CascadeCheckboxController
   private fadeAbort?: AbortController
 
   constructor(
@@ -57,6 +59,7 @@ export class SettingsModalController extends LiveContainer {
     @inject(SLOT_TOKENS.AnticipationCheckboxController) anticipationCheckbox: AnticipationCheckboxController,
     @inject(SLOT_TOKENS.RespinCheckboxController) respinCheckbox: RespinCheckboxController,
     @inject(SLOT_TOKENS.HoldWinCheckboxController) holdWinCheckbox: HoldWinCheckboxController,
+    @inject(SLOT_TOKENS.CascadeCheckboxController) cascadeCheckbox: CascadeCheckboxController,
     @inject(SLOT_TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>
   ) {
     super()
@@ -67,6 +70,7 @@ export class SettingsModalController extends LiveContainer {
     this.anticipationCheckbox = anticipationCheckbox
     this.respinCheckbox = respinCheckbox
     this.holdWinCheckbox = holdWinCheckbox
+    this.cascadeCheckbox = cascadeCheckbox
 
     this.closeButton = new Button({
       variant: ButtonVariant.circle,
@@ -85,6 +89,7 @@ export class SettingsModalController extends LiveContainer {
     this.modal.addContent(anticipationCheckbox)
     this.modal.addContent(respinCheckbox)
     this.modal.addContent(holdWinCheckbox)
+    this.modal.addContent(cascadeCheckbox)
     this.modal.addContent(this.closeButton)
 
     this.addChild(this.modal)
@@ -122,6 +127,7 @@ export class SettingsModalController extends LiveContainer {
     this.anticipationCheckbox.position.set(this.modal.plateWidth / 2, turboY + 2 * rowStep)
     this.respinCheckbox.position.set(this.modal.plateWidth / 2, turboY + 3 * rowStep)
     this.holdWinCheckbox.position.set(this.modal.plateWidth / 2, turboY + 4 * rowStep)
+    this.cascadeCheckbox.position.set(this.modal.plateWidth / 2, turboY + 5 * rowStep)
   }
 
   /**

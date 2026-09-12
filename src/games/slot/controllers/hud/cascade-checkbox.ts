@@ -1,0 +1,46 @@
+import { inject, injectable } from 'inversify'
+import type { GameEmitter } from 'src/core/events/game-emitter'
+import { LiveContainer } from 'src/engine/live-container'
+import { PANEL_ROW_WIDTH } from 'src/games/slot/constants'
+import type { GameEvents } from 'src/games/slot/events'
+import type { SlotStore } from 'src/games/slot/stores/slot'
+import { SLOT_TOKENS } from 'src/games/slot/tokens'
+import { CheckboxVariant, ForcedMechanic } from 'src/games/slot/types'
+import { Checkbox } from 'src/games/slot/ui/hud/checkbox'
+
+/** Чекбокс force cascade в настройках. */
+@injectable()
+export class CascadeCheckboxController extends LiveContainer {
+  private readonly checkbox: Checkbox
+
+  constructor(
+    @inject(SLOT_TOKENS.SlotStore) slotStore: SlotStore,
+    @inject(SLOT_TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>
+  ) {
+    super()
+
+    this.checkbox = new Checkbox({
+      label: 'CASCADE',
+      width: PANEL_ROW_WIDTH,
+      variant: CheckboxVariant.radio,
+      onTap: () => {
+        slotStore.toggleForcedMechanic(ForcedMechanic.cascade)
+        emitter.emit('ui:buttonTapped')
+      },
+    })
+
+    this.addChild(this.checkbox)
+
+    this.watch(
+      () => slotStore.forcedMechanic === ForcedMechanic.cascade,
+      (isChecked) => this.checkbox.setChecked(isChecked),
+      { fireImmediately: true }
+    )
+
+    this.watch(
+      () => slotStore.canToggleForcedMechanic(ForcedMechanic.cascade),
+      (enabled) => this.checkbox.setEnabled(enabled),
+      { fireImmediately: true }
+    )
+  }
+}

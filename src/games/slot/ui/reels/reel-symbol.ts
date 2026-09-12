@@ -8,12 +8,12 @@ import type { SymbolKey } from 'src/games/slot/types'
 
 const TRACK_MAIN = 0
 
-/** Символ барабана: спрайт нужной позы плюс скелет из пула на выигрышной анимации. */
+/** Символ барабана: спрайт нужной позы плюс скелет из пула на выигрышной анимации и взрыве. */
 export class ReelSymbol extends SpineAnimation implements CellView<SymbolKey> {
   private readonly artSprite = new Sprite()
 
   private key: SymbolKey | null = null
-  private pose: 'idle' | 'blur' | 'win' = 'idle'
+  private pose: 'idle' | 'blur' | 'win' | 'explode' = 'idle'
   private attachedKey: SymbolKey | null = null
 
   constructor(pool: SpinePool) {
@@ -33,9 +33,9 @@ export class ReelSymbol extends SpineAnimation implements CellView<SymbolKey> {
     this.applyPose()
   }
 
-  /** Ведёт позу движения. Выигрышную позу не трогает: её ставит и снимает оверлей. */
+  /** Ведёт позу движения. Выигрышную позу и взрыв не трогает: их ставит и снимает владелец. */
   setMoving(moving: boolean): void {
-    if (this.pose === 'win') return
+    if (this.pose === 'win' || this.pose === 'explode') return
 
     this.setPose(moving ? 'blur' : 'idle')
   }
@@ -46,6 +46,13 @@ export class ReelSymbol extends SpineAnimation implements CellView<SymbolKey> {
 
   win(): void {
     this.setPose('win')
+  }
+
+  /** Проигрывает взрыв символа; после него ячейка пуста, пока `idle` не вернёт арт. */
+  explode(signal?: AbortSignal): Promise<void> {
+    this.setPose('explode')
+
+    return this.playOnce(TRACK_MAIN, 'explode', signal)
   }
 
   /** Единственная точка смены позы. */
@@ -63,7 +70,7 @@ export class ReelSymbol extends SpineAnimation implements CellView<SymbolKey> {
 
     if (!key) return
 
-    if (pose !== 'win') {
+    if (pose === 'idle' || pose === 'blur') {
       if (this.attachedKey) {
         this.detach()
         this.attachedKey = null
@@ -75,7 +82,7 @@ export class ReelSymbol extends SpineAnimation implements CellView<SymbolKey> {
       return
     }
 
-    // Выигрышную позу держит скелет: он рисует тот же арт и лежит в тех же единицах ячейки
+    // Выигрышную позу и взрыв держит скелет: он рисует тот же арт и лежит в тех же единицах ячейки
     this.artSprite.visible = false
 
     if (this.attachedKey !== key) {
@@ -83,6 +90,7 @@ export class ReelSymbol extends SpineAnimation implements CellView<SymbolKey> {
       this.attachedKey = key
     }
 
-    this.play(TRACK_MAIN, 'win')
+    // Взрыв запускает сам explode: ему нужен промис конца клипа
+    if (pose === 'win') this.play(TRACK_MAIN, 'win')
   }
 }

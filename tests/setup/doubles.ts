@@ -19,10 +19,10 @@ export type ReelsStub = {
 }
 
 /**
- * Дублёр контроллера барабанов поверх настоящей модели: `land` действительно прокручивает
- * ленты и сажает их на данные раунда, только синхронно и без рендера. Прокрутка с удержанными
+ * Дублёр контроллера барабанов поверх настоящей модели: `land` и `cascade` действительно двигают
+ * ленты и сажают их на данные раунда, только синхронно и без рендера. Прокрутка с удержанными
  * барабанами отмечается в журнале как `respin`. Сработавший `stopSignal`
- * проматывает посадку настоящим `slam` и отмечается в журнале.
+ * проматывает посадку или падение настоящим `slam` и отмечается в журнале.
  * Методы презентации резолвятся сразу и отмечаются в журнале.
  */
 export const createReelsStub = (log: PresentationLog): ReelsMachineController & ReelsStub => {
@@ -53,6 +53,30 @@ export const createReelsStub = (log: PresentationLog): ReelsMachineController & 
       await landing
 
       log.push('land')
+    },
+    explode: async () => {
+      log.push('explode')
+    },
+    cascade: async (
+      symbolKeys: SlotReelsData,
+      removed: readonly CellIndex[],
+      _signal?: AbortSignal,
+      stopSignal?: AbortSignal
+    ) => {
+      machine.setData(symbolKeys)
+
+      const falling = machine.cascade({ removed })
+
+      // Падение дублёра синхронно: Stop успевает сработать только до его начала
+      if (stopSignal?.aborted) {
+        machine.slam()
+        log.push('cascadeSlam')
+      }
+
+      advanceUntilIdle(machine)
+      await falling
+
+      log.push('cascade')
     },
     showTint: async () => {
       log.push('showTint')

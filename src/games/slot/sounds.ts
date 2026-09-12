@@ -144,6 +144,20 @@ export const SLOT_SOUNDS = {
       },
     ],
   },
+  /** Взрыв выигравших символов на каскаде: хлопок шума с падающим тоном, отличает его от удара посадки. */
+  cascadeBurst: {
+    cooldown: 0.05,
+    voices: [
+      {
+        wave: 'noise',
+        attack: 0.002,
+        duration: 0.18,
+        gain: 0.07,
+        filter: { type: 'bandpass', frequency: 2200, q: 0.9 },
+      },
+      { wave: 'triangle', frequency: 900, frequencyEnd: 220, attack: 0.003, duration: 0.16, gain: 0.07 },
+    ],
+  },
   /** Старт бонуса Hold & Win: быстрое арпеджио на полторы октавы вверх. */
   holdWinStart: {
     voices: [
