@@ -170,11 +170,11 @@ export class Reel<TData, TValue> {
 
   /**
    * Ловит барабан: докручивает ленту до ровной посадки слотов и подставляет значения раунда.
-   * Барабан, который не крутится, резолвится сразу. Паузы anticipation и колбэк входа
+   * Барабан, который не крутится, резолвится сразу. Место в лесенке, паузы anticipation и колбэк входа
    * в собственную паузу приходят в `options`.
    */
   land(options: ReelLandOptions = {}): Promise<void> {
-    const { signal, anticipation = 0, anticipating = false, onAnticipated } = options
+    const { signal, order = this.index, anticipation = 0, anticipating = false, onAnticipated } = options
 
     if (this.phase !== ReelPhase.spinning) return Promise.resolve()
 
@@ -184,6 +184,7 @@ export class Reel<TData, TValue> {
     this.onAnticipated = onAnticipated ?? null
     this.plan = this.strategies.landingStrategy.plan({
       ...this.context,
+      order,
       fromOffset: this.offset,
       spunFrames: this.spunFrames,
       anticipation,

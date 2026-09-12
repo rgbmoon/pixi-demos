@@ -147,6 +147,93 @@ describe('anticipation', () => {
   })
 })
 
+describe('респин', () => {
+  it('удерживает барабаны с вайлдом, докручивает остальные и закрывает раунд после последнего шага', async () => {
+    round = await startRound({ scenario: MockScenario.respin })
+
+    const { store, emitter, log } = round
+    const reels = round.container.get(SLOT_TOKENS.ReelsMachineController) as unknown as ReelsStub
+    const creditBefore = store.credit
+    const { bet } = store
+    const credits: number[] = []
+
+    emitter.on('respin:started', () => credits.push(store.credit))
+
+    await round.playSpin()
+
+    const steps = store.spinRespins
+
+    expect(steps.length).toBeGreaterThan(0)
+    expect(log.filter((entry) => entry === 'respin')).toHaveLength(steps.length)
+    // Баланс ответа включает все шаги: до последнего кредит видит только списанную ставку
+    expect(credits).toEqual(steps.map(() => creditBefore - bet))
+    expect(reels.readGrid()).toEqual(steps.at(-1)?.frame)
+    expect(store.credit).toBe(store.spinResult?.balance)
+    expect(store.win).toBe(0)
+    expect(store.heldReels).toEqual([])
+  })
+
+  it('показывает выигрыш каждого шага и копит сумму шагов в строке WIN', async () => {
+    round = await startRound({ scenario: MockScenario.respin, seed: 3 })
+
+    const { store, emitter, log } = round
+    const wins: number[] = []
+
+    emitter.on('respin:landed', () => wins.push(store.win))
+
+    await round.playSpin()
+
+    const stepPaylines = [store.spinPaylines, ...store.spinRespins.map((step) => step.paylines)]
+    const stepWins = [store.spinWin, ...store.spinRespins.map((step) => step.win)]
+    let sum = 0
+
+    // Сид даёт цепочку из нескольких шагов с выигрышами: без неё проверка накопления пуста
+    expect(stepWins.filter((win) => win > 0).length).toBeGreaterThan(1)
+    // На посадке каждого респина в строке WIN сумма всех предыдущих шагов
+    expect(wins).toEqual(stepWins.slice(0, -1).map((win) => (sum += win)))
+    expect(log.filter((entry) => entry === 'showAllWins')).toHaveLength(
+      stepPaylines.filter((paylines) => paylines.length > 0).length
+    )
+  })
+
+  it('по Stop на респине проматывает его посадку и доводит раунд до конца', async () => {
+    round = await startRound({ scenario: MockScenario.respin })
+
+    const { store, emitter, log } = round
+    const reels = round.container.get(SLOT_TOKENS.ReelsMachineController) as unknown as ReelsStub
+    const canStop: boolean[] = []
+
+    emitter.on('respin:started', () => {
+      canStop.push(store.canStop)
+      emitter.emit('ui:stopRequested')
+    })
+
+    await round.playSpin()
+
+    expect(canStop.every(Boolean)).toBe(true)
+    expect(log.indexOf('slam')).toBeGreaterThan(log.indexOf('respin'))
+    expect(reels.readGrid()).toEqual(store.spinRespins.at(-1)?.frame)
+    // Сигнал Stop живёт только фазу респина
+    expect(emitter.listenerCounts()['ui:stopRequested'] ?? 0).toBe(0)
+  })
+
+  it('по force присылает респин и в турбо проводит шаги без выдержек и полного разбора линий', async () => {
+    round = await startRound({ scenario: MockScenario.bigwin })
+
+    const { store, log } = round
+
+    store.toggleRespinForced()
+    store.toggleTurboEnabled()
+    await round.playSpin()
+
+    expect(store.spinRespins.length).toBeGreaterThan(0)
+    expect(log).toContain('respin')
+    expect(log).not.toContain('waitTicks')
+    expect(log).not.toContain('playWinLines')
+    expect(store.credit).toBe(store.spinResult?.balance)
+  })
+})
+
 describe('турбо-режим', () => {
   /** Ждёт `count` посадок подряд: столько спинов серия прошла с момента вызова. */
   const waitForLandings = async (count: number): Promise<void> => {

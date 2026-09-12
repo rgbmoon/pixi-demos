@@ -155,8 +155,8 @@ GameTicker
 | `setData(data: TData \| null): void`              | записывает результат раунда; из него читают посадка и `Cell.getValue`  |
 | `getStrategies() / setStrategies(strategies)`     | стратегии машины по умолчанию; смена действует со следующего спина     |
 | `reset(): void`                                   | мгновенно ставит ленты по текущим данным — стартовая доска             |
-| `spin(): void`                                    | запускает прокрутку всех барабанов                                     |
-| `land(options?: LandOptions): Promise<void>`      | сажает все барабаны, `Promise.all` по лентам — см. ниже                |
+| `spin(options?: SpinOptions): void`               | запускает прокрутку всех барабанов, кроме удержанных — см. ниже        |
+| `land(options?: LandOptions): Promise<void>`      | сажает крутящиеся барабаны, `Promise.all` по лентам — см. ниже         |
 | `slam(): void`                                    | проматывает посадку садящихся барабанов к финальному участку           |
 | `advance(deltaFrames): void`                      | шаг модели; зовёт владелец такта                                       |
 | `getReels() / getReel(i)`                         | барабаны                                                               |
@@ -165,6 +165,10 @@ GameTicker
 | `getPhase(): ReelPhase`                           | `landing`, если садится хоть один; `spinning`, если крутится хоть один |
 
 ```ts
+type SpinOptions = {
+  readonly held?: readonly number[] // индексы удержанных барабанов: на этот раунд они не крутятся
+}
+
 type LandOptions = {
   readonly signal?: AbortSignal // отмена: реджектит посадку и возвращает барабаны в покой
   readonly anticipation?: readonly number[] // индексы барабанов, которые садятся с паузой
@@ -172,6 +176,11 @@ type LandOptions = {
   readonly onReelAnticipated?: (reel: number) => void // барабан из списка вошёл в свою паузу
 }
 ```
+
+Удержанный барабан остаётся в `idle`: его слоты не двигаются и не меняют значений, `land` его не
+сажает и `onReelLanded` о нём не сообщает. Данные раунда обязаны повторять значения удержанных
+барабанов, иначе `Cell.getValue` разойдётся с экраном. Лесенка считается по порядку среди садящихся
+барабанов: первый крутящийся встаёт без задержки лесенки.
 
 Барабан получает паузу за каждый барабан из `anticipation` с индексом не больше своего. Поэтому
 барабан правее ждущего соседа тоже сдвигается, даже если сам в списке не стоит: иначе он встал бы
@@ -195,7 +204,7 @@ type LandOptions = {
 | `getSlotAt(row)`                                 | слот, занимающий ряд сейчас                                                 |
 | `readValue(row)`                                 | значение ряда в данных раунда                                               |
 | `reset() / spin() / slam() / advance(dt)`        | то же, что у машины, но на одной ленте                                      |
-| `land(options?: ReelLandOptions)`                | посадка ленты: `signal`, число пауз, своя пауза и колбэк входа в неё        |
+| `land(options?: ReelLandOptions)`                | посадка ленты: `signal`, место в лесенке, число пауз, своя пауза и колбэк входа в неё |
 
 ### `Cell<TData, TValue>`
 
@@ -238,7 +247,7 @@ type ReelStrategies = {
 }
 
 type ReelContext = {
-  readonly index: number // номер барабана — им стратегия делает лесенку
+  readonly index: number // номер барабана
   readonly rows: number
   readonly buffer: number
   readonly cellHeight: number
@@ -246,6 +255,7 @@ type ReelContext = {
 }
 
 type LandingContext = ReelContext & {
+  readonly order: number // место в лесенке: номер среди садящихся барабанов раунда
   readonly fromOffset: number // позиция ленты в момент начала посадки
   readonly spunFrames: number // сколько кадров барабан крутился до посадки
   readonly anticipation: number // число пауз anticipation до остановки, включая свою; 0 — без пауз
@@ -371,8 +381,8 @@ private setSymbols(symbols: SlotReelsData | undefined): void {
   this.machine.reset()
 }
 
-spin(): void {
-  this.machine.spin()
+spin(held: readonly number[] = []): void {
+  this.machine.spin({ held }) // удержанные барабаны респина остаются на месте
 }
 
 async land(
@@ -402,9 +412,9 @@ async land(
 }
 ```
 
-Фазы дальше зовут только контроллер: `spin()` — когда раунд начался,
-`await land(данные, anticipation, signal, stopSignal)` — когда пришёл результат сервера. Ядра и адаптера они не
-видят вовсе. `stopSignal` — сигнал нажатия Stop: фаза получает его из эмиттера (`signalOn`) и отдаёт
+Фазы дальше зовут только контроллер: `spin()` — когда раунд начался, `spin(held)` — когда начался
+шаг респина, `await land(данные, anticipation, signal, stopSignal)` — когда известен кадр, на который
+садятся барабаны. Ядра и адаптера они не видят вовсе. `stopSignal` — сигнал нажатия Stop: фаза получает его из эмиттера (`signalOn`) и отдаёт
 вниз так же, как `signal` отмены. Сработавший до вызова сигнал проматывает посадку с первого кадра,
 сработавший по ходу — с момента нажатия.
 
@@ -425,13 +435,16 @@ async land(
 На старте барабан фиксирует стратегии раунда: свои из `ReelDef`, иначе текущие стратегии машины.
 Поэтому `setStrategies` посреди спина до текущего раунда не доходит.
 
+Барабан из `SpinOptions.held` машина не запускает: он остаётся в `idle` с теми слотами, на которые
+сел прошлый раунд.
+
 Каждый кадр `advanceSpin` двигает `offset` на `spinStrategy.step(...)`, копит `spunFrames` и
 пересчитывает позиции. Слот, сменивший круг, получает `getFillerValue(reel)` и `moving = true`.
 
 ### `land(options)` — посадка
 
-1. Барабан не в `spinning` — промис резолвится сразу.
-2. `landingStrategy.plan({ ...context, fromOffset, spunFrames, anticipation, anticipating })`
+1. Барабан не в `spinning` — промис резолвится сразу. Машина такие барабаны в посадку не передаёт.
+2. `landingStrategy.plan({ ...context, order, fromOffset, spunFrames, anticipation, anticipating })`
    считает расписание один раз.
 3. Каждый кадр `advanceLanding` берёт `plan.positionAt(elapsed)` и ставит `offset` в него.
    Шаг может быть **отрицательным** — на отскоке лента возвращается из-за точки посадки.
@@ -471,7 +484,7 @@ slot.moving = false
 ### Расписание `PlannedLandingStrategy`
 
 ```
-путь = оборот ленты + недокрученный минимум вращения + лесенка (index * staggerCells)
+путь = оборот ленты + недокрученный минимум вращения + лесенка (order * staggerCells)
        + паузы anticipation (anticipation * anticipationCells)
        + тормозной путь + хвост отскока + добор до границы ячейки
 
@@ -554,17 +567,17 @@ export const SLOT_TURBO_STRATEGIES: ReelStrategies = {
 | -------------------------- | --------------------------------- | ------------------------------------------------------------ | ------------------------------- |
 | Механика движения          | anticipation, held, каскад        | ядро: стратегия, метод или опция машины                      | данными раунда                  |
 | Режим игры со своей сеткой | Hold & Win                        | второй экземпляр `ReelsMachine` и `ReelsView` с конфигом игры | фазой автомата по данным раунда |
-| Настройка игрока           | турбо, force anticipation         | набор стратегий машины или флаг мока                         | чекбоксом настроек              |
+| Настройка игрока           | турбо, force anticipation/respin  | набор стратегий машины или флаг мока                         | чекбоксом настроек              |
 
 **Одна машина на сетку.** Механики движения совместимы между собой и включаются на раунд опциями
-вызова: `land({ anticipation })`, дальше `spin({ held })` и трансформация каскада.
+вызова: `land({ anticipation })`, `spin({ held })`, дальше трансформация каскада.
 Отдельная машина под сочетание механик не собирается: число сочетаний растёт перемножением, а
 подмена машины сбрасывает доску раунда — данные, позиции лент и view ячеек, на которые ссылаются
 оверлеи игры.
 
 **Механику раунда выбирает сервер**, клиент показывает её по данным раунда. Чекбокс демо включает
 механику через мок: флаг уходит в запрос спина, мок присылает раунд с механикой, код клиента не
-меняется. Так устроен force anticipation, по тому же образцу делаются force respin и force cascade.
+меняется. Так устроены force anticipation и force respin, по тому же образцу делается force cascade.
 
 **Вторая машина — только у режима со своей сеткой.** Hold & Win меняет геометрию (барабаны высотой
 1 на каждую ячейку), view ячейки (монета с номиналом) и счётчик респинов. Классы машины и адаптера
@@ -593,7 +606,7 @@ export const SLOT_TURBO_STRATEGIES: ReelStrategies = {
 | Slam stop              | есть    | `Reel.slam()`, точка промотки — `plan.settleFrames`  | —                                                                 |
 | Минимум вращения       | есть    | `minSpinFrames` у `PlannedLandingStrategy`           | —                                                                 |
 | Anticipation           | есть    | `LandOptions.anticipation`, `anticipationCells` у `PlannedLandingStrategy` | —                                           |
-| Held-барабаны, респин  | в плане | флаг удержания на раунд в `spin`, фаза `respin`      | `spin` и `land` уже работают на барабан                           |
+| Held-барабаны, респин  | есть    | `SpinOptions.held`, лесенка по `LandingContext.order`, фаза `respin` | —                                               |
 | Hold & Win-ячейки      | в плане | вторая машина из барабанов высотой 1, фаза фичи      | `rows` перекрывается в `ReelDef`                                  |
 | Каскады                | в плане | падение слотов своим движением, цикл фаз `result → cascade` | `Cell` отделена от `StripSlot` — точка расширения готова   |
 

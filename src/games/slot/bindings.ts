@@ -24,6 +24,7 @@ import { CreditLabelController } from './controllers/hud/credit-label'
 import { GameModeMinusButtonController } from './controllers/hud/game-mode-minus-button'
 import { GameModePanelController } from './controllers/hud/game-mode-panel'
 import { GameModePlusButtonController } from './controllers/hud/game-mode-plus-button'
+import { RespinCheckboxController } from './controllers/hud/respin-checkbox'
 import { SettingsButtonController } from './controllers/hud/settings-button'
 import { SettingsModalController } from './controllers/hud/settings-modal'
 import { SoundToggleButtonController } from './controllers/hud/sound-toggle-button'
@@ -35,6 +36,7 @@ import { SoundController } from './controllers/sound'
 import type { GameEvents } from './events'
 import { BootingPhase } from './phases/booting'
 import { IdlePhase } from './phases/idle'
+import { RespinPhase } from './phases/respin'
 import { ResultPhase } from './phases/result'
 import { SpinningPhase } from './phases/spinning'
 import { GameScene } from './scenes/game'
@@ -67,6 +69,7 @@ export const bindFlow = (container: Container): void => {
   container.bind(CORE_TOKENS.Phase).to(IdlePhase)
   container.bind(CORE_TOKENS.Phase).to(SpinningPhase)
   container.bind(CORE_TOKENS.Phase).to(ResultPhase)
+  container.bind(CORE_TOKENS.Phase).to(RespinPhase)
 }
 
 /** Картинка и звук: контроллеры и собирающая их сцена. */
@@ -187,6 +190,13 @@ const bindScene = (container: Container): void => {
   container
     .bind(SLOT_TOKENS.AnticipationCheckboxController)
     .to(AnticipationCheckboxController)
+    .onDeactivation((checkbox) => {
+      if (!checkbox.destroyed) checkbox.destroy({ children: true })
+    })
+
+  container
+    .bind(SLOT_TOKENS.RespinCheckboxController)
+    .to(RespinCheckboxController)
     .onDeactivation((checkbox) => {
       if (!checkbox.destroyed) checkbox.destroy({ children: true })
     })

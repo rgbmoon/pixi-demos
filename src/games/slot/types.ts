@@ -3,6 +3,7 @@ export const PhaseName = {
   idle: 'idle',
   spinning: 'spinning',
   result: 'result',
+  respin: 'respin',
 } as const
 
 export type PhaseName = (typeof PhaseName)[keyof typeof PhaseName]

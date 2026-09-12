@@ -13,6 +13,16 @@ const PaylineSchema = z.object({
 
 export type Payline = z.infer<typeof PaylineSchema>
 
+/** Шаг респина: удержанные барабаны, кадр после посадки и выигрыш этого кадра. */
+const RespinStepSchema = z.object({
+  held: z.array(z.number()),
+  frame: z.array(z.array(z.string<SymbolKey>())),
+  paylines: z.array(PaylineSchema),
+  win: z.number(),
+})
+
+export type RespinStep = z.infer<typeof RespinStepSchema>
+
 /** Трансформации раунда: дискриминированный по `type` список шагов, общий для `initGame` и `spin`. */
 const TransformationsSchema = z.array(
   z.discriminatedUnion('type', [
@@ -31,6 +41,10 @@ const TransformationsSchema = z.array(
     z.object({
       type: z.literal('anticipation'),
       value: z.array(z.number()),
+    }),
+    z.object({
+      type: z.literal('respins'),
+      value: z.array(RespinStepSchema),
     }),
     z.object({
       type: z.literal('multipliersInit'),
@@ -127,6 +141,8 @@ const SpinRequestSchema = z.object({
   gameMode: z.string(),
   /** Просит сервер о раунде с anticipation. */
   forceAnticipation: z.boolean().optional(),
+  /** Просит сервер о раунде с респином. */
+  forceRespin: z.boolean().optional(),
 })
 
 export type SpinRequest = z.infer<typeof SpinRequestSchema>

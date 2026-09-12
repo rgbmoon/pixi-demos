@@ -193,6 +193,18 @@ describe('SlotStore', () => {
       store.toggleAnticipationForced()
       expect(store.isAnticipationForced).toBe(true)
     })
+
+    it('переключают force respin только в idle', () => {
+      const store = createStore()
+
+      store.setPhase(PhaseName.respin)
+      store.toggleRespinForced()
+      expect(store.isRespinForced).toBe(false)
+
+      store.setPhase(PhaseName.idle)
+      store.toggleRespinForced()
+      expect(store.isRespinForced).toBe(true)
+    })
   })
 
   describe('шаги по спискам', () => {

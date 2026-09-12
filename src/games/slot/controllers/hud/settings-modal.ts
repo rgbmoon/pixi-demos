@@ -22,6 +22,7 @@ import { Modal } from 'src/games/slot/ui/hud/modal'
 
 import type { AnticipationCheckboxController } from './anticipation-checkbox'
 import type { GameModePanelController } from './game-mode-panel'
+import type { RespinCheckboxController } from './respin-checkbox'
 import type { TurboCheckboxController } from './turbo-checkbox'
 
 /**
@@ -35,6 +36,7 @@ export class SettingsModalController extends LiveContainer {
   private readonly gameModePanel: GameModePanelController
   private readonly turboCheckbox: TurboCheckboxController
   private readonly anticipationCheckbox: AnticipationCheckboxController
+  private readonly respinCheckbox: RespinCheckboxController
   private fadeAbort?: AbortController
 
   constructor(
@@ -43,6 +45,7 @@ export class SettingsModalController extends LiveContainer {
     @inject(SLOT_TOKENS.GameModePanelController) gameModePanel: GameModePanelController,
     @inject(SLOT_TOKENS.TurboCheckboxController) turboCheckbox: TurboCheckboxController,
     @inject(SLOT_TOKENS.AnticipationCheckboxController) anticipationCheckbox: AnticipationCheckboxController,
+    @inject(SLOT_TOKENS.RespinCheckboxController) respinCheckbox: RespinCheckboxController,
     @inject(SLOT_TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>
   ) {
     super()
@@ -51,6 +54,7 @@ export class SettingsModalController extends LiveContainer {
     this.gameModePanel = gameModePanel
     this.turboCheckbox = turboCheckbox
     this.anticipationCheckbox = anticipationCheckbox
+    this.respinCheckbox = respinCheckbox
 
     this.closeButton = new Button({
       variant: ButtonVariant.circle,
@@ -66,6 +70,7 @@ export class SettingsModalController extends LiveContainer {
     this.modal.addContent(gameModePanel)
     this.modal.addContent(turboCheckbox)
     this.modal.addContent(anticipationCheckbox)
+    this.modal.addContent(respinCheckbox)
     this.modal.addContent(this.closeButton)
 
     this.addChild(this.modal)
@@ -97,6 +102,7 @@ export class SettingsModalController extends LiveContainer {
     this.gameModePanel.position.set(this.modal.plateWidth / 2, MODAL_HEADER_HEIGHT + MODAL_PADDING + PANEL_HEIGHT / 2)
     this.turboCheckbox.position.set(this.modal.plateWidth / 2, turboY)
     this.anticipationCheckbox.position.set(this.modal.plateWidth / 2, turboY + MODAL_ROW_GAP + CHECKBOX_SIZE)
+    this.respinCheckbox.position.set(this.modal.plateWidth / 2, turboY + 2 * (MODAL_ROW_GAP + CHECKBOX_SIZE))
   }
 
   /**

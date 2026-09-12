@@ -35,9 +35,9 @@ export class SpinningPhase implements Phase<PhaseName> {
   }
 
   async enter(signal: AbortSignal): Promise<typeof PhaseName.idle | typeof PhaseName.result> {
-    const { bet, gameMode, isAnticipationForced } = this.slotStore
-    // Доска до спина: на неё барабаны вернутся, если сервер не ответит
-    const board = this.slotStore.spinSymbols ?? this.slotStore.initialSymbols
+    const { bet, gameMode, isAnticipationForced, isRespinForced } = this.slotStore
+    // Доска до спина — кадр последнего шага прошлого раунда: на неё барабаны вернутся, если сервер не ответит
+    const board = this.slotStore.stepSymbols ?? this.slotStore.initialSymbols
     // Прошлый ответ сервера: его балансом закрывается серия, если спин провалится
     const previousResult = this.slotStore.spinResult
     // Stop принимается, пока идёт фаза: сигнал Stop и его подписку снимает scope
@@ -63,7 +63,10 @@ export class SpinningPhase implements Phase<PhaseName> {
       let result: SpinResult
 
       try {
-        result = await this.api.spin({ bet, gameMode, forceAnticipation: isAnticipationForced }, signal)
+        result = await this.api.spin(
+          { bet, gameMode, forceAnticipation: isAnticipationForced, forceRespin: isRespinForced },
+          signal
+        )
       } catch (error) {
         // Отмена — не провал раунда: её разбирает движок, откатывать ставку остановленному автомату незачем
         if (signal.aborted) {

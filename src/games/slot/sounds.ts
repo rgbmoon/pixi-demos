@@ -112,6 +112,20 @@ export const SLOT_SOUNDS = {
       },
     ],
   },
+  /** Старт респина: два восходящих тона над коротким шумом, отличают его от старта платного спина. */
+  respinStart: {
+    voices: [
+      { ...CHIME_VOICE, frequency: E5, duration: 0.12, gain: 0.1 },
+      { ...CHIME_VOICE, frequency: B5, duration: 0.18, gain: 0.1, delay: 0.08 },
+      {
+        wave: 'noise',
+        attack: 0.01,
+        duration: 0.1,
+        gain: 0.03,
+        filter: { type: 'bandpass', frequency: 1400, q: 0.8 },
+      },
+    ],
+  },
   /**
    * Удар посадки барабана: низкое тело для наушников, треугольник и щелчок шума для динамика
    * телефона. Одновременная посадка (slam, турбо) схлопывается `cooldown` в один удар.

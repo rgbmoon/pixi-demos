@@ -12,7 +12,7 @@ export class WinFrame extends Container {
 
     const frame = new Graphics()
       .rect(-width / 2, -height / 2, width, height)
-      .stroke({ width: WIN_FRAME_THICKNESS, color: PALETTE.cyan })
+      .stroke({ width: WIN_FRAME_THICKNESS, color: PALETTE.orange })
 
     this.visible = false
     this.addChild(frame)

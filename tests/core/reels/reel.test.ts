@@ -254,6 +254,53 @@ describe('Reel', () => {
     expect(stopFrames[4]).toBeGreaterThan(stopFrames[3])
   })
 
+  it('не трогает удержанные барабаны и сажает остальные на данные шага', async () => {
+    const held = [1, 3]
+    const board = createGrid()
+    // Сервер повторяет удержанные колонки, остальные получают новые значения
+    const step = board.map((column, reel) => (held.includes(reel) ? column : column.map((value) => `next-${value}`)))
+    const machine = createMachine()
+    const landed: number[] = []
+
+    machine.setData(board)
+    machine.reset()
+
+    const heldStrips = held.map((reel) => machine.getReel(reel)?.getStrip().map((slot) => ({ ...slot })))
+
+    machine.spin({ held })
+    machine.advance(25)
+    machine.setData(step)
+
+    const landing = machine.land({ onReelLanded: (reel) => landed.push(reel) })
+
+    advanceUntilIdle(machine)
+    await landing
+
+    expect(readVisibleGrid(machine)).toEqual(step)
+    expect(held.map((reel) => machine.getReel(reel)?.getStrip())).toEqual(heldStrips)
+    // Удержанный барабан не садился: объявлять его посадку нечего
+    expect(landed).toEqual([0, 2, 4])
+  })
+
+  it('начинает лесенку с первого крутящегося барабана', () => {
+    const baseline = createMachine()
+    const heldMachine = createMachine()
+
+    baseline.spin()
+    heldMachine.spin({ held: [0, 1] })
+
+    const [baselineStops, heldStops] = [baseline, heldMachine].map((machine) => {
+      machine.advance(25)
+      machine.setData(createGrid())
+      void machine.land()
+
+      return recordStopFrames(machine)
+    })
+
+    expect(heldStops[2]).toBe(baselineStops[0])
+    expect(heldStops[3]).toBe(baselineStops[1])
+  })
+
   it('не меняет движение текущего раунда при смене стратегий посреди спина', async () => {
     const grid = createGrid()
     const baseline = createMachine()

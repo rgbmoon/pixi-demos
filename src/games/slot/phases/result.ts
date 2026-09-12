@@ -12,7 +12,8 @@ import { TURBO_WIN_SHOWCASE_MS, WIN_DISPLAY_MS } from '../constants'
 
 
 /**
- * Фаза показа результата: барабаны уже стоят, фаза выставляет выигрыш, показывает линии и закрывает раунд.
+ * Фаза показа результата: барабаны уже стоят, фаза выставляет выигрыш шага, показывает линии и закрывает раунд.
+ * Пока в ответе есть следующий шаг респина, возвращает раунд в `respin`.
  * В турбо-серии возвращает раунд в `spinning`, пока спин зажат и хватает на ставку.
  */
 @injectable()
@@ -36,22 +37,30 @@ export class ResultPhase implements Phase<PhaseName> {
     this.ticker = ticker
   }
 
-  async enter(signal: AbortSignal): Promise<typeof PhaseName.idle | typeof PhaseName.spinning> {
+  async enter(
+    signal: AbortSignal
+  ): Promise<typeof PhaseName.idle | typeof PhaseName.spinning | typeof PhaseName.respin> {
     const { spinResult: result } = this.slotStore
 
     if (!result) {
       return PhaseName.idle
     }
 
-    // Сумма встаёт в WinLabelController до анимаций линий и висит там, пока раунд не закроется; в серии она копится
-    if (this.slotStore.isTurboSeries) {
-      this.slotStore.accrueWin(this.slotStore.spinWin)
+    // Сумма встаёт в WinLabelController до анимаций линий и висит там, пока раунд не закроется;
+    // шаги респина и спины серии её копят
+    if (this.slotStore.isTurboSeries || this.slotStore.currentRespin) {
+      this.slotStore.accrueWin(this.slotStore.stepWin)
     } else {
-      this.slotStore.setWin(this.slotStore.spinWin)
+      this.slotStore.setWin(this.slotStore.stepWin)
     }
 
-    if (this.slotStore.spinPaylines.length > 0) {
+    if (this.slotStore.stepPaylines.length > 0) {
       await this.presentWin(signal)
+    }
+
+    // Баланс ответа включает все шаги: раунд закрывается только после последнего
+    if (this.slotStore.nextRespin) {
+      return PhaseName.respin
     }
 
     if (!this.slotStore.isTurboSeries) {

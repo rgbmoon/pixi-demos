@@ -76,4 +76,24 @@ test.describe('раунд', () => {
 
     await expect(spin).toBeVisible({ timeout: 30_000 })
   })
+
+  test('проводит раунд с респином через все шаги до нового покоя', async ({ page }) => {
+    // Каждый шаг респина — своя посадка и свой показ выигрыша: раунд длиннее обычного спина
+    test.setTimeout(90_000)
+
+    await page.goto('/slot?scenario=respin&seed=1')
+
+    await expect(page.getByRole('status', { name: 'Loading game' })).toBeHidden({ timeout: 30_000 })
+
+    await page.keyboard.press('Tab')
+
+    const spin = page.getByRole('button', { name: 'Spin' })
+
+    await expect(spin).toBeVisible()
+    await spin.dispatchEvent('click')
+
+    // Спин недоступен до конца последнего шага: между шагами раунд не возвращается в покой
+    await expect(spin).toBeHidden()
+    await expect(spin).toBeVisible({ timeout: 60_000 })
+  })
 })

@@ -1,4 +1,4 @@
-import type { SpinResult } from 'src/games/slot/api/slot'
+import type { RespinStep, SpinResult } from 'src/games/slot/api/slot'
 
 /**
  * Карта событий игры: имя события → тип его payload. Единственное место, где заводятся имена, —
@@ -17,4 +17,6 @@ export type GameEvents = {
   'reel:anticipationStarted': { reel: number }
   'credit:toppedUp': void
   'spin:landed': SpinResult
+  'respin:started': { held: readonly number[] }
+  'respin:landed': RespinStep
 }

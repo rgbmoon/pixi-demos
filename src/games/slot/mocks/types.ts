@@ -1,7 +1,7 @@
 import type { Random } from 'src/core/types'
 import type { SpinResult } from 'src/games/slot/api/slot'
 
-export type SpinRequestPayload = { bet: number; gameMode: string; forceAnticipation: boolean }
+export type SpinRequestPayload = { bet: number; gameMode: string; forceAnticipation: boolean; forceRespin: boolean }
 
 /** Форсирование исхода раунда: стандартный инструмент прогонов и e2e. */
 export const MockScenario = {
@@ -9,6 +9,7 @@ export const MockScenario = {
   bigwin: 'bigwin',
   nowin: 'nowin',
   anticipation: 'anticipation',
+  respin: 'respin',
   error: 'error',
 } as const
 

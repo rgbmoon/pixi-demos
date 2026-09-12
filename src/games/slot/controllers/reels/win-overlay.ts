@@ -17,7 +17,7 @@ export class WinOverlayController extends LiveContainer {
   private readonly ticker: GameTicker
   private readonly paylinesController: PaylinesController
   private readonly overlay = new WinOverlay()
-  private paylines: SlotStore['spinPaylines'] = []
+  private paylines: SlotStore['stepPaylines'] = []
 
   constructor(ticker: GameTicker, slotStore: SlotStore, paylinesController: PaylinesController) {
     super()
@@ -28,9 +28,9 @@ export class WinOverlayController extends LiveContainer {
     this.addChild(this.overlay)
 
     this.watch(
-      () => slotStore.spinPaylines,
-      (spinPaylines) => {
-        this.paylines = spinPaylines
+      () => slotStore.stepPaylines,
+      (stepPaylines) => {
+        this.paylines = stepPaylines
       },
       {
         fireImmediately: true,
