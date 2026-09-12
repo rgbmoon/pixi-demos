@@ -1,7 +1,7 @@
 import { injectable } from 'inversify'
 import { action, computed, makeObservable, observable } from 'mobx'
 import { readStoredFlag, writeStoredFlag } from 'src/core/storage'
-import type { GameInitResult, Payline, RoundTransformation, SpinResult } from 'src/games/slot/api/slot'
+import type { GameInitResult, Payline, RespinStep, RoundTransformation, SpinResult } from 'src/games/slot/api/slot'
 import { DEFAULT_GAME_MODE, INITIAL_PHASE, SOUND_STORAGE_KEY } from 'src/games/slot/constants'
 import { PhaseName, StepDirection, type SymbolKey } from 'src/games/slot/types'
 
@@ -20,6 +20,8 @@ export class SlotStore {
   @observable isTurboEnabled = false
   /** Настройка игрока: каждый спин просит сервер о раунде с anticipation. */
   @observable isAnticipationForced = false
+  /** Настройка игрока: каждый спин просит сервер о раунде с респином. */
+  @observable isRespinForced = false
   /** Ввод игрока: кнопка спина зажата дольше порога удержания. Пишет кнопка, отпускание принимается в любой фазе. */
   @observable isSpinHeld = false
   /** Идёт турбо-серия: выигрыши копятся в `win` и уходят в кредит по её закрытию. Пишет автомат. */
@@ -29,6 +31,8 @@ export class SlotStore {
   @observable gameMode: string = DEFAULT_GAME_MODE
   @observable credit = 0
   @observable win = 0
+  /** Шаг раунда: 0 — базовый спин, n — n-й респин из ответа сервера. Пишет автомат. */
+  @observable roundStep = 0
 
   // Ответы сервера как есть: их кладут фазы, стор ничего не пересчитывает
   @observable.ref init: GameInitResult | null = null
@@ -65,9 +69,9 @@ export class SlotStore {
     return this.phase === PhaseName.idle
   }
 
-  /** Барабаны в движении: фаза `spinning` длится от старта прокрутки до посадки. */
+  /** Барабаны в движении: фазы `spinning` и `respin` длятся от старта прокрутки до посадки. */
   @computed get isSpinning(): boolean {
-    return this.phase === PhaseName.spinning
+    return this.phase === PhaseName.spinning || this.phase === PhaseName.respin
   }
 
   /** Хватает ли кредита на ставку. */
@@ -96,6 +100,10 @@ export class SlotStore {
   }
 
   @computed get canToggleAnticipationForced(): boolean {
+    return this.isIdle
+  }
+
+  @computed get canToggleRespinForced(): boolean {
     return this.isIdle
   }
 
@@ -135,9 +143,42 @@ export class SlotStore {
     return this.isTurboEnabled ? [] : this.spinAnticipation
   }
 
-  /** Выигрыш раунда, в котором была пауза anticipation: его показ отличается от обычного. */
+  /** Выигрыш базового спина, в котором была пауза anticipation: его показ отличается от обычного. */
   @computed get isAnticipationWin(): boolean {
-    return this.spinWin > 0 && this.presentedAnticipation.length > 0
+    return !this.currentRespin && this.spinWin > 0 && this.presentedAnticipation.length > 0
+  }
+
+  /** Шаги респина из ответа сервера по порядку. */
+  @computed get spinRespins(): RespinStep[] {
+    return this.spinTransformations.find((transformation) => transformation.type === 'respins')?.value ?? []
+  }
+
+  /** Респин, который показывают барабаны; на базовом спине его нет. */
+  @computed get currentRespin(): RespinStep | undefined {
+    return this.roundStep > 0 ? this.spinRespins[this.roundStep - 1] : undefined
+  }
+
+  /** Следующий шаг респина раунда, если сервер его прислал. */
+  @computed get nextRespin(): RespinStep | undefined {
+    return this.spinRespins[this.roundStep]
+  }
+
+  /** Сетка текущего шага раунда: кадр респина или базового спина. */
+  @computed get stepSymbols(): SymbolKey[][] | undefined {
+    return this.currentRespin?.frame ?? this.spinSymbols
+  }
+
+  @computed get stepPaylines(): Payline[] {
+    return this.currentRespin?.paylines ?? this.spinPaylines
+  }
+
+  @computed get stepWin(): number {
+    return this.currentRespin?.win ?? this.spinWin
+  }
+
+  /** Барабаны, удержанные на текущем респине; по закрытии раунда список пуст. */
+  @computed get heldReels(): number[] {
+    return this.isIdle ? [] : (this.currentRespin?.held ?? [])
   }
 
   /** Доступен ли шаг по списку ставок: вне idle, при открытой модалке и за краями списка — нет. */
@@ -189,6 +230,12 @@ export class SlotStore {
   /** Гасит результат прошлого раунда перед новым запросом, чтобы вью не показывал устаревшие данные. */
   @action clearSpin() {
     this.spinResult = null
+    this.roundStep = 0
+  }
+
+  /** Переводит раунд на следующий шаг респина. */
+  @action advanceRoundStep() {
+    this.roundStep += 1
   }
 
   @action stepBet(direction: StepDirection) {
@@ -251,6 +298,12 @@ export class SlotStore {
     if (!this.canToggleAnticipationForced) return
 
     this.isAnticipationForced = !this.isAnticipationForced
+  }
+
+  @action toggleRespinForced() {
+    if (!this.canToggleRespinForced) return
+
+    this.isRespinForced = !this.isRespinForced
   }
 
   @action holdSpin() {

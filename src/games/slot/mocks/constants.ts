@@ -74,5 +74,11 @@ export const WIN_PROBABILITY = 0.5
 export const ANTICIPATION_SCATTERS = 2
 /** Вероятность третьего скаттера в сценарии `anticipation`. */
 export const ANTICIPATION_HIT_PROBABILITY = 0.5
+/** Вероятность вайлда в случайном раунде: каждый вайлд удерживает свой барабан и запускает респин. */
+export const RESPIN_PROBABILITY = 0.1
+/** Вероятность нового вайлда на шаге респина: он продлевает цепочку. */
+export const RESPIN_WILD_PROBABILITY = 0.5
+/** Предел шагов респина в одном раунде. */
+export const MAX_RESPINS = 3
 export const REELS = 5
 export const ROWS = 3

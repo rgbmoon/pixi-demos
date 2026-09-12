@@ -29,6 +29,7 @@ const createContext = (
   anticipating = false
 ): LandingContext => ({
   index,
+  order: index,
   rows: ROWS,
   buffer: BUFFER,
   cellHeight: CELL_HEIGHT,

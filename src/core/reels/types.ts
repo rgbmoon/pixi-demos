@@ -46,6 +46,8 @@ export type LandingPlan = {
 }
 
 export type LandingContext = ReelContext & {
+  /** Место барабана в лесенке посадки: номер среди садящихся барабанов раунда. */
+  readonly order: number
   /** Позиция ленты в момент начала посадки. */
   readonly fromOffset: number
   /** Сколько кадров барабан крутился до начала посадки. */
@@ -59,12 +61,20 @@ export type LandingContext = ReelContext & {
 /** Настройки посадки одного барабана. */
 export type ReelLandOptions = {
   readonly signal?: AbortSignal
+  /** Место барабана в лесенке посадки; по умолчанию — его индекс. */
+  readonly order?: number
   /** Число пауз anticipation до посадки барабана, включая его собственную. */
   readonly anticipation?: number
   /** У барабана есть собственная пауза anticipation. */
   readonly anticipating?: boolean
   /** Зовётся синхронно из `advance`, когда барабан вошёл в собственную паузу; после `slam` не зовётся. */
   readonly onAnticipated?: () => void
+}
+
+/** Настройки прокрутки машины на раунд. */
+export type SpinOptions = {
+  /** Индексы удержанных барабанов: на этот раунд они не крутятся. */
+  readonly held?: readonly number[]
 }
 
 /** Настройки посадки машины на раунд. */

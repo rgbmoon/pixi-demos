@@ -13,6 +13,7 @@ import type { SymbolKey } from 'src/games/slot/types'
 import { AnticipationGlowFrame } from 'src/games/slot/ui/reels/anticipation-glow-frame'
 import { ReelsBoard } from 'src/games/slot/ui/reels/reels-board'
 
+import { HeldFrameController } from './held-frame'
 import { PaylinesController } from './paylines'
 import { WinOverlayController } from './win-overlay'
 
@@ -26,6 +27,7 @@ export class ReelsMachineController extends LiveContainer {
   private readonly machine: ReelsMachine<SlotReelsData, SymbolKey>
   private readonly board: ReelsBoard
   private readonly anticipationGlowFrame: AnticipationGlowFrame
+  private readonly heldFrame: HeldFrameController
   private readonly paylines: PaylinesController
   private readonly winOverlay: WinOverlayController
 
@@ -43,10 +45,12 @@ export class ReelsMachineController extends LiveContainer {
     this.board = new ReelsBoard(ticker, this.machine, pool)
 
     this.anticipationGlowFrame = new AnticipationGlowFrame(ticker)
+    this.heldFrame = new HeldFrameController(ticker, slotStore)
     this.paylines = new PaylinesController(ticker, slotStore)
     this.winOverlay = new WinOverlayController(ticker, slotStore, this.paylines)
 
     this.board.addOverlay(this.anticipationGlowFrame)
+    this.board.addOverlay(this.heldFrame)
     this.board.addOverlay(this.winOverlay)
     // После вин оверлея: линия пересекает поднятый выигравший символ и должна идти поверх него
     this.board.addOverlay(this.paylines)
@@ -75,8 +79,9 @@ export class ReelsMachineController extends LiveContainer {
     this.machine.reset()
   }
 
-  spin(): void {
-    this.machine.spin()
+  /** Запускает прокрутку; барабаны из `held` остаются на месте до конца раунда. */
+  spin(held: readonly number[] = []): void {
+    this.machine.spin({ held })
   }
 
   /**

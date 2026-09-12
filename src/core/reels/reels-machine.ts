@@ -2,7 +2,7 @@ import type { Cell } from './cell'
 import { DEFAULT_BUFFER } from './constants'
 import { Reel } from './reel'
 import { Row } from './row'
-import type { CellIndex, LandOptions, ReelDef, ReelOptions, ReelsConfig, ReelStrategies } from './types'
+import type { CellIndex, LandOptions, ReelDef, ReelOptions, ReelsConfig, ReelStrategies, SpinOptions } from './types'
 import { ReelPhase } from './types'
 
 /**
@@ -81,24 +81,30 @@ export class ReelsMachine<TData, TValue> {
     }
   }
 
-  spin(): void {
+  /** Запускает прокрутку всех барабанов, кроме удержанных: те остаются в покое до конца раунда. */
+  spin(options: SpinOptions = {}): void {
+    const { held = [] } = options
+
     for (const reel of this.reels) {
-      reel.spin()
+      if (!held.includes(reel.index)) reel.spin()
     }
   }
 
   /**
-   * Сажает все барабаны. Барабан получает паузу за каждый барабан anticipation слева от себя и за
+   * Сажает крутящиеся барабаны; лесенка считается по их порядку, удержанные в ней не участвуют.
+   * Барабан получает паузу за каждый барабан anticipation слева от себя и за
    * себя, если он в списке: так он не встанет раньше соседа, который ещё ждёт. Собственная пауза
    * есть только у барабанов из списка — о входе в неё сообщает `onReelAnticipated`.
    */
   async land(options: LandOptions = {}): Promise<void> {
     const { signal, anticipation = [], onReelLanded, onReelAnticipated } = options
+    const spinning = this.reels.filter((reel) => reel.getPhase() === ReelPhase.spinning)
 
     await Promise.all(
-      this.reels.map(async (reel) => {
+      spinning.map(async (reel, order) => {
         await reel.land({
           signal,
+          order,
           anticipation: anticipation.filter((index) => index <= reel.index).length,
           anticipating: anticipation.includes(reel.index),
           onAnticipated: () => onReelAnticipated?.(reel.index),

@@ -6,7 +6,7 @@ import type { PlannedLandingOptions } from './types'
 
 /**
  * Расписание посадки из трёх участков: равномерный ход, линейное торможение и отскок.
- * Путь складывается из оборота ленты, недокрученного минимума вращения, лесенки по номеру барабана,
+ * Путь складывается из оборота ленты, недокрученного минимума вращения, лесенки по месту барабана в посадке,
  * пауз anticipation, тормозного пути и хвоста отскока, а остаток докручивается до границы ячейки. Позиция берётся из
  * расписания по накопленным кадрам, поэтому границы отрезков точны при любой частоте кадров.
  */
@@ -33,7 +33,7 @@ export class PlannedLandingStrategy implements LandingStrategy {
       minSpinFrames = 0,
       anticipationCells = 0,
     } = this.options
-    const { fromOffset, spunFrames, anticipation, anticipating, index, cellHeight, stripHeight } = context
+    const { fromOffset, spunFrames, anticipation, anticipating, order, cellHeight, stripHeight } = context
 
     const easeDistance = easeCells * cellHeight
     // Барабан, пойманный раньше минимума, докручивает недостающие кадры на круизе
@@ -44,7 +44,7 @@ export class PlannedLandingStrategy implements LandingStrategy {
     const plannedDistance =
       stripHeight +
       minSpinDistance +
-      index * staggerCells * cellHeight +
+      order * staggerCells * cellHeight +
       anticipationDistance +
       this.brakeDistance +
       easeDistance

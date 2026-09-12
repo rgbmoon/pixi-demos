@@ -46,6 +46,8 @@ export class SoundController extends LiveContainer {
     this.listen(emitter, 'reel:landed', this.handleReelLanded)
     this.listen(emitter, 'reel:anticipationStarted', this.handleAnticipationStarted)
     this.listen(emitter, 'spin:landed', this.handleSpinLanded)
+    this.listen(emitter, 'respin:started', this.handleRespinStarted)
+    this.listen(emitter, 'respin:landed', this.handleSpinLanded)
     this.listen(emitter, 'credit:toppedUp', () => synth.play(SLOT_SOUNDS.creditTopUp))
 
     // Фаза покидает spinning и при провале запроса, где spin:landed не эмитится
@@ -75,9 +77,24 @@ export class SoundController extends LiveContainer {
 
     this.synth.play(isTurboEnabled ? SLOT_SOUNDS.turboSpinStart : SLOT_SOUNDS.spinStart)
 
+    this.startSpinLoop(0)
+  }
+
+  /** Удержанные барабаны не садятся: гул стихает только по крутящимся. */
+  private handleRespinStarted = ({ held }: GameEvents['respin:started']): void => {
+    this.synth.play(SLOT_SOUNDS.respinStart)
+
+    this.startSpinLoop(held.length)
+  }
+
+  /** Запускает гул вращения с уровнем по числу уже стоящих барабанов. */
+  private startSpinLoop(landedReels: number): void {
     this.stopSpinLoop()
-    this.spinLoop = this.synth.startLoop(isTurboEnabled ? SLOT_LOOPS.turboSpin : SLOT_LOOPS.spin)
-    this.landedReels = 0
+    this.spinLoop = this.synth.startLoop(this.slotStore.isTurboEnabled ? SLOT_LOOPS.turboSpin : SLOT_LOOPS.spin)
+    this.landedReels = landedReels
+
+    // Без удержанных уровень полный: setLevel перебил бы нарастание fadeIn
+    if (landedReels > 0) this.spinLoop?.setLevel(1 - landedReels / REELS_COUNT)
   }
 
   /** Удар посадки выше на каждом следующем барабане, гул стихает по мере посадки. */
@@ -98,11 +115,11 @@ export class SoundController extends LiveContainer {
     this.anticipatedReel = reel
   }
 
-  /** Выигрыш озвучивается по сумме спина из стора: в турбо коротко, после anticipation мелодией, иначе по крупности. */
+  /** Выигрыш озвучивается по сумме шага из стора: в турбо коротко, после anticipation мелодией, иначе по крупности. */
   private handleSpinLanded = (): void => {
-    const { spinWin, bet, isTurboEnabled, isAnticipationWin } = this.slotStore
+    const { stepWin, bet, isTurboEnabled, isAnticipationWin } = this.slotStore
 
-    if (spinWin <= 0) return
+    if (stepWin <= 0) return
 
     if (isTurboEnabled) {
       this.synth.play(SLOT_SOUNDS.turboWin)
@@ -116,7 +133,7 @@ export class SoundController extends LiveContainer {
       return
     }
 
-    this.synth.play(spinWin >= bet * BIG_WIN_MULTIPLIER ? SLOT_SOUNDS.winBig : SLOT_SOUNDS.winSmall)
+    this.synth.play(stepWin >= bet * BIG_WIN_MULTIPLIER ? SLOT_SOUNDS.winBig : SLOT_SOUNDS.winSmall)
   }
 
   private stopSpinLoop(): void {

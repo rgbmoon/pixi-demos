@@ -15,7 +15,8 @@ export type ReelsStub = {
 
 /**
  * Дублёр контроллера барабанов поверх настоящей модели: `land` действительно прокручивает
- * ленты и сажает их на данные раунда, только синхронно и без рендера. Сработавший `stopSignal`
+ * ленты и сажает их на данные раунда, только синхронно и без рендера. Прокрутка с удержанными
+ * барабанами отмечается в журнале как `respin`. Сработавший `stopSignal`
  * проматывает посадку настоящим `slam` и отмечается в журнале.
  * Методы презентации резолвятся сразу и отмечаются в журнале.
  */
@@ -23,9 +24,9 @@ export const createReelsStub = (log: PresentationLog): ReelsMachineController & 
   const machine = createMachine()
 
   const stub = {
-    spin: () => {
-      log.push('spin')
-      machine.spin()
+    spin: (held: readonly number[] = []) => {
+      log.push(held.length > 0 ? 'respin' : 'spin')
+      machine.spin({ held })
     },
     land: async (
       symbolKeys: SlotReelsData | undefined,

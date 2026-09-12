@@ -11,6 +11,7 @@ import type { CreditLabelController } from './controllers/hud/credit-label'
 import type { GameModeMinusButtonController } from './controllers/hud/game-mode-minus-button'
 import type { GameModePanelController } from './controllers/hud/game-mode-panel'
 import type { GameModePlusButtonController } from './controllers/hud/game-mode-plus-button'
+import type { RespinCheckboxController } from './controllers/hud/respin-checkbox'
 import type { SettingsButtonController } from './controllers/hud/settings-button'
 import type { SettingsModalController } from './controllers/hud/settings-modal'
 import type { SoundToggleButtonController } from './controllers/hud/sound-toggle-button'
@@ -39,6 +40,7 @@ export const SLOT_TOKENS = {
   AnticipationCheckboxController: Symbol(
     'AnticipationCheckboxController'
   ) as ServiceIdentifier<AnticipationCheckboxController>,
+  RespinCheckboxController: Symbol('RespinCheckboxController') as ServiceIdentifier<RespinCheckboxController>,
   BetPlusButtonController: Symbol('BetPlusButtonController') as ServiceIdentifier<BetPlusButtonController>,
   BetMinusButtonController: Symbol('BetMinusButtonController') as ServiceIdentifier<BetMinusButtonController>,
   BetPanelController: Symbol('BetPanelController') as ServiceIdentifier<BetPanelController>,
