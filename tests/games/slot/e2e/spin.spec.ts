@@ -1,17 +1,12 @@
 import { expect, test } from '@playwright/test'
 
+import { openGame } from '../../../setup/game-page'
+
 test.describe('раунд', () => {
   test('проводит спин от нажатия до нового покоя', async ({ page }) => {
-    await page.goto('/slot?scenario=bigwin&seed=1')
+    const spin = await openGame(page, '?scenario=bigwin&seed=1')
 
-    await expect(page.getByRole('status', { name: 'Loading game' })).toBeHidden({ timeout: 30_000 })
-
-    // Слой доступности PIXI поднимается по Tab; указатель его DOM-кнопки не принимают, поэтому клик диспатчим напрямую
-    await page.keyboard.press('Tab')
-
-    const spin = page.getByRole('button', { name: 'Spin' })
-
-    await expect(spin).toBeVisible()
+    // Указатель DOM-кнопки слоя доступности не принимают, поэтому клик диспатчим напрямую
     await spin.dispatchEvent('click')
 
     // Пока раунд идёт, спин недоступен; по его закрытии кнопка возвращается
@@ -20,13 +15,7 @@ test.describe('раунд', () => {
   })
 
   test('останавливает барабаны по Stop и доводит раунд до покоя', async ({ page }) => {
-    await page.goto('/slot?scenario=bigwin&seed=1')
-
-    await expect(page.getByRole('status', { name: 'Loading game' })).toBeHidden({ timeout: 30_000 })
-
-    await page.keyboard.press('Tab')
-
-    const spin = page.getByRole('button', { name: 'Spin' })
+    const spin = await openGame(page, '?scenario=bigwin&seed=1')
     const stop = page.getByRole('button', { name: 'Stop' })
 
     await spin.dispatchEvent('click')
@@ -40,17 +29,11 @@ test.describe('раунд', () => {
   })
 
   test('в турбо-режиме крутит серию, пока спин зажат, и возвращается в покой после отпускания', async ({ page }) => {
-    await page.goto('/slot?scenario=bigwin&seed=1')
-
-    await expect(page.getByRole('status', { name: 'Loading game' })).toBeHidden({ timeout: 30_000 })
-
-    await page.keyboard.press('Tab')
+    const spin = await openGame(page, '?scenario=bigwin&seed=1')
 
     await page.getByRole('button', { name: 'Settings' }).dispatchEvent('click')
     await page.getByRole('button', { name: 'TURBO SPIN' }).dispatchEvent('click')
     await page.getByRole('button', { name: 'Close settings' }).dispatchEvent('click')
-
-    const spin = page.getByRole('button', { name: 'Spin', exact: true })
 
     await expect(spin).toBeVisible()
 
@@ -81,15 +64,8 @@ test.describe('раунд', () => {
     // Каждый шаг респина — своя посадка и свой показ выигрыша: раунд длиннее обычного спина
     test.setTimeout(90_000)
 
-    await page.goto('/slot?scenario=respin&seed=1')
+    const spin = await openGame(page, '?scenario=respin&seed=1')
 
-    await expect(page.getByRole('status', { name: 'Loading game' })).toBeHidden({ timeout: 30_000 })
-
-    await page.keyboard.press('Tab')
-
-    const spin = page.getByRole('button', { name: 'Spin' })
-
-    await expect(spin).toBeVisible()
     await spin.dispatchEvent('click')
 
     // Спин недоступен до конца последнего шага: между шагами раунд не возвращается в покой
@@ -101,15 +77,8 @@ test.describe('раунд', () => {
     // Бонус — вход, серия шагов и сбор монет: раунд длиннее респина
     test.setTimeout(120_000)
 
-    await page.goto('/slot?scenario=holdwin&seed=1')
+    const spin = await openGame(page, '?scenario=holdwin&seed=1')
 
-    await expect(page.getByRole('status', { name: 'Loading game' })).toBeHidden({ timeout: 30_000 })
-
-    await page.keyboard.press('Tab')
-
-    const spin = page.getByRole('button', { name: 'Spin' })
-
-    await expect(spin).toBeVisible()
     await spin.dispatchEvent('click')
 
     // Спин недоступен, пока идёт бонус: между шагами раунд не возвращается в покой

@@ -8,6 +8,8 @@ export default defineConfig({
   testDir: './tests',
   // Только спеки: рядом лежат тесты vitest, и без этого Playwright забрал бы и их
   testMatch: '**/*.spec.ts',
+  // Бутстрап игры и раунд ждут до 30 с каждый: дефолтные 30 с на тест не вмещают их вместе
+  timeout: 60_000,
   fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
