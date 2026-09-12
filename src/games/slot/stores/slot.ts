@@ -1,9 +1,17 @@
 import { injectable } from 'inversify'
 import { action, computed, makeObservable, observable } from 'mobx'
 import { readStoredFlag, writeStoredFlag } from 'src/core/storage'
-import type { GameInitResult, Payline, RespinStep, RoundTransformation, SpinResult } from 'src/games/slot/api/slot'
+import type {
+  GameInitResult,
+  HoldWin,
+  HoldWinStep,
+  Payline,
+  RespinStep,
+  RoundTransformation,
+  SpinResult,
+} from 'src/games/slot/api/slot'
 import { DEFAULT_GAME_MODE, INITIAL_PHASE, SOUND_STORAGE_KEY } from 'src/games/slot/constants'
-import { PhaseName, StepDirection, type SymbolKey } from 'src/games/slot/types'
+import { type CoinValue, ForcedMechanic, PhaseName, StepDirection, type SymbolKey } from 'src/games/slot/types'
 
 @injectable()
 export class SlotStore {
@@ -18,10 +26,8 @@ export class SlotStore {
   @observable isSoundOn = readStoredFlag(SOUND_STORAGE_KEY, true)
   /** Настройка игрока: турбо-режим — быстрые спины по тапу и серия по удержанию спина. */
   @observable isTurboEnabled = false
-  /** Настройка игрока: каждый спин просит сервер о раунде с anticipation. */
-  @observable isAnticipationForced = false
-  /** Настройка игрока: каждый спин просит сервер о раунде с респином. */
-  @observable isRespinForced = false
+  /** Настройка игрока: механика, о которой каждый спин просит сервер; `null` — раунд без заказа. */
+  @observable forcedMechanic: ForcedMechanic | null = null
   /** Ввод игрока: кнопка спина зажата дольше порога удержания. Пишет кнопка, отпускание принимается в любой фазе. */
   @observable isSpinHeld = false
   /** Идёт турбо-серия: выигрыши копятся в `win` и уходят в кредит по её закрытию. Пишет автомат. */
@@ -33,6 +39,10 @@ export class SlotStore {
   @observable win = 0
   /** Шаг раунда: 0 — базовый спин, n — n-й респин из ответа сервера. Пишет автомат. */
   @observable roundStep = 0
+  /** Шаг бонуса Hold & Win: null — бонус не начат, 0 — стартовое поле, n — вставший n-й шаг из ответа. Пишет автомат. */
+  @observable holdWinStep: number | null = null
+  /** Монеты бонуса собраны: результат раунда показывает выигрыш бонуса. Пишет автомат. */
+  @observable isHoldWinCollected = false
 
   // Ответы сервера как есть: их кладут фазы, стор ничего не пересчитывает
   @observable.ref init: GameInitResult | null = null
@@ -69,9 +79,9 @@ export class SlotStore {
     return this.phase === PhaseName.idle
   }
 
-  /** Барабаны в движении: фазы `spinning` и `respin` длятся от старта прокрутки до посадки. */
+  /** Барабаны в движении: фазы `spinning`, `respin` и `holdWinSpin` длятся от старта прокрутки до посадки. */
   @computed get isSpinning(): boolean {
-    return this.phase === PhaseName.spinning || this.phase === PhaseName.respin
+    return this.phase === PhaseName.spinning || this.phase === PhaseName.respin || this.phase === PhaseName.holdWinSpin
   }
 
   /** Хватает ли кредита на ставку. */
@@ -99,13 +109,6 @@ export class SlotStore {
     return this.isIdle
   }
 
-  @computed get canToggleAnticipationForced(): boolean {
-    return this.isIdle
-  }
-
-  @computed get canToggleRespinForced(): boolean {
-    return this.isIdle
-  }
 
   /** Настройки открываются только в idle: посреди раунда их контролы всё равно недоступны. */
   @computed get canOpenSettings(): boolean {
@@ -168,17 +171,63 @@ export class SlotStore {
     return this.currentRespin?.frame ?? this.spinSymbols
   }
 
+  /** Линии текущего шага раунда; у собранного бонуса линий нет. */
   @computed get stepPaylines(): Payline[] {
+    if (this.isHoldWinCollected) return []
+
     return this.currentRespin?.paylines ?? this.spinPaylines
   }
 
+  /** Выигрыш текущего шага раунда: собранного бонуса, респина или базового спина. */
   @computed get stepWin(): number {
+    if (this.isHoldWinCollected) return this.spinHoldWin?.win ?? 0
+
     return this.currentRespin?.win ?? this.spinWin
+  }
+
+  /** Бонус Hold & Win из ответа сервера. */
+  @computed get spinHoldWin(): HoldWin | undefined {
+    return this.spinTransformations.find((transformation) => transformation.type === 'holdAndWin')?.value
+  }
+
+  /** Бонус идёт: начат и монеты ещё не собраны. */
+  @computed get isHoldWinActive(): boolean {
+    return this.holdWinStep !== null && !this.isHoldWinCollected
+  }
+
+  /** Бонус есть в ответе, ещё не начат, и шагов респина перед ним не осталось. */
+  @computed get hasPendingHoldWin(): boolean {
+    return this.spinHoldWin !== undefined && this.holdWinStep === null && !this.nextRespin
+  }
+
+  /** Вставший шаг бонуса; на стартовом поле его нет. */
+  @computed get currentHoldWinStep(): HoldWinStep | undefined {
+    return this.holdWinStep ? this.spinHoldWin?.steps[this.holdWinStep - 1] : undefined
+  }
+
+  /** Следующий шаг бонуса, если бонус идёт и сервер его прислал. */
+  @computed get nextHoldWinStep(): HoldWinStep | undefined {
+    return this.holdWinStep === null ? undefined : this.spinHoldWin?.steps[this.holdWinStep]
+  }
+
+  /** Поле бонуса на текущем шаге: кадр вставшего шага или стартовое. */
+  @computed get holdWinFrame(): CoinValue[][] | undefined {
+    return this.currentHoldWinStep?.frame ?? this.spinHoldWin?.frame
+  }
+
+  /** Счётчик респинов бонуса: меняется, когда шаг встал. */
+  @computed get holdWinRespinsLeft(): number {
+    return this.currentHoldWinStep?.respinsLeft ?? this.spinHoldWin?.respins ?? 0
   }
 
   /** Барабаны, удержанные на текущем респине; по закрытии раунда список пуст. */
   @computed get heldReels(): number[] {
     return this.isIdle ? [] : (this.currentRespin?.held ?? [])
+  }
+
+  /** Можно ли выбрать механику: только в idle; турбо пропускает паузы, поэтому anticipation при нём недоступен. */
+  canToggleForcedMechanic(mechanic: ForcedMechanic): boolean {
+    return this.isIdle && !(mechanic === ForcedMechanic.anticipation && this.isTurboEnabled)
   }
 
   /** Доступен ли шаг по списку ставок: вне idle, при открытой модалке и за краями списка — нет. */
@@ -231,11 +280,28 @@ export class SlotStore {
   @action clearSpin() {
     this.spinResult = null
     this.roundStep = 0
+    this.holdWinStep = null
+    this.isHoldWinCollected = false
   }
 
   /** Переводит раунд на следующий шаг респина. */
   @action advanceRoundStep() {
     this.roundStep += 1
+  }
+
+  /** Начинает бонус Hold & Win со стартового поля. */
+  @action startHoldWin() {
+    this.holdWinStep = 0
+  }
+
+  /** Отмечает, что следующий шаг бонуса встал. */
+  @action advanceHoldWinStep() {
+    this.holdWinStep = (this.holdWinStep ?? 0) + 1
+  }
+
+  /** Закрывает бонус: его выигрыш становится выигрышем шага раунда. */
+  @action collectHoldWin() {
+    this.isHoldWinCollected = true
   }
 
   @action stepBet(direction: StepDirection) {
@@ -292,18 +358,18 @@ export class SlotStore {
     if (!this.canToggleTurbo) return
 
     this.isTurboEnabled = !this.isTurboEnabled
+
+    // Турбо пропускает паузы anticipation: заказ, который нечем показать, снимается
+    if (this.isTurboEnabled && this.forcedMechanic === ForcedMechanic.anticipation) {
+      this.forcedMechanic = null
+    }
   }
 
-  @action toggleAnticipationForced() {
-    if (!this.canToggleAnticipationForced) return
+  /** Выбирает механику, снимая прежнюю; повторный выбор той же механики снимает заказ. */
+  @action toggleForcedMechanic(mechanic: ForcedMechanic) {
+    if (!this.canToggleForcedMechanic(mechanic)) return
 
-    this.isAnticipationForced = !this.isAnticipationForced
-  }
-
-  @action toggleRespinForced() {
-    if (!this.canToggleRespinForced) return
-
-    this.isRespinForced = !this.isRespinForced
+    this.forcedMechanic = this.forcedMechanic === mechanic ? null : mechanic
   }
 
   @action holdSpin() {

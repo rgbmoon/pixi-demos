@@ -144,6 +144,21 @@ export const SLOT_SOUNDS = {
       },
     ],
   },
+  /** Старт бонуса Hold & Win: быстрое арпеджио на полторы октавы вверх. */
+  holdWinStart: {
+    voices: [
+      ...createArpeggio([G4, C5, E5, G5, C6], 0.06, { ...CHIME_VOICE, duration: 0.25 }),
+      ...createArpeggio([G4, C5, E5, G5, C6], 0.06, CHIME_OVERTONE),
+    ],
+  },
+  /** Монета встала в ячейку бонуса: металлический звон с негармоническим обертоном. */
+  coinLand: {
+    cooldown: 0.05,
+    voices: [
+      { wave: 'sine', frequency: E6, attack: 0.001, duration: 0.12, gain: 0.1 },
+      { wave: 'sine', frequency: E6 * COIN_OVERTONE_RATIO, attack: 0.001, duration: 0.08, gain: 0.03 },
+    ],
+  },
   /** Выигрыш: мажорное трезвучие вверх. */
   winSmall: {
     voices: [...createArpeggio([C5, E5, G5], 0.08, CHIME_VOICE), ...createArpeggio([C5, E5, G5], 0.08, CHIME_OVERTONE)],

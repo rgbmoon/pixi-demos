@@ -4,6 +4,9 @@ export const PhaseName = {
   spinning: 'spinning',
   result: 'result',
   respin: 'respin',
+  holdWinIntro: 'holdWinIntro',
+  holdWinSpin: 'holdWinSpin',
+  holdWinCollect: 'holdWinCollect',
 } as const
 
 export type PhaseName = (typeof PhaseName)[keyof typeof PhaseName]
@@ -23,6 +26,21 @@ export const SymbolKey = {
 } as const
 
 export type SymbolKey = (typeof SymbolKey)[keyof typeof SymbolKey]
+
+/** Механика, которую настройки демо просят у сервера на каждом спине; одновременно — только одна. */
+export const ForcedMechanic = {
+  anticipation: 'anticipation',
+  respin: 'respin',
+  holdWin: 'holdWin',
+} as const
+
+export type ForcedMechanic = (typeof ForcedMechanic)[keyof typeof ForcedMechanic]
+
+/** Значение ячейки поля Hold & Win: номинал монеты в деньгах или `null` — пустая ячейка. */
+export type CoinValue = number | null
+
+/** Значение слота ленты Hold & Win: ячейка поля или символ наполнения, который виден только в движении. */
+export type HoldWinCell = CoinValue | SymbolKey
 
 /** Геометрия линии выплат: ряд (0..2) на каждом барабане и вертикальный сдвиг линии в долях высоты ячейки. */
 export type PaylineShape = {
@@ -69,9 +87,18 @@ export type LabelOptions = {
   text?: string
 }
 
+/** Вид отметки: галка — независимый флаг, точка — выбор одного из группы. */
+export const CheckboxVariant = {
+  box: 'box',
+  radio: 'radio',
+} as const
+
+export type CheckboxVariant = (typeof CheckboxVariant)[keyof typeof CheckboxVariant]
+
 export type CheckboxOptions = {
   label: string
   width: number
+  variant?: CheckboxVariant
   onTap?: () => void
 }
 

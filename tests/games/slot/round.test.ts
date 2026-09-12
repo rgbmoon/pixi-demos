@@ -1,11 +1,15 @@
 // @vitest-environment jsdom
+import { reaction } from 'mobx'
 import { MockScenario } from 'src/games/slot/mocks/types'
 import { SLOT_TOKENS } from 'src/games/slot/tokens'
-import { PhaseName } from 'src/games/slot/types'
+import { ForcedMechanic, PhaseName } from 'src/games/slot/types'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import type { ReelsStub } from '../../setup/doubles'
+import type { HoldWinStub, ReelsStub } from '../../setup/doubles'
 import { type Round, startRound } from '../../setup/round'
+
+/** Сид сценария `holdwin`, в котором выигрывает и базовый спин. */
+const HOLD_WIN_WITH_BASE_WIN_SEED = 1
 
 let round: Round | undefined
 
@@ -113,7 +117,7 @@ describe('anticipation', () => {
 
     const { store, log } = round
 
-    store.toggleAnticipationForced()
+    store.toggleForcedMechanic(ForcedMechanic.anticipation)
     await round.playSpin()
 
     expect(store.presentedAnticipation.length).toBeGreaterThan(0)
@@ -133,11 +137,11 @@ describe('anticipation', () => {
   })
 
   it('в турбо пропускает паузу и вспышку, даже если сервер прислал anticipation', async () => {
-    round = await startRound({ scenario: MockScenario.bigwin })
+    // Настройка anticipation в турбо недоступна: раунд с паузой присылает сценарий сервера
+    round = await startRound({ scenario: MockScenario.anticipation })
 
     const { store, log } = round
 
-    store.toggleAnticipationForced()
     store.toggleTurboEnabled()
     await round.playSpin()
 
@@ -222,7 +226,7 @@ describe('респин', () => {
 
     const { store, log } = round
 
-    store.toggleRespinForced()
+    store.toggleForcedMechanic(ForcedMechanic.respin)
     store.toggleTurboEnabled()
     await round.playSpin()
 
@@ -230,6 +234,93 @@ describe('респин', () => {
     expect(log).toContain('respin')
     expect(log).not.toContain('waitTicks')
     expect(log).not.toContain('playWinLines')
+    expect(store.credit).toBe(store.spinResult?.balance)
+  })
+})
+
+describe('Hold & Win', () => {
+  it('меняет доску на поле бонуса, проводит все шаги сервера и закрывает раунд серверным балансом', async () => {
+    round = await startRound({ scenario: MockScenario.holdwin })
+
+    const { store, emitter, log } = round
+    const holdWin = round.container.get(SLOT_TOKENS.HoldWinController) as unknown as HoldWinStub
+    const creditBefore = store.credit
+    const { bet } = store
+    const credits: number[] = []
+
+    emitter.on('holdWin:landed', () => credits.push(store.credit))
+
+    await round.playSpin()
+
+    const bonus = store.spinHoldWin
+
+    if (!bonus) throw new Error('holdwin scenario returned no bonus')
+
+    // Каждый шаг сервера показан одной посадкой, поле встаёт на кадр последнего шага
+    expect(log.filter((entry) => entry === 'holdWinLand')).toHaveLength(bonus.steps.length)
+    expect(holdWin.readGrid()).toEqual(bonus.steps.at(-1)?.frame)
+    // Доска бонуса появляется до первого шага, сбор идёт после последнего, базовая доска возвращается после сбора
+    expect(log.indexOf('showHoldWin')).toBeLessThan(log.indexOf('holdWinSpin'))
+    expect(log.indexOf('holdWinCollect')).toBeGreaterThan(log.lastIndexOf('holdWinLand'))
+    expect(log.indexOf('showReels')).toBeGreaterThan(log.indexOf('holdWinCollect'))
+    // Баланс ответа включает бонус: до его конца кредит видит только списанную ставку
+    expect(credits).toEqual(bonus.steps.map(() => creditBefore - bet))
+    expect(store.credit).toBe(store.spinResult?.balance)
+    expect(store.win).toBe(0)
+  })
+
+  it('держит в строке WIN сумму базового спина и бонуса до зачисления', async () => {
+    round = await startRound({ scenario: MockScenario.holdwin, seed: HOLD_WIN_WITH_BASE_WIN_SEED })
+
+    const { store } = round
+    const wins: number[] = []
+
+    reaction(
+      () => store.win,
+      (win) => wins.push(win)
+    )
+
+    await round.playSpin()
+
+    // Сид даёт выигрыш и на базовом спине: без него проверка накопления пуста
+    expect(store.spinWin).toBeGreaterThan(0)
+    // Последняя сумма перед зачислением (оно гасит строку в ноль) — базовый выигрыш плюс бонус
+    expect(wins.at(-2)).toBeCloseTo(store.spinWin + (store.spinHoldWin?.win ?? 0), 2)
+  })
+
+  it('по Stop на шаге бонуса проматывает его посадку', async () => {
+    round = await startRound({ scenario: MockScenario.holdwin })
+
+    const { store, emitter, log } = round
+    const canStop: boolean[] = []
+
+    emitter.on('holdWin:spinStarted', () => {
+      canStop.push(store.canStop)
+      emitter.emit('ui:stopRequested')
+    })
+
+    await round.playSpin()
+
+    const steps = store.spinHoldWin?.steps ?? []
+
+    expect(canStop).toEqual(steps.map(() => true))
+    expect(log.filter((entry) => entry === 'holdWinSlam')).toHaveLength(steps.length)
+    // Сигнал Stop живёт только фазу шага
+    expect(emitter.listenerCounts()['ui:stopRequested'] ?? 0).toBe(0)
+  })
+
+  it('по force присылает бонус и в турбо проводит его без выдержек', async () => {
+    round = await startRound({ scenario: MockScenario.nowin })
+
+    const { store, log } = round
+
+    store.toggleForcedMechanic(ForcedMechanic.holdWin)
+    store.toggleTurboEnabled()
+    await round.playSpin()
+
+    expect(store.spinHoldWin).toBeDefined()
+    expect(log).toContain('holdWinCollect')
+    expect(log).not.toContain('waitTicks')
     expect(store.credit).toBe(store.spinResult?.balance)
   })
 })

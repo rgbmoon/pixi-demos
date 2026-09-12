@@ -11,10 +11,12 @@ const IDLE_MESSAGE = 'MAKE YOUR BET'
 const SPIN_MESSAGE = 'GOOD LUCK'
 const TURBO_IDLE_MESSAGE = 'HOLD FOR SPIN'
 const TURBO_SPIN_MESSAGE = 'TURBO!'
+const RESPINS_CAPTION = 'RESPINS'
 
 /**
  * Строка под барабанами: сумма выигрыша (в турбо-серии — накопленная), а между раундами — подсказка
  * по фазе. В турбо-режиме подсказки свои: в покое зовёт зажать спин, во вращении объявляет турбо.
+ * Пока идёт бонус Hold & Win, строка показывает счётчик его респинов.
  */
 @injectable()
 export class WinLabelController extends LiveContainer {
@@ -42,10 +44,20 @@ export class WinLabelController extends LiveContainer {
       () => slotStore.isTurboEnabled,
       () => this.render()
     )
+    this.watch(
+      () => slotStore.isHoldWinActive && slotStore.holdWinRespinsLeft,
+      () => this.render()
+    )
   }
 
   private render(): void {
-    const { win, isTurboEnabled } = this.slotStore
+    const { win, isTurboEnabled, isHoldWinActive, holdWinRespinsLeft } = this.slotStore
+
+    if (isHoldWinActive) {
+      this.valueLabel.setText(RESPINS_CAPTION, String(holdWinRespinsLeft))
+
+      return
+    }
 
     if (win > 0) {
       this.valueLabel.setText(WIN_CAPTION, formatAmount(win))

@@ -49,6 +49,12 @@ export class SoundController extends LiveContainer {
     this.listen(emitter, 'respin:started', this.handleRespinStarted)
     this.listen(emitter, 'respin:landed', this.handleSpinLanded)
     this.listen(emitter, 'credit:toppedUp', () => synth.play(SLOT_SOUNDS.creditTopUp))
+    this.listen(emitter, 'holdWin:started', () => synth.play(SLOT_SOUNDS.holdWinStart))
+    this.listen(emitter, 'holdWin:spinStarted', this.handleHoldWinSpinStarted)
+    this.listen(emitter, 'holdWin:cellLanded', this.handleCellLanded)
+    // Фаза шага бонуса идёт подряд, isSpinning между шагами не падает: гул снимает посадка шага
+    this.listen(emitter, 'holdWin:landed', () => this.stopSpinLoop())
+    this.listen(emitter, 'holdWin:collected', this.handleHoldWinCollected)
 
     // Фаза покидает spinning и при провале запроса, где spin:landed не эмитится
     this.watch(
@@ -85,6 +91,22 @@ export class SoundController extends LiveContainer {
     this.synth.play(SLOT_SOUNDS.respinStart)
 
     this.startSpinLoop(held.length)
+  }
+
+  private handleHoldWinSpinStarted = (): void => {
+    this.synth.play(SLOT_SOUNDS.respinStart)
+
+    this.startSpinLoop(0)
+  }
+
+  /** Монета звенит, пустая ячейка садится ударом барабана: одновременные удары схлопывает `cooldown`. */
+  private handleCellLanded = ({ value }: GameEvents['holdWin:cellLanded']): void => {
+    this.synth.play(value ? SLOT_SOUNDS.coinLand : SLOT_SOUNDS.reelStop)
+  }
+
+  /** Полное поле озвучивается мелодией, обычный сбор — крупным выигрышем. */
+  private handleHoldWinCollected = ({ grand }: GameEvents['holdWin:collected']): void => {
+    this.synth.play(grand > 0 ? SLOT_SOUNDS.anticipationWin : SLOT_SOUNDS.winBig)
   }
 
   /** Запускает гул вращения с уровнем по числу уже стоящих барабанов. */

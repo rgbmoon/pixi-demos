@@ -13,7 +13,7 @@ import { TURBO_WIN_SHOWCASE_MS, WIN_DISPLAY_MS } from '../constants'
 
 /**
  * Фаза показа результата: барабаны уже стоят, фаза выставляет выигрыш шага, показывает линии и закрывает раунд.
- * Пока в ответе есть следующий шаг респина, возвращает раунд в `respin`.
+ * Пока в ответе есть следующий шаг респина, возвращает раунд в `respin`, после респинов — в бонус Hold & Win.
  * В турбо-серии возвращает раунд в `spinning`, пока спин зажат и хватает на ставку.
  */
 @injectable()
@@ -39,7 +39,9 @@ export class ResultPhase implements Phase<PhaseName> {
 
   async enter(
     signal: AbortSignal
-  ): Promise<typeof PhaseName.idle | typeof PhaseName.spinning | typeof PhaseName.respin> {
+  ): Promise<
+    typeof PhaseName.idle | typeof PhaseName.spinning | typeof PhaseName.respin | typeof PhaseName.holdWinIntro
+  > {
     const { spinResult: result } = this.slotStore
 
     if (!result) {
@@ -47,8 +49,8 @@ export class ResultPhase implements Phase<PhaseName> {
     }
 
     // Сумма встаёт в WinLabelController до анимаций линий и висит там, пока раунд не закроется;
-    // шаги респина и спины серии её копят
-    if (this.slotStore.isTurboSeries || this.slotStore.currentRespin) {
+    // шаги респина, бонус и спины серии её копят
+    if (this.slotStore.isTurboSeries || this.slotStore.currentRespin || this.slotStore.isHoldWinCollected) {
       this.slotStore.accrueWin(this.slotStore.stepWin)
     } else {
       this.slotStore.setWin(this.slotStore.stepWin)
@@ -56,11 +58,18 @@ export class ResultPhase implements Phase<PhaseName> {
 
     if (this.slotStore.stepPaylines.length > 0) {
       await this.presentWin(signal)
+    } else if (this.slotStore.isHoldWinCollected && this.slotStore.stepWin > 0 && !this.slotStore.isTurboEnabled) {
+      // Линий у бонуса нет: сумма стоит в строке WIN, пока не уйдёт в кредит; турбо выдержек не держит
+      await this.ticker.waitTicks(WIN_DISPLAY_MS, signal)
     }
 
     // Баланс ответа включает все шаги: раунд закрывается только после последнего
     if (this.slotStore.nextRespin) {
       return PhaseName.respin
+    }
+
+    if (this.slotStore.hasPendingHoldWin) {
+      return PhaseName.holdWinIntro
     }
 
     if (!this.slotStore.isTurboSeries) {

@@ -15,7 +15,13 @@ import type { SlotStore } from 'src/games/slot/stores/slot'
 import { SLOT_TOKENS } from 'src/games/slot/tokens'
 import { PhaseName } from 'src/games/slot/types'
 
-import { createBackgroundStub, createReelsStub, createTickerStub, type PresentationLog } from './doubles'
+import {
+  createBackgroundStub,
+  createHoldWinStub,
+  createReelsStub,
+  createTickerStub,
+  type PresentationLog,
+} from './doubles'
 import { server, wsLink } from './msw-server'
 
 export type RoundOptions = {
@@ -66,6 +72,7 @@ export const createRound = ({
   const log: PresentationLog = []
 
   container.bind(SLOT_TOKENS.ReelsMachineController).toConstantValue(createReelsStub(log))
+  container.bind(SLOT_TOKENS.HoldWinController).toConstantValue(createHoldWinStub(log))
   container.bind(SLOT_TOKENS.BackgroundController).toConstantValue(createBackgroundStub(log))
   container.bind(ENGINE_TOKENS.GameTicker).toConstantValue(createTickerStub(log))
 

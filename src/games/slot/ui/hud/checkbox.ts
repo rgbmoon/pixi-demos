@@ -1,4 +1,5 @@
-import { Assets, Container, Rectangle, Sprite, type Texture } from 'pixi.js'
+import { Assets, Container, Graphics, Rectangle, Sprite, type Texture } from 'pixi.js'
+import { PALETTE } from 'src/core/palette'
 import { CHECKBOX_BACKING, CHECKBOX_ICONS } from 'src/games/slot/assets'
 import {
   CHECKBOX_FONT_SIZE,
@@ -6,14 +7,15 @@ import {
   DISABLED_ALPHA,
   ICON_RATIO,
   PANEL_BUTTON_GAP,
+  RADIO_DOT_RATIO,
 } from 'src/games/slot/constants'
-import { LabelColor, type CheckboxOptions } from 'src/games/slot/types'
+import { CheckboxVariant, LabelColor, type CheckboxOptions } from 'src/games/slot/types'
 
 import { Label } from './label'
 
 export class Checkbox extends Container {
   private readonly background = new Sprite()
-  private readonly mark = new Sprite()
+  private readonly mark: Container
   private readonly caption: Label
   private readonly textures: { normal: Texture; active: Texture }
 
@@ -21,6 +23,7 @@ export class Checkbox extends Container {
     super()
 
     const size = CHECKBOX_SIZE
+    const isRadio = options.variant === CheckboxVariant.radio
 
     this.textures = { normal: Assets.get(CHECKBOX_BACKING.normal), active: Assets.get(CHECKBOX_BACKING.active) }
     this.caption = new Label({ color: LabelColor.cyan, fontSize: CHECKBOX_FONT_SIZE, text: options.label })
@@ -31,9 +34,17 @@ export class Checkbox extends Container {
     this.background.anchor.set(0.5)
     this.background.position.set(left + size / 2, 0)
 
-    this.mark.texture = Assets.get(CHECKBOX_ICONS.mark)
-    this.mark.anchor.set(0.5)
-    this.mark.setSize(size * ICON_RATIO)
+    if (isRadio) {
+      this.mark = new Graphics().circle(0, 0, (size * RADIO_DOT_RATIO) / 2).fill(PALETTE.white)
+    } else {
+      const check = new Sprite(Assets.get(CHECKBOX_ICONS.mark))
+
+      check.anchor.set(0.5)
+      check.setSize(size * ICON_RATIO)
+
+      this.mark = check
+    }
+
     this.mark.position.copyFrom(this.background.position)
 
     this.caption.anchor.set(0, 0.5)

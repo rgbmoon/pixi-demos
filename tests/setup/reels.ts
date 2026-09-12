@@ -48,7 +48,7 @@ export const createGrid = (): TestData =>
   Array.from({ length: REELS }, (_, reel) => Array.from({ length: ROWS }, (_, row) => `r${reel}c${row}`))
 
 /** Крутит модель до полной остановки; шаг задаётся вызывающим. */
-export const advanceUntilIdle = (machine: ReelsMachine<TestData, string>, deltaFrames = 1): number => {
+export const advanceUntilIdle = <TData, TValue>(machine: ReelsMachine<TData, TValue>, deltaFrames = 1): number => {
   let frames = 0
 
   while (machine.getPhase() !== ReelPhase.idle) {

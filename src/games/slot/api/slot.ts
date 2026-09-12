@@ -23,6 +23,29 @@ const RespinStepSchema = z.object({
 
 export type RespinStep = z.infer<typeof RespinStepSchema>
 
+/** Поле Hold & Win `[барабан][ряд]`: номинал монеты в деньгах или `null` — пустая ячейка. */
+const CoinFrameSchema = z.array(z.array(z.number().nullable()))
+
+/** Шаг Hold & Win: удержанные ячейки, поле после посадки и счётчик респинов после шага. */
+const HoldWinStepSchema = z.object({
+  held: z.array(z.object({ reel: z.number(), row: z.number() })),
+  frame: CoinFrameSchema,
+  respinsLeft: z.number(),
+})
+
+export type HoldWinStep = z.infer<typeof HoldWinStepSchema>
+
+/** Бонус Hold & Win: стартовое поле и счётчик, шаги, выплата за полное поле и выигрыш бонуса целиком. */
+const HoldWinSchema = z.object({
+  frame: CoinFrameSchema,
+  respins: z.number(),
+  steps: z.array(HoldWinStepSchema),
+  grand: z.number(),
+  win: z.number(),
+})
+
+export type HoldWin = z.infer<typeof HoldWinSchema>
+
 /** Трансформации раунда: дискриминированный по `type` список шагов, общий для `initGame` и `spin`. */
 const TransformationsSchema = z.array(
   z.discriminatedUnion('type', [
@@ -45,6 +68,10 @@ const TransformationsSchema = z.array(
     z.object({
       type: z.literal('respins'),
       value: z.array(RespinStepSchema),
+    }),
+    z.object({
+      type: z.literal('holdAndWin'),
+      value: HoldWinSchema,
     }),
     z.object({
       type: z.literal('multipliersInit'),
@@ -143,6 +170,8 @@ const SpinRequestSchema = z.object({
   forceAnticipation: z.boolean().optional(),
   /** Просит сервер о раунде с респином. */
   forceRespin: z.boolean().optional(),
+  /** Просит сервер о раунде с бонусом Hold & Win. */
+  forceHoldWin: z.boolean().optional(),
 })
 
 export type SpinRequest = z.infer<typeof SpinRequestSchema>

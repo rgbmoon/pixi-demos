@@ -7,33 +7,51 @@ import { ReelView } from './reel-view'
 import type { CellView, ReelsViewConfig } from './types'
 
 /**
- * Адаптер модели барабанов к PIXI: маска зоны, ленты view и единственный такт модели.
+ * Адаптер модели барабанов к PIXI: раскладка лент, маски и управление временем модели.
  * Ничего не решает — на каждом кадре двигает модель и переносит её слоты в view.
  */
 export class ReelsView<TData, TValue, TView extends CellView<TValue>> extends Container {
   private readonly ticker: GameTicker
   private readonly machine: ReelsMachine<TData, TValue>
   private readonly reelViews: ReelView<TValue, TView>[]
-  private readonly maskGraphics = new Graphics()
   /** Ревизия каждого барабана на момент последней отрисовки: с ней сверяется `sync`. */
   private readonly drawnRevisions: number[]
 
   constructor(ticker: GameTicker, machine: ReelsMachine<TData, TValue>, config: ReelsViewConfig<TValue, TView>) {
     super()
 
-    const { cellWidth, cellHeight, zoneWidth, zoneHeight, createCellView } = config
+    const { cellWidth, cellHeight, createCellView } = config
 
     this.ticker = ticker
     this.machine = machine
     this.reelViews = machine.getReels().map((reel) => new ReelView(reel.getStrip().length, createCellView))
     this.drawnRevisions = this.reelViews.map(() => -1)
 
-    this.maskGraphics.rect(-cellWidth / 2, -cellHeight / 2, zoneWidth, zoneHeight).fill(0xffffff)
+    // Ленты с одним y делят маску-полосу: буферные слоты полосы лежат над ней, а число stencil-масок
+    // равно числу рядов раскладки
+    const lanes = new Map<number, number[]>()
 
-    this.mask = this.maskGraphics
-    this.addChild(this.maskGraphics, ...this.reelViews)
+    this.reelViews.forEach((reelView, index) => {
+      const { x, y } = config.getReelPosition?.(index) ?? { x: cellWidth * index, y: 0 }
 
-    this.reelViews.forEach((reelView, index) => reelView.position.set(cellWidth * index, 0))
+      reelView.position.set(x, y)
+      lanes.set(y, [...(lanes.get(y) ?? []), index])
+    })
+
+    lanes.forEach((indices, y) => {
+      const xs = indices.map((index) => this.reelViews[index].x)
+      const rows = Math.max(...indices.map((index) => machine.getReels()[index].getCells().length))
+      const left = Math.min(...xs) - cellWidth / 2
+      const lane = new Container()
+      const mask = new Graphics()
+        .rect(left, y - cellHeight / 2, Math.max(...xs) + cellWidth / 2 - left, rows * cellHeight)
+        .fill(0xffffff)
+
+      lane.mask = mask
+      lane.addChild(mask, ...indices.map((index) => this.reelViews[index]))
+
+      this.addChild(lane)
+    })
 
     this.sync()
 

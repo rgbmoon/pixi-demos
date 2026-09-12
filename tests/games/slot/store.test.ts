@@ -1,7 +1,7 @@
 import { configure } from 'mobx'
 import { SOUND_STORAGE_KEY } from 'src/games/slot/constants'
 import { SlotStore } from 'src/games/slot/stores/slot'
-import { PhaseName, StepDirection } from 'src/games/slot/types'
+import { ForcedMechanic, PhaseName, StepDirection } from 'src/games/slot/types'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -182,28 +182,42 @@ describe('SlotStore', () => {
       }
     })
 
-    it('переключают force anticipation только в idle', () => {
-      const store = createStore()
-
-      store.setPhase(PhaseName.spinning)
-      store.toggleAnticipationForced()
-      expect(store.isAnticipationForced).toBe(false)
-
-      store.setPhase(PhaseName.idle)
-      store.toggleAnticipationForced()
-      expect(store.isAnticipationForced).toBe(true)
-    })
-
-    it('переключают force respin только в idle', () => {
+    it('выбирают заказ механики только в idle', () => {
       const store = createStore()
 
       store.setPhase(PhaseName.respin)
-      store.toggleRespinForced()
-      expect(store.isRespinForced).toBe(false)
+      store.toggleForcedMechanic(ForcedMechanic.respin)
+      expect(store.forcedMechanic).toBe(null)
 
       store.setPhase(PhaseName.idle)
-      store.toggleRespinForced()
-      expect(store.isRespinForced).toBe(true)
+      store.toggleForcedMechanic(ForcedMechanic.respin)
+      expect(store.forcedMechanic).toBe(ForcedMechanic.respin)
+    })
+
+    it('держат заказанной одну механику: выбор другой снимает прежнюю, повторный — снимает свою', () => {
+      const store = createStore()
+
+      store.setPhase(PhaseName.idle)
+      store.toggleForcedMechanic(ForcedMechanic.respin)
+      store.toggleForcedMechanic(ForcedMechanic.holdWin)
+      expect(store.forcedMechanic).toBe(ForcedMechanic.holdWin)
+
+      store.toggleForcedMechanic(ForcedMechanic.holdWin)
+      expect(store.forcedMechanic).toBe(null)
+    })
+
+    it('снимают anticipation при включении турбо и не дают выбрать его, пока турбо включён', () => {
+      const store = createStore()
+
+      store.setPhase(PhaseName.idle)
+      store.toggleForcedMechanic(ForcedMechanic.anticipation)
+      store.toggleTurboEnabled()
+      expect(store.forcedMechanic).toBe(null)
+
+      store.toggleForcedMechanic(ForcedMechanic.anticipation)
+      expect(store.forcedMechanic).toBe(null)
+      // Остальные механики турбо показывает, их заказ остаётся доступным
+      expect(store.canToggleForcedMechanic(ForcedMechanic.holdWin)).toBe(true)
     })
   })
 

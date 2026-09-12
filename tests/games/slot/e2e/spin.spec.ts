@@ -96,4 +96,24 @@ test.describe('раунд', () => {
     await expect(spin).toBeHidden()
     await expect(spin).toBeVisible({ timeout: 60_000 })
   })
+
+  test('проводит раунд с бонусом Hold & Win до нового покоя', async ({ page }) => {
+    // Бонус — вход, серия шагов и сбор монет: раунд длиннее респина
+    test.setTimeout(120_000)
+
+    await page.goto('/slot?scenario=holdwin&seed=1')
+
+    await expect(page.getByRole('status', { name: 'Loading game' })).toBeHidden({ timeout: 30_000 })
+
+    await page.keyboard.press('Tab')
+
+    const spin = page.getByRole('button', { name: 'Spin' })
+
+    await expect(spin).toBeVisible()
+    await spin.dispatchEvent('click')
+
+    // Спин недоступен, пока идёт бонус: между шагами раунд не возвращается в покой
+    await expect(spin).toBeHidden()
+    await expect(spin).toBeVisible({ timeout: 90_000 })
+  })
 })
