@@ -24,6 +24,7 @@ import { CreditLabelController } from './controllers/hud/credit-label'
 import { GameModeMinusButtonController } from './controllers/hud/game-mode-minus-button'
 import { GameModePanelController } from './controllers/hud/game-mode-panel'
 import { GameModePlusButtonController } from './controllers/hud/game-mode-plus-button'
+import { HoldWinCheckboxController } from './controllers/hud/hold-win-checkbox'
 import { RespinCheckboxController } from './controllers/hud/respin-checkbox'
 import { SettingsButtonController } from './controllers/hud/settings-button'
 import { SettingsModalController } from './controllers/hud/settings-modal'
@@ -31,10 +32,14 @@ import { SoundToggleButtonController } from './controllers/hud/sound-toggle-butt
 import { SpinButtonController } from './controllers/hud/spin-button'
 import { TurboCheckboxController } from './controllers/hud/turbo-checkbox'
 import { WinLabelController } from './controllers/hud/win-label'
+import { HoldWinController } from './controllers/reels/hold-win'
 import { ReelsMachineController } from './controllers/reels/reels-machine'
 import { SoundController } from './controllers/sound'
 import type { GameEvents } from './events'
 import { BootingPhase } from './phases/booting'
+import { HoldWinCollectPhase } from './phases/hold-win-collect'
+import { HoldWinIntroPhase } from './phases/hold-win-intro'
+import { HoldWinSpinPhase } from './phases/hold-win-spin'
 import { IdlePhase } from './phases/idle'
 import { RespinPhase } from './phases/respin'
 import { ResultPhase } from './phases/result'
@@ -70,6 +75,9 @@ export const bindFlow = (container: Container): void => {
   container.bind(CORE_TOKENS.Phase).to(SpinningPhase)
   container.bind(CORE_TOKENS.Phase).to(ResultPhase)
   container.bind(CORE_TOKENS.Phase).to(RespinPhase)
+  container.bind(CORE_TOKENS.Phase).to(HoldWinIntroPhase)
+  container.bind(CORE_TOKENS.Phase).to(HoldWinSpinPhase)
+  container.bind(CORE_TOKENS.Phase).to(HoldWinCollectPhase)
 }
 
 /** Картинка и звук: контроллеры и собирающая их сцена. */
@@ -108,6 +116,13 @@ const bindScene = (container: Container): void => {
     .to(ReelsMachineController)
     .onDeactivation((reels) => {
       if (!reels.destroyed) reels.destroy({ children: true })
+    })
+
+  container
+    .bind(SLOT_TOKENS.HoldWinController)
+    .to(HoldWinController)
+    .onDeactivation((holdWin) => {
+      if (!holdWin.destroyed) holdWin.destroy({ children: true })
     })
 
   container
@@ -197,6 +212,13 @@ const bindScene = (container: Container): void => {
   container
     .bind(SLOT_TOKENS.RespinCheckboxController)
     .to(RespinCheckboxController)
+    .onDeactivation((checkbox) => {
+      if (!checkbox.destroyed) checkbox.destroy({ children: true })
+    })
+
+  container
+    .bind(SLOT_TOKENS.HoldWinCheckboxController)
+    .to(HoldWinCheckboxController)
     .onDeactivation((checkbox) => {
       if (!checkbox.destroyed) checkbox.destroy({ children: true })
     })

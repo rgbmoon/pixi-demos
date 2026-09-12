@@ -7,7 +7,7 @@ import type { ReelsMachineController } from 'src/games/slot/controllers/reels/re
 import type { GameEvents } from 'src/games/slot/events'
 import type { SlotStore } from 'src/games/slot/stores/slot'
 import { SLOT_TOKENS } from 'src/games/slot/tokens'
-import { PhaseName } from 'src/games/slot/types'
+import { ForcedMechanic, PhaseName } from 'src/games/slot/types'
 
 /**
  * Фаза вращения: держит барабаны в движении от старта до посадки. Параллельно шлёт запрос спина,
@@ -35,7 +35,7 @@ export class SpinningPhase implements Phase<PhaseName> {
   }
 
   async enter(signal: AbortSignal): Promise<typeof PhaseName.idle | typeof PhaseName.result> {
-    const { bet, gameMode, isAnticipationForced, isRespinForced } = this.slotStore
+    const { bet, gameMode, forcedMechanic } = this.slotStore
     // Доска до спина — кадр последнего шага прошлого раунда: на неё барабаны вернутся, если сервер не ответит
     const board = this.slotStore.stepSymbols ?? this.slotStore.initialSymbols
     // Прошлый ответ сервера: его балансом закрывается серия, если спин провалится
@@ -64,7 +64,13 @@ export class SpinningPhase implements Phase<PhaseName> {
 
       try {
         result = await this.api.spin(
-          { bet, gameMode, forceAnticipation: isAnticipationForced, forceRespin: isRespinForced },
+          {
+            bet,
+            gameMode,
+            forceAnticipation: forcedMechanic === ForcedMechanic.anticipation,
+            forceRespin: forcedMechanic === ForcedMechanic.respin,
+            forceHoldWin: forcedMechanic === ForcedMechanic.holdWin,
+          },
           signal
         )
       } catch (error) {

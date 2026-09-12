@@ -3,14 +3,7 @@ import type { ReelsMachine } from 'src/core/reels/reels-machine'
 import type { GameTicker } from 'src/engine/game-ticker'
 import { ReelsView } from 'src/engine/reels/reels-view'
 import type { SpinePool } from 'src/engine/spine-pool'
-import {
-  CELL_HEIGHT,
-  CELL_WIDTH,
-  CELLS_ORIGIN_X,
-  CELLS_ORIGIN_Y,
-  REELS_ZONE_HEIGHT,
-  REELS_ZONE_WIDTH,
-} from 'src/games/slot/constants'
+import { CELL_HEIGHT, CELL_WIDTH, CELLS_ORIGIN_X, CELLS_ORIGIN_Y } from 'src/games/slot/constants'
 import type { SlotReelsData } from 'src/games/slot/reels'
 import type { SymbolKey } from 'src/games/slot/types'
 
@@ -31,8 +24,6 @@ export class ReelsBoard extends Container {
     this.reelsView = new ReelsView(ticker, machine, {
       cellWidth: CELL_WIDTH,
       cellHeight: CELL_HEIGHT,
-      zoneWidth: REELS_ZONE_WIDTH,
-      zoneHeight: REELS_ZONE_HEIGHT,
       createCellView: () => new ReelSymbol(pool),
     })
 

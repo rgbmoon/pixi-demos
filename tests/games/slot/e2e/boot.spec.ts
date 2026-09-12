@@ -1,13 +1,16 @@
 import { expect, test } from '@playwright/test'
 
+import { openGame } from '../../../setup/game-page'
+
 test.describe('загрузка игры', () => {
   test('поднимает канвас и снимает экран загрузки', async ({ page }) => {
-    await page.goto('/slot?scenario=nowin&seed=1')
+    // Экран загрузки проверяется после готовности игры: до прихода ленивого чанка страницы его ещё
+    // нет в DOM, и проверка на исчезновение прошла бы до его появления
+    await openGame(page, '?scenario=nowin&seed=1')
 
-    await expect(page.locator('canvas')).toBeVisible()
-
-    // Спиннер снимается, только когда игра сообщила о готовности: канвас появляется раньше неё
-    await expect(page.getByRole('status', { name: 'Loading game' })).toBeHidden({ timeout: 30_000 })
+    // Фон Layout — тоже канвас: игровой ищется в области страницы
+    await expect(page.getByRole('main').locator('canvas')).toBeVisible()
+    await expect(page.getByRole('status', { name: 'Loading game' })).toBeHidden()
     await expect(page.getByRole('alert')).toBeHidden()
   })
 
@@ -17,15 +20,9 @@ test.describe('загрузка игры', () => {
       Reflect.deleteProperty(Navigator.prototype, 'serviceWorker')
     })
 
-    await page.goto('/slot?scenario=bigwin&seed=1')
+    const spin = await openGame(page, '?scenario=bigwin&seed=1')
 
-    await expect(page.locator('canvas')).toBeVisible()
-    await expect(page.getByRole('status', { name: 'Loading game' })).toBeHidden({ timeout: 30_000 })
     await expect(page.getByRole('alert')).toBeHidden()
-
-    await page.keyboard.press('Tab')
-
-    const spin = page.getByRole('button', { name: 'Spin' })
 
     await spin.dispatchEvent('click')
 

@@ -1,4 +1,5 @@
-import type { RespinStep, SpinResult } from 'src/games/slot/api/slot'
+import type { HoldWin, HoldWinStep, RespinStep, SpinResult } from 'src/games/slot/api/slot'
+import type { CoinValue } from 'src/games/slot/types'
 
 /**
  * Карта событий игры: имя события → тип его payload. Единственное место, где заводятся имена, —
@@ -19,4 +20,9 @@ export type GameEvents = {
   'spin:landed': SpinResult
   'respin:started': { held: readonly number[] }
   'respin:landed': RespinStep
+  'holdWin:started': void
+  'holdWin:spinStarted': { held: HoldWinStep['held'] }
+  'holdWin:cellLanded': { reel: number; row: number; value: CoinValue }
+  'holdWin:landed': HoldWinStep
+  'holdWin:collected': HoldWin
 }

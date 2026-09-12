@@ -8,9 +8,9 @@ import { SLOT_TOKENS } from 'src/games/slot/tokens'
 import { CheckboxVariant, ForcedMechanic } from 'src/games/slot/types'
 import { Checkbox } from 'src/games/slot/ui/hud/checkbox'
 
-/** Чекбокс force anticipation в настройках */
+/** Чекбокс force Hold & Win в настройках. */
 @injectable()
-export class AnticipationCheckboxController extends LiveContainer {
+export class HoldWinCheckboxController extends LiveContainer {
   private readonly checkbox: Checkbox
 
   constructor(
@@ -20,11 +20,11 @@ export class AnticipationCheckboxController extends LiveContainer {
     super()
 
     this.checkbox = new Checkbox({
-      label: 'ANTICIPATION',
+      label: 'HOLD & WIN',
       width: PANEL_ROW_WIDTH,
       variant: CheckboxVariant.radio,
       onTap: () => {
-        slotStore.toggleForcedMechanic(ForcedMechanic.anticipation)
+        slotStore.toggleForcedMechanic(ForcedMechanic.holdWin)
         emitter.emit('ui:buttonTapped')
       },
     })
@@ -32,13 +32,13 @@ export class AnticipationCheckboxController extends LiveContainer {
     this.addChild(this.checkbox)
 
     this.watch(
-      () => slotStore.forcedMechanic === ForcedMechanic.anticipation,
+      () => slotStore.forcedMechanic === ForcedMechanic.holdWin,
       (isChecked) => this.checkbox.setChecked(isChecked),
       { fireImmediately: true }
     )
 
     this.watch(
-      () => slotStore.canToggleForcedMechanic(ForcedMechanic.anticipation),
+      () => slotStore.canToggleForcedMechanic(ForcedMechanic.holdWin),
       (enabled) => this.checkbox.setEnabled(enabled),
       { fireImmediately: true }
     )

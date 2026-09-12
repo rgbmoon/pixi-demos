@@ -5,6 +5,8 @@ import type { GameTicker } from 'src/engine/game-ticker'
 import { LiveContainer } from 'src/engine/live-container'
 import type { SpinePool } from 'src/engine/spine-pool'
 import { ENGINE_TOKENS } from 'src/engine/tokens'
+import { tweenAlpha } from 'src/engine/utils'
+import { HOLD_WIN_SWAP_MS } from 'src/games/slot/constants'
 import type { GameEvents } from 'src/games/slot/events'
 import { SLOT_REELS, SLOT_STRATEGIES, SLOT_TURBO_STRATEGIES, type SlotReelsData } from 'src/games/slot/reels'
 import type { SlotStore } from 'src/games/slot/stores/slot'
@@ -23,6 +25,7 @@ import { WinOverlayController } from './win-overlay'
  */
 @injectable()
 export class ReelsMachineController extends LiveContainer {
+  private readonly ticker: GameTicker
   private readonly emitter: GameEmitter<GameEvents>
   private readonly machine: ReelsMachine<SlotReelsData, SymbolKey>
   private readonly board: ReelsBoard
@@ -39,6 +42,7 @@ export class ReelsMachineController extends LiveContainer {
   ) {
     super()
 
+    this.ticker = ticker
     this.emitter = emitter
 
     this.machine = new ReelsMachine(SLOT_REELS)
@@ -117,6 +121,20 @@ export class ReelsMachineController extends LiveContainer {
       stopSignal?.removeEventListener('abort', this.slam)
       this.anticipationGlowFrame.hideAll()
     }
+  }
+
+  /** Проявляет доску барабанов после бонуса. */
+  async show(signal?: AbortSignal): Promise<void> {
+    this.visible = true
+
+    await tweenAlpha(this.ticker, this, 1, HOLD_WIN_SWAP_MS, signal)
+  }
+
+  /** Гасит доску барабанов на время бонуса; скрытая доска не рисуется и не держит маску. */
+  async hide(signal?: AbortSignal): Promise<void> {
+    await tweenAlpha(this.ticker, this, 0, HOLD_WIN_SWAP_MS, signal)
+
+    this.visible = false
   }
 
   showTint(signal?: AbortSignal): Promise<void> {

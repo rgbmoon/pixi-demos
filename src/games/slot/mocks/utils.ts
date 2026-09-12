@@ -1,11 +1,17 @@
 import { createRandom, pickRandom } from 'src/core/random'
 import type { Random } from 'src/core/types'
-import type { Payline, RespinStep, SpinResult } from 'src/games/slot/api/slot'
+import type { HoldWin, HoldWinStep, Payline, RespinStep, SpinResult } from 'src/games/slot/api/slot'
 import { SymbolKey } from 'src/games/slot/types'
 
 import {
   ANTICIPATION_HIT_PROBABILITY,
+  ANTICIPATION_PROBABILITY,
   ANTICIPATION_SCATTERS,
+  HOLD_WIN_COIN_MULTIPLIERS,
+  HOLD_WIN_COIN_PROBABILITY,
+  HOLD_WIN_GRAND_MULTIPLIER,
+  HOLD_WIN_RESPINS,
+  HOLD_WIN_TRIGGER,
   LINES_PER_MODE,
   MAX_RESPINS,
   PAY_TABLE,
@@ -19,8 +25,9 @@ import {
 } from './constants'
 import { MockScenario, type MockOptions, type SpinRequestPayload, type SpinTransformation } from './types'
 
-// Вайлд в сетку попадает только подсадкой: каждый W запускает респин, случайный W был бы почти в каждом раунде
-const BASE_SYMBOLS = Object.values(SymbolKey).filter((symbol) => symbol !== SymbolKey.W)
+// Вайлд и скаттер попадают в сетку только подсадкой: каждый W запускает респин, три S — Hold & Win,
+// и случайное наполнение давало бы их почти в каждом раунде
+const BASE_SYMBOLS = Object.values(SymbolKey).filter((symbol) => symbol !== SymbolKey.W && symbol !== SymbolKey.S)
 
 /** Доступные длины выигрыша для символа: числовые ключи PAY_TABLE в пределах числа барабанов. */
 const countsFor = (symbol: SymbolKey): number[] =>
@@ -46,6 +53,7 @@ export const parseSpinPayload = (payload: unknown): SpinRequestPayload => {
     gameMode: typeof data.gameMode === 'string' ? data.gameMode : '0',
     forceAnticipation: data.forceAnticipation === true,
     forceRespin: data.forceRespin === true,
+    forceHoldWin: data.forceHoldWin === true,
   }
 }
 
@@ -110,15 +118,15 @@ const plantSymbol = (grid: SymbolKey[][], reel: number, symbol: SymbolKey, rando
 }
 
 /**
- * Скаттеры на двух первых барабанах, третий — с вероятностью ANTICIPATION_HIT_PROBABILITY на одном
- * из оставшихся: раунд с гарантированным anticipation и случайной развязкой. Ряды подсаженной
- * линии `line` скаттеры обходят, иначе оборвали бы её выигрыш.
+ * Скаттеры на двух первых барабанах, третий — на одном из оставшихся, если `hit`: раунд с
+ * гарантированным anticipation, третий скаттер запускает Hold & Win. Ряды подсаженной линии `line`
+ * скаттеры обходят, иначе оборвали бы её выигрыш.
  */
-const plantAnticipation = (grid: SymbolKey[][], random: Random, line?: number[]) => {
+const plantAnticipation = (grid: SymbolKey[][], random: Random, line: number[] | undefined, hit: boolean) => {
   plantSymbol(grid, 0, SymbolKey.S, random, line?.[0])
   plantSymbol(grid, 1, SymbolKey.S, random, line?.[1])
 
-  if (random() < ANTICIPATION_HIT_PROBABILITY) {
+  if (hit) {
     const reel = 2 + Math.floor(random() * (REELS - 2))
 
     plantSymbol(grid, reel, SymbolKey.S, random, line?.[reel])
@@ -236,14 +244,57 @@ const generateRespins = (grid: SymbolKey[][], lineIds: string[], bet: number, ra
   return steps
 }
 
+/** Случайная монета: номинал в деньгах. */
+const createCoin = (bet: number, random: Random): number => roundMoney(pickRandom(HOLD_WIN_COIN_MULTIPLIERS, random) * bet)
+
+const countCoins = (frame: (number | null)[][]): number =>
+  frame.reduce((count, column) => count + column.filter((coin) => coin !== null).length, 0)
+
+const sumCoins = (frame: (number | null)[][]): number =>
+  roundMoney(frame.reduce((sum, column) => column.reduce<number>((total, coin) => total + (coin ?? 0), sum), 0))
+
+/**
+ * Бонус Hold & Win: монеты встают на места скаттеров и удерживаются, пустые ячейки крутятся заново.
+ * Новая монета возвращает счётчик к HOLD_WIN_RESPINS, шаг без монет уменьшает его; бонус кончается на
+ * нуле или на полном поле, за полное поле добавляется Grand. Меньше HOLD_WIN_TRIGGER скаттеров — бонуса нет.
+ */
+const generateHoldWin = (grid: SymbolKey[][], bet: number, random: Random): HoldWin | undefined => {
+  const start = grid.map((column) => column.map((symbol) => (symbol === SymbolKey.S ? createCoin(bet, random) : null)))
+  const cells = REELS * ROWS
+
+  if (countCoins(start) < HOLD_WIN_TRIGGER) {
+    return undefined
+  }
+
+  const steps: HoldWinStep[] = []
+
+  let frame = start
+  let respinsLeft = HOLD_WIN_RESPINS
+
+  while (respinsLeft > 0 && countCoins(frame) < cells) {
+    const held = frame.flatMap((column, reel) => column.flatMap((coin, row) => (coin === null ? [] : [{ reel, row }])))
+    const next = frame.map((column) =>
+      column.map((coin) => coin ?? (random() < HOLD_WIN_COIN_PROBABILITY ? createCoin(bet, random) : null))
+    )
+
+    respinsLeft = countCoins(next) > countCoins(frame) ? HOLD_WIN_RESPINS : respinsLeft - 1
+    steps.push({ held, frame: next, respinsLeft })
+    frame = next
+  }
+
+  const grand = countCoins(frame) === cells ? roundMoney(HOLD_WIN_GRAND_MULTIPLIER * bet) : 0
+
+  return { frame: start, respins: HOLD_WIN_RESPINS, steps, grand, win: roundMoney(sumCoins(frame) + grand) }
+}
+
 /**
  * Разыгрывает исход спина: собирает сетку, подсаживает серию по сценарию (или с вероятностью
- * WIN_PROBABILITY), по запросу или сценарию добавляет скаттеры под anticipation и вайлд под респин,
- * детектит выигрыши по всем активным линиям и разыгрывает цепочку респинов.
- * `win` — выигрыш всего раунда: базового кадра и всех шагов респина.
+ * WIN_PROBABILITY), по запросу или сценарию добавляет скаттеры под anticipation и Hold & Win и вайлд
+ * под респин, детектит выигрыши по всем активным линиям и разыгрывает цепочку респинов или бонус.
+ * `win` — выигрыш всего раунда: базового кадра, всех шагов респина и бонуса.
  */
 export const generateSpinOutcome = (
-  { bet, gameMode, forceAnticipation, forceRespin }: SpinRequestPayload,
+  { bet, gameMode, forceAnticipation, forceRespin, forceHoldWin }: SpinRequestPayload,
   { random, scenario }: MockOptions
 ): { transformations: SpinTransformation[]; win: number } => {
   const grid = createGrid(random)
@@ -259,16 +310,24 @@ export const generateSpinOutcome = (
     winLine = plantWin(grid, PAYLINES[pickRandom(lineIds, random)], random)
   }
 
-  if (forceAnticipation || scenario === MockScenario.anticipation) {
-    plantAnticipation(grid, random, winLine)
+  // Бонус и респин взаимоисключаются: респин переписал бы кадр, на скаттерах которого стоят монеты бонуса.
+  // Запрошенный респин важнее бонуса: при нём третий скаттер не подсаживается
+  const isRespinForced = forceRespin || scenario === MockScenario.respin
+
+  // Случайные скаттеры и вайлд только в случайном сценарии: форсированные исходы остаются предсказуемыми
+  if (!isRespinForced && (forceHoldWin || scenario === MockScenario.holdwin)) {
+    plantAnticipation(grid, random, winLine, true)
+  } else if (
+    forceAnticipation ||
+    scenario === MockScenario.anticipation ||
+    (scenario === MockScenario.random && random() < ANTICIPATION_PROBABILITY)
+  ) {
+    plantAnticipation(grid, random, winLine, !isRespinForced && random() < ANTICIPATION_HIT_PROBABILITY)
   }
 
-  // Случайный вайлд только в случайном сценарии: форсированные исходы остаются предсказуемыми
-  if (
-    forceRespin ||
-    scenario === MockScenario.respin ||
-    (scenario === MockScenario.random && random() < RESPIN_PROBABILITY)
-  ) {
+  const holdWin = generateHoldWin(grid, bet, random)
+
+  if (!holdWin && (isRespinForced || (scenario === MockScenario.random && random() < RESPIN_PROBABILITY))) {
     const reel = Math.floor(random() * REELS)
 
     plantSymbol(grid, reel, SymbolKey.W, random, winLine?.[reel])
@@ -295,7 +354,14 @@ export const generateSpinOutcome = (
     transformations.push({ type: 'respins', value: respins })
   }
 
-  return { transformations, win: roundMoney(respins.reduce((sum, step) => sum + step.win, win)) }
+  if (holdWin) {
+    transformations.push({ type: 'holdAndWin', value: holdWin })
+  }
+
+  return {
+    transformations,
+    win: roundMoney(respins.reduce((sum, step) => sum + step.win, win + (holdWin?.win ?? 0))),
+  }
 }
 
 const isMockScenario = (value: string | null): value is MockScenario =>

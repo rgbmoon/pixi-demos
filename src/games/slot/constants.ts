@@ -66,11 +66,17 @@ export const SYMBOL_SKELETONS: Record<SymbolKey, string> = Object.fromEntries(
 // сколько выигравших ячеек одного вида показывается разом; при нехватке пул дорастает сам
 const SYMBOL_POOL_SIZE = 3
 
+/** Ячеек в поле Hold & Win: по одному барабану высотой 1 на каждую ячейку сетки. */
+export const HOLD_WIN_CELLS_COUNT = REELS_COUNT * VISIBLE_SYMBOLS_COUNT
+
 /** Сколько инстансов каждого скелета `SpinePool` держит наготове после прогрева. */
-export const SPINE_WARM_UP: { skeleton: string; count: number }[] = Object.values(SYMBOL_SKELETONS).map((skeleton) => ({
-  skeleton,
-  count: SYMBOL_POOL_SIZE,
-}))
+export const SPINE_WARM_UP: { skeleton: string; count: number }[] = Object.entries(SYMBOL_SKELETONS).map(
+  ([key, skeleton]) => ({
+    skeleton,
+    // Сбор Hold & Win поднимает монеты-скаттеры всего поля разом
+    count: key === SymbolKey.S ? HOLD_WIN_CELLS_COUNT : SYMBOL_POOL_SIZE,
+  })
+)
 
 /** Непрозрачность затемнения поля на разборе выигрыша. */
 export const TINT_ALPHA = 0.55
@@ -138,6 +144,33 @@ export const HELD_FRAME_CROSS_ALPHA = 0.35
 
 /** Пауза между подсветкой удержанных барабанов и стартом респина, мс; в турбо не выдерживается. */
 export const RESPIN_INTRO_MS = 400
+
+// Hold & Win
+/** Смена базовой доски на доску бонуса и обратно, мс. */
+export const HOLD_WIN_SWAP_MS = 300
+/** Пауза между появлением доски бонуса и первым шагом, мс; в турбо не выдерживается. */
+export const HOLD_WIN_INTRO_MS = 600
+/** Пауза перед каждым шагом бонуса, мс; в турбо не выдерживается. */
+export const HOLD_WIN_STEP_MS = 250
+/** Промежуток между монетами при сборе, мс; в турбо монеты собираются разом. */
+export const HOLD_WIN_COLLECT_STAGGER_MS = 120
+/** Сколько собранные монеты держат выигрышную позу, мс. */
+export const HOLD_WIN_COLLECT_HOLD_MS = 800
+/** Кегль номинала монеты в нативных единицах символа. */
+export const COIN_VALUE_FONT_SIZE = 48
+/** Толщина обводки номинала монеты. */
+export const COIN_VALUE_STROKE = 10
+// Сетка и рамки ячеек бонуса рисуются по границам ячеек: арта под них в паке нет
+/** Толщина линий сетки поля бонуса в нативных пикселях зоны символов. */
+export const HOLD_WIN_GRID_THICKNESS = 4
+/** Непрозрачность линий сетки поля бонуса. */
+export const HOLD_WIN_GRID_ALPHA = 0.35
+/** Толщина рамки ячейки с монетой. */
+export const HOLD_WIN_COIN_FRAME_THICKNESS = 6
+/** Непрозрачность символа в пустой ячейке бонуса: монеты на его фоне читаются первыми. */
+export const HOLD_WIN_EMPTY_SYMBOL_ALPHA = 0.5
+/** Кегль надписи Grand над полным полем. */
+export const HOLD_WIN_GRAND_FONT_SIZE = 96
 
 // Тайминги показа выигрыша
 /** Сколько все выигравшие линии и символы показываются разом до разбора по линиям, мс. */
@@ -241,6 +274,12 @@ export const CHECKBOX_FONT_SIZE = 48
 
 /** Сторона подложки чекбокса: в полтора раза меньше средней кнопки. */
 export const CHECKBOX_SIZE = BUTTON_SIZE_UNITS.md / 1.5
+
+/** Доля стороны подложки под точку радио-варианта чекбокса. */
+export const RADIO_DOT_RATIO = 0.36
+
+/** Кегль подписи группы строк в модалке. */
+export const MODAL_GROUP_FONT_SIZE = 40
 
 // Звук
 /** Общая громкость синтезатора: голоса рецептов звучат относительно неё. */

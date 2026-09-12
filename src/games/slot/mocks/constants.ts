@@ -72,8 +72,20 @@ export const INITIAL_BALANCE = 1865789.73
 export const WIN_PROBABILITY = 0.5
 /** Столько скаттеров на вставших барабанах отправляют следующие барабаны в anticipation. */
 export const ANTICIPATION_SCATTERS = 2
-/** Вероятность третьего скаттера в сценарии `anticipation`. */
+/** Вероятность подсадки скаттеров под anticipation в случайном раунде. */
+export const ANTICIPATION_PROBABILITY = 0.15
+/** Вероятность третьего скаттера после двух: он запускает Hold & Win. */
 export const ANTICIPATION_HIT_PROBABILITY = 0.5
+/** Столько скаттеров в кадре базового спина запускают Hold & Win. */
+export const HOLD_WIN_TRIGGER = 3
+/** Счётчик респинов Hold & Win: стартовый и после каждой новой монеты. */
+export const HOLD_WIN_RESPINS = 3
+/** Вероятность монеты в пустой ячейке на шаге Hold & Win. */
+export const HOLD_WIN_COIN_PROBABILITY = 0.06
+/** Номиналы монет в ставках; повтор значения повышает его вес. */
+export const HOLD_WIN_COIN_MULTIPLIERS = [10, 10, 10, 20, 20, 50, 50, 100, 250]
+/** Выплата за полное поле Hold & Win в ставках. */
+export const HOLD_WIN_GRAND_MULTIPLIER = 5000
 /** Вероятность вайлда в случайном раунде: каждый вайлд удерживает свой барабан и запускает респин. */
 export const RESPIN_PROBABILITY = 0.1
 /** Вероятность нового вайлда на шаге респина: он продлевает цепочку. */

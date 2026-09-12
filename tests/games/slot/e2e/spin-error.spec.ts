@@ -1,13 +1,12 @@
 import { expect, test } from '@playwright/test'
 
+import { openGame } from '../../../setup/game-page'
+
 test.describe('ошибка раунда', () => {
   test('доводит отказ сервера до игрока', async ({ page }) => {
-    await page.goto('/slot?scenario=error&seed=1')
+    const spin = await openGame(page, '?scenario=error&seed=1')
 
-    await expect(page.getByRole('status', { name: 'Loading game' })).toBeHidden({ timeout: 30_000 })
-
-    await page.keyboard.press('Tab')
-    await page.getByRole('button', { name: 'Spin' }).dispatchEvent('click')
+    await spin.dispatchEvent('click')
 
     // Весь путь ошибки: мок → транспорт → фаза → шина уведомлений → React
     const snackbar = page.getByText('Spin failed, the bet has been refunded')

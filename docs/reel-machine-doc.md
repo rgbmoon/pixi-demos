@@ -35,7 +35,7 @@
 | `ReelDef`                          | конфиг  | описание барабана: id, ряды, стратегии, аксессор          |
 | `ReelsConfig`                      | конфиг  | состав машины и значения по умолчанию для барабанов       |
 | `SpinStrategy` / `LandingStrategy` | конфиг  | как барабан крутится и как садится                        |
-| `ReelsView` / `ReelView`           | адаптер | PIXI-обёртка: маска, ленты view, единственный такт        |
+| `ReelsView` / `ReelView`           | адаптер | PIXI-обёртка: раскладка лент, маски, единственный такт    |
 | `CellView`                         | адаптер | контракт view ячейки, который реализует игра: `setValue` и `setMoving` |
 
 Что это даёт: новая механика — это стратегия или правка модели, рендер не меняется; модель —
@@ -62,7 +62,7 @@ src/core/reels/                 headless: ни PIXI, ни React, ни тикер
 
 src/engine/reels/               PIXI-адаптер
   types.ts                      CellView, ReelsViewConfig
-  reels-view.ts                 ReelsView — маска, ленты, единственный тикер-колбэк
+  reels-view.ts                 ReelsView — раскладка и маски лент, единственный тикер-колбэк
   reel-view.ts                  ReelView — view слотов одной ленты
 
 <игра>/                         конфиг барабанов, view ячейки, контроллер для фаз — см. §5
@@ -271,10 +271,23 @@ type LandingContext = ReelContext & {
 
 | Член                                     | Что делает                                            |
 | ---------------------------------------- | ----------------------------------------------------- |
-| `constructor(ticker, machine, config)`   | создаёт ленты view, маску зоны и ставит такт на тикер |
+| `constructor(ticker, machine, config)`   | создаёт ленты view, маски по рядам раскладки и ставит такт на тикер |
 | `getCellView(index): TView \| undefined` | view, занимающий ячейку сейчас                        |
 | `getGridViews(): TView[][]`              | сетка view `[барабан][ряд]`                           |
 | `destroy(options?)`                      | снимает такт с тикера                                 |
+
+```ts
+type ReelsViewConfig<TValue, TView extends CellView<TValue>> = {
+  readonly cellWidth: number
+  readonly cellHeight: number
+  getReelPosition?(index: number): PointData // центр верхней ячейки ленты; по умолчанию (cellWidth * index, 0)
+  createCellView(): TView
+}
+```
+
+Ленты с одинаковым `y` делят одну маску-полосу: от крайней левой до крайней правой ленты полосы,
+высотой `rows * cellHeight`. Буферные слоты лежат над полосой и под маску не попадают. Слот 5×3 —
+одна полоса, поле Hold & Win из 15 лент высотой 1 — три.
 
 ---
 
@@ -343,8 +356,6 @@ export class ReelSymbol extends SpineAnimation implements CellView<SymbolKey> {
 this.reelsView = new ReelsView(ticker, machine, {
   cellWidth: CELL_WIDTH,
   cellHeight: CELL_HEIGHT,
-  zoneWidth: REELS_ZONE_WIDTH,
-  zoneHeight: REELS_ZONE_HEIGHT,
   createCellView: () => new ReelSymbol(pool),
 })
 
@@ -581,8 +592,10 @@ export const SLOT_TURBO_STRATEGIES: ReelStrategies = {
 
 **Вторая машина — только у режима со своей сеткой.** Hold & Win меняет геометрию (барабаны высотой
 1 на каждую ячейку), view ячейки (монета с номиналом) и счётчик респинов. Классы машины и адаптера
-те же, игра приносит второй конфиг, свой контроллер и свою реализацию `CellView`. Видимая доска
-переключается сценой по фазе автомата.
+те же, игра приносит второй конфиг (`HOLD_WIN_REELS`), раскладку лент сеткой (`getReelPosition`),
+свой контроллер и свою реализацию `CellView`. Доску меняют фазы бонуса вызовами контроллеров:
+базовая гаснет, доска бонуса проявляется на её месте, после сбора — обратно. Сцена стор не читает,
+а фаза обязана дождаться перехода.
 
 **Слой игры растёт фазами, контроллерами презентации и сценариями мока**: фаза `respin`, подсветка
 удержанного барабана, сценарий мока на каждую механику.
@@ -607,14 +620,14 @@ export const SLOT_TURBO_STRATEGIES: ReelStrategies = {
 | Минимум вращения       | есть    | `minSpinFrames` у `PlannedLandingStrategy`           | —                                                                 |
 | Anticipation           | есть    | `LandOptions.anticipation`, `anticipationCells` у `PlannedLandingStrategy` | —                                           |
 | Held-барабаны, респин  | есть    | `SpinOptions.held`, лесенка по `LandingContext.order`, фаза `respin` | —                                               |
-| Hold & Win-ячейки      | в плане | вторая машина из барабанов высотой 1, фаза фичи      | `rows` перекрывается в `ReelDef`                                  |
+| Hold & Win-ячейки      | есть    | `HOLD_WIN_REELS` — 15 барабанов высотой 1, фазы `holdWinIntro → holdWinSpin → holdWinCollect` | —                        |
 | Каскады                | в плане | падение слотов своим движением, цикл фаз `result → cascade` | `Cell` отделена от `StripSlot` — точка расширения готова   |
 
 ### Что менять не надо
 
 Адаптер. Если механика требует правки `ReelsView` или `ReelView` — почти наверняка её место в
-модели. Единственная законная причина изменить адаптер — новый способ рисовать ячейку, и он
-решается реализацией `CellView` на стороне игры. Адаптер переносит `slot.offset` в view и не
+модели. Законных причин изменить адаптер две: новый способ рисовать ячейку — он решается реализацией
+`CellView` на стороне игры — и новый способ раскладывать ленты, как сетка Hold & Win. Адаптер переносит `slot.offset` в view и не
 зависит от того, как offset посчитан, поэтому каскад его не затрагивает.
 
 ---
@@ -643,6 +656,11 @@ export const SLOT_TURBO_STRATEGIES: ReelStrategies = {
 
 **`getValue()` против `getSlot()`.** Первое — данные раунда, второе — экран. Во время вращения они
 расходятся. Линиям и подсчётам нужно первое, рендеру и оверлеям — второе.
+
+**Маска — на ряд раскладки, не на ленту.** Каждая маска в PIXI — stencil: она рвёт батч и дважды
+рисует сама себя (`ScissorMask` в PIXI 8.19 не зарегистрирован). Поэтому ленты одного ряда делят
+маску, и поле из 15 ячеек стоит три маски, а не пятнадцать. Скрытая доска (`visible = false`) масок
+не рисует.
 
 **Порядок `getStrip()` стабилен**, порядок `getVisibleSlotIndices()` — нет: он пересортировывается
 по позициям. Держать view по индексу можно только от первого.

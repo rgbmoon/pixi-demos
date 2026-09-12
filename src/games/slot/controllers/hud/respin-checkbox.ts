@@ -5,6 +5,7 @@ import { PANEL_ROW_WIDTH } from 'src/games/slot/constants'
 import type { GameEvents } from 'src/games/slot/events'
 import type { SlotStore } from 'src/games/slot/stores/slot'
 import { SLOT_TOKENS } from 'src/games/slot/tokens'
+import { CheckboxVariant, ForcedMechanic } from 'src/games/slot/types'
 import { Checkbox } from 'src/games/slot/ui/hud/checkbox'
 
 /** Чекбокс force respin в настройках. */
@@ -19,10 +20,11 @@ export class RespinCheckboxController extends LiveContainer {
     super()
 
     this.checkbox = new Checkbox({
-      label: 'FORCE RESPIN',
+      label: 'RESPIN',
       width: PANEL_ROW_WIDTH,
+      variant: CheckboxVariant.radio,
       onTap: () => {
-        slotStore.toggleRespinForced()
+        slotStore.toggleForcedMechanic(ForcedMechanic.respin)
         emitter.emit('ui:buttonTapped')
       },
     })
@@ -30,13 +32,13 @@ export class RespinCheckboxController extends LiveContainer {
     this.addChild(this.checkbox)
 
     this.watch(
-      () => slotStore.isRespinForced,
-      (isRespinForced) => this.checkbox.setChecked(isRespinForced),
+      () => slotStore.forcedMechanic === ForcedMechanic.respin,
+      (isChecked) => this.checkbox.setChecked(isChecked),
       { fireImmediately: true }
     )
 
     this.watch(
-      () => slotStore.canToggleRespinForced,
+      () => slotStore.canToggleForcedMechanic(ForcedMechanic.respin),
       (enabled) => this.checkbox.setEnabled(enabled),
       { fireImmediately: true }
     )
