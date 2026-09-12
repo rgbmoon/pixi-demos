@@ -7,6 +7,7 @@ export type SpinRequestPayload = {
   forceAnticipation: boolean
   forceRespin: boolean
   forceHoldWin: boolean
+  forceCascade: boolean
 }
 
 /** Форсирование исхода раунда: стандартный инструмент прогонов и e2e. */
@@ -17,6 +18,7 @@ export const MockScenario = {
   anticipation: 'anticipation',
   respin: 'respin',
   holdwin: 'holdwin',
+  cascade: 'cascade',
   error: 'error',
 } as const
 

@@ -1,4 +1,4 @@
-import type { HoldWin, HoldWinStep, RespinStep, SpinResult } from 'src/games/slot/api/slot'
+import type { CascadeStep, HoldWin, HoldWinStep, RespinStep, SpinResult } from 'src/games/slot/api/slot'
 import type { CoinValue } from 'src/games/slot/types'
 
 /**
@@ -25,4 +25,6 @@ export type GameEvents = {
   'holdWin:cellLanded': { reel: number; row: number; value: CoinValue }
   'holdWin:landed': HoldWinStep
   'holdWin:collected': HoldWin
+  'cascade:started': { removed: CascadeStep['removed'] }
+  'cascade:landed': CascadeStep
 }

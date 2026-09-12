@@ -1,18 +1,25 @@
 import { createRandom, pickRandom } from 'src/core/random'
+import type { CellIndex } from 'src/core/reels/types'
 import type { Random } from 'src/core/types'
-import type { HoldWin, HoldWinStep, Payline, RespinStep, SpinResult } from 'src/games/slot/api/slot'
+import type { CascadeStep, HoldWin, HoldWinStep, Payline, RespinStep, SpinResult } from 'src/games/slot/api/slot'
 import { SymbolKey } from 'src/games/slot/types'
 
 import {
   ANTICIPATION_HIT_PROBABILITY,
   ANTICIPATION_PROBABILITY,
   ANTICIPATION_SCATTERS,
+  CASCADE_MULTIPLIERS,
+  CASCADE_PROBABILITY,
+  CASCADE_REWIN_COUNT,
+  CASCADE_REWIN_PROBABILITY,
   HOLD_WIN_COIN_MULTIPLIERS,
   HOLD_WIN_COIN_PROBABILITY,
   HOLD_WIN_GRAND_MULTIPLIER,
   HOLD_WIN_RESPINS,
   HOLD_WIN_TRIGGER,
   LINES_PER_MODE,
+  MAX_CASCADE_REWINS,
+  MAX_CASCADES,
   MAX_RESPINS,
   PAY_TABLE,
   PAYLINES,
@@ -54,6 +61,7 @@ export const parseSpinPayload = (payload: unknown): SpinRequestPayload => {
     forceAnticipation: data.forceAnticipation === true,
     forceRespin: data.forceRespin === true,
     forceHoldWin: data.forceHoldWin === true,
+    forceCascade: data.forceCascade === true,
   }
 }
 
@@ -244,6 +252,92 @@ const generateRespins = (grid: SymbolKey[][], lineIds: string[], bet: number, ra
   return steps
 }
 
+/** Ячейки выигравших линий кадра без повторов. */
+const collectWinningCells = (paylines: Payline[]): CellIndex[] => {
+  const cells = new Map<string, CellIndex>()
+
+  paylines.forEach(({ line }) =>
+    line.forEach((row, reel) => {
+      if (row !== null) cells.set(`${reel}_${row}`, { reel, row })
+    })
+  )
+
+  return [...cells.values()]
+}
+
+/** Тот же список с началом в случайной позиции: перебор кандидатов без предпочтения первых. */
+const rotate = <T>(items: readonly T[], random: Random): T[] => {
+  const start = Math.floor(random() * items.length)
+
+  return [...items.slice(start), ...items.slice(0, start)]
+}
+
+/**
+ * Подсаживает выигрыш только в упавшие ячейки: ищет линию и символ, при которых каждая ячейка линии на
+ * первых трёх барабанах либо новая, либо уже несёт этот символ. Уцелевшие ячейки не меняются.
+ * `fresh[reel]` — сколько верхних ячеек барабана новые. Возвращает, удалась ли подсадка.
+ */
+const plantCascadeWin = (frame: SymbolKey[][], fresh: number[], lineIds: string[], random: Random): boolean => {
+  for (const lineId of rotate(lineIds, random)) {
+    const cells = PAYLINES[lineId].slice(0, CASCADE_REWIN_COUNT).map((row, reel) => ({ reel, row }))
+    const freshCells = cells.filter(({ reel, row }) => row < fresh[reel])
+
+    if (freshCells.length === 0) continue
+
+    const symbol = rotate(WINNING_SYMBOLS, random).find((candidate) =>
+      cells.every(({ reel, row }) => row < fresh[reel] || frame[reel][row] === candidate)
+    )
+
+    if (!symbol) continue
+
+    freshCells.forEach(({ reel, row }) => {
+      frame[reel][row] = symbol
+    })
+
+    return true
+  }
+
+  return false
+}
+
+/**
+ * Цепочка каскадов: ячейки выигравших линий уходят, уцелевшие символы колонки опускаются, сверху
+ * встают случайные. С вероятностью в новые ячейки подсаживается следующий выигрыш. Цепочка идёт, пока
+ * в кадре есть выигрыш, но не дольше MAX_CASCADES шагов; выигрыш шага умножается на его множитель.
+ */
+const generateCascades = (grid: SymbolKey[][], lineIds: string[], bet: number, random: Random): CascadeStep[] => {
+  const steps: CascadeStep[] = []
+
+  let frame = grid
+  let paylines = detectPaylines(frame, lineIds, bet)
+  let rewins = 0
+
+  while (paylines.length > 0 && steps.length < MAX_CASCADES) {
+    const removed = collectWinningCells(paylines)
+    const isRemoved = (reel: number, row: number) => removed.some((cell) => cell.reel === reel && cell.row === row)
+    const fresh = frame.map((column, reel) => column.filter((_, row) => isRemoved(reel, row)).length)
+
+    frame = frame.map((column, reel) => [
+      ...Array.from({ length: fresh[reel] }, () => pickRandom(BASE_SYMBOLS, random)),
+      ...column.filter((_, row) => !isRemoved(reel, row)),
+    ])
+
+    const canRewin = rewins < MAX_CASCADE_REWINS && random() < CASCADE_REWIN_PROBABILITY
+
+    if (canRewin && plantCascadeWin(frame, fresh, lineIds, random)) {
+      rewins += 1
+    }
+
+    paylines = detectPaylines(frame, lineIds, bet)
+
+    const multiplier = CASCADE_MULTIPLIERS[Math.min(steps.length, CASCADE_MULTIPLIERS.length - 1)]
+
+    steps.push({ removed, frame, multiplier, paylines, win: roundMoney(sumPaylines(paylines) * multiplier) })
+  }
+
+  return steps
+}
+
 /** Случайная монета: номинал в деньгах. */
 const createCoin = (bet: number, random: Random): number => roundMoney(pickRandom(HOLD_WIN_COIN_MULTIPLIERS, random) * bet)
 
@@ -290,15 +384,19 @@ const generateHoldWin = (grid: SymbolKey[][], bet: number, random: Random): Hold
 /**
  * Разыгрывает исход спина: собирает сетку, подсаживает серию по сценарию (или с вероятностью
  * WIN_PROBABILITY), по запросу или сценарию добавляет скаттеры под anticipation и Hold & Win и вайлд
- * под респин, детектит выигрыши по всем активным линиям и разыгрывает цепочку респинов или бонус.
- * `win` — выигрыш всего раунда: базового кадра, всех шагов респина и бонуса.
+ * под респин, детектит выигрыши по всем активным линиям и разыгрывает цепочку респинов, бонус или каскады.
+ * `win` — выигрыш всего раунда: базового кадра, всех шагов респина и каскада и бонуса.
  */
 export const generateSpinOutcome = (
-  { bet, gameMode, forceAnticipation, forceRespin, forceHoldWin }: SpinRequestPayload,
+  { bet, gameMode, forceAnticipation, forceRespin, forceHoldWin, forceCascade }: SpinRequestPayload,
   { random, scenario }: MockOptions
 ): { transformations: SpinTransformation[]; win: number } => {
   const grid = createGrid(random)
   const lineIds = activeLines(gameMode)
+
+  // Каскад убирает выигравшие ячейки и переписывает кадр, на котором стоят вайлды респина и скаттеры
+  // бонуса: заказанный каскад подсаживает выигрыш и обходится без них
+  const isCascadeForced = forceCascade || scenario === MockScenario.cascade
 
   let winLine: number[] | undefined
 
@@ -306,28 +404,33 @@ export const generateSpinOutcome = (
     winLine = plantWin(grid, PAYLINES[lineIds[0]], random, { symbol: SymbolKey.A, count: REELS })
   } else if (scenario === MockScenario.nowin) {
     breakLines(grid, lineIds, random)
-  } else if (random() < WIN_PROBABILITY) {
+  } else if (isCascadeForced || random() < WIN_PROBABILITY) {
     winLine = plantWin(grid, PAYLINES[pickRandom(lineIds, random)], random)
   }
 
   // Бонус и респин взаимоисключаются: респин переписал бы кадр, на скаттерах которого стоят монеты бонуса.
   // Запрошенный респин важнее бонуса: при нём третий скаттер не подсаживается
-  const isRespinForced = forceRespin || scenario === MockScenario.respin
+  const isRespinForced = !isCascadeForced && (forceRespin || scenario === MockScenario.respin)
 
   // Случайные скаттеры и вайлд только в случайном сценарии: форсированные исходы остаются предсказуемыми
-  if (!isRespinForced && (forceHoldWin || scenario === MockScenario.holdwin)) {
+  if (!isCascadeForced && !isRespinForced && (forceHoldWin || scenario === MockScenario.holdwin)) {
     plantAnticipation(grid, random, winLine, true)
   } else if (
-    forceAnticipation ||
-    scenario === MockScenario.anticipation ||
-    (scenario === MockScenario.random && random() < ANTICIPATION_PROBABILITY)
+    !isCascadeForced &&
+    (forceAnticipation ||
+      scenario === MockScenario.anticipation ||
+      (scenario === MockScenario.random && random() < ANTICIPATION_PROBABILITY))
   ) {
     plantAnticipation(grid, random, winLine, !isRespinForced && random() < ANTICIPATION_HIT_PROBABILITY)
   }
 
   const holdWin = generateHoldWin(grid, bet, random)
 
-  if (!holdWin && (isRespinForced || (scenario === MockScenario.random && random() < RESPIN_PROBABILITY))) {
+  if (
+    !holdWin &&
+    !isCascadeForced &&
+    (isRespinForced || (scenario === MockScenario.random && random() < RESPIN_PROBABILITY))
+  ) {
     const reel = Math.floor(random() * REELS)
 
     plantSymbol(grid, reel, SymbolKey.W, random, winLine?.[reel])
@@ -338,6 +441,13 @@ export const generateSpinOutcome = (
   const win = sumPaylines(paylines)
   const anticipation = detectAnticipation(grid)
   const respins = generateRespins(grid, lineIds, bet, random)
+  // Случайный каскад — только у выигрыша без респина и бонуса: механики не сочетаются
+  const hasCascades =
+    paylines.length > 0 &&
+    !holdWin &&
+    respins.length === 0 &&
+    (isCascadeForced || (scenario === MockScenario.random && random() < CASCADE_PROBABILITY))
+  const cascades = hasCascades ? generateCascades(grid, lineIds, bet, random) : []
   const transformations: SpinTransformation[] = [{ type: 'frameInit', value: grid }]
 
   if (anticipation.length > 0) {
@@ -358,9 +468,15 @@ export const generateSpinOutcome = (
     transformations.push({ type: 'holdAndWin', value: holdWin })
   }
 
+  if (cascades.length > 0) {
+    transformations.push({ type: 'cascades', value: cascades })
+  }
+
   return {
     transformations,
-    win: roundMoney(respins.reduce((sum, step) => sum + step.win, win + (holdWin?.win ?? 0))),
+    win: roundMoney(
+      [...respins, ...cascades].reduce((sum, step) => sum + step.win, win + (holdWin?.win ?? 0))
+    ),
   }
 }
 

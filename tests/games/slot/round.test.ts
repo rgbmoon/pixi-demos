@@ -325,6 +325,101 @@ describe('Hold & Win', () => {
   })
 })
 
+describe('каскад', () => {
+  it('проводит цепочку каскадов до кадра без выигрыша и закрывает раунд серверным балансом', async () => {
+    round = await startRound({ scenario: MockScenario.cascade })
+
+    const { store, emitter, log } = round
+    const reels = round.container.get(SLOT_TOKENS.ReelsMachineController) as unknown as ReelsStub
+    const creditBefore = store.credit
+    const { bet } = store
+    const credits: number[] = []
+
+    emitter.on('cascade:landed', () => credits.push(store.credit))
+
+    await round.playSpin()
+
+    const steps = store.spinCascades
+
+    // Сид даёт цепочку из нескольких шагов: без неё проверка порядка пуста
+    expect(steps.length).toBeGreaterThan(1)
+    expect(steps.at(-1)?.paylines).toEqual([])
+    // Каждый шаг — взрыв и падение; выигрыш перед взрывом показан разом, без разбора по линиям
+    expect(log.filter((entry) => entry === 'explode')).toHaveLength(steps.length)
+    expect(log.filter((entry) => entry === 'cascade')).toHaveLength(steps.length)
+    expect(log.indexOf('showAllWins')).toBeLessThan(log.indexOf('explode'))
+    expect(log).not.toContain('playWinLines')
+    expect(reels.readGrid()).toEqual(steps.at(-1)?.frame)
+    // Баланс ответа включает все шаги: до последнего кредит видит только списанную ставку
+    expect(credits).toEqual(steps.map(() => creditBefore - bet))
+    expect(store.credit).toBe(store.spinResult?.balance)
+    expect(store.win).toBe(0)
+  })
+
+  it('копит в строке WIN базовый выигрыш и выигрыши шагов, показывая множитель каждого шага', async () => {
+    round = await startRound({ scenario: MockScenario.cascade })
+
+    const { store, emitter } = round
+    const wins: number[] = []
+    const multipliers: (number | null)[] = []
+
+    reaction(
+      () => store.win,
+      (win) => wins.push(win)
+    )
+    emitter.on('cascade:landed', () => multipliers.push(store.cascadeMultiplier))
+
+    await round.playSpin()
+
+    const steps = store.spinCascades
+    const total = steps.reduce((sum, step) => sum + step.win, store.spinWin)
+
+    // Последняя сумма перед зачислением (оно гасит строку в ноль) — базовый выигрыш плюс шаги
+    expect(wins.at(-2)).toBeCloseTo(total, 2)
+    expect(multipliers).toEqual(steps.map((step) => step.multiplier))
+    // По закрытии раунда множителя на поле нет
+    expect(store.cascadeMultiplier).toBeNull()
+  })
+
+  it('по Stop во время каскада проматывает падение', async () => {
+    round = await startRound({ scenario: MockScenario.cascade })
+
+    const { store, emitter, log } = round
+    const reels = round.container.get(SLOT_TOKENS.ReelsMachineController) as unknown as ReelsStub
+    const canStop: boolean[] = []
+
+    emitter.on('cascade:started', () => {
+      canStop.push(store.canStop)
+      emitter.emit('ui:stopRequested')
+    })
+
+    await round.playSpin()
+
+    const steps = store.spinCascades
+
+    expect(canStop).toEqual(steps.map(() => true))
+    expect(log.filter((entry) => entry === 'cascadeSlam')).toHaveLength(steps.length)
+    expect(reels.readGrid()).toEqual(steps.at(-1)?.frame)
+    // Сигнал Stop живёт только фазу каскада
+    expect(emitter.listenerCounts()['ui:stopRequested'] ?? 0).toBe(0)
+  })
+
+  it('по force присылает каскад и в турбо проводит цепочку без выдержек', async () => {
+    round = await startRound({ scenario: MockScenario.bigwin })
+
+    const { store, log } = round
+
+    store.toggleForcedMechanic(ForcedMechanic.cascade)
+    store.toggleTurboEnabled()
+    await round.playSpin()
+
+    expect(store.spinCascades.length).toBeGreaterThan(0)
+    expect(log).toContain('cascade')
+    expect(log).not.toContain('waitTicks')
+    expect(store.credit).toBe(store.spinResult?.balance)
+  })
+})
+
 describe('турбо-режим', () => {
   /** Ждёт `count` посадок подряд: столько спинов серия прошла с момента вызова. */
   const waitForLandings = async (count: number): Promise<void> => {

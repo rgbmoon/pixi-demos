@@ -70,6 +70,7 @@ export class SpinningPhase implements Phase<PhaseName> {
             forceAnticipation: forcedMechanic === ForcedMechanic.anticipation,
             forceRespin: forcedMechanic === ForcedMechanic.respin,
             forceHoldWin: forcedMechanic === ForcedMechanic.holdWin,
+            forceCascade: forcedMechanic === ForcedMechanic.cascade,
           },
           signal
         )

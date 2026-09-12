@@ -20,6 +20,7 @@ import { AnticipationCheckboxController } from './controllers/hud/anticipation-c
 import { BetMinusButtonController } from './controllers/hud/bet-minus-button'
 import { BetPanelController } from './controllers/hud/bet-panel'
 import { BetPlusButtonController } from './controllers/hud/bet-plus-button'
+import { CascadeCheckboxController } from './controllers/hud/cascade-checkbox'
 import { CreditLabelController } from './controllers/hud/credit-label'
 import { GameModeMinusButtonController } from './controllers/hud/game-mode-minus-button'
 import { GameModePanelController } from './controllers/hud/game-mode-panel'
@@ -37,6 +38,7 @@ import { ReelsMachineController } from './controllers/reels/reels-machine'
 import { SoundController } from './controllers/sound'
 import type { GameEvents } from './events'
 import { BootingPhase } from './phases/booting'
+import { CascadePhase } from './phases/cascade'
 import { HoldWinCollectPhase } from './phases/hold-win-collect'
 import { HoldWinIntroPhase } from './phases/hold-win-intro'
 import { HoldWinSpinPhase } from './phases/hold-win-spin'
@@ -78,6 +80,7 @@ export const bindFlow = (container: Container): void => {
   container.bind(CORE_TOKENS.Phase).to(HoldWinIntroPhase)
   container.bind(CORE_TOKENS.Phase).to(HoldWinSpinPhase)
   container.bind(CORE_TOKENS.Phase).to(HoldWinCollectPhase)
+  container.bind(CORE_TOKENS.Phase).to(CascadePhase)
 }
 
 /** Картинка и звук: контроллеры и собирающая их сцена. */
@@ -219,6 +222,13 @@ const bindScene = (container: Container): void => {
   container
     .bind(SLOT_TOKENS.HoldWinCheckboxController)
     .to(HoldWinCheckboxController)
+    .onDeactivation((checkbox) => {
+      if (!checkbox.destroyed) checkbox.destroy({ children: true })
+    })
+
+  container
+    .bind(SLOT_TOKENS.CascadeCheckboxController)
+    .to(CascadeCheckboxController)
     .onDeactivation((checkbox) => {
       if (!checkbox.destroyed) checkbox.destroy({ children: true })
     })

@@ -92,5 +92,17 @@ export const RESPIN_PROBABILITY = 0.1
 export const RESPIN_WILD_PROBABILITY = 0.5
 /** Предел шагов респина в одном раунде. */
 export const MAX_RESPINS = 3
+/** Вероятность каскада у выигрышного базового спина в случайном раунде без респина и бонуса. */
+export const CASCADE_PROBABILITY = 0.3
+/** Вероятность подсадки нового выигрыша в упавшие ячейки: она продлевает цепочку каскадов. */
+export const CASCADE_REWIN_PROBABILITY = 0.6
+/** Длина подсаживаемой в каскад серии: минимальная выплата большинства символов. */
+export const CASCADE_REWIN_COUNT = 3
+/** Предел подсадок выигрыша в одной цепочке; случайный выигрыш продлевает её и сверх него. */
+export const MAX_CASCADE_REWINS = 3
+/** Предел шагов каскада в одном раунде. */
+export const MAX_CASCADES = 8
+/** Множитель выигрыша на n-м шаге каскада; дальше повторяется последний. */
+export const CASCADE_MULTIPLIERS = [2, 3, 5]
 export const REELS = 5
 export const ROWS = 3

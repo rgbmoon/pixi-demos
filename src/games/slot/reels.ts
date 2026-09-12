@@ -1,6 +1,7 @@
+import { GravityFallStrategy } from 'src/core/reels/strategies/gravity-fall'
 import { LinearSpinStrategy } from 'src/core/reels/strategies/linear-spin'
 import { PlannedLandingStrategy } from 'src/core/reels/strategies/planned-landing'
-import type { PlannedLandingOptions } from 'src/core/reels/strategies/types'
+import type { GravityFallOptions, PlannedLandingOptions } from 'src/core/reels/strategies/types'
 import type { ReelsConfig, ReelStrategies } from 'src/core/reels/types'
 import { CELL_HEIGHT, HOLD_WIN_CELLS_COUNT, REELS_COUNT, VISIBLE_SYMBOLS_COUNT } from 'src/games/slot/constants'
 import type { CoinValue, HoldWinCell, SymbolKey } from 'src/games/slot/types'
@@ -27,6 +28,13 @@ const TURBO_STAGGER_CELLS = 0.5
 const HOLD_WIN_STAGGER_CELLS = 0.5
 const HOLD_WIN_TURBO_STAGGER_CELLS = 0.15
 
+// Падение каскада: ячейку символ пролетает за ~13 кадров, барабаны и ряды стартуют лесенкой
+const FALL_GRAVITY = 2.5
+const FALL_STAGGER_FRAMES = 3
+const FALL_ROW_STAGGER_FRAMES = 2
+const FALL_BOUNCE_CELLS = 0.06
+const FALL_BOUNCE_FRAMES = 8
+
 const LANDING_OPTIONS: PlannedLandingOptions = {
   speed: SPIN_SPEED,
   deceleration: LANDING_DECELERATION,
@@ -36,10 +44,18 @@ const LANDING_OPTIONS: PlannedLandingOptions = {
   staggerCells: LAND_STAGGER_CELLS,
 }
 
+const FALL_OPTIONS: GravityFallOptions = {
+  gravity: FALL_GRAVITY,
+  staggerFrames: FALL_STAGGER_FRAMES,
+  rowStaggerFrames: FALL_ROW_STAGGER_FRAMES,
+  bounceCells: FALL_BOUNCE_CELLS,
+  bounceFrames: FALL_BOUNCE_FRAMES,
+}
+
 /** Данные раунда для лент: сетка символов `[барабан][ряд]`. */
 export type SlotReelsData = SymbolKey[][]
 
-/** Обычное движение: минимум вращения, полная лесенка остановки и паузы anticipation. */
+/** Обычное движение: минимум вращения, полная лесенка остановки, паузы anticipation и падение каскада. */
 export const SLOT_STRATEGIES: ReelStrategies = {
   spinStrategy: new LinearSpinStrategy({ speed: SPIN_SPEED }),
   landingStrategy: new PlannedLandingStrategy({
@@ -47,9 +63,13 @@ export const SLOT_STRATEGIES: ReelStrategies = {
     minSpinFrames: MIN_SPIN_FRAMES,
     anticipationCells: ANTICIPATION_CELLS,
   }),
+  fallStrategy: new GravityFallStrategy(FALL_OPTIONS),
 }
 
-/** Турбо: лента быстрее, лесенка сжата, барабан садится сразу по приходу результата, пауз anticipation нет. */
+/**
+ * Турбо: лента быстрее, лесенка сжата, барабан садится сразу по приходу результата, пауз anticipation нет.
+ * Падение быстрее тем же множителем: ускорение растёт квадратом, лесенка делится на множитель.
+ */
 export const SLOT_TURBO_STRATEGIES: ReelStrategies = {
   spinStrategy: new LinearSpinStrategy({ speed: SPIN_SPEED * TURBO_SPEED_FACTOR }),
   landingStrategy: new PlannedLandingStrategy({
@@ -57,6 +77,13 @@ export const SLOT_TURBO_STRATEGIES: ReelStrategies = {
     speed: SPIN_SPEED * TURBO_SPEED_FACTOR,
     deceleration: LANDING_DECELERATION * TURBO_SPEED_FACTOR ** 2,
     staggerCells: TURBO_STAGGER_CELLS,
+  }),
+  fallStrategy: new GravityFallStrategy({
+    ...FALL_OPTIONS,
+    gravity: FALL_GRAVITY * TURBO_SPEED_FACTOR ** 2,
+    staggerFrames: FALL_STAGGER_FRAMES / TURBO_SPEED_FACTOR,
+    rowStaggerFrames: FALL_ROW_STAGGER_FRAMES / TURBO_SPEED_FACTOR,
+    bounceFrames: FALL_BOUNCE_FRAMES / TURBO_SPEED_FACTOR,
   }),
 }
 

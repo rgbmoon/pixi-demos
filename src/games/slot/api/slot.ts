@@ -23,12 +23,29 @@ const RespinStepSchema = z.object({
 
 export type RespinStep = z.infer<typeof RespinStepSchema>
 
+/** Адрес ячейки поля: барабан и ряд. */
+const CellIndexSchema = z.object({ reel: z.number(), row: z.number() })
+
+/**
+ * Шаг каскада: ячейки прошлого кадра, ушедшие из поля, кадр после падения, множитель шага,
+ * линии кадра с выплатами без множителя и выигрыш шага с множителем.
+ */
+const CascadeStepSchema = z.object({
+  removed: z.array(CellIndexSchema),
+  frame: z.array(z.array(z.string<SymbolKey>())),
+  multiplier: z.number(),
+  paylines: z.array(PaylineSchema),
+  win: z.number(),
+})
+
+export type CascadeStep = z.infer<typeof CascadeStepSchema>
+
 /** Поле Hold & Win `[барабан][ряд]`: номинал монеты в деньгах или `null` — пустая ячейка. */
 const CoinFrameSchema = z.array(z.array(z.number().nullable()))
 
 /** Шаг Hold & Win: удержанные ячейки, поле после посадки и счётчик респинов после шага. */
 const HoldWinStepSchema = z.object({
-  held: z.array(z.object({ reel: z.number(), row: z.number() })),
+  held: z.array(CellIndexSchema),
   frame: CoinFrameSchema,
   respinsLeft: z.number(),
 })
@@ -72,6 +89,10 @@ const TransformationsSchema = z.array(
     z.object({
       type: z.literal('holdAndWin'),
       value: HoldWinSchema,
+    }),
+    z.object({
+      type: z.literal('cascades'),
+      value: z.array(CascadeStepSchema),
     }),
     z.object({
       type: z.literal('multipliersInit'),
@@ -172,6 +193,8 @@ const SpinRequestSchema = z.object({
   forceRespin: z.boolean().optional(),
   /** Просит сервер о раунде с бонусом Hold & Win. */
   forceHoldWin: z.boolean().optional(),
+  /** Просит сервер о раунде с каскадами. */
+  forceCascade: z.boolean().optional(),
 })
 
 export type SpinRequest = z.infer<typeof SpinRequestSchema>

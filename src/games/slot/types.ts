@@ -7,6 +7,7 @@ export const PhaseName = {
   holdWinIntro: 'holdWinIntro',
   holdWinSpin: 'holdWinSpin',
   holdWinCollect: 'holdWinCollect',
+  cascade: 'cascade',
 } as const
 
 export type PhaseName = (typeof PhaseName)[keyof typeof PhaseName]
@@ -32,6 +33,7 @@ export const ForcedMechanic = {
   anticipation: 'anticipation',
   respin: 'respin',
   holdWin: 'holdWin',
+  cascade: 'cascade',
 } as const
 
 export type ForcedMechanic = (typeof ForcedMechanic)[keyof typeof ForcedMechanic]

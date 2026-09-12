@@ -1,6 +1,7 @@
 import { inject, injectable } from 'inversify'
 import type { GameEmitter } from 'src/core/events/game-emitter'
 import { ReelsMachine } from 'src/core/reels/reels-machine'
+import type { CellIndex } from 'src/core/reels/types'
 import type { GameTicker } from 'src/engine/game-ticker'
 import { LiveContainer } from 'src/engine/live-container'
 import type { SpinePool } from 'src/engine/spine-pool'
@@ -15,13 +16,15 @@ import type { SymbolKey } from 'src/games/slot/types'
 import { AnticipationGlowFrame } from 'src/games/slot/ui/reels/anticipation-glow-frame'
 import { ReelsBoard } from 'src/games/slot/ui/reels/reels-board'
 
+import { CascadeMultiplierController } from './cascade-multiplier'
 import { HeldFrameController } from './held-frame'
 import { PaylinesController } from './paylines'
 import { WinOverlayController } from './win-overlay'
 
 /**
  * Машина барабанов: держит модель лент и её поле, наполняет доску стартовыми символами по стору,
- * переключает стратегии движения по турбо-режиму и открывает фазам методы раунда — прокрутку, посадку и показ выигрыша.
+ * переключает стратегии движения по турбо-режиму и открывает фазам методы раунда — прокрутку, посадку,
+ * каскад и показ выигрыша.
  */
 @injectable()
 export class ReelsMachineController extends LiveContainer {
@@ -33,6 +36,7 @@ export class ReelsMachineController extends LiveContainer {
   private readonly heldFrame: HeldFrameController
   private readonly paylines: PaylinesController
   private readonly winOverlay: WinOverlayController
+  private readonly cascadeMultiplier: CascadeMultiplierController
 
   constructor(
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
@@ -52,12 +56,14 @@ export class ReelsMachineController extends LiveContainer {
     this.heldFrame = new HeldFrameController(ticker, slotStore)
     this.paylines = new PaylinesController(ticker, slotStore)
     this.winOverlay = new WinOverlayController(ticker, slotStore, this.paylines)
+    this.cascadeMultiplier = new CascadeMultiplierController(ticker, slotStore)
 
     this.board.addOverlay(this.anticipationGlowFrame)
     this.board.addOverlay(this.heldFrame)
     this.board.addOverlay(this.winOverlay)
     // После вин оверлея: линия пересекает поднятый выигравший символ и должна идти поверх него
     this.board.addOverlay(this.paylines)
+    this.board.addOverlay(this.cascadeMultiplier)
 
     this.addChild(this.board)
 
@@ -120,6 +126,46 @@ export class ReelsMachineController extends LiveContainer {
     } finally {
       stopSignal?.removeEventListener('abort', this.slam)
       this.anticipationGlowFrame.hideAll()
+    }
+  }
+
+  /** Взрывает символы в ячейках `removed`; ячейки остаются пустыми до падения каскада. */
+  async explode(removed: readonly CellIndex[], signal?: AbortSignal): Promise<void> {
+    const symbols = removed.flatMap((cell) => this.board.getCellView(cell) ?? [])
+
+    await Promise.all(symbols.map((symbol) => symbol.explode(signal)))
+  }
+
+  /**
+   * Сажает каскад на символы шага: уцелевшие символы падают на освободившиеся ячейки, новые — сверху.
+   * `stopSignal` проматывает падение так же, как посадку. Каждый вставший барабан объявляется `reel:landed`.
+   */
+  async cascade(
+    symbolKeys: SlotReelsData,
+    removed: readonly CellIndex[],
+    signal?: AbortSignal,
+    stopSignal?: AbortSignal
+  ): Promise<void> {
+    // View взорванных ячеек берутся до каскада: модель переставит слоты, и адрес укажет на другой символ
+    const exploded = removed.flatMap((cell) => this.board.getCellView(cell) ?? [])
+
+    this.machine.setData(symbolKeys)
+
+    const falling = this.machine.cascade({ removed, signal, onReelLanded: this.handleReelLanded })
+
+    // Модель уже подняла их слоты над зоной: адаптер перенесёт позиции раньше, чем кадр отрисуется
+    exploded.forEach((symbol) => symbol.idle())
+
+    if (stopSignal?.aborted) {
+      this.machine.slam()
+    }
+
+    stopSignal?.addEventListener('abort', this.slam, { once: true })
+
+    try {
+      await falling
+    } finally {
+      stopSignal?.removeEventListener('abort', this.slam)
     }
   }
 

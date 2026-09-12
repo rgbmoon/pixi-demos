@@ -2,7 +2,16 @@ import type { Cell } from './cell'
 import { DEFAULT_BUFFER } from './constants'
 import { Reel } from './reel'
 import { Row } from './row'
-import type { CellIndex, LandOptions, ReelDef, ReelOptions, ReelsConfig, ReelStrategies, SpinOptions } from './types'
+import type {
+  CascadeOptions,
+  CellIndex,
+  LandOptions,
+  ReelDef,
+  ReelOptions,
+  ReelsConfig,
+  ReelStrategies,
+  SpinOptions,
+} from './types'
 import { ReelPhase } from './types'
 
 /**
@@ -20,7 +29,11 @@ export class ReelsMachine<TData, TValue> {
   constructor(config: ReelsConfig<TData, TValue>) {
     this.config = config
     this.data = config.data ?? null
-    this.strategies = { spinStrategy: config.spinStrategy, landingStrategy: config.landingStrategy }
+    this.strategies = {
+      spinStrategy: config.spinStrategy,
+      landingStrategy: config.landingStrategy,
+      fallStrategy: config.fallStrategy,
+    }
     this.reels = config.reels.map((def, index) => new Reel(this, def, index, this.resolveOptions(def)))
     this.rows = Array.from({ length: config.rows }, (_, index) => new Row(this, index))
   }
@@ -65,11 +78,16 @@ export class ReelsMachine<TData, TValue> {
     return this.reels.map((reel) => reel.getCells())
   }
 
-  /** Фаза машины: садится, если садится хоть один барабан; крутится, если крутится хоть один. */
+  /**
+   * Фаза машины: садится, если садится хоть один барабан; крутится, если крутится хоть один;
+   * падает, если падает хоть один.
+   */
   getPhase(): ReelPhase {
     if (this.reels.some((reel) => reel.getPhase() === ReelPhase.landing)) return ReelPhase.landing
 
     if (this.reels.some((reel) => reel.getPhase() === ReelPhase.spinning)) return ReelPhase.spinning
+
+    if (this.reels.some((reel) => reel.getPhase() === ReelPhase.falling)) return ReelPhase.falling
 
     return ReelPhase.idle
   }
@@ -115,7 +133,28 @@ export class ReelsMachine<TData, TValue> {
     )
   }
 
-  /** Проматывает посадку всех садящихся барабанов к финальному участку: они встают одновременно. */
+  /**
+   * Каскад по текущим данным: в барабанах с ячейками из `removed` уцелевшие символы падают вниз,
+   * сверху падают новые. Лесенка считается по порядку падающих барабанов, остальные не двигаются.
+   */
+  async cascade(options: CascadeOptions): Promise<void> {
+    const { removed, signal, onReelLanded } = options
+    const falling = this.reels.flatMap((reel) => {
+      const removedRows = removed.filter((cell) => cell.reel === reel.index).map((cell) => cell.row)
+
+      return removedRows.length > 0 ? [{ reel, removedRows }] : []
+    })
+
+    await Promise.all(
+      falling.map(async ({ reel, removedRows }, order) => {
+        await reel.cascade({ removedRows, order, signal })
+
+        onReelLanded?.(reel.index)
+      })
+    )
+  }
+
+  /** Проматывает посадку и падение всех барабанов к финальному участку: они встают одновременно. */
   slam(): void {
     for (const reel of this.reels) {
       reel.slam()

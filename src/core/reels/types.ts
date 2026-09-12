@@ -8,11 +8,12 @@ export type CellIndex = {
   readonly row: number
 }
 
-/** Фаза барабана: свободен, крутится, садится. */
+/** Фаза барабана: свободен, крутится, садится, падает на каскаде. */
 export const ReelPhase = {
   idle: 'idle',
   spinning: 'spinning',
   landing: 'landing',
+  falling: 'falling',
 } as const
 
 export type ReelPhase = (typeof ReelPhase)[keyof typeof ReelPhase]
@@ -93,10 +94,59 @@ export type LandingStrategy = {
   plan(context: LandingContext): LandingPlan
 }
 
-/** Стратегии движения барабана: как он крутится и как садится. */
+/** Падающий слот каскада: ряд, в который он садится, и путь до него. */
+export type FallDrop = {
+  readonly row: number
+  /** Путь слота до ряда, в единицах машины. */
+  readonly distance: number
+}
+
+export type FallContext = ReelContext & {
+  /** Место барабана в лесенке падения: номер среди падающих барабанов каскада. */
+  readonly order: number
+  /** Падающие слоты барабана. */
+  readonly drops: readonly FallDrop[]
+}
+
+/** Расписание падения: путь каждого падающего слота на любом кадре. */
+export type FallPlan = {
+  /** Длительность падения в кадрах приведённой частоты. */
+  readonly totalFrames: number
+  /** Кадр, к которому все слоты коснулись своих рядов: до него `slam` проматывает падение. */
+  readonly settleFrames: number
+  /** Путь слота `drop` (индекс в `FallContext.drops`) через `frames` кадров после начала падения. */
+  positionAt(drop: number, frames: number): number
+}
+
+/** Как слоты барабана падают на каскаде: строит расписание по падающим слотам. */
+export type FallStrategy = {
+  plan(context: FallContext): FallPlan
+}
+
+/** Стратегии движения барабана: как он крутится, как садится и как падает на каскаде. */
 export type ReelStrategies = {
   readonly spinStrategy: SpinStrategy
   readonly landingStrategy: LandingStrategy
+  /** Без неё машина каскадов не принимает. */
+  readonly fallStrategy?: FallStrategy
+}
+
+/** Настройки падения одного барабана. */
+export type ReelCascadeOptions = {
+  /** Ряды, ушедшие из поля. */
+  readonly removedRows: readonly number[]
+  /** Место барабана в лесенке падения; по умолчанию — его индекс. */
+  readonly order?: number
+  readonly signal?: AbortSignal
+}
+
+/** Настройки каскада машины. */
+export type CascadeOptions = {
+  /** Ячейки, ушедшие из поля: уцелевшие символы их колонок падают вниз, сверху падают новые. */
+  readonly removed: readonly CellIndex[]
+  readonly signal?: AbortSignal
+  /** Зовётся с номером барабана, как только его слоты встали. */
+  readonly onReelLanded?: (reel: number) => void
 }
 
 /** Слот ленты: движущаяся ячейка, которую рисует адаптер. */
@@ -122,6 +172,7 @@ export type ReelDef<TData, TValue> = {
   readonly buffer?: number
   readonly spinStrategy?: SpinStrategy
   readonly landingStrategy?: LandingStrategy
+  readonly fallStrategy?: FallStrategy
   readonly accessorFn?: (data: TData, index: CellIndex) => TValue | undefined
   readonly meta?: ReelMeta
 }

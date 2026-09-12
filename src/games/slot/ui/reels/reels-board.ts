@@ -1,5 +1,6 @@
 import { Container } from 'pixi.js'
 import type { ReelsMachine } from 'src/core/reels/reels-machine'
+import type { CellIndex } from 'src/core/reels/types'
 import type { GameTicker } from 'src/engine/game-ticker'
 import { ReelsView } from 'src/engine/reels/reels-view'
 import type { SpinePool } from 'src/engine/spine-pool'
@@ -45,6 +46,11 @@ export class ReelsBoard extends Container {
   /** View видимых символов по барабанам — сетка, по которой владелец ищет выигравшие ячейки. */
   getGridViews(): ReelSymbol[][] {
     return this.reelsView.getGridViews()
+  }
+
+  /** View символа, стоящего в ячейке сейчас. */
+  getCellView(index: CellIndex): ReelSymbol | undefined {
+    return this.reelsView.getCellView(index)
   }
 
   showTint(signal?: AbortSignal): Promise<void> {
