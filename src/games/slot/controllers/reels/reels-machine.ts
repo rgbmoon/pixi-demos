@@ -22,9 +22,8 @@ import { PaylinesController } from './paylines'
 import { WinOverlayController } from './win-overlay'
 
 /**
- * Машина барабанов: держит модель лент и её поле, наполняет доску стартовыми символами по стору,
- * переключает стратегии движения по турбо-режиму и открывает фазам методы раунда — прокрутку, посадку,
- * каскад и показ выигрыша.
+ * Контроллер барабанов: создаёт машину и доску, ставит стартовые символы из стора, меняет стратегии по
+ * турбо-режиму. Фазам даёт методы раунда: прокрутку, посадку, каскад и показ выигрыша.
  */
 @injectable()
 export class ReelsMachineController extends LiveContainer {
@@ -55,7 +54,7 @@ export class ReelsMachineController extends LiveContainer {
     this.anticipationGlowFrame = new AnticipationGlowFrame(ticker)
     this.heldFrame = new HeldFrameController(ticker, slotStore)
     this.paylines = new PaylinesController(ticker, slotStore)
-    this.winOverlay = new WinOverlayController(ticker, slotStore, this.paylines)
+    this.winOverlay = new WinOverlayController(ticker, slotStore, this.paylines, (cell) => this.board.getCellView(cell))
     this.cascadeMultiplier = new CascadeMultiplierController(ticker, slotStore)
 
     this.board.addOverlay(this.anticipationGlowFrame)
@@ -95,10 +94,8 @@ export class ReelsMachineController extends LiveContainer {
   }
 
   /**
-   * Сажает барабаны на символы раунда; барабаны из `anticipation` садятся с паузой.
-   * `stopSignal` проматывает посадку к финалу: сработавший до вызова — с первого кадра, сработавший
-   * по ходу — с момента срабатывания. Каждый вставший барабан объявляется событием `reel:landed`,
-   * начало паузы — `reel:anticipationStarted`.
+   * Сажает барабаны на символы раунда, барабаны из `anticipation` — с паузой. `stopSignal` уходит в машину
+   * как `slamSignal`. Остановка барабана объявляется `reel:landed`, начало паузы — `reel:anticipationStarted`.
    */
   async land(
     symbolKeys: SlotReelsData | undefined,
@@ -108,23 +105,15 @@ export class ReelsMachineController extends LiveContainer {
   ): Promise<void> {
     this.machine.setData(symbolKeys ?? null)
 
-    const landing = this.machine.land({
-      signal,
-      anticipation,
-      onReelLanded: this.handleReelLanded,
-      onReelAnticipated: this.handleReelAnticipated,
-    })
-
-    if (stopSignal?.aborted) {
-      this.machine.slam()
-    }
-
-    stopSignal?.addEventListener('abort', this.slam, { once: true })
-
     try {
-      await landing
+      await this.machine.land({
+        signal,
+        slamSignal: stopSignal,
+        anticipation,
+        onReelLanded: this.handleReelLanded,
+        onReelAnticipated: this.handleReelAnticipated,
+      })
     } finally {
-      stopSignal?.removeEventListener('abort', this.slam)
       this.anticipationGlowFrame.hideAll()
     }
   }
@@ -137,8 +126,8 @@ export class ReelsMachineController extends LiveContainer {
   }
 
   /**
-   * Сажает каскад на символы шага: уцелевшие символы падают на освободившиеся ячейки, новые — сверху.
-   * `stopSignal` проматывает падение так же, как посадку. Каждый вставший барабан объявляется `reel:landed`.
+   * Каскад на символы шага: уцелевшие символы падают на освободившиеся ячейки, новые — сверху. `stopSignal`
+   * уходит в машину как `slamSignal`, остановка барабана объявляется `reel:landed`.
    */
   async cascade(
     symbolKeys: SlotReelsData,
@@ -151,22 +140,17 @@ export class ReelsMachineController extends LiveContainer {
 
     this.machine.setData(symbolKeys)
 
-    const falling = this.machine.cascade({ removed, signal, onReelLanded: this.handleReelLanded })
+    const falling = this.machine.cascade({
+      removed,
+      signal,
+      slamSignal: stopSignal,
+      onReelLanded: this.handleReelLanded,
+    })
 
     // Модель уже подняла их слоты над зоной: адаптер перенесёт позиции раньше, чем кадр отрисуется
     exploded.forEach((symbol) => symbol.idle())
 
-    if (stopSignal?.aborted) {
-      this.machine.slam()
-    }
-
-    stopSignal?.addEventListener('abort', this.slam, { once: true })
-
-    try {
-      await falling
-    } finally {
-      stopSignal?.removeEventListener('abort', this.slam)
-    }
+    await falling
   }
 
   /** Проявляет доску барабанов после бонуса. */
@@ -176,7 +160,7 @@ export class ReelsMachineController extends LiveContainer {
     await tweenAlpha(this.ticker, this, 1, HOLD_WIN_SWAP_MS, signal)
   }
 
-  /** Гасит доску барабанов на время бонуса; скрытая доска не рисуется и не держит маску. */
+  /** Гасит доску барабанов на время бонуса; скрытая доска не рисуется, её маски тоже. */
   async hide(signal?: AbortSignal): Promise<void> {
     await tweenAlpha(this.ticker, this, 0, HOLD_WIN_SWAP_MS, signal)
 
@@ -192,15 +176,11 @@ export class ReelsMachineController extends LiveContainer {
   }
 
   showAllWins(signal?: AbortSignal, durationMs?: number): Promise<void> {
-    return this.winOverlay.showAllWins(this.board.getGridViews(), signal, durationMs)
+    return this.winOverlay.showAllWins(signal, durationMs)
   }
 
   playWinLines(signal?: AbortSignal): Promise<void> {
-    return this.winOverlay.playWinLines(this.board.getGridViews(), signal)
-  }
-
-  private slam = (): void => {
-    this.machine.slam()
+    return this.winOverlay.playWinLines(signal)
   }
 
   private handleReelLanded = (reel: number): void => {

@@ -3,7 +3,7 @@ import type { StripSlot } from 'src/core/reels/types'
 
 import type { CellView } from './types'
 
-/** Лента одного барабана: view слотов в порядке модели, позиции берутся из неё же. */
+/** View слотов одного барабана в порядке `getStrip()`. */
 export class ReelView<TValue, TView extends CellView<TValue>> extends Container {
   private readonly views: TView[]
 
@@ -19,13 +19,13 @@ export class ReelView<TValue, TView extends CellView<TValue>> extends Container 
     return this.views[slotIndex]
   }
 
-  /** Переносит состояние слотов в view. Порядок слотов модели стабилен, поэтому view слота не меняется. */
-  sync(strip: readonly StripSlot<TValue>[]): void {
+  /** Записывает в view позицию, значение и позу слотов; `scale` переводит единицы модели в пиксели. */
+  sync(strip: readonly Readonly<StripSlot<TValue>>[], scale: number): void {
     for (let slotIndex = 0; slotIndex < strip.length; slotIndex++) {
       const slot = strip[slotIndex]
       const view = this.views[slotIndex]
 
-      view.y = slot.offset
+      view.y = slot.offset * scale
 
       view.setValue(slot.value)
       view.setMoving(slot.moving)

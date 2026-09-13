@@ -2,7 +2,7 @@ import type { SpinStrategy } from 'src/core/reels/types'
 
 import type { LinearSpinOptions } from './types'
 
-/** Равномерная прокрутка: лента идёт с постоянной скоростью, пока барабан не поймают. */
+/** Прокрутка с постоянной скоростью `speed` единиц за кадр. */
 export class LinearSpinStrategy implements SpinStrategy {
   private readonly speed: number
 

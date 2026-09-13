@@ -1,6 +1,7 @@
 import { inject, injectable } from 'inversify'
 import type { GameEmitter } from 'src/core/events/game-emitter'
 import type { Phase } from 'src/core/fsm/types'
+import { HOLD_WIN_COLLECT_STAGGER_MS } from 'src/games/slot/constants'
 import type { HoldWinController } from 'src/games/slot/controllers/reels/hold-win'
 import type { ReelsMachineController } from 'src/games/slot/controllers/reels/reels-machine'
 import type { GameEvents } from 'src/games/slot/events'
@@ -40,7 +41,8 @@ export class HoldWinCollectPhase implements Phase<PhaseName> {
       throw new Error('Hold & Win collect phase entered without a bonus')
     }
 
-    await this.holdWin.collect(signal)
+    // Турбо поднимает монеты разом
+    await this.holdWin.collect(this.slotStore.isTurboEnabled ? 0 : HOLD_WIN_COLLECT_STAGGER_MS, signal)
 
     this.slotStore.collectHoldWin()
     this.emitter.emit('holdWin:collected', holdWin)

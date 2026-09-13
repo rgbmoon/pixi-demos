@@ -195,6 +195,28 @@ describe('Reel', () => {
     expect(anticipated).toEqual([])
   })
 
+  it('по сигналу промотки посреди посадки сажает все барабаны в один кадр на значения раунда', async () => {
+    const grid = createGrid()
+    const machine = createMachine()
+    const stop = new AbortController()
+
+    machine.spin()
+    machine.advance(25)
+    machine.setData(grid)
+
+    const landing = machine.land({ slamSignal: stop.signal })
+
+    for (let frame = 0; frame < 5; frame += 1) {
+      machine.advance(1)
+    }
+
+    stop.abort()
+
+    expect(new Set(recordStopFrames(machine)).size).toBe(1)
+    await landing
+    expect(readVisibleGrid(machine)).toEqual(grid)
+  })
+
   it('объявляет вход в паузу только ждущим барабанам, через лесенку после посадки соседа слева', () => {
     const machine = createAnticipationMachine()
     const clock = { frame: 0 }

@@ -9,16 +9,19 @@ import type {
   ReelDef,
   ReelOptions,
   ReelsConfig,
+  ReelsModel,
   ReelStrategies,
   SpinOptions,
 } from './types'
 import { ReelPhase } from './types'
 
 /**
- * Машина барабанов: держит данные раунда, состав барабанов и общий такт модели.
- * Ничего не рисует и не знает про тикер — шаг приносит владелец вызовом `advance`.
+ * Машина барабанов: данные раунда, барабаны и стратегии по умолчанию. Передаёт вызовы раунда барабанам
+ * и вычисляет параметры, которые зависят от соседних барабанов.
  */
-export class ReelsMachine<TData, TValue> {
+export class ReelsMachine<TData, TValue> implements ReelsModel<TValue> {
+  readonly cellHeight: number
+
   private readonly config: ReelsConfig<TData, TValue>
   private readonly reels: Reel<TData, TValue>[]
   private readonly rows: Row<TData, TValue>[]
@@ -28,6 +31,7 @@ export class ReelsMachine<TData, TValue> {
 
   constructor(config: ReelsConfig<TData, TValue>) {
     this.config = config
+    this.cellHeight = config.cellHeight
     this.data = config.data ?? null
     this.strategies = {
       spinStrategy: config.spinStrategy,
@@ -42,7 +46,7 @@ export class ReelsMachine<TData, TValue> {
     return this.data
   }
 
-  /** Кладёт результат раунда: из него посадка берёт значения, а ячейки — `getValue`. */
+  /** Записывает данные раунда: из них читают посадка, каскад и `Cell.getValue`. */
   setData(data: TData | null): void {
     this.data = data
   }
@@ -52,7 +56,7 @@ export class ReelsMachine<TData, TValue> {
     return this.strategies
   }
 
-  /** Меняет стратегии машины по умолчанию. Барабаны берут их на старте спина, текущий раунд не меняется. */
+  /** Меняет стратегии по умолчанию; барабан применяет их со следующего `spin`. */
   setStrategies(strategies: ReelStrategies): void {
     this.strategies = strategies
   }
@@ -78,10 +82,7 @@ export class ReelsMachine<TData, TValue> {
     return this.reels.map((reel) => reel.getCells())
   }
 
-  /**
-   * Фаза машины: садится, если садится хоть один барабан; крутится, если крутится хоть один;
-   * падает, если падает хоть один.
-   */
+  /** Фаза машины по приоритету: `landing`, `spinning`, `falling`, если такая фаза есть хотя бы у одного барабана, иначе `idle`. */
   getPhase(): ReelPhase {
     if (this.reels.some((reel) => reel.getPhase() === ReelPhase.landing)) return ReelPhase.landing
 
@@ -92,14 +93,14 @@ export class ReelsMachine<TData, TValue> {
     return ReelPhase.idle
   }
 
-  /** Ставит ленты в исходную позицию по текущим данным: стартовая доска раунда. */
+  /** Ставит ленты барабанов в покое на текущие данные: стартовая доска. */
   reset(): void {
     for (const reel of this.reels) {
       reel.reset()
     }
   }
 
-  /** Запускает прокрутку всех барабанов, кроме удержанных: те остаются в покое до конца раунда. */
+  /** Запускает прокрутку всех барабанов, кроме `held`. */
   spin(options: SpinOptions = {}): void {
     const { held = [] } = options
 
@@ -109,62 +110,79 @@ export class ReelsMachine<TData, TValue> {
   }
 
   /**
-   * Сажает крутящиеся барабаны; лесенка считается по их порядку, удержанные в ней не участвуют.
-   * Барабан получает паузу за каждый барабан anticipation слева от себя и за
-   * себя, если он в списке: так он не встанет раньше соседа, который ещё ждёт. Собственная пауза
-   * есть только у барабанов из списка — о входе в неё сообщает `onReelAnticipated`.
+   * Сажает крутящиеся барабаны лесенкой по их порядку. Барабан получает паузу за каждый барабан
+   * из `anticipation` с индексом не больше своего, собственную — только если он сам в списке.
    */
   async land(options: LandOptions = {}): Promise<void> {
-    const { signal, anticipation = [], onReelLanded, onReelAnticipated } = options
+    const { signal, slamSignal, anticipation = [], onReelLanded, onReelAnticipated } = options
     const spinning = this.reels.filter((reel) => reel.getPhase() === ReelPhase.spinning)
 
-    await Promise.all(
+    const landing = Promise.all(
       spinning.map(async (reel, order) => {
         await reel.land({
           signal,
           order,
-          anticipation: anticipation.filter((index) => index <= reel.index).length,
-          anticipating: anticipation.includes(reel.index),
+          anticipationPauses: anticipation.filter((index) => index <= reel.index).length,
+          isAnticipating: anticipation.includes(reel.index),
           onAnticipated: () => onReelAnticipated?.(reel.index),
         })
 
         onReelLanded?.(reel.index)
       })
     )
+
+    await this.awaitWithSlam(landing, slamSignal)
   }
 
-  /**
-   * Каскад по текущим данным: в барабанах с ячейками из `removed` уцелевшие символы падают вниз,
-   * сверху падают новые. Лесенка считается по порядку падающих барабанов, остальные не двигаются.
-   */
+  /** Каскад по текущим данным в барабанах с ячейками из `removed`; место в лесенке — номер среди падающих. */
   async cascade(options: CascadeOptions): Promise<void> {
-    const { removed, signal, onReelLanded } = options
+    const { removed, signal, slamSignal, onReelLanded } = options
     const falling = this.reels.flatMap((reel) => {
       const removedRows = removed.filter((cell) => cell.reel === reel.index).map((cell) => cell.row)
 
       return removedRows.length > 0 ? [{ reel, removedRows }] : []
     })
 
-    await Promise.all(
+    const fall = Promise.all(
       falling.map(async ({ reel, removedRows }, order) => {
         await reel.cascade({ removedRows, order, signal })
 
         onReelLanded?.(reel.index)
       })
     )
+
+    await this.awaitWithSlam(fall, slamSignal)
   }
 
-  /** Проматывает посадку и падение всех барабанов к финальному участку: они встают одновременно. */
+  /** Переводит посадку и падение всех барабанов к началу финального участка: они останавливаются одновременно. */
   slam(): void {
     for (const reel of this.reels) {
       reel.slam()
     }
   }
 
+  /** Продвигает движения всех барабанов на `deltaFrames` кадров. */
   advance(deltaFrames: number): void {
     for (const reel of this.reels) {
       reel.advance(deltaFrames)
     }
+  }
+
+  /** Ждёт движение и вызывает `slam` по `slamSignal`: сразу, если сигнал уже сработал, иначе в момент срабатывания. */
+  private async awaitWithSlam(motion: Promise<unknown>, slamSignal?: AbortSignal): Promise<void> {
+    if (slamSignal?.aborted) this.slam()
+
+    slamSignal?.addEventListener('abort', this.handleSlam, { once: true })
+
+    try {
+      await motion
+    } finally {
+      slamSignal?.removeEventListener('abort', this.handleSlam)
+    }
+  }
+
+  private handleSlam = (): void => {
+    this.slam()
   }
 
   /** Опции барабана: конфиг машины, перекрытый его описанием. */

@@ -1,9 +1,9 @@
-import type { ReelStrip } from 'src/core/reels/strip'
+import type { ReelStrip } from 'src/core/reels/reel-strip'
 import { ReelPhase, type ReelContext, type SpinStrategy, type StripSlot } from 'src/core/reels/types'
 
 import type { ReelMotion } from './types'
 
-/** Бесконечная прокрутка: лента идёт на шаг стратегии, обёрнутые слоты получают наполнение. */
+/** Прокрутка без конца: каждый кадр лента сдвигается на шаг `SpinStrategy`, обёрнутые слоты получают наполнение. */
 export class SpinMotion<TValue> implements ReelMotion {
   readonly phase = ReelPhase.spinning
 
@@ -11,7 +11,7 @@ export class SpinMotion<TValue> implements ReelMotion {
   private readonly strategy: SpinStrategy
   private readonly context: ReelContext
   private readonly onWrap: (slot: StripSlot<TValue>) => void
-  /** Сколько кадров барабан крутится до начала посадки. */
+  /** Кадры прокрутки с её начала: посадка учитывает их в минимуме вращения. */
   private spunFrames = 0
 
   constructor(
@@ -37,7 +37,7 @@ export class SpinMotion<TValue> implements ReelMotion {
   }
 
   slam(): void {
-    // Промотке нечего сокращать: конец прокрутки задаёт посадка
+    // У прокрутки нет финального участка
   }
 
   isDone(): boolean {

@@ -25,8 +25,8 @@ const createContext = (
   fromOffset: number,
   index = 0,
   spunFrames = 0,
-  anticipation = 0,
-  anticipating = false
+  anticipationPauses = 0,
+  isAnticipating = false
 ): LandingContext => ({
   index,
   order: index,
@@ -36,8 +36,8 @@ const createContext = (
   stripHeight: STRIP_HEIGHT,
   fromOffset,
   spunFrames,
-  anticipation,
-  anticipating,
+  anticipationPauses,
+  isAnticipating,
 })
 
 /** Насколько лента промахнулась мимо ближайшей границы ячейки. */

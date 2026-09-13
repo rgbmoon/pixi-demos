@@ -1,6 +1,6 @@
 import { Container, Graphics } from 'pixi.js'
 import { PALETTE } from 'src/core/palette'
-import type { ReelsMachine } from 'src/core/reels/reels-machine'
+import type { ReelsModel } from 'src/core/reels/types'
 import type { GameTicker } from 'src/engine/game-ticker'
 import { ReelsView } from 'src/engine/reels/reels-view'
 import type { SpinePool } from 'src/engine/spine-pool'
@@ -16,7 +16,6 @@ import {
   REELS_COUNT,
   VISIBLE_SYMBOLS_COUNT,
 } from 'src/games/slot/constants'
-import type { HoldWinReelsData } from 'src/games/slot/reels'
 import { type HoldWinCell, LabelColor } from 'src/games/slot/types'
 import { Label } from 'src/games/slot/ui/hud/label'
 import { getHoldWinReelPosition } from 'src/games/slot/utils'
@@ -31,15 +30,15 @@ import { ReelsFrame } from './reels-frame'
  */
 export class HoldWinBoard extends Container {
   private readonly frame: ReelsFrame
-  private readonly reelsView: ReelsView<HoldWinReelsData, HoldWinCell, Coin>
+  private readonly reelsView: ReelsView<HoldWinCell, Coin>
   private readonly grid = new Graphics()
   private readonly coinFrames = new Graphics()
   private readonly grandLabel = new Label({ color: LabelColor.cyan, fontSize: HOLD_WIN_GRAND_FONT_SIZE })
 
-  constructor(ticker: GameTicker, machine: ReelsMachine<HoldWinReelsData, HoldWinCell>, pool: SpinePool) {
+  constructor(ticker: GameTicker, model: ReelsModel<HoldWinCell>, pool: SpinePool) {
     super()
 
-    this.reelsView = new ReelsView(ticker, machine, {
+    this.reelsView = new ReelsView(ticker, model, {
       cellWidth: CELL_WIDTH,
       cellHeight: CELL_HEIGHT,
       getReelPosition: getHoldWinReelPosition,
@@ -68,9 +67,9 @@ export class HoldWinBoard extends Container {
     this.addChild(this.frame)
   }
 
-  /** Монеты по лентам бонуса: у каждой ленты одна видимая ячейка. */
-  getCoins(): (Coin | undefined)[] {
-    return this.reelsView.getGridViews().map(([coin]) => coin)
+  /** View единственной видимой ячейки ленты бонуса. */
+  getCoin(index: number): Coin | undefined {
+    return this.reelsView.getCellView({ reel: index, row: 0 })
   }
 
   /** Обводит циан-рамкой ячейки из списка; остальные рамки снимает. */

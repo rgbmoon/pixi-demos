@@ -1,28 +1,26 @@
-import { inject, injectable } from 'inversify'
+import type { GameEmitter } from 'src/core/events/game-emitter'
 import { LiveContainer } from 'src/engine/live-container'
 import { PANEL_BUTTON_GAP, PANEL_WIDTH } from 'src/games/slot/constants'
+import type { GameEvents } from 'src/games/slot/events'
 import type { SlotStore } from 'src/games/slot/stores/slot'
-import { SLOT_TOKENS } from 'src/games/slot/tokens'
 import { Panel } from 'src/games/slot/ui/hud/panel'
 
-import type { GameModeMinusButtonController } from './game-mode-minus-button'
-import type { GameModePlusButtonController } from './game-mode-plus-button'
+import { GameModeMinusButtonController } from './game-mode-minus-button'
+import { GameModePlusButtonController } from './game-mode-plus-button'
 
 
 /**
  * Панель режима игры: показывает число линий, участвующих в раунде,
  * и расставляет вокруг плашки кнопки шага по режимам.
  */
-@injectable()
 export class GameModePanelController extends LiveContainer {
   private readonly panel = new Panel('LINES')
 
-  constructor(
-    @inject(SLOT_TOKENS.SlotStore) slotStore: SlotStore,
-    @inject(SLOT_TOKENS.GameModeMinusButtonController) minusButton: GameModeMinusButtonController,
-    @inject(SLOT_TOKENS.GameModePlusButtonController) plusButton: GameModePlusButtonController
-  ) {
+  constructor(slotStore: SlotStore, emitter: GameEmitter<GameEvents>) {
     super()
+
+    const minusButton = new GameModeMinusButtonController(slotStore, emitter)
+    const plusButton = new GameModePlusButtonController(slotStore, emitter)
 
     minusButton.position.set(-(PANEL_WIDTH / 2 + PANEL_BUTTON_GAP + minusButton.sizeUnits), -minusButton.sizeUnits / 2)
     plusButton.position.set(PANEL_WIDTH / 2 + PANEL_BUTTON_GAP, -plusButton.sizeUnits / 2)

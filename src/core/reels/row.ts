@@ -1,7 +1,7 @@
 import type { Cell } from './cell'
 import type { ReelsMachine } from './reels-machine'
 
-/** Поперечный ряд поля: по ячейке с каждого барабана. Им адресуются линии выплат. */
+/** Поперечный ряд поля: по ячейке с каждого барабана. */
 export class Row<TData, TValue> {
   readonly index: number
   readonly machine: ReelsMachine<TData, TValue>

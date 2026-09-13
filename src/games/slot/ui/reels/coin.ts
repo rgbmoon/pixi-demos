@@ -20,14 +20,14 @@ const TRACK_MAIN = 0
 /**
  * Ячейка Hold & Win: монета — спрайт скаттера с номиналом, пустая ячейка — приглушённый случайный символ
  * игры, символ наполнения — спрайт символа на прокрутке. Номинал виден только в покое; выигрышную позу
- * держит скелет скаттера из пула.
+ * рисует скелет скаттера из пула.
  */
 export class Coin extends SpineAnimation implements CellView<HoldWinCell> {
   private readonly artSprite = new Sprite()
   private readonly valueLabel = new Label({ color: LabelColor.white, fontSize: COIN_VALUE_FONT_SIZE })
 
   private value: HoldWinCell = null
-  /** Символ пустой ячейки: выбирается заново на каждой посадке в пустоту и держится до следующей. */
+  /** Символ пустой ячейки: выбирается заново на каждой посадке в пустоту и сохраняется до следующей. */
   private emptyKey: SymbolKey = getRandomEmptyCellSymbolKey()
   private isMoving = false
   private isWin = false
@@ -60,7 +60,7 @@ export class Coin extends SpineAnimation implements CellView<HoldWinCell> {
     this.render()
   }
 
-  /** Ведёт позу движения. Выигрышную позу не трогает: её ставит и снимает сбор. */
+  /** Переключает позу движения; выигрышную позу не меняет, её ставит и снимает сбор монет. */
   setMoving(moving: boolean): void {
     if (this.isWin || moving === this.isMoving) return
 
@@ -69,18 +69,13 @@ export class Coin extends SpineAnimation implements CellView<HoldWinCell> {
     this.render()
   }
 
-  /** Номинал монеты; у пустой ячейки и символа наполнения его нет. */
-  getValue(): number {
-    return typeof this.value === 'number' ? this.value : 0
-  }
-
   win(): void {
     if (this.isWin || typeof this.value !== 'number') return
 
     this.isWin = true
 
     this.attach(SYMBOL_SKELETONS[SymbolKey.S])
-    // Скелет встаёт последним ребёнком: номинал поднимается над ним
+    // Повторный addChild переносит номинал поверх скелета
     this.addChild(this.valueLabel)
     this.play(TRACK_MAIN, 'win')
 
@@ -107,7 +102,7 @@ export class Coin extends SpineAnimation implements CellView<HoldWinCell> {
     this.valueLabel.visible = typeof value === 'number' && !this.isMoving
   }
 
-  /** Символ арта: наполнение показывает себя, монета — скаттер, пустая ячейка — свой случайный символ. */
+  /** Символ арта: у наполнения — его символ, у монеты — скаттер, у пустой ячейки — её случайный символ. */
   private getArtKey(): SymbolKey {
     if (typeof this.value === 'string') return this.value
 

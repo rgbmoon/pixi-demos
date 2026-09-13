@@ -16,22 +16,12 @@ import {
   SPINE_WARM_UP,
 } from './constants'
 import { BackgroundController } from './controllers/background'
-import { AnticipationCheckboxController } from './controllers/hud/anticipation-checkbox'
-import { BetMinusButtonController } from './controllers/hud/bet-minus-button'
 import { BetPanelController } from './controllers/hud/bet-panel'
-import { BetPlusButtonController } from './controllers/hud/bet-plus-button'
-import { CascadeCheckboxController } from './controllers/hud/cascade-checkbox'
 import { CreditLabelController } from './controllers/hud/credit-label'
-import { GameModeMinusButtonController } from './controllers/hud/game-mode-minus-button'
-import { GameModePanelController } from './controllers/hud/game-mode-panel'
-import { GameModePlusButtonController } from './controllers/hud/game-mode-plus-button'
-import { HoldWinCheckboxController } from './controllers/hud/hold-win-checkbox'
-import { RespinCheckboxController } from './controllers/hud/respin-checkbox'
 import { SettingsButtonController } from './controllers/hud/settings-button'
 import { SettingsModalController } from './controllers/hud/settings-modal'
 import { SoundToggleButtonController } from './controllers/hud/sound-toggle-button'
 import { SpinButtonController } from './controllers/hud/spin-button'
-import { TurboCheckboxController } from './controllers/hud/turbo-checkbox'
 import { WinLabelController } from './controllers/hud/win-label'
 import { HoldWinController } from './controllers/reels/hold-win'
 import { ReelsMachineController } from './controllers/reels/reels-machine'
@@ -143,43 +133,8 @@ const bindScene = (container: Container): void => {
     })
 
   container
-    .bind(SLOT_TOKENS.BetPlusButtonController)
-    .to(BetPlusButtonController)
-    .onDeactivation((button) => {
-      if (!button.destroyed) button.destroy({ children: true })
-    })
-
-  container
-    .bind(SLOT_TOKENS.BetMinusButtonController)
-    .to(BetMinusButtonController)
-    .onDeactivation((button) => {
-      if (!button.destroyed) button.destroy({ children: true })
-    })
-
-  container
     .bind(SLOT_TOKENS.BetPanelController)
     .to(BetPanelController)
-    .onDeactivation((panel) => {
-      if (!panel.destroyed) panel.destroy({ children: true })
-    })
-
-  container
-    .bind(SLOT_TOKENS.GameModePlusButtonController)
-    .to(GameModePlusButtonController)
-    .onDeactivation((button) => {
-      if (!button.destroyed) button.destroy({ children: true })
-    })
-
-  container
-    .bind(SLOT_TOKENS.GameModeMinusButtonController)
-    .to(GameModeMinusButtonController)
-    .onDeactivation((button) => {
-      if (!button.destroyed) button.destroy({ children: true })
-    })
-
-  container
-    .bind(SLOT_TOKENS.GameModePanelController)
-    .to(GameModePanelController)
     .onDeactivation((panel) => {
       if (!panel.destroyed) panel.destroy({ children: true })
     })
@@ -196,41 +151,6 @@ const bindScene = (container: Container): void => {
     .to(SettingsModalController)
     .onDeactivation((modal) => {
       if (!modal.destroyed) modal.destroy({ children: true })
-    })
-
-  container
-    .bind(SLOT_TOKENS.TurboCheckboxController)
-    .to(TurboCheckboxController)
-    .onDeactivation((checkbox) => {
-      if (!checkbox.destroyed) checkbox.destroy({ children: true })
-    })
-
-  container
-    .bind(SLOT_TOKENS.AnticipationCheckboxController)
-    .to(AnticipationCheckboxController)
-    .onDeactivation((checkbox) => {
-      if (!checkbox.destroyed) checkbox.destroy({ children: true })
-    })
-
-  container
-    .bind(SLOT_TOKENS.RespinCheckboxController)
-    .to(RespinCheckboxController)
-    .onDeactivation((checkbox) => {
-      if (!checkbox.destroyed) checkbox.destroy({ children: true })
-    })
-
-  container
-    .bind(SLOT_TOKENS.HoldWinCheckboxController)
-    .to(HoldWinCheckboxController)
-    .onDeactivation((checkbox) => {
-      if (!checkbox.destroyed) checkbox.destroy({ children: true })
-    })
-
-  container
-    .bind(SLOT_TOKENS.CascadeCheckboxController)
-    .to(CascadeCheckboxController)
-    .onDeactivation((checkbox) => {
-      if (!checkbox.destroyed) checkbox.destroy({ children: true })
     })
 
   container
