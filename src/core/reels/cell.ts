@@ -3,9 +3,8 @@ import type { ReelsMachine } from './reels-machine'
 import type { CellContext, CellIndex, StripSlot } from './types'
 
 /**
- * Ячейка поля: стабильный адрес `(барабан, ряд)`, по которому линии и оверлеи находят значение.
- * `getValue` читает данные раунда, `getSlot` — то, что стоит в ячейке на экране: во время вращения
- * они расходятся, после посадки совпадают.
+ * Ячейка поля: постоянный адрес `(барабан, ряд)`. `getValue` возвращает значение из данных раунда,
+ * `getSlot` — слот, который стоит в ячейке сейчас; после посадки они совпадают.
  */
 export class Cell<TData, TValue> {
   readonly id: string
@@ -26,7 +25,7 @@ export class Cell<TData, TValue> {
   }
 
   /** Слот ленты, занимающий ячейку сейчас. */
-  getSlot(): StripSlot<TValue> | undefined {
+  getSlot(): Readonly<StripSlot<TValue>> | undefined {
     return this.reel.getSlotAt(this.index.row)
   }
 

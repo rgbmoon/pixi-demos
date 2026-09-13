@@ -16,8 +16,9 @@ TypeScript · PixiJS · Spine · React · MobX · Inversify · zod + partysocket
 
 ## Docs
 
-- [Reel machine](docs/reel-machine-doc.md) — headless reels model and its PIXI adapter:
-  architecture, API, usage, extension.
+- [Reel machine](docs/reel-machine.html) — headless reels model and its PIXI adapter:
+  architecture, diagrams, integration with the game, extension.
+- [Testing strategy](docs/testing.html) — test layers, what is covered and why.
 - [CLAUDE.md](CLAUDE.md) — layer rules and conventions.
 
 ## Deploy

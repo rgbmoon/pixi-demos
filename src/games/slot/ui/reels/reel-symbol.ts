@@ -33,7 +33,7 @@ export class ReelSymbol extends SpineAnimation implements CellView<SymbolKey> {
     this.applyPose()
   }
 
-  /** Ведёт позу движения. Выигрышную позу и взрыв не трогает: их ставит и снимает владелец. */
+  /** Переключает позу движения; выигрышную позу и взрыв не меняет, их ставит и снимает контроллер. */
   setMoving(moving: boolean): void {
     if (this.pose === 'win' || this.pose === 'explode') return
 
@@ -82,7 +82,7 @@ export class ReelSymbol extends SpineAnimation implements CellView<SymbolKey> {
       return
     }
 
-    // Выигрышную позу и взрыв держит скелет: он рисует тот же арт и лежит в тех же единицах ячейки
+    // Выигрышную позу и взрыв рисует скелет того же арта в тех же размерах ячейки
     this.artSprite.visible = false
 
     if (this.attachedKey !== key) {

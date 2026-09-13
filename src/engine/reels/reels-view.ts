@@ -1,58 +1,32 @@
 import { Container, type DestroyOptions, Graphics, type Ticker } from 'pixi.js'
-import type { ReelsMachine } from 'src/core/reels/reels-machine'
-import type { CellIndex } from 'src/core/reels/types'
-import type { GameTicker } from 'src/engine/game-ticker'
+import type { CellIndex, ReelsModel } from 'src/core/reels/types'
 
 import { ReelView } from './reel-view'
 import type { CellView, ReelsViewConfig } from './types'
 
 /**
- * Адаптер модели барабанов к PIXI: раскладка лент, маски и управление временем модели.
- * Ничего не решает — на каждом кадре двигает модель и переносит её слоты в view.
+ * PIXI-адаптер модели барабанов: раскладывает ленты и накрывает их масками; на каждом кадре тикера
+ * вызывает `advance` модели и переносит слоты в view.
  */
-export class ReelsView<TData, TValue, TView extends CellView<TValue>> extends Container {
-  private readonly ticker: GameTicker
-  private readonly machine: ReelsMachine<TData, TValue>
+export class ReelsView<TValue, TView extends CellView<TValue>> extends Container {
+  private readonly ticker: Ticker
+  private readonly model: ReelsModel<TValue>
   private readonly reelViews: ReelView<TValue, TView>[]
+  /** Пикселей view на единицу длины модели. */
+  private readonly unitScale: number
   /** Ревизия каждого барабана на момент последней отрисовки: с ней сверяется `sync`. */
   private readonly drawnRevisions: number[]
 
-  constructor(ticker: GameTicker, machine: ReelsMachine<TData, TValue>, config: ReelsViewConfig<TValue, TView>) {
+  constructor(ticker: Ticker, model: ReelsModel<TValue>, config: ReelsViewConfig<TValue, TView>) {
     super()
 
-    const { cellWidth, cellHeight, createCellView } = config
-
     this.ticker = ticker
-    this.machine = machine
-    this.reelViews = machine.getReels().map((reel) => new ReelView(reel.getStrip().length, createCellView))
+    this.model = model
+    this.unitScale = config.cellHeight / model.cellHeight
+    this.reelViews = model.getReels().map((reel) => new ReelView(reel.getStrip().length, config.createCellView))
     this.drawnRevisions = this.reelViews.map(() => -1)
 
-    // Ленты с одним y делят маску-полосу: буферные слоты полосы лежат над ней, а число stencil-масок
-    // равно числу рядов раскладки
-    const lanes = new Map<number, number[]>()
-
-    this.reelViews.forEach((reelView, index) => {
-      const { x, y } = config.getReelPosition?.(index) ?? { x: cellWidth * index, y: 0 }
-
-      reelView.position.set(x, y)
-      lanes.set(y, [...(lanes.get(y) ?? []), index])
-    })
-
-    lanes.forEach((indices, y) => {
-      const xs = indices.map((index) => this.reelViews[index].x)
-      const rows = Math.max(...indices.map((index) => machine.getReels()[index].getCells().length))
-      const left = Math.min(...xs) - cellWidth / 2
-      const lane = new Container()
-      const mask = new Graphics()
-        .rect(left, y - cellHeight / 2, Math.max(...xs) + cellWidth / 2 - left, rows * cellHeight)
-        .fill(0xffffff)
-
-      lane.mask = mask
-      lane.addChild(mask, ...indices.map((index) => this.reelViews[index]))
-
-      this.addChild(lane)
-    })
-
+    this.layoutLanes(config)
     this.sync()
 
     this.ticker.add(this.step)
@@ -66,40 +40,55 @@ export class ReelsView<TData, TValue, TView extends CellView<TValue>> extends Co
 
   /** View, занимающий ячейку поля сейчас. */
   getCellView(index: CellIndex): TView | undefined {
-    const reel = this.machine.getReel(index.reel)
-
-    if (!reel) return undefined
-
-    const slotIndex = reel.getVisibleSlotIndices()[index.row]
+    const slotIndex = this.model.getReels()[index.reel]?.getVisibleSlotIndices()[index.row]
 
     return slotIndex === undefined ? undefined : this.reelViews[index.reel].getView(slotIndex)
   }
 
-  /** View видимых ячеек по барабанам: сетка `[барабан][ряд]`, по ней владелец ищет выигравшие ячейки. */
-  getGridViews(): TView[][] {
-    return this.machine.getReels().map((reel, index) =>
-      reel.getVisibleSlotIndices().flatMap((slotIndex) => {
-        const view = this.reelViews[index].getView(slotIndex)
+  /**
+   * Расставляет ленты по раскладке и накрывает масками. Ленты с одним `y` делят маску-полосу:
+   * число stencil-масок равно числу рядов раскладки, буферные слоты лежат над полосой.
+   */
+  private layoutLanes(config: ReelsViewConfig<TValue, TView>): void {
+    const { cellWidth, cellHeight, getReelPosition } = config
+    const reels = this.model.getReels()
+    const lanes = new Map<number, number[]>()
 
-        return view ? [view] : []
-      })
-    )
+    this.reelViews.forEach((reelView, index) => {
+      const { x, y } = getReelPosition?.(index) ?? { x: cellWidth * index, y: 0 }
+
+      reelView.position.set(x, y)
+      lanes.set(y, [...(lanes.get(y) ?? []), index])
+    })
+
+    lanes.forEach((indices, y) => {
+      const xs = indices.map((index) => this.reelViews[index].x)
+      const rows = Math.max(...indices.map((index) => reels[index].rows))
+      const left = Math.min(...xs) - cellWidth / 2
+      const lane = new Container()
+      const mask = new Graphics()
+        .rect(left, y - cellHeight / 2, Math.max(...xs) + cellWidth / 2 - left, rows * cellHeight)
+        .fill(0xffffff)
+
+      lane.mask = mask
+      lane.addChild(mask, ...indices.map((index) => this.reelViews[index]))
+
+      this.addChild(lane)
+    })
   }
 
   private step = (ticker: Ticker): void => {
-    this.machine.advance(ticker.deltaTime)
+    this.model.advance(ticker.deltaTime)
 
     this.sync()
   }
 
   /**
-   * Переносит в view только те барабаны, чья модель изменилась с прошлого кадра.
-   * Неподвижный барабан пропускается намеренно: пока он стоит, его view забирает себе
-   * оверлей выигрыша — поднимает их поверх затемнения. Запись позиций в это время
-   * перебила бы положение, выставленное оверлеем.
+   * Переносит в view только барабаны с выросшей ревизией, поэтому view стоящего барабана можно временно
+   * перенести в другой контейнер.
    */
   private sync(): void {
-    const reels = this.machine.getReels()
+    const reels = this.model.getReels()
 
     for (let index = 0; index < reels.length; index++) {
       const revision = reels[index].getRevision()
@@ -108,7 +97,7 @@ export class ReelsView<TData, TValue, TView extends CellView<TValue>> extends Co
 
       this.drawnRevisions[index] = revision
 
-      this.reelViews[index].sync(reels[index].getStrip())
+      this.reelViews[index].sync(reels[index].getStrip(), this.unitScale)
     }
   }
 }

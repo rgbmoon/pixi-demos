@@ -23,12 +23,12 @@ import { Button } from 'src/games/slot/ui/hud/button'
 import { Label } from 'src/games/slot/ui/hud/label'
 import { Modal } from 'src/games/slot/ui/hud/modal'
 
-import type { AnticipationCheckboxController } from './anticipation-checkbox'
-import type { CascadeCheckboxController } from './cascade-checkbox'
-import type { GameModePanelController } from './game-mode-panel'
-import type { HoldWinCheckboxController } from './hold-win-checkbox'
-import type { RespinCheckboxController } from './respin-checkbox'
-import type { TurboCheckboxController } from './turbo-checkbox'
+import { AnticipationCheckboxController } from './anticipation-checkbox'
+import { CascadeCheckboxController } from './cascade-checkbox'
+import { GameModePanelController } from './game-mode-panel'
+import { HoldWinCheckboxController } from './hold-win-checkbox'
+import { RespinCheckboxController } from './respin-checkbox'
+import { TurboCheckboxController } from './turbo-checkbox'
 
 /**
  * Модальное окно настроек.
@@ -54,23 +54,17 @@ export class SettingsModalController extends LiveContainer {
   constructor(
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
     @inject(SLOT_TOKENS.SlotStore) slotStore: SlotStore,
-    @inject(SLOT_TOKENS.GameModePanelController) gameModePanel: GameModePanelController,
-    @inject(SLOT_TOKENS.TurboCheckboxController) turboCheckbox: TurboCheckboxController,
-    @inject(SLOT_TOKENS.AnticipationCheckboxController) anticipationCheckbox: AnticipationCheckboxController,
-    @inject(SLOT_TOKENS.RespinCheckboxController) respinCheckbox: RespinCheckboxController,
-    @inject(SLOT_TOKENS.HoldWinCheckboxController) holdWinCheckbox: HoldWinCheckboxController,
-    @inject(SLOT_TOKENS.CascadeCheckboxController) cascadeCheckbox: CascadeCheckboxController,
     @inject(SLOT_TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>
   ) {
     super()
 
     this.ticker = ticker
-    this.gameModePanel = gameModePanel
-    this.turboCheckbox = turboCheckbox
-    this.anticipationCheckbox = anticipationCheckbox
-    this.respinCheckbox = respinCheckbox
-    this.holdWinCheckbox = holdWinCheckbox
-    this.cascadeCheckbox = cascadeCheckbox
+    this.gameModePanel = new GameModePanelController(slotStore, emitter)
+    this.turboCheckbox = new TurboCheckboxController(slotStore, emitter)
+    this.anticipationCheckbox = new AnticipationCheckboxController(slotStore, emitter)
+    this.respinCheckbox = new RespinCheckboxController(slotStore, emitter)
+    this.holdWinCheckbox = new HoldWinCheckboxController(slotStore, emitter)
+    this.cascadeCheckbox = new CascadeCheckboxController(slotStore, emitter)
 
     this.closeButton = new Button({
       variant: ButtonVariant.circle,
@@ -83,13 +77,13 @@ export class SettingsModalController extends LiveContainer {
       },
     })
 
-    this.modal.addContent(gameModePanel)
-    this.modal.addContent(turboCheckbox)
+    this.modal.addContent(this.gameModePanel)
+    this.modal.addContent(this.turboCheckbox)
     this.modal.addContent(this.forceCaption)
-    this.modal.addContent(anticipationCheckbox)
-    this.modal.addContent(respinCheckbox)
-    this.modal.addContent(holdWinCheckbox)
-    this.modal.addContent(cascadeCheckbox)
+    this.modal.addContent(this.anticipationCheckbox)
+    this.modal.addContent(this.respinCheckbox)
+    this.modal.addContent(this.holdWinCheckbox)
+    this.modal.addContent(this.cascadeCheckbox)
     this.modal.addContent(this.closeButton)
 
     this.addChild(this.modal)

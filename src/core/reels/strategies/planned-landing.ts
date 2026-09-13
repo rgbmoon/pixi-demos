@@ -6,9 +6,7 @@ import type { PlannedLandingOptions } from './types'
 
 /**
  * Расписание посадки из трёх участков: равномерный ход, линейное торможение и отскок.
- * Путь складывается из оборота ленты, недокрученного минимума вращения, лесенки по месту барабана в посадке,
- * пауз anticipation, тормозного пути и хвоста отскока, а остаток докручивается до границы ячейки. Позиция берётся из
- * расписания по накопленным кадрам, поэтому границы отрезков точны при любой частоте кадров.
+ * Позиция считается по накопленным кадрам, поэтому границы участков не зависят от частоты кадров.
  */
 export class PlannedLandingStrategy implements LandingStrategy {
   private readonly options: PlannedLandingOptions
@@ -33,14 +31,14 @@ export class PlannedLandingStrategy implements LandingStrategy {
       minSpinFrames = 0,
       anticipationCells = 0,
     } = this.options
-    const { fromOffset, spunFrames, anticipation, anticipating, order, cellHeight, stripHeight } = context
+    const { fromOffset, spunFrames, anticipationPauses, isAnticipating, order, cellHeight, stripHeight } = context
 
     const easeDistance = easeCells * cellHeight
-    // Барабан, пойманный раньше минимума, докручивает недостающие кадры на круизе
+    // Ответ пришёл раньше минимума вращения: недостающие кадры добавляются к равномерному участку
     const minSpinDistance = Math.max(0, minSpinFrames - spunFrames) * speed
-    // Паузы anticipation идут на круизе: slam их проматывает вместе с ним
-    const anticipationDistance = anticipation * anticipationCells * cellHeight
-    // Полный оборот ленты в дистанции гарантирует, что каждый слот обернётся хотя бы раз и получит финальное значение
+    // Паузы anticipation — часть равномерного участка, slam проматывает их вместе с ним
+    const anticipationDistance = anticipationPauses * anticipationCells * cellHeight
+    // Оборот ленты в пути: каждый слот обернётся хотя бы раз и получит значение раунда
     const plannedDistance =
       stripHeight +
       minSpinDistance +
@@ -48,23 +46,23 @@ export class PlannedLandingStrategy implements LandingStrategy {
       anticipationDistance +
       this.brakeDistance +
       easeDistance
-    // Точка посадки: докручиваем остаток до границы ячейки, дальше вся дистанция кратна ячейке
+    // Добор до границы ячейки делает путь кратным высоте ячейки
     const distance = plannedDistance + getAlignmentGap(fromOffset + plannedDistance, cellHeight)
     const cruiseDistance = distance - this.brakeDistance - easeDistance
     const cruiseFrames = cruiseDistance / speed
-    // Отскок подхватывает ленту на handoverSpeed: длительность подобрана по производной кривой в нуле
+    // Длительность отскока подобрана так, чтобы начальная скорость кривой равнялась handoverSpeed
     const easeFrames = (getEaseOutBackInitialSpeed(backStrength) * easeDistance) / handoverSpeed
     const easeStartFrames = cruiseFrames + this.brakeFrames
     const totalFrames = easeStartFrames + easeFrames
-    // Собственная пауза — чистая добавка круиза: без неё барабан встал бы на столько кадров раньше
+    // Собственная пауза удлиняет равномерный участок: без неё барабан остановился бы на pauseFrames раньше
     const pauseFrames = (anticipationCells * cellHeight) / speed
 
     return {
       distance,
       totalFrames,
-      // Slam проматывает круиз и торможение, отскок остаётся: лента встаёт с тем же толчком
+      // Slam проматывает равномерный участок и торможение, отскок проигрывается полностью
       settleFrames: easeStartFrames,
-      anticipationFrames: anticipating && pauseFrames > 0 ? totalFrames - pauseFrames : undefined,
+      anticipationFrames: isAnticipating && pauseFrames > 0 ? totalFrames - pauseFrames : undefined,
       positionAt: (frames: number): number => {
         if (frames <= cruiseFrames) return this.getCruisePosition(frames)
 

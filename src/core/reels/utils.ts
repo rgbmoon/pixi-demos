@@ -8,9 +8,8 @@ export const getAlignmentGap = (position: number, cellHeight: number): number =>
 }
 
 /**
- * Свёртка позиции слота в диапазон ленты `[min, min + stripHeight)`.
- * Позиция в пределах `WRAP_EPSILON` от верхней границы складывается в начало диапазона:
- * иначе слот, чья точка покоя попала на границу, паркуется под зоной вместо буфера над ней.
+ * Сворачивает позицию слота в диапазон ленты `[min, min + stripHeight)`. Позиция ближе `WRAP_EPSILON`
+ * к верхней границе переходит в начало диапазона.
  */
 export const wrapOffset = (position: number, min: number, stripHeight: number): number => {
   const wrapped = ((((position - min) % stripHeight) + stripHeight) % stripHeight) + min
@@ -19,9 +18,8 @@ export const wrapOffset = (position: number, min: number, stripHeight: number): 
 }
 
 /**
- * Номер круга ленты: меняется, когда слот пересекает границу диапазона.
- * Обёртка ловится сменой круга, а не сравнением с порогом, — детект не зависит от направления.
- * Допуск тот же, что у `wrapOffset`: круг и позиция обязаны решать про границу одинаково.
+ * Номер круга ленты: меняется, когда слот пересекает границу диапазона в любую сторону.
+ * Допуск тот же, что у `wrapOffset`: круг и позиция обязаны одинаково трактовать границу.
  */
 export const getLap = (position: number, min: number, stripHeight: number): number =>
   Math.floor((position - min + WRAP_EPSILON) / stripHeight)

@@ -1,11 +1,11 @@
-import type { ReelStrip } from 'src/core/reels/strip'
+import type { ReelStrip } from 'src/core/reels/reel-strip'
 import { type LandingPlan, ReelPhase, type StripSlot } from 'src/core/reels/types'
 
 import type { ReelMotion } from './types'
 
 /**
- * Посадка: лента идёт по расписанию стратегии от позиции, где её поймали, и встаёт на границу ячейки.
- * Обёрнутый слот получает значение по непройденному остатку пути.
+ * Посадка: позиция ленты на каждом кадре берётся из `LandingPlan`, в конце лента выравнивается на границу
+ * ячейки. Для обёрнутого слота `onWrap` получает непройденный остаток пути.
  */
 export class LandingMotion<TValue> implements ReelMotion {
   readonly phase = ReelPhase.landing
@@ -37,7 +37,7 @@ export class LandingMotion<TValue> implements ReelMotion {
 
     this.elapsed += deltaFrames
 
-    // Вход в паузу ловится только ходом ленты: slam двигает время вне advance и перескакивает его молча
+    // Начало паузы проверяется только здесь: slam меняет elapsed вне advance, промотанная пауза не объявляется
     if (plan.anticipationFrames !== undefined && previous < plan.anticipationFrames && this.elapsed >= plan.anticipationFrames) {
       this.onAnticipated?.()
     }
@@ -55,8 +55,8 @@ export class LandingMotion<TValue> implements ReelMotion {
   }
 
   /**
-   * Проматывает посадку к финальному участку расписания. План не меняется, двигается только время,
-   * поэтому слоты получают значения раунда так же, как на обычной посадке.
+   * Переводит время посадки к `settleFrames`. План не меняется, поэтому обёрнутые слоты получают значения
+   * так же, как без промотки.
    */
   slam(): void {
     this.elapsed = Math.max(this.elapsed, this.plan.settleFrames)

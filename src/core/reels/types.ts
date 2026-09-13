@@ -8,7 +8,7 @@ export type CellIndex = {
   readonly row: number
 }
 
-/** Фаза барабана: свободен, крутится, садится, падает на каскаде. */
+/** Фаза барабана: покой, прокрутка, посадка, падение каскада. */
 export const ReelPhase = {
   idle: 'idle',
   spinning: 'spinning',
@@ -18,7 +18,7 @@ export const ReelPhase = {
 
 export type ReelPhase = (typeof ReelPhase)[keyof typeof ReelPhase]
 
-/** Геометрия барабана: всё, что стратегии нужно знать о ленте. */
+/** Геометрия барабана для стратегий. */
 export type ReelContext = {
   readonly index: number
   readonly rows: number
@@ -27,22 +27,22 @@ export type ReelContext = {
   readonly stripHeight: number
 }
 
-/** Как барабан крутится: путь ленты за кадр. */
+/** Стратегия прокрутки: путь ленты за `deltaFrames` кадров. */
 export type SpinStrategy = {
   step(deltaFrames: number, context: ReelContext): number
 }
 
 /** Расписание посадки барабана: путь ленты до остановки и её позиция на любом кадре посадки. */
 export type LandingPlan = {
-  /** Полный путь ленты до остановки, в единицах машины. */
+  /** Полный путь ленты до остановки, в единицах длины модели. */
   readonly distance: number
-  /** Длительность посадки в кадрах приведённой частоты. */
+  /** Длительность посадки в кадрах. */
   readonly totalFrames: number
   /** Начало финального участка посадки: до этого кадра `slam` проматывает расписание. */
   readonly settleFrames: number
-  /** Начало собственной паузы anticipation: кадр, с которого барабан крутится сверх расписания без неё. */
+  /** Кадр начала собственной паузы anticipation: без паузы барабан остановился бы в этом кадре. */
   readonly anticipationFrames?: number
-  /** Позиция ленты через `frames` кадров после начала посадки, в единицах машины от её старта. */
+  /** Путь ленты от начала посадки через `frames` кадров. */
   positionAt(frames: number): number
 }
 
@@ -54,9 +54,9 @@ export type LandingContext = ReelContext & {
   /** Сколько кадров барабан крутился до начала посадки. */
   readonly spunFrames: number
   /** Число пауз anticipation до посадки барабана, включая его собственную; 0 — обычное расписание. */
-  readonly anticipation: number
-  /** У барабана есть собственная пауза anticipation, а не только сдвиг за соседей слева. */
-  readonly anticipating: boolean
+  readonly anticipationPauses: number
+  /** У барабана есть собственная пауза anticipation; без неё он только сдвигается за соседями слева. */
+  readonly isAnticipating: boolean
 }
 
 /** Настройки посадки одного барабана. */
@@ -65,10 +65,10 @@ export type ReelLandOptions = {
   /** Место барабана в лесенке посадки; по умолчанию — его индекс. */
   readonly order?: number
   /** Число пауз anticipation до посадки барабана, включая его собственную. */
-  readonly anticipation?: number
+  readonly anticipationPauses?: number
   /** У барабана есть собственная пауза anticipation. */
-  readonly anticipating?: boolean
-  /** Зовётся синхронно из `advance`, когда барабан вошёл в собственную паузу; после `slam` не зовётся. */
+  readonly isAnticipating?: boolean
+  /** Вызывается в кадре начала собственной паузы; пауза, промотанная `slam`, не объявляется. */
   readonly onAnticipated?: () => void
 }
 
@@ -81,15 +81,17 @@ export type SpinOptions = {
 /** Настройки посадки машины на раунд. */
 export type LandOptions = {
   readonly signal?: AbortSignal
+  /** Сигнал промотки: при срабатывании до или во время посадки машина вызывает `slam`. */
+  readonly slamSignal?: AbortSignal
   /** Индексы барабанов, которые садятся с паузой anticipation. */
   readonly anticipation?: readonly number[]
-  /** Зовётся с номером барабана, как только он встал. */
+  /** Вызывается с номером барабана после его остановки. */
   readonly onReelLanded?: (reel: number) => void
-  /** Зовётся синхронно из `advance` с номером барабана, вошедшего в паузу anticipation; после `slam` не зовётся. */
+  /** Вызывается с номером барабана в кадре начала его собственной паузы; пауза, промотанная `slam`, не объявляется. */
   readonly onReelAnticipated?: (reel: number) => void
 }
 
-/** Как барабан садится: строит расписание пути от текущей позиции ленты. */
+/** Стратегия посадки: план пути от текущей позиции ленты. */
 export type LandingStrategy = {
   plan(context: LandingContext): LandingPlan
 }
@@ -97,7 +99,7 @@ export type LandingStrategy = {
 /** Падающий слот каскада: ряд, в который он садится, и путь до него. */
 export type FallDrop = {
   readonly row: number
-  /** Путь слота до ряда, в единицах машины. */
+  /** Путь слота до ряда, в единицах длины модели. */
   readonly distance: number
 }
 
@@ -110,7 +112,7 @@ export type FallContext = ReelContext & {
 
 /** Расписание падения: путь каждого падающего слота на любом кадре. */
 export type FallPlan = {
-  /** Длительность падения в кадрах приведённой частоты. */
+  /** Длительность падения в кадрах. */
   readonly totalFrames: number
   /** Кадр, к которому все слоты коснулись своих рядов: до него `slam` проматывает падение. */
   readonly settleFrames: number
@@ -118,7 +120,7 @@ export type FallPlan = {
   positionAt(drop: number, frames: number): number
 }
 
-/** Как слоты барабана падают на каскаде: строит расписание по падающим слотам. */
+/** Стратегия падения каскада: план пути каждого падающего слота. */
 export type FallStrategy = {
   plan(context: FallContext): FallPlan
 }
@@ -127,7 +129,7 @@ export type FallStrategy = {
 export type ReelStrategies = {
   readonly spinStrategy: SpinStrategy
   readonly landingStrategy: LandingStrategy
-  /** Без неё машина каскадов не принимает. */
+  /** Нужна для `cascade`; без неё каскад бросает ошибку конфигурации. */
   readonly fallStrategy?: FallStrategy
 }
 
@@ -145,16 +147,18 @@ export type CascadeOptions = {
   /** Ячейки, ушедшие из поля: уцелевшие символы их колонок падают вниз, сверху падают новые. */
   readonly removed: readonly CellIndex[]
   readonly signal?: AbortSignal
-  /** Зовётся с номером барабана, как только его слоты встали. */
+  /** Сигнал промотки: при срабатывании до или во время падения машина вызывает `slam`. */
+  readonly slamSignal?: AbortSignal
+  /** Вызывается с номером барабана после остановки его слотов. */
   readonly onReelLanded?: (reel: number) => void
 }
 
-/** Слот ленты: движущаяся ячейка, которую рисует адаптер. */
+/** Слот ленты: значение, позиция и поза одного view-объекта. */
 export type StripSlot<TValue> = {
   readonly id: string
   /** Значение, которое слот показывает сейчас. */
   value: TValue
-  /** Позиция слота в единицах машины, свёрнутая в диапазон ленты. */
+  /** Позиция слота в единицах длины модели, свёрнутая в диапазон ленты. */
   offset: number
   /** Слот в движении: view показывает размытую позу. */
   moving: boolean
@@ -182,18 +186,18 @@ export type ReelsConfig<TData, TValue> = ReelStrategies & {
   readonly reels: readonly ReelDef<TData, TValue>[]
   readonly rows: number
   readonly buffer?: number
-  /** Высота ячейки в единицах машины: их же адаптер кладёт в позиции view. */
+  /** Высота ячейки — единица длины модели; адаптер переводит её в пиксели через свою высоту ячейки. */
   readonly cellHeight: number
   readonly data?: TData | null
   /** Достаёт значение ячейки из данных раунда; `undefined` — ячейки в результате нет. */
   readonly accessorFn: (data: TData, index: CellIndex) => TValue | undefined
-  /** Значение ячейки вне результата раунда: наполнение ленты во время вращения. */
+  /** Значение слота вне результата раунда: на прокрутке и в буфере. */
   readonly getFillerValue: (reel: number) => TValue
 }
 
 /**
- * Разрешённые опции барабана: конфиг машины, перекрытый описанием барабана.
- * Стратегий здесь нет: их можно сменить на ходу, и барабан берёт их у машины на старте спина.
+ * Опции барабана: конфиг машины, перекрытый `ReelDef`. Стратегий здесь нет: барабан получает их у машины
+ * на каждом `spin`.
  */
 export type ReelOptions<TData, TValue> = {
   readonly rows: number
@@ -203,7 +207,22 @@ export type ReelOptions<TData, TValue> = {
   readonly getFillerValue: (reel: number) => TValue
 }
 
-/** Контекст ячейки: машина, барабан и сама ячейка одним объектом для владельца view. */
+/** Барабан в контракте адаптера: число рядов, слоты ленты и счётчик их правок. */
+export type ReelModel<TValue> = {
+  readonly rows: number
+  getRevision(): number
+  getStrip(): readonly Readonly<StripSlot<TValue>>[]
+  getVisibleSlotIndices(): number[]
+}
+
+/** Машина в контракте адаптера: барабаны, единица длины и шаг модели. */
+export type ReelsModel<TValue> = {
+  readonly cellHeight: number
+  getReels(): readonly ReelModel<TValue>[]
+  advance(deltaFrames: number): void
+}
+
+/** Контекст ячейки: машина, барабан, ячейка и её значение одним объектом. */
 export type CellContext<TData, TValue> = {
   readonly machine: ReelsMachine<TData, TValue>
   readonly reel: Reel<TData, TValue>

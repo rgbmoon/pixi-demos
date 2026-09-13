@@ -6,10 +6,7 @@ import { Paylines } from 'src/games/slot/ui/reels/paylines'
 import { getActiveLineIds } from 'src/games/slot/utils'
 
 
-/**
- * Линии выплат: показывает набор по требованию раунда, а на смену режима вне раунда
- * сам проигрывает превью активных линий.
- */
+/** Линии выплат: показывает линии по вызову фаз, а при смене режима вне раунда — превью активных линий. */
 export class PaylinesController extends LiveContainer {
   private readonly ticker: GameTicker
   private readonly slotStore: SlotStore
@@ -91,7 +88,7 @@ export class PaylinesController extends LiveContainer {
     } catch {
       // Показ прерван следующим нажатием: линии уже перерисованы его вызовом show
     } finally {
-      // Отклонение промиса приходит после того, как новый показ записал свой контроллер, — чужой не затираем
+      // Отклонение приходит после того, как новый показ записал свой AbortController; его не сбрасываем
       if (this.previewAbort === abort) this.previewAbort = undefined
     }
   }

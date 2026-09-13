@@ -7,7 +7,7 @@ import { LiveContainer } from 'src/engine/live-container'
 import type { SpinePool } from 'src/engine/spine-pool'
 import { ENGINE_TOKENS } from 'src/engine/tokens'
 import { tweenAlpha } from 'src/engine/utils'
-import { HOLD_WIN_COLLECT_HOLD_MS, HOLD_WIN_COLLECT_STAGGER_MS, HOLD_WIN_SWAP_MS } from 'src/games/slot/constants'
+import { HOLD_WIN_COLLECT_HOLD_MS, HOLD_WIN_SWAP_MS } from 'src/games/slot/constants'
 import type { GameEvents } from 'src/games/slot/events'
 import {
   HOLD_WIN_REELS,
@@ -18,13 +18,12 @@ import {
 import type { SlotStore } from 'src/games/slot/stores/slot'
 import { SLOT_TOKENS } from 'src/games/slot/tokens'
 import type { HoldWinCell } from 'src/games/slot/types'
-import type { Coin } from 'src/games/slot/ui/reels/coin'
 import { HoldWinBoard } from 'src/games/slot/ui/reels/hold-win-board'
 import { formatAmount, toHoldWinCell, toHoldWinReel } from 'src/games/slot/utils'
 
 /**
- * Поле бонуса Hold & Win: держит машину ячеек и её доску, переключает стратегии по турбо-режиму и
- * открывает фазам методы бонуса — появление доски, прокрутку незанятых ячеек, посадку и сбор монет.
+ * Контроллер поля Hold & Win: создаёт машину ячеек и доску, меняет стратегии по турбо-режиму. Фазам даёт
+ * методы бонуса: показ доски, прокрутку незанятых ячеек, посадку и сбор монет.
  */
 @injectable()
 export class HoldWinController extends LiveContainer {
@@ -80,7 +79,7 @@ export class HoldWinController extends LiveContainer {
     await tweenAlpha(this.ticker, this, 1, HOLD_WIN_SWAP_MS, signal)
   }
 
-  /** Гасит доску; скрытая доска не рисуется и не держит маски. */
+  /** Гасит доску; скрытая доска не рисуется, её маски тоже. */
   async hide(signal?: AbortSignal): Promise<void> {
     await tweenAlpha(this.ticker, this, 0, HOLD_WIN_SWAP_MS, signal)
 
@@ -95,41 +94,33 @@ export class HoldWinController extends LiveContainer {
   }
 
   /**
-   * Сажает крутящиеся ячейки на поле шага. `stopSignal` проматывает посадку к финалу так же, как у
-   * барабанов. Каждая вставшая ячейка объявляется событием `holdWin:cellLanded`, вставшая монета
-   * получает подсвеченную рамку.
+   * Сажает крутящиеся ячейки на поле шага; `stopSignal` уходит в машину как `slamSignal`. Остановка ячейки
+   * объявляется `holdWin:cellLanded`, ячейка с монетой получает подсвеченную рамку.
    */
   async land(frame: HoldWinReelsData, signal?: AbortSignal, stopSignal?: AbortSignal): Promise<void> {
     this.machine.setData(frame)
 
-    const landing = this.machine.land({ signal, onReelLanded: this.handleCellLanded })
-
-    if (stopSignal?.aborted) {
-      this.machine.slam()
-    }
-
-    stopSignal?.addEventListener('abort', this.slam, { once: true })
-
-    try {
-      await landing
-    } finally {
-      stopSignal?.removeEventListener('abort', this.slam)
-    }
+    await this.machine.land({ signal, slamSignal: stopSignal, onReelLanded: this.handleCellLanded })
   }
 
   /**
-   * Собирает монеты поля: поднимает их в выигрышную позу по порядку лент, в турбо — разом, и держит
-   * позу до конца показа. Полное поле объявляется надписью Grand с выплатой из ответа.
+   * Собирает монеты поля: переводит их в выигрышную позу по порядку лент с интервалом `staggerMs` и
+   * оставляет в ней до конца показа. Полное поле объявляется надписью Grand с выплатой из ответа.
    */
-  async collect(signal?: AbortSignal): Promise<void> {
-    const { isTurboEnabled, spinHoldWin } = this.slotStore
-    const coins = this.board.getCoins().filter((coin): coin is Coin => coin !== undefined && coin.getValue() > 0)
+  async collect(staggerMs: number, signal?: AbortSignal): Promise<void> {
+    const { spinHoldWin } = this.slotStore
+    const coins = this.machine.getReels().flatMap((reel) => {
+      const value = reel.getCell(0)?.getValue()
+      const coin = this.board.getCoin(reel.index)
+
+      return typeof value === 'number' && value > 0 && coin ? [coin] : []
+    })
 
     try {
       for (const coin of coins) {
         coin.win()
 
-        if (!isTurboEnabled) await this.ticker.waitTicks(HOLD_WIN_COLLECT_STAGGER_MS, signal)
+        if (staggerMs > 0) await this.ticker.waitTicks(staggerMs, signal)
       }
 
       if (spinHoldWin && spinHoldWin.grand > 0) {
@@ -140,10 +131,6 @@ export class HoldWinController extends LiveContainer {
     } finally {
       coins.forEach((coin) => coin.idle())
     }
-  }
-
-  private slam = (): void => {
-    this.machine.slam()
   }
 
   private handleCellLanded = (index: number): void => {

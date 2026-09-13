@@ -1,28 +1,23 @@
 import { Container } from 'pixi.js'
-import type { ReelsMachine } from 'src/core/reels/reels-machine'
-import type { CellIndex } from 'src/core/reels/types'
+import type { CellIndex, ReelsModel } from 'src/core/reels/types'
 import type { GameTicker } from 'src/engine/game-ticker'
 import { ReelsView } from 'src/engine/reels/reels-view'
 import type { SpinePool } from 'src/engine/spine-pool'
 import { CELL_HEIGHT, CELL_WIDTH, CELLS_ORIGIN_X, CELLS_ORIGIN_Y } from 'src/games/slot/constants'
-import type { SlotReelsData } from 'src/games/slot/reels'
 import type { SymbolKey } from 'src/games/slot/types'
 
 import { ReelSymbol } from './reel-symbol'
 import { ReelsFrame } from './reels-frame'
 
-/**
- * Поле барабанов: арт рамки и view лент над моделью машины.
- * Саму прокрутку ведёт модель, поле отвечает за арт, зону символов и слои поверх неё.
- */
+/** Доска барабанов: рамка, ленты `ReelsView` в зоне символов и слои оверлеев поверх неё. */
 export class ReelsBoard extends Container {
   private readonly frame: ReelsFrame
-  private readonly reelsView: ReelsView<SlotReelsData, SymbolKey, ReelSymbol>
+  private readonly reelsView: ReelsView<SymbolKey, ReelSymbol>
 
-  constructor(ticker: GameTicker, machine: ReelsMachine<SlotReelsData, SymbolKey>, pool: SpinePool) {
+  constructor(ticker: GameTicker, model: ReelsModel<SymbolKey>, pool: SpinePool) {
     super()
 
-    this.reelsView = new ReelsView(ticker, machine, {
+    this.reelsView = new ReelsView(ticker, model, {
       cellWidth: CELL_WIDTH,
       cellHeight: CELL_HEIGHT,
       createCellView: () => new ReelSymbol(pool),
@@ -36,16 +31,11 @@ export class ReelsBoard extends Container {
     this.addChild(this.frame)
   }
 
-  /** Кладёт слой поверх символов: разбор выигрыша и линии приходят снаружи, порядок вызовов — их порядок. */
+  /** Добавляет слой поверх символов; слои ложатся в порядке вызовов. */
   addOverlay(overlay: Container): void {
     overlay.position.set(CELLS_ORIGIN_X, CELLS_ORIGIN_Y)
 
     this.frame.addChildToSymbolsWinSlot(overlay)
-  }
-
-  /** View видимых символов по барабанам — сетка, по которой владелец ищет выигравшие ячейки. */
-  getGridViews(): ReelSymbol[][] {
-    return this.reelsView.getGridViews()
   }
 
   /** View символа, стоящего в ячейке сейчас. */

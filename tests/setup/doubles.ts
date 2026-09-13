@@ -21,8 +21,8 @@ export type ReelsStub = {
 /**
  * Дублёр контроллера барабанов поверх настоящей модели: `land` и `cascade` действительно двигают
  * ленты и сажают их на данные раунда, только синхронно и без рендера. Прокрутка с удержанными
- * барабанами отмечается в журнале как `respin`. Сработавший `stopSignal`
- * проматывает посадку или падение настоящим `slam` и отмечается в журнале.
+ * барабанами отмечается в журнале как `respin`. `stopSignal` уходит в модель сигналом промотки,
+ * сработавший отмечается в журнале.
  * Методы презентации резолвятся сразу и отмечаются в журнале.
  */
 export const createReelsStub = (log: PresentationLog): ReelsMachineController & ReelsStub => {
@@ -41,13 +41,10 @@ export const createReelsStub = (log: PresentationLog): ReelsMachineController & 
     ) => {
       machine.setData((symbolKeys ?? null) as never)
 
-      const landing = machine.land({ anticipation })
+      const landing = machine.land({ anticipation, slamSignal: stopSignal })
 
       // Посадка дублёра синхронна: Stop успевает сработать только до её начала
-      if (stopSignal?.aborted) {
-        machine.slam()
-        log.push('slam')
-      }
+      if (stopSignal?.aborted) log.push('slam')
 
       advanceUntilIdle(machine)
       await landing
@@ -65,13 +62,10 @@ export const createReelsStub = (log: PresentationLog): ReelsMachineController & 
     ) => {
       machine.setData(symbolKeys)
 
-      const falling = machine.cascade({ removed })
+      const falling = machine.cascade({ removed, slamSignal: stopSignal })
 
       // Падение дублёра синхронно: Stop успевает сработать только до его начала
-      if (stopSignal?.aborted) {
-        machine.slam()
-        log.push('cascadeSlam')
-      }
+      if (stopSignal?.aborted) log.push('cascadeSlam')
 
       advanceUntilIdle(machine)
       await falling
@@ -110,8 +104,8 @@ export type HoldWinStub = {
 
 /**
  * Дублёр контроллера бонуса поверх настоящей машины ячеек: `land` синхронно прокручивает ленты
- * и сажает их на поле шага. Удержанные ячейки не крутятся. Сработавший `stopSignal` проматывает
- * посадку настоящим `slam` и отмечается в журнале как `holdWinSlam`.
+ * и сажает их на поле шага. Удержанные ячейки не крутятся. `stopSignal` уходит в модель сигналом
+ * промотки, сработавший отмечается в журнале как `holdWinSlam`.
  */
 export const createHoldWinStub = (log: PresentationLog): HoldWinController & HoldWinStub => {
   const machine = new ReelsMachine(HOLD_WIN_REELS)
@@ -132,12 +126,9 @@ export const createHoldWinStub = (log: PresentationLog): HoldWinController & Hol
     land: async (frame: HoldWinReelsData, _signal?: AbortSignal, stopSignal?: AbortSignal) => {
       machine.setData(frame)
 
-      const landing = machine.land()
+      const landing = machine.land({ slamSignal: stopSignal })
 
-      if (stopSignal?.aborted) {
-        machine.slam()
-        log.push('holdWinSlam')
-      }
+      if (stopSignal?.aborted) log.push('holdWinSlam')
 
       advanceUntilIdle(machine)
       await landing

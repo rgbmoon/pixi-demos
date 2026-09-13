@@ -1,11 +1,11 @@
-import type { ReelStrip } from 'src/core/reels/strip'
+import type { ReelStrip } from 'src/core/reels/reel-strip'
 import { type FallPlan, ReelPhase } from 'src/core/reels/types'
 
 import type { FallingSlot, ReelMotion } from './types'
 
 /**
- * Падение каскада: каждый слот идёт своим путём по расписанию стратегии и садится в свой ряд.
- * На последнем кадре слоты встают точно на ряды, а их позиции становятся базами ленты.
+ * Падение каскада: каждый падающий слот перемещается по своему пути из `FallPlan`. На последнем кадре
+ * слоты ставятся точно на ряды, и их позиции становятся базами ленты.
  */
 export class FallMotion<TValue> implements ReelMotion {
   readonly phase = ReelPhase.falling
@@ -39,7 +39,7 @@ export class FallMotion<TValue> implements ReelMotion {
     this.done = true
   }
 
-  /** Проматывает падение к кадру, когда все слоты коснулись рядов: отскок остаётся. */
+  /** Переводит время падения к `settleFrames` — кадру касания последнего слота; отскок проигрывается. */
   slam(): void {
     this.elapsed = Math.max(this.elapsed, this.plan.settleFrames)
   }
