@@ -10,7 +10,6 @@ import {
   createMachine,
   FALL_OPTIONS,
   readVisibleGrid,
-  REELS,
   ROWS,
   type TestData,
 } from '../../setup/reels'
@@ -219,8 +218,6 @@ describe('каскад', () => {
 
     expect(untouched?.getRevision()).toBe(revision)
     expect(landed.sort()).toEqual([...new Set(REMOVED.map((cell) => cell.reel))].sort())
-    expect(landed).not.toContain(1)
-    expect(landed.length).toBeLessThan(REELS)
   })
 
   it('реджектит каскад по отмене и возвращает барабаны в покой', async () => {

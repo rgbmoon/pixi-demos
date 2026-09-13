@@ -3,6 +3,12 @@ import type { ZodType } from 'zod'
 export type WsTransportOptions = {
   url: string
   timeoutMs?: number
+  reconnect?: WsReconnectOptions
+}
+
+export type WsReconnectOptions = {
+  minDelayMs: number
+  maxDelayMs: number
 }
 
 export type WsRequestOptions = {

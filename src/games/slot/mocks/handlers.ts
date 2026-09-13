@@ -76,7 +76,7 @@ const GAME_INIT_RESULT: GameInitResult = {
  * `link` передаёт тот, кто собирает хендлеры много раз: одна ссылка на все сборки не копит слушателей msw.
  */
 export const createHandlers = (options: MockOptions, link: WebSocketLink = ws.link(WS_URL)) => {
-  let balance = INITIAL_BALANCE
+  let balance = options.balance ?? INITIAL_BALANCE
   let totalWin = 0
   let lastBet = GAME_INIT_RESULT.round.bet
 

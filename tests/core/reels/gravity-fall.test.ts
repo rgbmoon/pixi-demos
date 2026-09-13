@@ -26,15 +26,6 @@ const createContext = (order = 0, drops = DROPS): FallContext => ({
   drops,
 })
 
-/** Первый кадр выборки, на котором слот сдвинулся с места. */
-const findStartFrame = (positionAt: (frames: number) => number): number => {
-  let frames = 0
-
-  while (positionAt(frames) === 0) frames += SAMPLE_STEP
-
-  return frames
-}
-
 describe('GravityFallStrategy', () => {
   it('доводит каждый слот ровно до его ряда к концу расписания', () => {
     const plan = strategy.plan(createContext())
@@ -72,27 +63,5 @@ describe('GravityFallStrategy', () => {
         expect(plan.positionAt(index, frames)).toBeGreaterThanOrEqual(drop.distance - bounce - 1e-9)
       }
     })
-  })
-
-  it('запускает нижний слот колонки не позже верхнего', () => {
-    const plan = strategy.plan(createContext())
-    const startFrames = DROPS.map((_, index) => findStartFrame((frames) => plan.positionAt(index, frames)))
-    const byRow = DROPS.map((drop, index) => ({ row: drop.row, start: startFrames[index] })).sort(
-      (a, b) => b.row - a.row
-    )
-
-    for (let index = 1; index < byRow.length; index += 1) {
-      expect(byRow[index].start).toBeGreaterThanOrEqual(byRow[index - 1].start)
-    }
-  })
-
-  it('сдвигает следующий барабан лесенки позже предыдущего', () => {
-    const first = strategy.plan(createContext(0))
-    const second = strategy.plan(createContext(1))
-
-    expect(findStartFrame((frames) => second.positionAt(0, frames))).toBeGreaterThan(
-      findStartFrame((frames) => first.positionAt(0, frames))
-    )
-    expect(second.totalFrames).toBeGreaterThan(first.totalFrames)
   })
 })

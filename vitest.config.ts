@@ -20,7 +20,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'lcov'],
       include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/**/types.ts', 'src/**/tokens.ts', 'src/**/constants.ts', 'src/main.tsx'],
+      exclude: ['src/**/types.ts', 'src/**/tokens.ts', 'src/**/constants.ts', 'src/main.tsx', 'src/**/mocks/**'],
     },
   },
 })

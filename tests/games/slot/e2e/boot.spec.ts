@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-import { openGame } from '../../../setup/game-page'
+import { expectNoNotices, openGame } from '../../../setup/game-page'
 
 test.describe('загрузка игры', () => {
   test('поднимает канвас и снимает экран загрузки', async ({ page }) => {
@@ -11,7 +11,7 @@ test.describe('загрузка игры', () => {
     // Фон Layout — тоже канвас: игровой ищется в области страницы
     await expect(page.getByRole('main').locator('canvas')).toBeVisible()
     await expect(page.getByRole('status', { name: 'Loading game' })).toBeHidden()
-    await expect(page.getByRole('alert')).toBeHidden()
+    await expectNoNotices(page)
   })
 
   test('проводит спин в браузере без Service Worker', async ({ page }) => {
@@ -22,11 +22,22 @@ test.describe('загрузка игры', () => {
 
     const spin = await openGame(page, '?scenario=bigwin&seed=1')
 
-    await expect(page.getByRole('alert')).toBeHidden()
-
     await spin.dispatchEvent('click')
 
     await expect(spin).toBeHidden()
     await expect(spin).toBeVisible({ timeout: 30_000 })
+    await expectNoNotices(page)
+  })
+
+  test('показывает оверлей с перезагрузкой, если ассеты игры не загрузились', async ({ page }) => {
+    // Ассеты игры грузит только preload игрового модуля: отказ на них проходит путь бутстрапа до оверлея
+    await page.route('**/games/slot/**', (route) => route.abort())
+    await page.goto('/slot?scenario=nowin&seed=1')
+
+    const overlay = page.getByRole('alert')
+
+    await expect(overlay).toContainText('Failed to load the game', { timeout: 30_000 })
+    await expect(overlay.getByRole('button', { name: 'Reload' })).toBeVisible()
+    await expect(page.getByRole('status', { name: 'Loading game' })).toBeHidden()
   })
 })

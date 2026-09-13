@@ -40,9 +40,12 @@ export class SpinningPhase implements Phase<PhaseName> {
     const board = this.slotStore.stepSymbols ?? this.slotStore.initialSymbols
     // Прошлый ответ сервера: его балансом закрывается серия, если спин провалится
     const previousResult = this.slotStore.spinResult
-    // Stop принимается, пока идёт фаза: сигнал Stop и его подписку снимает scope
+    // Stop принимается, пока идёт фаза и Stop доступен по стору: сигнал Stop и его подписку снимает scope
     const scope = new AbortController()
-    const stopSignal = this.emitter.signalOn('ui:stopRequested', { signal: scope.signal })
+    const stopSignal = this.emitter.signalOn('ui:stopRequested', {
+      signal: scope.signal,
+      filter: () => this.slotStore.canStop,
+    })
 
     this.emitter.emit('spin:started')
 

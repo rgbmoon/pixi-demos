@@ -10,10 +10,14 @@ import { ENGINE_TOKENS } from 'src/engine/tokens'
 import { bindFlow } from 'src/games/slot/bindings'
 import type { GameEvents } from 'src/games/slot/events'
 import { createHandlers } from 'src/games/slot/mocks/handlers'
-import { MockScenario } from 'src/games/slot/mocks/types'
+import { type MockOptions, MockScenario } from 'src/games/slot/mocks/types'
 import type { SlotStore } from 'src/games/slot/stores/slot'
 import { SLOT_TOKENS } from 'src/games/slot/tokens'
 import { PhaseName } from 'src/games/slot/types'
+import { WS_URL } from 'src/net/constants'
+import { NET_TOKENS } from 'src/net/tokens'
+import type { WsTransportOptions } from 'src/net/types'
+import { WsTransport } from 'src/net/ws-transport'
 
 import {
   createBackgroundStub,
@@ -29,8 +33,12 @@ export type RoundOptions = {
   scenario?: MockScenario
   /** Сид генератора мока: один и тот же сид даёт один и тот же раунд. */
   seed?: number
+  /** Стартовый баланс игрока на мок-сервере. */
+  balance?: number
   /** Ставить ли штатные хендлеры мока. Свой хендлер на тот же URL конфликтует с ними за соединение. */
   withHandlers?: boolean
+  /** Опции транспорта вместо боевых: короткий таймаут запроса, быстрое переподключение. */
+  transport?: Omit<WsTransportOptions, 'url'>
 }
 
 export type Round = {
@@ -38,6 +46,8 @@ export type Round = {
   fsm: Fsm
   store: SlotStore
   emitter: GameEmitter<GameEvents>
+  /** Опции, которые хендлеры мока читают на каждом запросе: смена `scenario` меняет исход следующего спина. */
+  mock: MockOptions
   /** Порядок вызовов презентации: по нему проверяется, что момент события совпал с именем. */
   log: PresentationLog
   /** Ждёт, когда автомат объявит указанную фазу. */
@@ -58,14 +68,27 @@ export type Round = {
 export const createRound = ({
   scenario = MockScenario.random,
   seed = 1,
+  balance,
   withHandlers = true,
+  transport,
 }: RoundOptions = {}): Round => {
-  if (withHandlers) server.use(...createHandlers({ random: createRandom(seed), scenario }, wsLink))
+  const mock: MockOptions = { random: createRandom(seed), scenario, balance }
+
+  if (withHandlers) server.use(...createHandlers(mock, wsLink))
 
   const container = new Container({ defaultScope: 'Singleton' })
 
-  // Транспорт приходит из прод-композиции: сценарий говорит с моком тем же кодом, что и игра
-  bindApp(container)
+  // Транспорт приходит из прод-композиции: сценарий говорит с моком тем же кодом, что и игра.
+  // Свои опции заменяют только таймауты транспорта, класс тот же
+  if (transport) {
+    container
+      .bind(NET_TOKENS.WsTransport)
+      .toConstantValue(new WsTransport({ url: WS_URL, ...transport }))
+      .onDeactivation((instance) => instance.disconnect())
+  } else {
+    bindApp(container)
+  }
+
   bindFsm(container)
   bindFlow(container)
 
@@ -97,6 +120,7 @@ export const createRound = ({
     fsm,
     store,
     emitter,
+    mock,
     log,
     waitForPhase,
     playSpin,

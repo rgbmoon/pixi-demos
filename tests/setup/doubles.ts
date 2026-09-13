@@ -16,6 +16,8 @@ export type PresentationLog = string[]
 export type ReelsStub = {
   /** Видимая сетка модели: чем барабаны кончили раунд. */
   readGrid: () => (string | undefined)[][]
+  /** Барабаны, которые последняя посадка получила в anticipation. */
+  readAnticipation: () => readonly number[]
 }
 
 /**
@@ -27,6 +29,7 @@ export type ReelsStub = {
  */
 export const createReelsStub = (log: PresentationLog): ReelsMachineController & ReelsStub => {
   const machine = createMachine()
+  let lastAnticipation: readonly number[] = []
 
   const stub = {
     spin: (held: readonly number[] = []) => {
@@ -40,6 +43,7 @@ export const createReelsStub = (log: PresentationLog): ReelsMachineController & 
       stopSignal?: AbortSignal
     ) => {
       machine.setData((symbolKeys ?? null) as never)
+      lastAnticipation = anticipation
 
       const landing = machine.land({ anticipation, slamSignal: stopSignal })
 
@@ -91,6 +95,7 @@ export const createReelsStub = (log: PresentationLog): ReelsMachineController & 
       log.push('hideReels')
     },
     readGrid: () => readVisibleGrid(machine),
+    readAnticipation: () => lastAnticipation,
   }
 
   // Фазы видят контроллер только как тип и зовут ровно эти методы; остального PIXI-наследия им не нужно

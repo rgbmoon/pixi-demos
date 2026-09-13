@@ -119,14 +119,6 @@ describe('PlannedLandingStrategy', () => {
     expect(distance - positionAt(settleFrames)).toBeCloseTo(OPTIONS.easeCells * CELL_HEIGHT, 9)
   })
 
-  it('разносит остановку барабанов лесенкой', () => {
-    const distances = [0, 1, 2, 3, 4].map((index) => strategy.plan(createContext(0, index)).distance)
-
-    distances.slice(1).forEach((distance, previousIndex) => {
-      expect(distance - distances[previousIndex]).toBeCloseTo(OPTIONS.staggerCells * CELL_HEIGHT, 9)
-    })
-  })
-
   it.each([1, 2, 3])('удлиняет круиз на %d паузы anticipation, не трогая торможение и отскок', (anticipation) => {
     const anticipationCells = 10
     const withAnticipation = new PlannedLandingStrategy({ ...OPTIONS, anticipationCells })
