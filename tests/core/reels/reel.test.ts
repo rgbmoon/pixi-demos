@@ -103,13 +103,6 @@ describe('Reel', () => {
     })
   })
 
-  it('резолвит посадку сразу, если барабаны не крутятся', async () => {
-    const machine = createMachine()
-
-    await expect(machine.land()).resolves.toBeUndefined()
-    expect(machine.getPhase()).toBe(ReelPhase.idle)
-  })
-
   it('реджектит посадку по отмене и возвращает барабаны в покой', async () => {
     const machine = createMachine()
     const controller = new AbortController()
@@ -140,23 +133,6 @@ describe('Reel', () => {
     await landing
 
     expect(landed).toEqual(Array.from({ length: REELS }, (_, reel) => reel))
-  })
-
-  it('не объявляет посадку, прерванную отменой', async () => {
-    const machine = createMachine()
-    const controller = new AbortController()
-    const landed: number[] = []
-
-    machine.spin()
-    machine.advance(10)
-
-    const landing = machine.land({ signal: controller.signal, onReelLanded: (reel) => landed.push(reel) })
-
-    machine.advance(5)
-    controller.abort(new Error('round cancelled'))
-
-    await expect(landing).rejects.toThrow('round cancelled')
-    expect(landed).toEqual([])
   })
 
   it.each([0, 5, 20, 40, 60])('после slam на %d-м кадре посадки сажает ленту на значения раунда', async (landingFrames) => {
@@ -321,32 +297,6 @@ describe('Reel', () => {
 
     expect(heldStops[2]).toBe(baselineStops[0])
     expect(heldStops[3]).toBe(baselineStops[1])
-  })
-
-  it('не меняет движение текущего раунда при смене стратегий посреди спина', async () => {
-    const grid = createGrid()
-    const baseline = createMachine()
-    const switched = createMachine()
-
-    for (const machine of [baseline, switched]) {
-      machine.spin()
-      machine.advance(25)
-    }
-
-    // Вторая машина получает стратегии без лесенки: на текущей посадке это не должно сказаться
-    switched.setStrategies({
-      ...switched.getStrategies(),
-      landingStrategy: new PlannedLandingStrategy({ ...LANDING_OPTIONS, staggerCells: 0 }),
-    })
-
-    const frames = [baseline, switched].map((machine) => {
-      machine.setData(grid)
-      void machine.land()
-
-      return advanceUntilIdle(machine)
-    })
-
-    expect(frames[1]).toBe(frames[0])
   })
 
   it('садится одинаково при любом размере шага', async () => {

@@ -37,9 +37,12 @@ export class CascadePhase implements Phase<PhaseName> {
       throw new Error('Cascade phase entered without a cascade step')
     }
 
-    // Stop принимается, пока идёт фаза: сигнал Stop и его подписку снимает scope
+    // Stop принимается, пока идёт фаза и Stop доступен по стору: сигнал Stop и его подписку снимает scope
     const scope = new AbortController()
-    const stopSignal = this.emitter.signalOn('ui:stopRequested', { signal: scope.signal })
+    const stopSignal = this.emitter.signalOn('ui:stopRequested', {
+      signal: scope.signal,
+      filter: () => this.slotStore.canStop,
+    })
 
     try {
       this.emitter.emit('cascade:started', { removed: step.removed })

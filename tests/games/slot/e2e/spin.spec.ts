@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-import { openGame } from '../../../setup/game-page'
+import { expectNoNotices, openGame } from '../../../setup/game-page'
 
 test.describe('раунд', () => {
   test('проводит спин от нажатия до нового покоя', async ({ page }) => {
@@ -12,6 +12,8 @@ test.describe('раунд', () => {
     // Пока раунд идёт, спин недоступен; по его закрытии кнопка возвращается
     await expect(spin).toBeHidden()
     await expect(spin).toBeVisible({ timeout: 30_000 })
+
+    await expectNoNotices(page)
   })
 
   test('останавливает барабаны по Stop и доводит раунд до покоя', async ({ page }) => {
@@ -26,6 +28,8 @@ test.describe('раунд', () => {
 
     await expect(stop).toBeHidden()
     await expect(spin).toBeVisible({ timeout: 30_000 })
+
+    await expectNoNotices(page)
   })
 
   test('в турбо-режиме крутит серию, пока спин зажат, и возвращается в покой после отпускания', async ({ page }) => {
@@ -48,16 +52,19 @@ test.describe('раунд', () => {
     // DOM-кнопки слоя указатель пропускают, поэтому нажатие попадает в канвас под ними
     await page.mouse.move(centerX, centerY)
     await page.mouse.down()
-    await page.waitForTimeout(1500)
 
-    // Серия уже идёт: зажатая кнопка остаётся доступной и показывает турбо-спин. Короткое ожидание
-    // не даёт проверке дотянуть до порога удержания, если тот вдруг сломан
-    await page.keyboard.press('Tab')
-    await expect(page.getByRole('button', { name: 'Turbo spin' })).toBeVisible({ timeout: 1000 })
+    // Кнопка называется «Turbo spin» только в серии: пока порог удержания не пройден, она остаётся «Spin».
+    // Зажатая кнопка остаётся доступной, Tab поднимает слой доступности, пока серия не начнётся
+    await expect(async () => {
+      await page.keyboard.press('Tab')
+      await expect(page.getByRole('button', { name: 'Turbo spin' })).toBeVisible({ timeout: 500 })
+    }).toPass({ timeout: 10_000 })
 
     await page.mouse.up()
 
     await expect(spin).toBeVisible({ timeout: 30_000 })
+
+    await expectNoNotices(page)
   })
 
   test('проводит раунд с респином через все шаги до нового покоя', async ({ page }) => {
@@ -71,6 +78,8 @@ test.describe('раунд', () => {
     // Спин недоступен до конца последнего шага: между шагами раунд не возвращается в покой
     await expect(spin).toBeHidden()
     await expect(spin).toBeVisible({ timeout: 60_000 })
+
+    await expectNoNotices(page)
   })
 
   test('проводит раунд с каскадами через все шаги до нового покоя', async ({ page }) => {
@@ -84,6 +93,8 @@ test.describe('раунд', () => {
     // Спин недоступен до конца последнего шага: между шагами раунд не возвращается в покой
     await expect(spin).toBeHidden()
     await expect(spin).toBeVisible({ timeout: 60_000 })
+
+    await expectNoNotices(page)
   })
 
   test('проводит раунд с бонусом Hold & Win до нового покоя', async ({ page }) => {
@@ -97,5 +108,7 @@ test.describe('раунд', () => {
     // Спин недоступен, пока идёт бонус: между шагами раунд не возвращается в покой
     await expect(spin).toBeHidden()
     await expect(spin).toBeVisible({ timeout: 90_000 })
+
+    await expectNoNotices(page)
   })
 })

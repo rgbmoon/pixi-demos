@@ -3,7 +3,13 @@ import { WebSocket as ReconnectingWebSocket } from 'partysocket'
 import { notifyError } from 'src/core/errors/utils'
 import { z } from 'zod'
 
-import type { PendingRequest, PushListener, WsRequestOptions, WsTransportOptions } from './types'
+import type {
+  PendingRequest,
+  PushListener,
+  WsReconnectOptions,
+  WsRequestOptions,
+  WsTransportOptions,
+} from './types'
 
 // Ответ на запрос: пара { request, response }. Коррелируем по response.invocationId,
 // ошибку сервера ловим по response.error.
@@ -34,10 +40,12 @@ export class WsTransport {
   private readonly listeners = new Map<string, Set<PushListener>>()
   private readonly url: string
   private readonly timeoutMs: number
+  private readonly reconnect?: WsReconnectOptions
 
-  constructor({ url, timeoutMs = 10000 }: WsTransportOptions) {
+  constructor({ url, timeoutMs = 10000, reconnect }: WsTransportOptions) {
     this.url = url
     this.timeoutMs = timeoutMs
+    this.reconnect = reconnect
   }
 
   /**
@@ -127,7 +135,14 @@ export class WsTransport {
    * серверная invocation — в `dispatchPush`, открытие соединения — в `flushPending`.
    */
   private createSocket(): ReconnectingWebSocket {
-    const activeSocket = new ReconnectingWebSocket(this.url)
+    const activeSocket = new ReconnectingWebSocket(
+      this.url,
+      undefined,
+      this.reconnect && {
+        minReconnectionDelay: this.reconnect.minDelayMs,
+        maxReconnectionDelay: this.reconnect.maxDelayMs,
+      }
+    )
 
     activeSocket.addEventListener('message', (event) => {
       if (typeof event.data !== 'string') return

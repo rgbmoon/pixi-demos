@@ -160,6 +160,8 @@ ui           →  лист, core и engine.  Не знает stores, api, events
 - **Намерение игрока внутри раунда** (Stop) фаза превращает в сигнал события `emitter.signalOn` и передаёт
   вниз аргументом вызова, как `signal` отмены: `await reels.land(..., signal, stopSignal)`.
   Контроллеры UI-события раунда не слушают.
+- **Фаза, принимающая намерение игрока, проверяет его доступность по стору** (`filter` у `waitFor` /
+  `signalOn`); доступность кнопки отображает тот же флаг.
 - **Широковещательные события автомата** (`spin:started`, `spin:landed`, `respin:started`,
   `respin:landed`, `holdWin:started`, `holdWin:spinStarted`, `holdWin:landed`, `holdWin:collected`,
   `cascade:started`, `cascade:landed`)

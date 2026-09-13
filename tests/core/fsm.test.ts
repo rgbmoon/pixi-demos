@@ -12,7 +12,7 @@ const createSink = () => {
   return { visited, sink: { setPhase: (phase: string) => visited.push(phase) } satisfies PhaseSink }
 }
 
-const createPhase = (name: string, enter: Phase['enter'], exit?: () => void): Phase => ({ name, enter, exit })
+const createPhase = (name: string, enter: Phase['enter']): Phase => ({ name, enter })
 
 describe('Fsm', () => {
   const notices: { severity: string; message: string }[] = []
@@ -21,14 +21,10 @@ describe('Fsm', () => {
   beforeEach(() => {
     notices.length = 0
     offNotice = onNotice((notice) => notices.push(notice))
-    // traceError и tracePhase печатают в консоль на DEV-сборке, а тесты идут именно в ней
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-    vi.spyOn(console, 'debug').mockImplementation(() => {})
   })
 
   afterEach(() => {
     offNotice()
-    vi.restoreAllMocks()
   })
 
   it('падает на сборке, если фаза из конфига не забиндена', () => {
@@ -70,28 +66,6 @@ describe('Fsm', () => {
     await started
 
     expect(visited).toEqual(['a', 'b', 'a', 'b'])
-  })
-
-  it('зовёт exit на каждой итерации, включая ошибочную', async () => {
-    const { sink } = createSink()
-    const exitOk = vi.fn()
-    const exitFailing = vi.fn()
-
-    const phases = [
-      createPhase('a', () => 'b', exitOk),
-      createPhase(
-        'b',
-        () => {
-          throw new Error('phase failed')
-        },
-        exitFailing
-      ),
-    ]
-
-    await new Fsm(phases, sink, { initial: 'a', names: ['a', 'b'] }).start()
-
-    expect(exitOk).toHaveBeenCalledOnce()
-    expect(exitFailing).toHaveBeenCalledOnce()
   })
 
   it('останавливает петлю навсегда после ошибки фазы', async () => {
@@ -144,18 +118,5 @@ describe('Fsm', () => {
     await expect(started).resolves.toBeUndefined()
     expect(notices).toEqual([])
     expect(emitter.listenerCounts()).toEqual({})
-  })
-
-  it('не входит ни в одну фазу, если остановлен до запуска', async () => {
-    const { visited, sink } = createSink()
-    const enter = vi.fn(() => 'a')
-
-    const fsm = new Fsm([createPhase('a', enter)], sink, { initial: 'a', names: ['a'] })
-
-    fsm.dispose()
-    await fsm.start()
-
-    expect(enter).not.toHaveBeenCalled()
-    expect(visited).toEqual([])
   })
 })

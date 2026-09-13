@@ -28,6 +28,7 @@ export type MockScenario = (typeof MockScenario)[keyof typeof MockScenario]
 export type MockOptions = {
   random: Random
   scenario: MockScenario
+  balance?: number
 }
 
 /** Одна трансформация результата спина — член дискриминированного union из api-схемы. */

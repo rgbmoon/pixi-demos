@@ -1,20 +1,16 @@
-import type { GameInitResult, Payline, SpinResult } from 'src/games/slot/api/slot'
+import type { GameInitResult } from 'src/games/slot/api/slot'
 import { SymbolKey } from 'src/games/slot/types'
 
-/** Ставки режима; списки всех режимов одной длины — на этом стоит перенос индекса между режимами. */
+/** Ставки режима по умолчанию (`gameMode: '4'`). */
 export const BETS = [10, 20, 50, 100]
+/** Ставки режима `'3'`: другие значения, та же длина — на ней стоит перенос индекса между режимами. */
+export const MODE_3_BETS = [7, 14, 35, 70]
 export const DEFAULT_BET_INDEX = 2
 export const INITIAL_BALANCE = 1000
 
 /** Сетка 5×3 из одного символа: раунд без выигрыша, если линии не подставлены отдельно. */
-export const createSymbols = (key: SymbolKey = SymbolKey.A): SymbolKey[][] =>
+const createSymbols = (key: SymbolKey = SymbolKey.A): SymbolKey[][] =>
   Array.from({ length: 5 }, () => Array.from({ length: 3 }, () => key))
-
-export const createPayline = (lineId = '0'): Payline => ({
-  lineId,
-  line: [1, 1, 1, null, null],
-  value: 300,
-})
 
 export const createInitResult = (overrides: Partial<GameInitResult['round']> = {}): GameInitResult => ({
   securityHash: 'HASH',
@@ -43,7 +39,7 @@ export const createInitResult = (overrides: Partial<GameInitResult['round']> = {
     allowedLuckyBets: [
       { gameMode: '1', coefficient: 3, bets: BETS },
       { gameMode: '2', coefficient: 5, bets: BETS },
-      { gameMode: '3', coefficient: 7, bets: BETS },
+      { gameMode: '3', coefficient: 7, bets: MODE_3_BETS },
       { gameMode: '4', coefficient: 10, bets: BETS },
     ],
     coinCoefficient: 1,
@@ -58,33 +54,4 @@ export const createInitResult = (overrides: Partial<GameInitResult['round']> = {
   freeRoundCampaign: null,
   gamificationToken: 'TOKEN',
   isDemo: true,
-})
-
-export const createSpinResult = ({
-  bet = BETS[DEFAULT_BET_INDEX],
-  balance = INITIAL_BALANCE,
-  win = 0,
-  paylines = [],
-  symbols = createSymbols(),
-}: {
-  bet?: number
-  balance?: number
-  win?: number
-  paylines?: Payline[]
-  symbols?: SymbolKey[][]
-} = {}): SpinResult => ({
-  roundId: 'round-1',
-  bet,
-  balance,
-  totalWin: win,
-  platformMaxWin: null,
-  endedUtc: '2026-01-01T00:01:00.000Z',
-  SpinResponse: {
-    transformations: [
-      { type: 'frameInit', value: symbols },
-      ...(paylines.length > 0 ? ([{ type: 'paylines', value: paylines }] as const) : []),
-      { type: 'win', value: win },
-    ],
-  },
-  freeRoundCampaign: null,
 })

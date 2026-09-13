@@ -43,9 +43,12 @@ export class RespinPhase implements Phase<PhaseName> {
       throw new Error('Respin phase entered without a respin step')
     }
 
-    // Stop принимается, пока идёт фаза: сигнал Stop и его подписку снимает scope
+    // Stop принимается, пока идёт фаза и Stop доступен по стору: сигнал Stop и его подписку снимает scope
     const scope = new AbortController()
-    const stopSignal = this.emitter.signalOn('ui:stopRequested', { signal: scope.signal })
+    const stopSignal = this.emitter.signalOn('ui:stopRequested', {
+      signal: scope.signal,
+      filter: () => this.slotStore.canStop,
+    })
 
     // Шаг переключается до старта: подсветка удержанных барабанов появляется раньше прокрутки
     this.slotStore.advanceRoundStep()

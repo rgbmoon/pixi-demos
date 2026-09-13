@@ -1,9 +1,12 @@
 // @vitest-environment jsdom
 import { reaction } from 'mobx'
+import type { Notice } from 'src/core/errors/types'
+import { onNotice } from 'src/core/errors/utils'
 import { MockScenario } from 'src/games/slot/mocks/types'
+import type { SlotStore } from 'src/games/slot/stores/slot'
 import { SLOT_TOKENS } from 'src/games/slot/tokens'
-import { ForcedMechanic, PhaseName } from 'src/games/slot/types'
-import { afterEach, describe, expect, it } from 'vitest'
+import { ForcedMechanic, PhaseName, StepDirection } from 'src/games/slot/types'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import type { HoldWinStub, ReelsStub } from '../../setup/doubles'
 import { type Round, startRound } from '../../setup/round'
@@ -11,12 +14,28 @@ import { type Round, startRound } from '../../setup/round'
 /** Сид сценария `holdwin`, в котором выигрывает и базовый спин. */
 const HOLD_WIN_WITH_BASE_WIN_SEED = 1
 
+/** Ставка мока по умолчанию: режим Line10, первая позиция списка. */
+const MOCK_BET = 0.1
+
 let round: Round | undefined
+let notices: Notice[]
+let offNotice: () => void
+
+beforeEach(() => {
+  notices = []
+  offNotice = onNotice((notice) => notices.push(notice))
+})
 
 afterEach(async () => {
   await round?.stop()
   round = undefined
+  offNotice()
+
+  // Успешный раунд проходит без единого уведомления: ошибка в любой ветке всплыла бы здесь
+  expect(notices).toEqual([])
 })
+
+const getReels = (current: Round) => current.container.get(SLOT_TOKENS.ReelsMachineController) as unknown as ReelsStub
 
 describe('раунд', () => {
   it('проводит выигрышный раунд от ставки до нового idle', async () => {
@@ -46,7 +65,7 @@ describe('раунд', () => {
   it('сажает барабаны ровно на серверную сетку', async () => {
     round = await startRound({ scenario: MockScenario.bigwin })
 
-    const reels = round.container.get(SLOT_TOKENS.ReelsMachineController) as unknown as ReelsStub
+    const reels = getReels(round)
 
     await round.playSpin()
 
@@ -69,7 +88,7 @@ describe('раунд', () => {
     round = await startRound({ scenario: MockScenario.bigwin })
 
     const { store, emitter } = round
-    const reels = round.container.get(SLOT_TOKENS.ReelsMachineController) as unknown as ReelsStub
+    const reels = getReels(round)
 
     round.requestSpin()
     await round.waitForPhase(PhaseName.spinning)
@@ -87,27 +106,42 @@ describe('раунд', () => {
     expect(emitter.listenerCounts()['ui:stopRequested'] ?? 0).toBe(0)
   })
 
-  it('не переносит Stop, нажатый вне вращения, в следующий раунд', async () => {
+  it('объявляет посадку после остановки барабанов и до показа выигрыша', async () => {
     round = await startRound({ scenario: MockScenario.bigwin })
 
-    round.emitter.emit('ui:stopRequested')
+    const { log, emitter } = round
+    const at = (entry: string) => log.indexOf(entry)
+
+    emitter.on('spin:landed', () => log.push('spin:landed'))
+
     await round.playSpin()
 
-    expect(round.log).not.toContain('slam')
+    expect(log).toEqual(
+      expect.arrayContaining(['land', 'spin:landed', 'showAllWins', 'showTint', 'playWinLines', 'hideTint'])
+    )
+    // Событие в прошедшем времени эмитится после посадки: подписчик видит остановленные барабаны
+    expect(at('land')).toBeLessThan(at('spin:landed'))
+    expect(at('spin:landed')).toBeLessThan(at('showAllWins'))
+    // Разбор по линиям идёт под затемнением
+    expect(at('showTint')).toBeLessThan(at('playWinLines'))
+    expect(at('playWinLines')).toBeLessThan(at('hideTint'))
   })
 
-  it('ведёт презентацию выигрыша в объявленном порядке', async () => {
-    round = await startRound({ scenario: MockScenario.bigwin })
+  it('списывает и отправляет на сервер ставку, выбранную игроком', async () => {
+    round = await startRound({ scenario: MockScenario.nowin })
 
-    const landed: string[] = []
+    const { store } = round
 
-    round.emitter.on('spin:landed', () => landed.push('spin:landed'))
+    store.stepBet(StepDirection.forward)
+
+    const { bet, credit: creditBefore } = store
 
     await round.playSpin()
 
-    // Событие в прошедшем времени эмитится после посадки, презентация — следом за ним
-    expect(round.log).toEqual(['spin', 'land', 'showAllWins', 'showTint', 'playWinLines', 'hideTint', 'waitTicks'])
-    expect(landed).toEqual(['spin:landed'])
+    expect(bet).not.toBe(MOCK_BET)
+    expect(store.spinResult?.bet).toBe(bet)
+    // Баланс сервера без выигрыша: сервер списал ровно ту ставку, что списал клиент
+    expect(store.credit).toBeCloseTo(creditBefore - bet, 2)
   })
 })
 
@@ -120,10 +154,11 @@ describe('anticipation', () => {
     store.toggleForcedMechanic(ForcedMechanic.anticipation)
     await round.playSpin()
 
-    expect(store.presentedAnticipation.length).toBeGreaterThan(0)
-    expect(store.isAnticipationWin).toBe(true)
+    expect(store.spinAnticipation.length).toBeGreaterThan(0)
+    // Барабаны получили ровно те паузы, что прислал сервер
+    expect(getReels(round).readAnticipation()).toEqual(store.spinAnticipation)
     // Вспышка идёт вместе с показом всех линий, разбор линий — после них
-    expect(log).toEqual(expect.arrayContaining(['flash', 'showAllWins']))
+    expect(log).toEqual(expect.arrayContaining(['flash', 'showAllWins', 'playWinLines']))
     expect(log.indexOf('flash')).toBeLessThan(log.indexOf('playWinLines'))
   })
 
@@ -132,7 +167,9 @@ describe('anticipation', () => {
 
     await round.playSpin()
 
-    expect(round.store.presentedAnticipation).toEqual([])
+    // Выигрыш есть: вспышку отличает от обычного показа только пауза
+    expect(round.store.spinWin).toBeGreaterThan(0)
+    expect(getReels(round).readAnticipation()).toEqual([])
     expect(round.log).not.toContain('flash')
   })
 
@@ -145,8 +182,10 @@ describe('anticipation', () => {
     store.toggleTurboEnabled()
     await round.playSpin()
 
+    // Сид даёт паузу и выигрыш: без них отсутствие вспышки ничего не доказывает
     expect(store.spinAnticipation.length).toBeGreaterThan(0)
-    expect(store.presentedAnticipation).toEqual([])
+    expect(store.spinWin).toBeGreaterThan(0)
+    expect(getReels(round).readAnticipation()).toEqual([])
     expect(log).not.toContain('flash')
   })
 })
@@ -156,7 +195,7 @@ describe('респин', () => {
     round = await startRound({ scenario: MockScenario.respin })
 
     const { store, emitter, log } = round
-    const reels = round.container.get(SLOT_TOKENS.ReelsMachineController) as unknown as ReelsStub
+    const reels = getReels(round)
     const creditBefore = store.credit
     const { bet } = store
     const credits: number[] = []
@@ -204,7 +243,7 @@ describe('респин', () => {
     round = await startRound({ scenario: MockScenario.respin })
 
     const { store, emitter, log } = round
-    const reels = round.container.get(SLOT_TOKENS.ReelsMachineController) as unknown as ReelsStub
+    const reels = getReels(round)
     const canStop: boolean[] = []
 
     emitter.on('respin:started', () => {
@@ -330,7 +369,7 @@ describe('каскад', () => {
     round = await startRound({ scenario: MockScenario.cascade })
 
     const { store, emitter, log } = round
-    const reels = round.container.get(SLOT_TOKENS.ReelsMachineController) as unknown as ReelsStub
+    const reels = getReels(round)
     const creditBefore = store.credit
     const { bet } = store
     const credits: number[] = []
@@ -385,7 +424,7 @@ describe('каскад', () => {
     round = await startRound({ scenario: MockScenario.cascade })
 
     const { store, emitter, log } = round
-    const reels = round.container.get(SLOT_TOKENS.ReelsMachineController) as unknown as ReelsStub
+    const reels = getReels(round)
     const canStop: boolean[] = []
 
     emitter.on('cascade:started', () => {
@@ -469,15 +508,11 @@ describe('турбо-режим', () => {
   })
 
   it('зачисляет выигрыши и продолжает серию, когда банк кончился', async () => {
-    round = await startRound({ scenario: MockScenario.bigwin })
+    // Кредита ровно на одну ставку: без зачисления выигрышей второго спина серии не будет
+    round = await startRound({ scenario: MockScenario.bigwin, balance: MOCK_BET })
 
     const { store, emitter } = round
-    const { init, bet } = store
 
-    if (!init) throw new Error('init is missing after boot')
-
-    // Кредита ровно на одну ставку: без зачисления выигрышей второго спина серии не будет
-    store.applyInit({ ...init, round: { ...init.round, balance: bet, bet } })
     store.toggleTurboEnabled()
     store.holdSpin()
     emitter.emit('ui:spinRequested')
@@ -490,5 +525,128 @@ describe('турбо-режим', () => {
     await round.waitForPhase(PhaseName.idle)
 
     expect(store.credit).toBe(store.spinResult?.balance)
+  })
+
+  it('закрывает серию, когда кредит не покрывает ставку и после зачисления', async () => {
+    // Кредита на две ставки, выигрышей нет: третьего спина серии не будет
+    round = await startRound({ scenario: MockScenario.nowin, balance: 2 * MOCK_BET })
+
+    const { store, emitter } = round
+    let landings = 0
+
+    emitter.on('spin:landed', () => {
+      landings += 1
+    })
+
+    store.toggleTurboEnabled()
+    store.holdSpin()
+    emitter.emit('ui:spinRequested')
+
+    await round.waitForPhase(PhaseName.spinning)
+    await round.waitForPhase(PhaseName.idle)
+
+    expect(landings).toBe(2)
+    // Кнопка ещё зажата, но серия закрыта, а спин недоступен
+    expect(store.isSpinHeld).toBe(true)
+    expect(store.isTurboSeries).toBe(false)
+    expect(store.canSpin).toBe(false)
+    expect(store.credit).toBe(store.spinResult?.balance)
+  })
+})
+
+describe('доступность спина и Stop', () => {
+  /** Спит ли фаза idle до следующего запроса спина: запрос, прошедший фильтр, снимает её подписку синхронно. */
+  const isWaitingForSpin = (current: Round): boolean =>
+    (current.emitter.listenerCounts()['ui:spinRequested'] ?? 0) > 0
+
+  it('не начинает раунд без денег на ставку и начинает, когда ставка снова по карману', async () => {
+    round = await startRound({ scenario: MockScenario.nowin, balance: 1.5 * MOCK_BET })
+
+    const { store } = round
+    const creditBefore = store.credit
+
+    store.stepBet(StepDirection.forward)
+    round.requestSpin()
+
+    expect(isWaitingForSpin(round)).toBe(true)
+    expect(store.credit).toBe(creditBefore)
+
+    store.stepBet(StepDirection.backward)
+    await round.playSpin()
+
+    // Сервер списал одну ставку: отвергнутый запрос до него не дошёл
+    expect(store.credit).toBeCloseTo(creditBefore - MOCK_BET, 2)
+  })
+
+  it('не начинает раунд при открытых настройках', async () => {
+    round = await startRound({ scenario: MockScenario.nowin })
+
+    const { store } = round
+    const creditBefore = store.credit
+
+    store.openSettings()
+    round.requestSpin()
+
+    expect(isWaitingForSpin(round)).toBe(true)
+    expect(store.credit).toBe(creditBefore)
+
+    store.closeSettings()
+    await round.playSpin()
+
+    expect(store.credit).toBeCloseTo(creditBefore - MOCK_BET, 2)
+  })
+
+  it('в турбо-режиме не проматывает посадку по Stop', async () => {
+    round = await startRound({ scenario: MockScenario.bigwin })
+
+    const { store, emitter } = round
+
+    store.toggleTurboEnabled()
+    emitter.on('spin:started', () => emitter.emit('ui:stopRequested'))
+
+    await round.playSpin()
+
+    expect(round.log).not.toContain('slam')
+  })
+})
+
+describe('раунд за раундом', () => {
+  const STEP_CASES: [MockScenario, string, (store: SlotStore) => number][] = [
+    [MockScenario.respin, 'respin', (store) => store.spinRespins.length],
+    [MockScenario.cascade, 'cascade', (store) => store.spinCascades.length],
+    [MockScenario.holdwin, 'holdWinLand', (store) => store.spinHoldWin?.steps.length ?? 0],
+  ]
+
+  it.each(STEP_CASES)('после раунда %s следующий такой же проходит все свои шаги', async (scenario, entry, countSteps) => {
+    round = await startRound({ scenario })
+
+    await round.playSpin()
+
+    const firstRoundLength = round.log.length
+
+    await round.playSpin()
+
+    const steps = countSteps(round.store)
+
+    // Шаги прошлого раунда, не сброшенные перед новым, сдвинули бы начало цепочки или скрыли её целиком
+    expect(steps).toBeGreaterThan(0)
+    expect(round.log.slice(firstRoundLength).filter((item) => item === entry)).toHaveLength(steps)
+    expect(round.store.credit).toBe(round.store.spinResult?.balance)
+  })
+
+  it('не копит подписчиков эмиттера от раунда к раунду', async () => {
+    round = await startRound({ scenario: MockScenario.bigwin })
+
+    await round.playSpin()
+
+    const afterFirstRound = round.emitter.listenerCounts()
+
+    // Каждая механика проходит свои фазы со своими подписками на Stop
+    for (const scenario of [MockScenario.respin, MockScenario.cascade, MockScenario.holdwin]) {
+      round.mock.scenario = scenario
+      await round.playSpin()
+    }
+
+    expect(round.emitter.listenerCounts()).toEqual(afterFirstRound)
   })
 })

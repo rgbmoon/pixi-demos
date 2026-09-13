@@ -43,9 +43,12 @@ export class HoldWinSpinPhase implements Phase<PhaseName> {
       throw new Error('Hold & Win spin phase entered without a step')
     }
 
-    // Stop принимается, пока идёт фаза: сигнал Stop и его подписку снимает scope
+    // Stop принимается, пока идёт фаза и Stop доступен по стору: сигнал Stop и его подписку снимает scope
     const scope = new AbortController()
-    const stopSignal = this.emitter.signalOn('ui:stopRequested', { signal: scope.signal })
+    const stopSignal = this.emitter.signalOn('ui:stopRequested', {
+      signal: scope.signal,
+      filter: () => this.slotStore.canStop,
+    })
 
     try {
       if (!this.slotStore.isTurboEnabled) {
