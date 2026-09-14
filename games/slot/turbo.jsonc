@@ -1,0 +1,38 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    // Дублёры слота используют оснастку тестов пакета reels
+    "test": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/vitest.shared.ts",
+        "$TURBO_ROOT$/.env",
+        "$TURBO_ROOT$/packages/reels/tests/setup/**"
+      ]
+    },
+    // e2e запускаются на сборке приложения. Входы задачи: общая часть web, страница и ассеты слота;
+    // страниц и ассетов других игр в списке нет.
+    // Папки web/src перечислены явно: исключение `!` в turbo действует независимо от порядка глобов,
+    // поэтому включить pages/slot после `!pages/**` нельзя. Новую общую папку web/src нужно добавить сюда
+    "e2e": {
+      "inputs": [
+        "e2e/**",
+        "playwright.config.ts",
+        "package.json",
+        "$TURBO_ROOT$/playwright.shared.ts",
+        "$TURBO_ROOT$/pnpm-lock.yaml",
+        "$TURBO_ROOT$/.env",
+        "$TURBO_ROOT$/web/*",
+        "$TURBO_ROOT$/web/src/*",
+        "$TURBO_ROOT$/web/src/app/**",
+        "$TURBO_ROOT$/web/src/components/**",
+        "$TURBO_ROOT$/web/src/styles/**",
+        "$TURBO_ROOT$/web/src/pages/slot/**",
+        "$TURBO_ROOT$/web/public/*",
+        "$TURBO_ROOT$/web/public/games/slot/**",
+        "!$TURBO_ROOT$/web/**/.DS_Store"
+      ]
+    }
+  }
+}

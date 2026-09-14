@@ -1,0 +1,44 @@
+{
+  "name": "@pixi-demos/slot",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "imports": {
+    "#src/*": "./src/*.ts"
+  },
+  "scripts": {
+    "lint": "eslint --quiet --fix .",
+    "lint:ci": "eslint --quiet .",
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui"
+  },
+  "dependencies": {
+    "@pixi-demos/core": "workspace:*",
+    "@pixi-demos/engine": "workspace:*",
+    "@pixi-demos/net": "workspace:*",
+    "@pixi-demos/reels": "workspace:*",
+    "@pixi-demos/reels-pixi-adapter": "workspace:*",
+    "inversify": "catalog:",
+    "mobx": "catalog:",
+    "pixi.js": "catalog:",
+    "reflect-metadata": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@playwright/test": "catalog:",
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "jsdom": "catalog:",
+    "msw": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  }
+}

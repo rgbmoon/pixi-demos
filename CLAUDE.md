@@ -25,30 +25,37 @@
 
 **Стек:** React 19 · PIXI.js v8 · MobX 6 · inversify 8 · Tailwind CSS v4 · react-router-dom v7 ·
 TypeScript 6 · Vite 8; сеть — zod + partysocket, моки — MSW, скелеты — стаб из `engine/skeleton`,
-звук — Web Audio API без библиотек (`engine/audio`).
+звук — Web Audio API без библиотек (`engine/audio`); монорепо — pnpm workspaces + Turborepo.
 Рантайм `@esotericsoftware/spine-pixi-v8` остаётся в зависимостях, но сейчас не импортируется:
 Spine-ассеты лицензионные и в репозиторий не попадают. Версия пинована тильдой `~4.2.x` —
 major.minor рантайма обязан совпадать с версией редактора, экспортировавшего ассеты (4.2.43).
 React Compiler включён для JSX-файлов
-(babel не парсит декораторы в `.ts`, см. [vite.config.ts](vite.config.ts)).
+(babel не парсит декораторы в `.ts`, см. [web/vite.config.ts](web/vite.config.ts)).
 
 ---
 
 ## Команды
 
-| Команда                 | Что делает                                                                     |
-| ----------------------- | ------------------------------------------------------------------------------ |
-| `npm run dev`           | Vite dev-сервер                                                                |
-| `npm run build`         | `tsc -b && vite build`                                                         |
-| `npm run lint`          | `eslint --quiet --fix .` + `tsc --noEmit -p tsconfig.app.json`                 |
-| `npm run lint:ci`       | `eslint --quiet .` + `tsc -b` — версия для CI, без `--fix`                     |
-| `npm run preview`       | превью прод-сборки                                                             |
-| `npm run preview:mocks` | сборка с `VITE_USE_MOCKS=true` + превью — прод-сборка с работающими MSW-моками |
-| `npm test`              | vitest: модульные тесты и сценарии раунда                                      |
-| `npm run coverage`      | vitest с покрытием (v8)                                                        |
-| `npm run e2e`           | сборка с моками + Playwright, проект `chromium`                                |
+| Команда                              | Что делает                                                                     |
+| ------------------------------------ | ------------------------------------------------------------------------------ |
+| `pnpm dev`                           | Vite dev-сервер приложения                                                     |
+| `pnpm build`                         | typecheck всех пакетов + `vite build`                                          |
+| `pnpm lint`                          | `eslint --quiet --fix .` + `tsc -b` по пакетам и eslint корневых конфигов      |
+| `pnpm lint:ci`                       | то же без `--fix` — версия для CI                                              |
+| `pnpm preview`                       | превью прод-сборки                                                             |
+| `pnpm preview:mocks`                 | сборка с `VITE_USE_MOCKS=true` + превью — прод-сборка с работающими MSW-моками |
+| `pnpm test`                          | vitest всех пакетов: модульные тесты и сценарии раунда                         |
+| `pnpm coverage`                      | vitest с покрытием (v8), по пакетам                                            |
+| `pnpm e2e`                           | сборка с моками, затем Playwright всех пакетов со спеками                      |
+| `pnpm e2e --filter=@pixi-demos/slot` | то же для одной игры                                                           |
 
-Husky `pre-commit` запускает `npm run lint`; тесты и E2E гоняет CI. E2E в хук не заведены: им
+Задачи пакетов запускает Turborepo ([turbo.jsonc](turbo.jsonc)) и кэширует по хэшу входов: задача с
+прежними входами повторно не выполняется. Задача без скрипта `transit` включает в хэш исходники
+пакетов, от которых пакет зависит: правка `src` пакета сбрасывает кэш задач у зависимых пакетов.
+Тесты пакета в этот хэш не входят. Корневой `package.json` не зависит от workspace-пакетов: исходники
+пакетов, от которых зависит корень, turbo включает в глобальный хэш.
+
+Husky `pre-commit` запускает `pnpm lint`; тесты и E2E гоняет CI. E2E в хук не заведены: им
 нужны прод-сборка и браузер, для pre-commit это слишком долго.
 
 ---
@@ -60,12 +67,17 @@ Husky `pre-commit` запускает `npm run lint`; тесты и E2E гоня
 
 - **Деплой только из `main` и только после зелёных `checks` и `e2e`.** Релизом служит мёрдж PR;
   второй вход — кнопка Run workflow на `main`, она гоняет те же проверки перед деплоем.
-  Джоб деплоя забирает артефакт `dist` из джоба e2e, поэтому публикуется проверенная сборка.
-- **Бэкенда нет**: прод собирается `npm run build:mocks`. MSW перехватывает WebSocket в самой
+  Джоб деплоя забирает артефакт `dist` (`web/dist`) из джоба e2e, поэтому публикуется проверенная сборка.
+- **Кэш Turborepo сохраняется между запусками workflow** (`actions/cache`, `.turbo/cache`): задачи с
+  прежним хэшем входов повторно не выполняются, браузеры Playwright устанавливаются, только если у
+  какой-то задачи e2e нет записи в кэше. При ручном запуске workflow turbo получает `--force` и
+  выполняет все задачи без кэша.
+- **Бэкенда нет**: прод собирается `pnpm build:mocks`. MSW перехватывает WebSocket в самой
   странице, поэтому демо целиком статическое.
-- **`VITE_WS_URL` держит `.env` в репозитории.** Значение не секрет: его перехватывает мок, и оно
-  обязано совпадать у транспорта и у хендлера. `.env.local` переопределяет его локально.
-- **Правила раздачи — `public/_redirects` и `public/_headers`.** Actions публикует готовый каталог,
+- **`VITE_WS_URL` задан в `.env` в корне репозитория.** Значение не секрет: его перехватывает мок, и оно
+  обязано совпадать у транспорта и у хендлера; `envDir` приложения и тестов указывает на корень.
+  `.env.local` переопределяет его локально.
+- **Правила раздачи — `web/public/_redirects` и `web/public/_headers`.** Actions публикует готовый каталог,
   поэтому правила обязаны попасть в `dist/` вместе с ассетами. SPA-фолбэк обязателен:
   `createBrowserRouter` без него отдаёт 404 на `/slot` и на перезагрузку страницы.
 
@@ -75,41 +87,54 @@ Husky `pre-commit` запускает `npm run lint`; тесты и E2E гоня
 
 ### Слои и направление импортов
 
-Каждая папка верхнего уровня — **будущий npm-пакет**: раскладка сделана так, чтобы вынос в
-монорепо был механическим. Пакеты разделены по рантайму: чистый TS, zod, React, PIXI.
+Каждая папка в `packages/`, `games/` и `web/` — **workspace-пакет** со своим `package.json`,
+зависимостями и тестами. Пакеты разделены по рантайму: чистый TS, zod, React, PIXI. Новые пакеты
+добавляются в `games/`; приложение в репозитории одно.
 
 ```
-src/
-  main.tsx      вход; сюда же подключён styles/index.css
-  app/          composition root: контейнеры, биндинги, роутер, провайдеры
-  pages/        роут-страницы; каждая — граница ленивого чанка
-  core/         чистый TS: errors/, events/, fsm/ и reels/ (движки), palette, easing, storage, tokens
-  net/          транспорт WS, конверт, msw-хелпер; без PIXI и React
-  components/   React-кит: Layout, Button, Snackbars, RouteError, BackgroundCanvas,
-                GameCanvas, ApiProvider, icons/
-  engine/       PIXI-рантайм: хост, тикер, пул скелетов, skeleton/, адаптер reels/,
-                синтезатор audio/ и базы сцены — LiveContainer и SpineAnimation
-  games/slot/   сама игра: api/ stores/ phases/ scenes/ mocks/ + листовые tokens, types,
-                constants, events, assets, utils, skeletons, reels, sounds; ui/ и controllers/
-                внутри разбиты по зонам сцены: hud/ и reels/
-  styles/       глобальный стиль и @theme-токены Tailwind
+packages/
+  core/                чистый TS: errors/, events/, fsm/ (движки), palette, easing, random, storage, tokens
+  net/                 транспорт WS и его биндинг, конверт, msw-хелпер; без PIXI и React
+  engine/              PIXI-рантайм: хост, тикер, пул скелетов, skeleton/, синтезатор audio/
+                       и базы сцены — LiveContainer и SpineAnimation
+  reels/               модель рил-машины — самостоятельная библиотека без зависимостей
+  reels-pixi-adapter/  PIXI-адаптер рил-машины
+games/
+  slot/                сама игра: api/ stores/ phases/ scenes/ mocks/ + листовые tokens, types,
+                       constants, events, assets, utils, skeletons, reels, sounds; ui/ и controllers/
+                       внутри разбиты по зонам сцены: hud/ и reels/
+web/                   приложение
+  src/main.tsx         вход; сюда же подключён styles/index.css
+  src/app/             composition root: контейнеры, биндинги, роутер, провайдеры
+  src/pages/           роут-страницы; каждая — граница ленивого чанка
+  src/components/      React-кит: Layout, Button, Snackbars, RouteError, BackgroundCanvas,
+                       GameCanvas, ApiProvider, icons/
+  src/styles/          глобальный стиль и @theme-токены Tailwind
+  public/              статика и ассеты игр
 ```
+
+Код пакета лежит в его `src/`, тесты — в `tests/`, e2e игры и приложения — в `e2e/`.
 
 - Граф импортов односторонний, `import/no-cycle` включён.
-- **Направление между пакетами** проверяет ESLint (`@typescript-eslint/no-restricted-imports`
-  с `allowTypeImports`, блок `files:` на пакет):
+- **Направление между пакетами** задают их `package.json`: pnpm не резолвит незаявленный пакет,
+  `import/no-extraneous-dependencies` сообщает о нём ошибкой линта. Ограничения, которых в
+  `package.json` нет, проверяет ESLint (`@typescript-eslint/no-restricted-imports` с
+  `allowTypeImports`, блок `files:` на пакет):
 
   ```
-  core        →  ничего;                        запрещены pixi.js и react
-  net         →  core;                          запрещены pixi.js и react
-  components  →  core, net;                     PIXI только динамическим import()
-  engine      →  core, net;                     запрещён react
-  games/*     →  core, net, engine;             никогда друг в друга и не в components
-  pages/*     →  всё, включая свою игру и app
-  app         →  всё, кроме games (игру знает только её страница)
+  core                →  ничего;                        запрещены pixi.js и react
+  net                 →  core;                          запрещены pixi.js и react
+  engine              →  core;                          запрещён react
+  reels               →  ничего;                        независимая библиотека, запрещены pixi.js и react
+  reels-pixi-adapter  →  reels;                         pixi.js — peerDependency
+  games/*             →  core, net, engine, reels, reels-pixi-adapter;  никогда друг в друга
+  web: components     →  core, net;                     PIXI только динамическим import()
+  web: pages/*        →  всё; из игры — только её контракт
+  web: app            →  всё, кроме games (пакет игры импортируют только её страница и агрегатор моков)
   ```
 
-  Предел правила: оно ловит алиасные пути, относительный `../..` за границу пакета — нет.
+  Предел правил: относительный путь `../..` за границу пакета ни одно из них не проверяет, поэтому
+  между пакетами импорт идёт только по имени пакета.
   Правя блоки, помни: в flat-config правила одного имени **заменяются целиком, а не складываются**,
   поэтому блок слоя обязан повторить пакетный набор — иначе он его молча снимет.
 
@@ -124,7 +149,8 @@ src/
 
 ### Уровни внутри игры
 
-Вниз импортировать можно, вверх — только `import type`; проверяется тем же правилом:
+Вниз импортировать можно, вверх — только `import type`; проверяется тем же правилом по путям
+`#src/<уровень>`:
 
 ```
 types/constants/tokens/assets/sounds  ←  лист
@@ -181,15 +207,15 @@ ui           →  лист, core и engine.  Не знает stores, api, events
 
 ### Композиция и DI
 
-Composition root — [app/container.ts](src/app/container.ts) (контейнеры) и
-[app/bindings.ts](src/app/bindings.ts): `bindApp` (транспорт) и `bindRuntime` (хост, тикер, пул,
-движок автомата). Состав самой игры приносит её манифест —
-[games/slot/bindings.ts](src/games/slot/bindings.ts).
+Composition root — [app/container.ts](web/src/app/container.ts) (контейнеры) и
+[app/bindings.ts](web/src/app/bindings.ts): `bindApp` (транспорт через `bindNet` пакета `net`, адрес —
+опцией) и `bindRuntime` (хост, тикер, пул, движок автомата). Состав самой игры приносит её манифест —
+[games/slot/bindings.ts](games/slot/src/bindings.ts).
 
 - **Композиционный корень не знает игру статически.** `createGameContainer(bindGame)` принимает
   биндер аргументом, и знает игру только её страница. Иначе вторая игра склеится с первой в один чанк.
-- **Контракт игрового модуля** — [games/slot/index.ts](src/games/slot/index.ts): `preload`, `bind`,
-  `start(container, element, signal)`. Больше страница об игре не знает ничего.
+- **Контракт игрового модуля** — [games/slot/index.ts](games/slot/src/index.ts): `preload`, `bind`,
+  `start(container, element, signal)`. Это вход `.` пакета игры; других модулей игры страница не импортирует.
 - **Два времени жизни = два контейнера.** App-контейнер живёт всю вкладку (транспорт);
   child-контейнер — один маунт страницы игры (хост, тикер, пул, эмиттер, сторы, сцена, контроллеры,
   фазы, автомат). Оба — `defaultScope: 'Singleton'`. Уровень биндинга выбирается по **времени жизни**
@@ -218,6 +244,9 @@ Composition root — [app/container.ts](src/app/container.ts) (контейне�
   доступность подпиской. Вид: класс
   в `ui/`, создаёт его контроллер — композиция не меняется. Фаза: класс → имя в `PhaseName` →
   `bind(CORE_TOKENS.Phase)` → `return`-переходы соседних фаз, движок не трогается.
+  Игра: пакет `games/<name>` с контрактом во входе `.` → зависимость и роут-страница в `web` → имя в
+  `GAMES` у [eslint.config.js](eslint.config.js) → `turbo.jsonc` пакета с входами e2e по образцу
+  [слота](games/slot/turbo.jsonc) → ассеты в `web/public/games/<name>/`.
 
 ---
 
@@ -251,7 +280,8 @@ Composition root — [app/container.ts](src/app/container.ts) (контейне�
 
 **`core/easing.ts`** — кривые движения: чистая математика без PIXI, поэтому ей пользуются и
 PIXI-слой, и React-кит (фон лендинга). Всё, что не зависит ни от PIXI, ни от React и нужно обоим,
-живёт в `core/` — это единственное место, откуда виден и тот, и другой.
+живёт в `core/` — это единственное место, откуда виден и тот, и другой. Исключение — рил-машина:
+пакет `reels` не зависит от `core`, нужные ему кривые лежат в его собственном `easing.ts`.
 
 **`core/events/`** — `GameEmitter` (обёртка над `eventemitter3`; PIXI тянет его же, поэтому в бандле
 он один, а слой событий обходится без PIXI) и карта `GameEvents` на стороне игры.
@@ -294,15 +324,16 @@ result → idle`, по файлу на фазу. `spinning` держит всё 
 текста выбирает контроллер по стору. Показ вне раунда (превью линий при смене режима) принадлежит
 контроллеру, а не автомату.
 
-**`core/reels/` и `engine/reels/`** — барабаны разнесены на модель и рендер по образцу
-headless-таблиц: ядро в `core/` держит данные раунда, состав и расчёт движения барабанов, адаптер
-в `engine/` переносит слоты модели в PIXI-view. Доступа к тикеру у модели нет: величину шага
+**`reels/` и `reels-pixi-adapter/`** — рил-машина разнесена на модель и рендер по образцу
+headless-таблиц: пакет `reels` содержит данные раунда, состав барабанов и расчёт их движения, адаптер
+переносит слоты модели в PIXI-view. Оба пакета — самостоятельные библиотеки: модель не зависит ни от
+одного пакета монорепо, адаптер — только от модели, `pixi.js` у него peerDependency. Доступа к тикеру у модели нет: величину шага
 приносит адаптер вызовом `advance` из своего тикер-колбэка, одного на всю машину. Считает она в
 абстрактных единицах длины: `cellHeight` приходит конфигом, единицу выбирает игра. Два понятия ячейки: `Cell` —
 стабильный адрес `(барабан, ряд)` с `getValue`/`getSlot`, по нему контроллеры игры находят значение
 раунда и View-компонент ячейки (`ReelsView.getCellView`);
 `StripSlot` — движущийся слот ленты, с ним работает рендер. Состав барабанов приносит игра значением
-`ReelsConfig`, view ячейки — фабрикой `createCellView`: своего арта у `engine/reels/` нет. Новая
+`ReelsConfig`, view ячейки — фабрикой `createCellView`: своего арта у адаптера нет. Новая
 механика — это стратегия (`SpinStrategy`, `LandingStrategy`, `FallStrategy`) или правка модели, адаптер не трогается.
 
 **`engine/` и сцена игры** — PIXI-слой. Контроллер — наследник `LiveContainer`: создаёт виды и
@@ -310,7 +341,7 @@ headless-таблиц: ядро в `core/` держит данные раунд�
 `Container` с методами игровой семантики (`spin`, `land`), поэтому смена реализации
 (спрайт ↔ Spine ↔ `Graphics`) не задевает ни контроллер, ни фазы. Не всё рисуется скелетами: часть
 собрана из спрайтов и `Graphics` — выбор за видом. В `engine/` лежат только те базы, которые не
-зависят от арта: `LiveContainer`, `SpineAnimation` и адаптер барабанов `reels/`. Кнопка и текст со
+зависят от арта: `LiveContainer` и `SpineAnimation`; адаптер барабанов — отдельный пакет. Кнопка и текст со
 своим артом и геометрией общими не бывают — они живут в `<game>/ui/`.
 
 **`engine/audio/` и звук игры** — `AudioSynth` собирает звуки из осцилляторов, шума и фильтров
@@ -373,17 +404,18 @@ PIXI — `PALETTE` (живёт в `core/`, чтобы её видели и PIXI-
 
 ## Ассеты
 
-- Ассеты игры лежат в `public/games/<game>/` — по папке на игру
+- Ассеты игры лежат в `web/public/games/<game>/` — по папке на игру. Каталог `public` у Vite один,
+  поэтому ассеты игр лежат в приложении
 - **Почему `public/`, а не `src/`**: их грузит `Assets.load` по строковому URL в рантайме, ESM-импорта
   нет, в граф сборки Vite они не попадают.
-- **Все URL — в одном манифесте** [games/slot/assets.ts](src/games/slot/assets.ts); **единственный
+- **Все URL — в одном манифесте** [games/slot/assets.ts](games/slot/src/assets.ts); **единственный
   `Assets.load` в проекте** — `preloadGameAssets`, его зовёт `preload` игрового модуля до сборки графа. Дальше всё читается из
   кэша синхронно (`Assets.get`, скелет из пула); `Assets.load` внутри классов не появляется.
 - **Вложенность внутри пака не менять**: `.atlas` ссылается на свою страницу голым именем файла.
 - **Регистр в путях сверяй с диском**: APFS регистронезависима, поэтому опечатка проявится только на
   прод-раздаче — PIXI получит SPA-фолбэк вместо ассета и упадёт на декодировании.
   ```bash
-  cd public/games/slot && find . -type f | sed 's|^\./||' | sort   # сверить с путями из assets.ts
+  cd web/public/games/slot && find . -type f | sed 's|^\./||' | sort   # сверить с путями из assets.ts
   ```
 - **SVG-иконки игры — всегда белые**: tint PIXI умножает цвет, чёрному источнику цвет не задать.
 
@@ -403,6 +435,9 @@ PIXI — `PALETTE` (живёт в `core/`, чтобы её видели и PIXI-
 **Folder-as-module** — только для компонентов, страниц и контракта игры (папка с `index.ts(x)`,
 импорт на папку). Внутри пакетов — плоские файлы, импорт на файл, баррелей нет: именно это делает
 один пакет безопасным для бандла — импорт `core/errors/utils` не тянет `engine/`.
+Исключение — пакеты-библиотеки `reels` и `reels-pixi-adapter`: их публичный API — баррель
+`src/index.ts`, единственный вход в `exports`, пакет помечен `"sideEffects": false`. Внутри пакета
+баррель не используется: модули импортируют друг друга напрямую, иначе появятся циклы.
 
 **Именование: роль называет папка, а не имя файла.**
 
@@ -427,8 +462,10 @@ PIXI — `PALETTE` (живёт в `core/`, чтобы её видели и PIXI-
 DTO-типы `z.infer` — рядом со своими схемами. `any` запрещён, вместо `@ts-ignore` — `@ts-expect-error`.
 Type-only импорты обязательны. Enum-подобные наборы — `as const`-объект + производный тип, не `enum`.
 
-**Импорты** — алиас `src/*`, относительные пути только для соседних и дочерних файлов;
-порядок навязан ESLint (`builtin → external → internal`, `react` первым, алфавит).
+**Импорты** — чужой пакет по имени (`@pixi-demos/core/errors/utils`), свой — через поле `imports`
+его `package.json` (`#src/errors/utils`); в `web` для своих файлов — алиас `src/*`. Относительные
+пути только для соседних и дочерних файлов. Порядок навязан ESLint (`builtin → external → internal`,
+`react` первым, алфавит); пакеты монорепо, `#src/*` и `src/*` — группа internal.
 
 **TypeScript** — строгий, `verbatimModuleSyntax`, `erasableSyntaxOnly`, `noUnusedLocals/Parameters`.
 Неиспользуемые параметры — с префиксом `_`. Включены legacy-декораторы под inversify,
@@ -440,12 +477,12 @@ Type-only импорты обязательны. Enum-подобные набо�
 либо ждут, либо помечают `void`, и тогда обработка ошибок обязана быть внутри самой функции.
 
 **Форматирование** — `.prettierrc.json` описывает стиль (без точек с запятой, одинарные кавычки,
-120 колонок), но на pre-commit гоняется только `npm run lint` — автофиксы ESLint и `tsc`. Формат
+120 колонок), но на pre-commit гоняется только `pnpm lint` — автофиксы ESLint и `tsc`. Формат
 держится IDE и глазами; вручную переформатировать чужой код не надо.
 
-**Моки** включаются флагом `USE_MOCKS`, объявленным прямо в [main.tsx](src/main.tsx): свёртка условия
+**Моки** включаются флагом `USE_MOCKS`, объявленным прямо в [main.tsx](web/src/main.tsx): свёртка условия
 в литерал внутри того же модуля — единственное, что выбрасывает msw из прод-бандла. После правки
-`main.tsx` проверяй: `npm run build && grep -rl setupWorker dist/assets/` должен молчать.
+`main.tsx` проверяй: `pnpm build && grep -rl setupWorker web/dist/assets/` должен молчать.
 
 ---
 

@@ -1,0 +1,47 @@
+{
+  "name": "@pixi-demos/web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:mocks": "VITE_USE_MOCKS=true vite build",
+    "preview": "vite preview",
+    "preview:mocks": "VITE_USE_MOCKS=true vite build && vite preview",
+    "lint": "eslint --quiet --fix .",
+    "lint:ci": "eslint --quiet .",
+    "typecheck": "tsc -b",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui"
+  },
+  "dependencies": {
+    "@pixi-demos/core": "workspace:*",
+    "@pixi-demos/engine": "workspace:*",
+    "@pixi-demos/net": "workspace:*",
+    "@pixi-demos/slot": "workspace:*",
+    "@tailwindcss/vite": "^4.3.2",
+    "inversify": "catalog:",
+    "mobx": "catalog:",
+    "pixi.js": "catalog:",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-router-dom": "^7.18.1",
+    "reflect-metadata": "catalog:",
+    "tailwindcss": "^4.3.2"
+  },
+  "devDependencies": {
+    "@mswjs/interceptors": "catalog:",
+    "@playwright/test": "catalog:",
+    "@rolldown/plugin-babel": "^0.2.3",
+    "@types/babel__core": "^7.20.5",
+    "@types/node": "catalog:",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "msw": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-svgr": "^5.2.0"
+  }
+}

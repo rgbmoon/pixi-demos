@@ -353,7 +353,7 @@
 
   <main>
     <header>
-      <span class="eyebrow">pixi-demos · ReelsMachine · src/core/reels · src/engine/reels</span>
+      <span class="eyebrow">pixi-demos · ReelsMachine · @pixi-demos/reels · @pixi-demos/reels-pixi-adapter</span>
       <h1>Рил-машина</h1>
       <p>Headless-модель барабанов слот-машины и PIXI-адаптер к ней.</p>
     </header>
@@ -387,10 +387,10 @@
         разделах <a href="#guide-strategies">«Стратегии»</a>, <a href="#mech-layout">«Раскладка и
         нестандартная сетка»</a> и <a href="#mech-extend">«Своё расширение»</a>.</p>
       <p>Рил-машина состоит из двух частей. <strong>Ядро</strong>
-        (<a href="../src/core/reels"><code>src/core/reels/</code></a>) — модель на TypeScript: состав
-        и расчёт движения барабанов, данные раунда. <strong>Адаптер</strong>
-        (<a href="../src/engine/reels"><code>src/engine/reels/</code></a>) переносит состояние модели в
-        дерево сцены PIXI.</p>
+        (<a href="../packages/reels"><code>@pixi-demos/reels</code></a>) — модель на TypeScript без
+        зависимостей: состав и расчёт движения барабанов, данные раунда. <strong>Адаптер</strong>
+        (<a href="../packages/reels-pixi-adapter"><code>@pixi-demos/reels-pixi-adapter</code></a>) переносит
+        состояние модели в дерево сцены PIXI. Оба пакета импортируются только из корня пакета.</p>
       <p>Значения ячеек машина получает в данных раунда через <code>setData</code>. По ним она вычисляет
         позицию каждого барабана на каждом кадре: барабаны останавливаются так, что в ячейках оказываются значения
         из данных.</p>
@@ -569,12 +569,8 @@
       <p>Пример собирает машину из трёх барабанов с PIXI-адаптером и проводит один раунд: стартовая доска,
         прокрутка, посадка на результат.</p>
       <pre><code>import { Container, Sprite, Texture } from 'pixi.js'
-import { ReelsMachine } from 'src/core/reels/reels-machine'
-import { GravityFallStrategy } from 'src/core/reels/strategies/gravity-fall'
-import { LinearSpinStrategy } from 'src/core/reels/strategies/linear-spin'
-import { PlannedLandingStrategy } from 'src/core/reels/strategies/planned-landing'
-import { ReelsView } from 'src/engine/reels/reels-view'
-import type { CellView } from 'src/engine/reels/types'
+import { GravityFallStrategy, LinearSpinStrategy, PlannedLandingStrategy, ReelsMachine } from '@pixi-demos/reels'
+import { type CellView, ReelsView } from '@pixi-demos/reels-pixi-adapter'
 
 // Стартовая доска: сетка значений [барабан][ряд]
 const board = [['A', 'B', 'C'], ['A', 'A', 'B'], ['C', 'B', 'A']]
@@ -645,20 +641,20 @@ await machine.land()</code></pre>
       <p>Что происходит в модулях машины от вызова <code>spin</code> до остановки последнего барабана.</p>
       <ol>
         <li>Ваш код вызывает <code>machine.spin()</code>.
-          <a href="../src/core/reels/reels-machine.ts"><code>ReelsMachine.spin</code></a> вызывает
+          <a href="../packages/reels/src/reels-machine.ts"><code>ReelsMachine.spin</code></a> вызывает
           <code>Reel.spin</code> у барабанов в фазе <code>idle</code>, кроме удержанных.</li>
-        <li><a href="../src/core/reels/reel.ts"><code>Reel.spin</code></a> фиксирует стратегии спина, получает
+        <li><a href="../packages/reels/src/reel.ts"><code>Reel.spin</code></a> фиксирует стратегии спина, получает
           план прокрутки <code>spinStrategy.plan(...)</code>, делает текущим движением <code>SpinMotion</code> и
           переводит слоты в позу движения.</li>
-        <li>На каждом кадре <a href="../src/engine/reels/reels-view.ts"><code>ReelsView</code></a> вызывает
+        <li>На каждом кадре <a href="../packages/reels-pixi-adapter/src/reels-view.ts"><code>ReelsView</code></a> вызывает
           <code>machine.advance(deltaTime)</code>. Машина вызывает <code>advance</code> каждого барабана,
           барабан — <code>advance</code> своего движения.</li>
-        <li><a href="../src/core/reels/motions/spin-motion.ts"><code>SpinMotion.advance</code></a> ставит
+        <li><a href="../packages/reels/src/motions/spin-motion.ts"><code>SpinMotion.advance</code></a> ставит
           ленту на путь <code>plan.positionAt(elapsed)</code> от старта спина через
-          <a href="../src/core/reels/reel-strip.ts"><code>ReelStrip.moveTo</code></a>. Перенесённые слоты
+          <a href="../packages/reels/src/reel-strip.ts"><code>ReelStrip.moveTo</code></a>. Перенесённые слоты
           получают значение наполнения.</li>
         <li>Затем в том же кадре <code>ReelsView.sync</code> вызывает
-          <a href="../src/engine/reels/reel-view.ts"><code>ReelView.sync</code></a> каждого барабана: тот
+          <a href="../packages/reels-pixi-adapter/src/reel-view.ts"><code>ReelView.sync</code></a> каждого барабана: тот
           задаёт каждому <code>CellView</code> барабана <code>y</code>, <code>setValue</code> и
           <code>setMoving</code>.</li>
         <li>Ваш код получает результат раунда и вызывает <code>machine.setData(data)</code> и
@@ -669,7 +665,7 @@ await machine.land()</code></pre>
         <li><code>Reel.land</code> передаёт стратегии посадки <code>LandingContext</code> с числом кадров
           прокрутки <code>spunFrames</code>, получает <code>LandingPlan</code> и делает текущим движением
           <code>LandingMotion</code>.</li>
-        <li><a href="../src/core/reels/motions/landing-motion.ts"><code>LandingMotion.advance</code></a> берёт
+        <li><a href="../packages/reels/src/motions/landing-motion.ts"><code>LandingMotion.advance</code></a> берёт
           путь из <code>plan.positionAt</code> и вызывает <code>ReelStrip.moveTo</code>. Для каждого
           перенесённого слота <code>Reel.fillLanding</code> записывает значение ряда, где слот
           остановится.</li>
@@ -738,7 +734,7 @@ await machine.land()</code></pre>
       <p><code>ReelDef.meta</code> хранит произвольные данные барабана. Ядро поле не читает, ваш код
         получает его через <code>reel.def.meta</code>. Тип расширяется аугментацией интерфейса
         <code>ReelMeta</code>:</p>
-      <pre><code>declare module 'src/core/reels/types' {
+      <pre><code>declare module '@pixi-demos/reels' {
   interface ReelMeta {
     readonly isBonusReel?: boolean
   }
@@ -747,7 +743,7 @@ await machine.land()</code></pre>
 
     <section id="guide-machine">
       <h2>Машина</h2>
-      <p><a href="../src/core/reels/reels-machine.ts"><code>ReelsMachine</code></a> — точка входа ядра.
+      <p><a href="../packages/reels/src/reels-machine.ts"><code>ReelsMachine</code></a> — точка входа ядра.
         Машина хранит данные раунда и стратегии по умолчанию, создаёт барабаны по конфигу и передаёт им
         вызовы раунда. Методы — в <a href="#api-machine">API</a>.</p>
 
@@ -781,7 +777,7 @@ await machine.land()</code></pre>
 
     <section id="guide-cells">
       <h2>Барабаны, ячейки, ряды</h2>
-      <p><a href="../src/core/reels/reel.ts"><code>Reel</code></a> создаёт машина по <code>ReelDef</code>.
+      <p><a href="../packages/reels/src/reel.ts"><code>Reel</code></a> создаёт машина по <code>ReelDef</code>.
         У барабана <code>rows</code> ячеек, лента из <code>rows + buffer</code> слотов и одно текущее
         движение.</p>
 
@@ -812,7 +808,7 @@ await machine.land()</code></pre>
 
     <section id="guide-strip">
       <h2>Лента и слоты</h2>
-      <p><a href="../src/core/reels/reel-strip.ts"><code>ReelStrip</code></a> хранит слоты барабана, базу
+      <p><a href="../packages/reels/src/reel-strip.ts"><code>ReelStrip</code></a> хранит слоты барабана, базу
         каждого слота и путь ленты. Позиции слотов меняет только <code>ReelStrip</code>, значения слотов
         записывает <code>Reel</code>.</p>
       <pre><code>stripHeight   = (rows + buffer) × cellHeight
@@ -1150,7 +1146,7 @@ await machine.land()</code></pre>
           оказывается под видимой зоной, соответствие «слот → ряд» сдвигается на единицу.
           <code>wrapOffset</code> и <code>getLap</code> применяют одинаковый допуск
           <code>WRAP_EPSILON</code>. Регрессию проверяет
-          <a href="../tests/core/reels/strip-wrap.test.ts"><code>strip-wrap.test.ts</code></a>.</li>
+          <a href="../packages/reels/tests/strip-wrap.test.ts"><code>strip-wrap.test.ts</code></a>.</li>
         <li><strong>После падения базы переписываются.</strong> Без <code>rebase()</code> первый сдвиг ленты
           вернул бы слоты на прежние места.</li>
       </ul>
@@ -1318,7 +1314,7 @@ await machine.cascade({ removed })</code></pre>
       <h2>Своё расширение</h2>
 
       <h3>Своя стратегия</h3>
-      <p>Стратегия реализует контракт из <a href="../src/core/reels/types.ts"><code>types.ts</code></a> и
+      <p>Стратегия реализует контракт из <a href="../packages/reels/src/types.ts"><code>types.ts</code></a> и
         передаётся в конфиг, в <code>ReelDef</code> или в <code>setStrategies</code>. Пример — посадка без
         отскока: равномерный ход, затем торможение до нуля. Она выполняет требования к стратегии посадки:
         путь не короче оборота ленты, кратен ячейке и заканчивается в <code>distance</code>. Паузы anticipation
@@ -1374,7 +1370,7 @@ await machine.cascade({ removed })</code></pre>
         <code>setMoving(moving)</code>. Адаптер задаёт ему <code>y</code> и вызывает оба метода на каждом кадре,
         поэтому повторный вызов с тем же аргументом не должен ничего менять. Другие позы — выигрыш, взрыв —
         ставит ваш код через <code>getCellView</code>; <code>setMoving</code> может их сохранять, так сделано в
-        <a href="../src/games/slot/ui/reels/reel-symbol.ts"><code>ReelSymbol</code></a>. <code>CellView</code>,
+        <a href="../games/slot/src/ui/reels/reel-symbol.ts"><code>ReelSymbol</code></a>. <code>CellView</code>,
         перенесённый в другой контейнер, адаптер не трогает, пока ваш код не вернёт его в барабан: так
         выигравший символ поднимается над затемнением.</p>
 
@@ -1429,7 +1425,7 @@ requestAnimationFrame(frame)</code></pre>
 
     <section id="api-config">
       <h2><code>ReelsConfig</code>, <code>ReelDef</code>, <code>ReelMeta</code></h2>
-      <p class="api-src"><code>src/core/reels/types.ts</code></p>
+      <p class="api-src"><code>packages/reels/src/types.ts</code></p>
 
       <h3><code>ReelsConfig&lt;TValue&gt;</code></h3>
       <p>Конфиг машины; включает поля <code>ReelStrategies</code>. Тип требует одно из двух:
@@ -1473,13 +1469,13 @@ requestAnimationFrame(frame)</code></pre>
       <h3><code>ReelMeta</code></h3>
       <dl class="api">
         <dt><code>interface ReelMeta { readonly [key: string]: unknown }</code></dt>
-        <dd>Расширяется аугментацией модуля <code>src/core/reels/types</code>.</dd>
+        <dd>Расширяется аугментацией модуля <code>@pixi-demos/reels</code>.</dd>
       </dl>
     </section>
 
     <section id="api-machine">
       <h2><code>ReelsMachine&lt;TValue&gt;</code></h2>
-      <p class="api-src"><code>src/core/reels/reels-machine.ts</code> · implements
+      <p class="api-src"><code>packages/reels/src/reels-machine.ts</code> · implements
         <code>ReelsModel&lt;TValue&gt;</code></p>
       <dl class="api">
         <div class="sub-h">Создание</div>
@@ -1537,7 +1533,7 @@ requestAnimationFrame(frame)</code></pre>
 
     <section id="api-options">
       <h2>Опции вызовов</h2>
-      <p class="api-src"><code>src/core/reels/types.ts</code></p>
+      <p class="api-src"><code>packages/reels/src/types.ts</code></p>
 
       <h3><code>SpinOptions</code></h3>
       <dl class="api">
@@ -1571,7 +1567,7 @@ requestAnimationFrame(frame)</code></pre>
 
     <section id="api-reel">
       <h2><code>Reel&lt;TValue&gt;</code></h2>
-      <p class="api-src"><code>src/core/reels/reel.ts</code> · implements <code>ReelModel&lt;TValue&gt;</code>.
+      <p class="api-src"><code>packages/reels/src/reel.ts</code> · implements <code>ReelModel&lt;TValue&gt;</code>.
         Барабаны создаёт машина; ваш код получает их через <code>getReels</code> и <code>getReel</code>.</p>
       <dl class="api">
         <div class="sub-h">Поля</div>
@@ -1626,7 +1622,7 @@ requestAnimationFrame(frame)</code></pre>
 
     <section id="api-cell">
       <h2><code>Cell</code>, <code>Row</code> и типы ячеек</h2>
-      <p class="api-src"><code>src/core/reels/cell.ts</code>, <code>row.ts</code>, <code>types.ts</code></p>
+      <p class="api-src"><code>packages/reels/src/cell.ts</code>, <code>row.ts</code>, <code>types.ts</code></p>
 
       <h3><code>Cell&lt;TValue&gt;</code></h3>
       <dl class="api">
@@ -1668,7 +1664,7 @@ requestAnimationFrame(frame)</code></pre>
 
     <section id="api-model">
       <h2><code>ReelsModel</code>, <code>ReelModel</code></h2>
-      <p class="api-src"><code>src/core/reels/types.ts</code>. Контракт, через который адаптер читает модель.
+      <p class="api-src"><code>packages/reels/src/types.ts</code>. Контракт, через который адаптер читает модель.
         <code>ReelsMachine</code> и <code>Reel</code> его реализуют; своя модель с этим контрактом работает с
         <code>ReelsView</code>.</p>
 
@@ -1695,7 +1691,7 @@ requestAnimationFrame(frame)</code></pre>
 
     <section id="api-strategy-contracts">
       <h2>Контракты стратегий</h2>
-      <p class="api-src"><code>src/core/reels/types.ts</code></p>
+      <p class="api-src"><code>packages/reels/src/types.ts</code></p>
 
       <h3><code>ReelStrategies</code></h3>
       <dl class="api">
@@ -1776,7 +1772,7 @@ requestAnimationFrame(frame)</code></pre>
 
     <section id="api-strategies">
       <h2>Готовые стратегии</h2>
-      <p class="api-src"><code>src/core/reels/strategies/</code>; типы опций —
+      <p class="api-src"><code>packages/reels/src/strategies/</code>; типы опций —
         <code>strategies/types.ts</code>. Скорости — в единицах длины за кадр, ускорения — за кадр².</p>
 
       <h3><code>LinearSpinStrategy</code></h3>
@@ -1790,8 +1786,8 @@ requestAnimationFrame(frame)</code></pre>
       <h3><code>PlannedLandingStrategy</code></h3>
       <dl class="api">
         <dt><code>new PlannedLandingStrategy(options: PlannedLandingOptions)</code></dt>
-        <dd>Посадка из трёх участков: равномерный ход, линейное торможение, отскок <code>easeOutBack</code> из
-          <code>src/core/easing</code>. <code>settleFrames</code> — начало отскока.</dd>
+        <dd>Посадка из трёх участков: равномерный ход, линейное торможение, отскок по кривой
+          <code>easeOutBack</code>. <code>settleFrames</code> — начало отскока.</dd>
         <dt><code>speed: number</code></dt>
         <dd>Скорость на равномерном участке; совпадает со скоростью прокрутки.</dd>
         <dt><code>deceleration: number</code></dt>
@@ -1844,7 +1840,7 @@ requestAnimationFrame(frame)</code></pre>
 
     <section id="api-utils">
       <h2>Утилиты и константы</h2>
-      <p class="api-src"><code>src/core/reels/utils.ts</code>, <code>constants.ts</code></p>
+      <p class="api-src"><code>packages/reels/src/utils.ts</code>, <code>constants.ts</code></p>
       <dl class="api">
         <dt><code>getDataValues(data: ReelsData&lt;TValue&gt;): TValue[]</code></dt>
         <dd>Значения данных раунда по всем ячейкам без пустых; из них машина берёт наполнение по умолчанию.</dd>
@@ -1868,7 +1864,7 @@ requestAnimationFrame(frame)</code></pre>
 
     <section id="adapter-guide">
       <h2>Как работает адаптер</h2>
-      <p><a href="../src/engine/reels/reels-view.ts"><code>ReelsView</code></a> — PIXI-<code>Container</code>.
+      <p><a href="../packages/reels-pixi-adapter/src/reels-view.ts"><code>ReelsView</code></a> — PIXI-<code>Container</code>.
         Конструктор создаёт <code>ReelView</code> на каждый барабан модели, в нём — по <code>CellView</code> на
         слот ленты через <code>createCellView</code>, расставляет барабаны и накрывает их масками, затем
         добавляет колбэк <code>step</code> в тикер. Кадр адаптера описан в разделе
@@ -1893,7 +1889,7 @@ requestAnimationFrame(frame)</code></pre>
       <h2>API адаптера</h2>
 
       <h3><code>ReelsView&lt;TValue, TView extends CellView&lt;TValue&gt;&gt;</code></h3>
-      <p class="api-src"><code>src/engine/reels/reels-view.ts</code> · extends <code>Container</code></p>
+      <p class="api-src"><code>packages/reels-pixi-adapter/src/reels-view.ts</code> · extends <code>Container</code></p>
       <dl class="api">
         <dt><code>constructor(ticker: Ticker, model: ReelsModel&lt;TValue&gt;, config: ReelsViewConfig&lt;TValue, TView&gt;)</code></dt>
         <dd>Создаёт <code>ReelView</code> барабанов и маски, синхронизирует слоты, добавляет колбэк в тикер.</dd>
@@ -1904,7 +1900,7 @@ requestAnimationFrame(frame)</code></pre>
       </dl>
 
       <h3><code>ReelsViewConfig&lt;TValue, TView&gt;</code></h3>
-      <p class="api-src"><code>src/engine/reels/types.ts</code></p>
+      <p class="api-src"><code>packages/reels-pixi-adapter/src/types.ts</code></p>
       <dl class="api">
         <dt><code>cellWidth: number</code></dt>
         <dd>Ширина ячейки в пикселях: шаг раскладки по умолчанию и ширина маски.</dd>
@@ -1917,7 +1913,7 @@ requestAnimationFrame(frame)</code></pre>
       </dl>
 
       <h3><code>CellView&lt;TValue&gt;</code></h3>
-      <p class="api-src"><code>src/engine/reels/types.ts</code> · extends <code>Container</code>; реализует ваш
+      <p class="api-src"><code>packages/reels-pixi-adapter/src/types.ts</code> · extends <code>Container</code>; реализует ваш
         код</p>
       <dl class="api">
         <dt><code>setValue(value: TValue): void</code></dt>
@@ -1929,7 +1925,7 @@ requestAnimationFrame(frame)</code></pre>
         состоянием.</p>
 
       <h3><code>ReelView&lt;TValue, TView&gt;</code></h3>
-      <p class="api-src"><code>src/engine/reels/reel-view.ts</code> · extends <code>Container</code>; создаёт
+      <p class="api-src"><code>packages/reels-pixi-adapter/src/reel-view.ts</code> · extends <code>Container</code>; создаёт
         <code>ReelsView</code></p>
       <dl class="api">
         <dt><code>constructor(slotCount: number, createCellView: () =&gt; TView)</code></dt>
@@ -1950,7 +1946,7 @@ requestAnimationFrame(frame)</code></pre>
 
     <section id="ex-strategies">
       <h2>Стратегии слота</h2>
-      <p><code>createStrategies</code> в <a href="../src/games/slot/reels.ts"><code>games/slot/reels.ts</code></a>
+      <p><code>createStrategies</code> в <a href="../games/slot/src/reels.ts"><code>games/slot/reels.ts</code></a>
         собирает набор из трёх стратегий с одной скоростью <code>SPIN_SPEED × speedFactor</code> для
         <code>LinearSpinStrategy</code> и равномерного участка <code>PlannedLandingStrategy</code>. Ускорения
         растут квадратом множителя, интервалы падения делятся на него. Длины заданы в пикселях зоны символов,
@@ -2080,13 +2076,13 @@ requestAnimationFrame(frame)</code></pre>
         <code>setData</code> без преобразования. <code>getFillerValue</code> даёт случайные символы игры: их
         больше, чем символов в данных раунда.</p>
       <ul>
-        <li><a href="../src/games/slot/ui/reels/reels-board.ts"><code>ReelsBoard</code></a> создаёт
+        <li><a href="../games/slot/src/ui/reels/reels-board.ts"><code>ReelsBoard</code></a> создаёт
           <code>ReelsView</code> с фабрикой <code>() =&gt; new ReelSymbol(pool)</code>.</li>
-        <li><a href="../src/games/slot/ui/reels/reel-symbol.ts"><code>ReelSymbol</code></a> реализует
+        <li><a href="../games/slot/src/ui/reels/reel-symbol.ts"><code>ReelSymbol</code></a> реализует
           <code>CellView</code>. <code>setValue</code> меняет текстуру, только если ключ символа изменился;
           <code>setMoving</code> переключает спрайт покоя и размытый спрайт и сохраняет позы выигрыша и
           взрыва — их ставит контроллер.</li>
-        <li><a href="../src/games/slot/controllers/reels/reels-machine.ts"><code>ReelsMachineController</code></a>
+        <li><a href="../games/slot/src/controllers/reels/reels-machine.ts"><code>ReelsMachineController</code></a>
           владеет машиной и доской. При смене <code>initialSymbols</code> в сторе он вызывает
           <code>setData</code> и <code>reset</code>, при смене <code>isTurboEnabled</code> —
           <code>setStrategies</code>.</li>
@@ -2138,7 +2134,7 @@ try {
     <section id="ex-respin">
       <h2>Респин</h2>
       <p>Шаг респина в ответе сервера содержит индексы удержанных барабанов. Фаза
-        <a href="../src/games/slot/phases/respin.ts"><code>respin</code></a> вызывает
+        <a href="../games/slot/src/phases/respin.ts"><code>respin</code></a> вызывает
         <code>reelsMachine.spin(step.held)</code> и <code>reelsMachine.land(stepSymbols, [])</code>; контроллер передаёт
         <code>held</code> в <code>machine.spin({ held })</code>. Данные шага повторяют символы удержанных
         барабанов. Рамку удержания рисует <code>HeldFrameController</code> по <code>heldReels</code> из
@@ -2147,7 +2143,7 @@ try {
 
     <section id="ex-cascade">
       <h2>Каскад в игре</h2>
-      <p>Фаза <a href="../src/games/slot/phases/cascade.ts"><code>cascade</code></a> вызывает
+      <p>Фаза <a href="../games/slot/src/phases/cascade.ts"><code>cascade</code></a> вызывает
         <code>reelsMachine.explode(removed)</code> — символы убранных ячеек проигрывают взрыв — затем
         <code>reelsMachine.cascade(frame, removed)</code>. Взрыв — анимация <code>ReelSymbol</code>: у машины и
         адаптера такого понятия нет, поэтому позу взрыва ставит и снимает контроллер.</p>
@@ -2196,7 +2192,7 @@ export const getHoldWinReelPosition = (index: number): PointData =&gt; {
         <li><code>getReelPosition</code> ставит барабаны сеткой в тех же координатах, что ячейки основной
           доски. Барабаны одного ряда поля имеют одинаковый <code>y</code> и делят маску: 15 барабанов рисуют три
           маски.</li>
-        <li><code>CellView</code> бонуса — <a href="../src/games/slot/ui/reels/coin.ts"><code>Coin</code></a>:
+        <li><code>CellView</code> бонуса — <a href="../games/slot/src/ui/reels/coin.ts"><code>Coin</code></a>:
           номинал монеты или символ наполнения.</li>
         <li>Удержанные монеты передаются в <code>spin({ held })</code> индексами барабанов через
           <code>toHoldWinReel</code>.</li>
@@ -2210,10 +2206,10 @@ export const getHoldWinReelPosition = (index: number): PointData =&gt; {
 
       <h3>Окружение</h3>
       <ul>
-        <li><strong>Конечный автомат фаз</strong> (<a href="../src/core/fsm"><code>core/fsm</code></a>). Фаза —
+        <li><strong>Конечный автомат фаз</strong> (<a href="../packages/core/src/fsm"><code>core/fsm</code></a>). Фаза —
           класс с методом <code>enter(signal)</code>: выполняет свою часть раунда и возвращает имя следующей
-          фазы. Фазы слота — в <a href="../src/games/slot/phases"><code>games/slot/phases/</code></a>.</li>
-        <li><strong>Стор</strong> (<a href="../src/games/slot/stores/slot.ts"><code>stores/slot.ts</code></a>) —
+          фазы. Фазы слота — в <a href="../games/slot/src/phases"><code>games/slot/phases/</code></a>.</li>
+        <li><strong>Стор</strong> (<a href="../games/slot/src/stores/slot.ts"><code>stores/slot.ts</code></a>) —
           класс MobX с ответом сервера. Пишут в него только фазы; геттеры <code>spinSymbols</code>,
           <code>nextCascade</code>, <code>heldReels</code> извлекают данные текущего шага.</li>
         <li><strong>Контроллер</strong> — наследник <code>LiveContainer</code>. Подписки на стор оформлены через
@@ -2230,9 +2226,9 @@ export const getHoldWinReelPosition = (index: number): PointData =&gt; {
         <table>
           <thead><tr><th>Часть</th><th>Папка</th><th>Импортирует</th><th>Что делает</th></tr></thead>
           <tbody>
-            <tr><td>Ядро</td><td><a href="../src/core/reels"><code>src/core/reels/</code></a></td><td><code>src/core/easing</code></td><td>данные раунда, состав и расчёт движения барабанов</td></tr>
-            <tr><td>Адаптер</td><td><a href="../src/engine/reels"><code>src/engine/reels/</code></a></td><td><code>pixi.js</code>, типы ядра</td><td>вызов <code>advance</code> на каждом кадре, перенос слотов в PIXI, маски</td></tr>
-            <tr><td>Игра</td><td><a href="../src/games/slot"><code>src/games/slot/</code></a></td><td>ядро, адаптер</td><td>конфиг барабанов, <code>CellView</code>, контроллеры с методами для фаз</td></tr>
+            <tr><td>Ядро</td><td><a href="../packages/reels/src"><code>packages/reels/src/</code></a></td><td>—</td><td>данные раунда, состав и расчёт движения барабанов</td></tr>
+            <tr><td>Адаптер</td><td><a href="../packages/reels-pixi-adapter/src"><code>packages/reels-pixi-adapter/src/</code></a></td><td><code>pixi.js</code>, типы ядра</td><td>вызов <code>advance</code> на каждом кадре, перенос слотов в PIXI, маски</td></tr>
+            <tr><td>Игра</td><td><a href="../games/slot/src"><code>games/slot/src/</code></a></td><td>ядро, адаптер</td><td>конфиг барабанов, <code>CellView</code>, контроллеры с методами для фаз</td></tr>
           </tbody>
         </table>
       </div>
@@ -2243,13 +2239,13 @@ export const getHoldWinReelPosition = (index: number): PointData =&gt; {
           <thead><tr><th>Контроллер</th><th>Владеет</th><th>Методы для фаз</th><th>Подписки и события</th></tr></thead>
           <tbody>
             <tr>
-              <td><a href="../src/games/slot/controllers/reels/reels-machine.ts"><code>ReelsMachineController</code></a></td>
+              <td><a href="../games/slot/src/controllers/reels/reels-machine.ts"><code>ReelsMachineController</code></a></td>
               <td><code>ReelsMachine(SLOT_REELS)</code>, <code>ReelsBoard</code> с <code>ReelsView</code></td>
               <td><code>spin(held)</code>, <code>land(data, anticipation, signal)</code>, <code>slam()</code>, <code>explode(removed)</code>, <code>cascade(data, removed, signal)</code>, <code>showAllWins</code>, <code>playWinLines</code>, <code>showTint</code>/<code>hideTint</code>, <code>show</code>/<code>hide</code></td>
               <td><code>watch</code>: <code>initialSymbols</code> → <code>setData</code> + <code>reset</code>, <code>isTurboEnabled</code> → <code>setStrategies</code>; эмитит <code>reel:landed</code>, <code>reel:anticipationStarted</code></td>
             </tr>
             <tr>
-              <td><a href="../src/games/slot/controllers/reels/hold-win-machine.ts"><code>HoldWinMachineController</code></a></td>
+              <td><a href="../games/slot/src/controllers/reels/hold-win-machine.ts"><code>HoldWinMachineController</code></a></td>
               <td><code>ReelsMachine(HOLD_WIN_REELS)</code>, <code>HoldWinBoard</code></td>
               <td><code>show(frame)</code>, <code>hide</code>, <code>spin(held)</code>, <code>land(frame, signal)</code>, <code>slam()</code>, <code>collect(staggerMs)</code></td>
               <td><code>watch</code>: <code>isTurboEnabled</code> → <code>setStrategies</code>; эмитит <code>holdWin:cellLanded</code></td>
@@ -2457,14 +2453,14 @@ export const getHoldWinReelPosition = (index: number): PointData =&gt; {
           мока раунд с выбранной механикой. Пока барабаны в движении (спин, респин, каскад, шаг бонуса),
           кнопка спина работает как Stop; в турбо Stop нет. Воспроизводимый раунд —
           <code>/slot?scenario=cascade&amp;seed=1</code>; сценарии перечислены в <code>MockScenario</code>
-          (<a href="../src/games/slot/mocks/types.ts"><code>mocks/types.ts</code></a>).</li>
-        <li><strong>Модель без канваса.</strong> <a href="../tests/core/reels"><code>tests/core/reels/</code></a>:
+          (<a href="../games/slot/src/mocks/types.ts"><code>mocks/types.ts</code></a>).</li>
+        <li><strong>Модель без канваса.</strong> <a href="../packages/reels/tests"><code>packages/reels/tests/</code></a>:
           посадка, каскад, перенос слотов, планы стратегий. Хелперы
-          <a href="../tests/setup/reels.ts"><code>tests/setup/reels.ts</code></a>: <code>createMachine</code>,
+          <a href="../packages/reels/tests/setup/reels.ts"><code>packages/reels/tests/setup/reels.ts</code></a>: <code>createMachine</code>,
           <code>advanceUntilIdle</code>, <code>readVisibleGrid</code>.</li>
-        <li><strong>Раунд целиком.</strong> <a href="../tests/games/slot/round.test.ts"><code>tests/games/slot/round.test.ts</code></a>
+        <li><strong>Раунд целиком.</strong> <a href="../games/slot/tests/round.test.ts"><code>games/slot/tests/round.test.ts</code></a>
           проводит фазы с дублёрами контроллеров из
-          <a href="../tests/setup/doubles.ts"><code>tests/setup/doubles.ts</code></a>; дублёры
+          <a href="../games/slot/tests/setup/doubles.ts"><code>games/slot/tests/setup/doubles.ts</code></a>; дублёры
           <code>ReelsMachineController</code> и <code>HoldWinMachineController</code> работают на настоящих машинах. Подход к тестам —
           <a href="testing.html">«Тестовая стратегия»</a>.</li>
       </ul>
@@ -2514,7 +2510,7 @@ export const getHoldWinReelPosition = (index: number): PointData =&gt; {
       </div>
     </section>
 
-    <footer>Код: <code>src/core/reels</code>, <code>src/engine/reels</code>, <code>src/games/slot</code>.
+    <footer>Код: <code>packages/reels</code>, <code>packages/reels-pixi-adapter</code>, <code>games/slot</code>.
       Соседний документ — <a href="testing.html">«Тестовая стратегия»</a>.</footer>
   </main>
 </div>

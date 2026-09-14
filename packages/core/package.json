@@ -1,0 +1,32 @@
+{
+  "name": "@pixi-demos/core",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "imports": {
+    "#src/*": "./src/*.ts"
+  },
+  "scripts": {
+    "lint": "eslint --quiet --fix .",
+    "lint:ci": "eslint --quiet .",
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "eventemitter3": "catalog:",
+    "inversify": "catalog:",
+    "reflect-metadata": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "jsdom": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  }
+}

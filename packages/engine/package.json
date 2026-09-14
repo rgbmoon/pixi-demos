@@ -1,0 +1,29 @@
+{
+  "name": "@pixi-demos/engine",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "imports": {
+    "#src/*": "./src/*.ts"
+  },
+  "scripts": {
+    "lint": "eslint --quiet --fix .",
+    "lint:ci": "eslint --quiet .",
+    "typecheck": "tsc -b"
+  },
+  "dependencies": {
+    "@esotericsoftware/spine-pixi-v8": "catalog:",
+    "@pixi-demos/core": "workspace:*",
+    "@pixi/devtools": "catalog:",
+    "inversify": "catalog:",
+    "mobx": "catalog:",
+    "pixi.js": "catalog:",
+    "reflect-metadata": "catalog:"
+  },
+  "devDependencies": {
+    "vite": "catalog:"
+  }
+}

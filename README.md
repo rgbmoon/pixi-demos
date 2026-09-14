@@ -12,7 +12,26 @@ Demo game clients built with PixiJS v8 and React.
 
 ## Stack
 
-TypeScript · PixiJS · Spine · React · MobX · Inversify · zod + partysocket · MSW · Vite · Tailwind.
+TypeScript · PixiJS · Spine · React · MobX · Inversify · zod + partysocket · MSW · Vite · Tailwind ·
+pnpm workspaces + Turborepo.
+
+## Repository layout
+
+A pnpm monorepo: every folder below is a workspace package with its own dependencies and tests.
+
+```
+packages/core                 pure TS: errors, events, FSM, palette, easing, storage
+packages/net                  WebSocket transport, message envelope, mock helpers
+packages/engine               PIXI runtime: host, ticker, skeleton pool, audio synth
+packages/reels                reel machine model: standalone, no dependencies
+packages/reels-pixi-adapter   PIXI adapter for the reel machine model
+games/slot                    the slot game: its unit tests and e2e specs live here
+web                           the application: composition root, pages, React kit, assets
+```
+
+Turborepo caches every task by the hash of its inputs, so lint, typecheck, unit tests and e2e run only
+for packages whose inputs changed. E2E are split by game: a change in one game does not re-run
+another game's e2e.
 
 ## Docs
 
@@ -31,10 +50,12 @@ service worker answers the game protocol in the browser.
 Deploys are automated in GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)) —
 nothing is published from a laptop:
 
-- **push and pull request** — `lint:ci`, unit tests and the Playwright e2e suite;
+- **push and pull request** — lint, typecheck, unit tests and the Playwright e2e suite. Tasks whose
+  inputs match a previous run are restored from the Turborepo cache;
 - **merge into `main`** — publishes to Netlify production the exact build that passed e2e. The deploy
   job depends on both check jobs, so a red run never ships. Merging is the release;
-- **manual re-deploy** — Actions → CI → _Run workflow_ on `main`. It re-runs every check first;
+- **manual re-deploy** — Actions → CI → _Run workflow_ on `main`. It re-runs every check first,
+  bypassing the cache;
 - **rollback** — Netlify → Deploys → _Publish deploy_ on an earlier build, then revert in git.
 
 Deploy only ever runs from `main`; other branches get checks only.
@@ -42,10 +63,12 @@ Deploy only ever runs from `main`; other branches get checks only.
 ## Getting started
 
 ```bash
-npm ci
-npm run dev            # Vite dev server
-npm run lint           # eslint --fix + tsc --noEmit
-npm run preview:mocks  # production build with MSW mocks enabled
-npm test               # vitest: unit tests and round scenarios
-npm run e2e            # production build with mocks + Playwright (chromium)
+pnpm install
+pnpm dev                                # Vite dev server
+pnpm lint                               # eslint --fix + tsc, changed packages only
+pnpm preview:mocks                      # production build with MSW mocks enabled
+pnpm test                               # vitest: unit tests and round scenarios
+pnpm e2e                                # production build with mocks + Playwright (chromium)
+pnpm e2e --filter=@pixi-demos/slot      # e2e of one game
+pnpm --filter @pixi-demos/slot test:watch
 ```
