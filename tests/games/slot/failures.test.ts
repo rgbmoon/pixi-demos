@@ -10,7 +10,7 @@ import { PhaseName } from 'src/games/slot/types'
 import { createWsHandler } from 'src/net/mocks/create-ws-handler'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import type { ReelsStub } from '../../setup/doubles'
+import type { ReelsMachineStub } from '../../setup/doubles'
 import { server, wsLink } from '../../setup/msw-server'
 import { createRound, type Round, startRound } from '../../setup/round'
 import { createInitResult } from '../../setup/slot-data'
@@ -35,7 +35,7 @@ describe('отказы раунда', () => {
     round = await startRound({ scenario: MockScenario.error })
 
     const creditBefore = round.store.credit
-    const reels = round.container.get(SLOT_TOKENS.ReelsMachineController) as unknown as ReelsStub
+    const reels = round.container.get(SLOT_TOKENS.ReelsMachineController) as unknown as ReelsMachineStub
 
     await round.playSpin()
 

@@ -2,7 +2,8 @@
   <!--
     Фавикон: тот же знак, но плотнее — полоса рамки шире относительно высоты,
     а бликов нет: на 16px они дают только грязь. Подложка держит контраст на
-    светлой вкладке, её цвет — фон шапки сайта.
+    светлой вкладке, её цвет — фон шапки сайта. Острия углов знака срезает
+    fav-round: внешний контур рамки со скруглением r = 4, это 2 px при показе в 32 px.
   -->
   <defs>
     <linearGradient id="fav-edge" x1="6%" y1="92%" x2="100%" y2="45%">
@@ -12,11 +13,15 @@
     </linearGradient>
 
     <path id="fav-mark" d="M18 15.5 L48.5 32 L18 48.5 Z"/>
+
+    <clipPath id="fav-round">
+      <path d="M20.1 12.32 L49.98 28.48 A4 4 0 0 1 49.98 35.52 L20.1 51.68 A4 4 0 0 1 14.2 48.16 L14.2 15.84 A4 4 0 0 1 20.1 12.32 Z"/>
+    </clipPath>
   </defs>
 
   <rect width="64" height="64" rx="14" fill="#0f172a"/>
 
-  <g fill="none" stroke-linejoin="miter" stroke-miterlimit="6">
+  <g fill="none" stroke-linejoin="miter" stroke-miterlimit="6" clip-path="url(#fav-round)">
     <use href="#fav-mark" stroke="url(#fav-edge)" stroke-width="7.6"/>
     <use href="#fav-mark" stroke="#0f172a" stroke-width="3.3" opacity="0.75"/>
   </g>

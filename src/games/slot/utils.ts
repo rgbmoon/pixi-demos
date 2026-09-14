@@ -2,9 +2,9 @@ import type { PointData } from 'pixi.js'
 import { pickRandom } from 'src/core/random'
 import type { CellIndex } from 'src/core/reels/types'
 import type { Random } from 'src/core/types'
-import { SymbolKey } from 'src/games/slot/types'
+import { type CoinValue, SymbolKey } from 'src/games/slot/types'
 
-import { CELL_HEIGHT, CELL_WIDTH, PAYLINES, VISIBLE_SYMBOLS_COUNT } from './constants'
+import { CELL_HEIGHT, CELL_WIDTH, HOLD_WIN_CELLS_COUNT, PAYLINES, VISIBLE_SYMBOLS_COUNT } from './constants'
 import type { PaylineShape } from './types'
 
 /** Индекс барабана Hold & Win по адресу ячейки сетки: барабаны пронумерованы по колонкам, сверху вниз. */
@@ -15,6 +15,14 @@ export const toHoldWinCell = (index: number): CellIndex => ({
   reel: Math.floor(index / VISIBLE_SYMBOLS_COUNT),
   row: index % VISIBLE_SYMBOLS_COUNT,
 })
+
+/** Данные раунда машины Hold & Win: поле шага `[барабан][ряд]`, разложенное по барабанам высотой 1. */
+export const toHoldWinReelsData = (frame: readonly (readonly CoinValue[])[]): (CoinValue | undefined)[][] =>
+  Array.from({ length: HOLD_WIN_CELLS_COUNT }, (_, index) => {
+    const { reel, row } = toHoldWinCell(index)
+
+    return [frame[reel]?.[row]]
+  })
 
 /** Центр барабана Hold & Win в координатах зоны символов: там же, где ячейка базовой доски. */
 export const getHoldWinReelPosition = (index: number): PointData => {

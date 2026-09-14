@@ -2,18 +2,18 @@ import { ReelsMachine } from 'src/core/reels/reels-machine'
 import type { CellIndex } from 'src/core/reels/types'
 import type { GameTicker } from 'src/engine/game-ticker'
 import type { BackgroundController } from 'src/games/slot/controllers/background'
-import type { HoldWinController } from 'src/games/slot/controllers/reels/hold-win'
+import type { HoldWinMachineController } from 'src/games/slot/controllers/reels/hold-win-machine'
 import type { ReelsMachineController } from 'src/games/slot/controllers/reels/reels-machine'
-import { HOLD_WIN_REELS, type HoldWinReelsData, type SlotReelsData } from 'src/games/slot/reels'
-import type { HoldWinCell } from 'src/games/slot/types'
-import { toHoldWinCell, toHoldWinReel } from 'src/games/slot/utils'
+import { HOLD_WIN_REELS, type SlotReelsData } from 'src/games/slot/reels'
+import type { CoinValue, HoldWinCell } from 'src/games/slot/types'
+import { toHoldWinCell, toHoldWinReel, toHoldWinReelsData } from 'src/games/slot/utils'
 
 import { advanceUntilIdle, createMachine, readVisibleGrid } from './reels'
 
 /** Журнал вызовов презентации в порядке их появления. */
 export type PresentationLog = string[]
 
-export type ReelsStub = {
+export type ReelsMachineStub = {
   /** Видимая сетка модели: чем барабаны кончили раунд. */
   readGrid: () => (string | undefined)[][]
   /** Барабаны, которые последняя посадка получила в anticipation. */
@@ -21,55 +21,54 @@ export type ReelsStub = {
 }
 
 /**
- * Дублёр контроллера барабанов поверх настоящей модели: `land` и `cascade` действительно двигают
- * барабаны и сажают их на данные раунда, только синхронно и без рендера. Прокрутка с удержанными
- * барабанами отмечается в журнале как `respin`. `stopSignal` уходит в модель сигналом промотки,
- * сработавший отмечается в журнале.
+ * Дублёр контроллера рил-машины барабанов поверх настоящей модели: `land` и `cascade` действительно
+ * двигают барабаны и сажают их на данные раунда, только синхронно и без рендера. Прокрутка с удержанными
+ * барабанами отмечается в журнале как `respin`. `slam` уходит в модель, а промотка отмечается в журнале
+ * в момент, когда её применяет посадка или падение.
  * Методы презентации резолвятся сразу и отмечаются в журнале.
  */
-export const createReelsStub = (log: PresentationLog): ReelsMachineController & ReelsStub => {
+export const createReelsMachineStub = (log: PresentationLog): ReelsMachineController & ReelsMachineStub => {
   const machine = createMachine()
   let lastAnticipation: readonly number[] = []
+  let isSlamRequested = false
 
   const stub = {
     spin: (held: readonly number[] = []) => {
       log.push(held.length > 0 ? 'respin' : 'spin')
       machine.spin({ held })
     },
-    land: async (
-      symbolKeys: SlotReelsData | undefined,
-      anticipation: readonly number[],
-      _signal?: AbortSignal,
-      stopSignal?: AbortSignal
-    ) => {
-      machine.setData((symbolKeys ?? null) as never)
+    land: async (symbolKeys: SlotReelsData | undefined, anticipation: readonly number[]) => {
+      machine.setData(symbolKeys ?? null)
       lastAnticipation = anticipation
 
-      const landing = machine.land({ anticipation, slamSignal: stopSignal })
+      const landing = machine.land({ anticipation })
 
-      // Посадка дублёра синхронна: Stop успевает сработать только до её начала
-      if (stopSignal?.aborted) log.push('slam')
+      // Посадка дублёра синхронна: Stop успевает прийти только до её начала
+      if (isSlamRequested) log.push('slam')
+
+      isSlamRequested = false
 
       advanceUntilIdle(machine)
       await landing
 
       log.push('land')
     },
+    slam: () => {
+      isSlamRequested = true
+      machine.slam()
+    },
     explode: async () => {
       log.push('explode')
     },
-    cascade: async (
-      symbolKeys: SlotReelsData,
-      removed: readonly CellIndex[],
-      _signal?: AbortSignal,
-      stopSignal?: AbortSignal
-    ) => {
+    cascade: async (symbolKeys: SlotReelsData, removed: readonly CellIndex[]) => {
       machine.setData(symbolKeys)
 
-      const falling = machine.cascade({ removed, slamSignal: stopSignal })
+      const falling = machine.cascade({ removed })
 
-      // Падение дублёра синхронно: Stop успевает сработать только до его начала
-      if (stopSignal?.aborted) log.push('cascadeSlam')
+      // Падение дублёра синхронно: Stop успевает прийти только до его начала
+      if (isSlamRequested) log.push('cascadeSlam')
+
+      isSlamRequested = false
 
       advanceUntilIdle(machine)
       await falling
@@ -99,26 +98,27 @@ export const createReelsStub = (log: PresentationLog): ReelsMachineController & 
   }
 
   // Фазы видят контроллер только как тип и зовут ровно эти методы; остального PIXI-наследия им не нужно
-  return stub as unknown as ReelsMachineController & ReelsStub
+  return stub as unknown as ReelsMachineController & ReelsMachineStub
 }
 
-export type HoldWinStub = {
+export type HoldWinMachineStub = {
   /** Видимое поле бонуса `[барабан][ряд]`: чем ячейки кончили последний шаг. */
   readGrid: () => HoldWinCell[][]
 }
 
 /**
- * Дублёр контроллера бонуса поверх настоящей машины ячеек: `land` синхронно прокручивает барабаны
- * и сажает их на поле шага. Удержанные ячейки не крутятся. `stopSignal` уходит в модель сигналом
- * промотки, сработавший отмечается в журнале как `holdWinSlam`.
+ * Дублёр контроллера рил-машины Hold & Win поверх настоящей машины ячеек: `land` синхронно прокручивает
+ * барабаны и сажает их на поле шага. Удержанные ячейки не крутятся. `slam` уходит в модель, применённая
+ * промотка отмечается в журнале как `holdWinSlam`.
  */
-export const createHoldWinStub = (log: PresentationLog): HoldWinController & HoldWinStub => {
+export const createHoldWinMachineStub = (log: PresentationLog): HoldWinMachineController & HoldWinMachineStub => {
   const machine = new ReelsMachine(HOLD_WIN_REELS)
+  let isSlamRequested = false
 
   const stub = {
-    show: async (frame: HoldWinReelsData | undefined) => {
+    show: async (frame: CoinValue[][] | undefined) => {
       log.push('showHoldWin')
-      machine.setData(frame ?? null)
+      machine.setData(frame ? toHoldWinReelsData(frame) : null)
       machine.reset()
     },
     hide: async () => {
@@ -128,17 +128,23 @@ export const createHoldWinStub = (log: PresentationLog): HoldWinController & Hol
       log.push('holdWinSpin')
       machine.spin({ held: held.map(toHoldWinReel) })
     },
-    land: async (frame: HoldWinReelsData, _signal?: AbortSignal, stopSignal?: AbortSignal) => {
-      machine.setData(frame)
+    land: async (frame: CoinValue[][]) => {
+      machine.setData(toHoldWinReelsData(frame))
 
-      const landing = machine.land({ slamSignal: stopSignal })
+      const landing = machine.land()
 
-      if (stopSignal?.aborted) log.push('holdWinSlam')
+      if (isSlamRequested) log.push('holdWinSlam')
+
+      isSlamRequested = false
 
       advanceUntilIdle(machine)
       await landing
 
       log.push('holdWinLand')
+    },
+    slam: () => {
+      isSlamRequested = true
+      machine.slam()
     },
     collect: async () => {
       log.push('holdWinCollect')
@@ -157,7 +163,7 @@ export const createHoldWinStub = (log: PresentationLog): HoldWinController & Hol
     },
   }
 
-  return stub as unknown as HoldWinController & HoldWinStub
+  return stub as unknown as HoldWinMachineController & HoldWinMachineStub
 }
 
 /** Дублёр фона: вспышка резолвится сразу и отмечается в журнале. */

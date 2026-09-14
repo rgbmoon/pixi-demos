@@ -1,3 +1,4 @@
+import { ReelsMachine } from 'src/core/reels/reels-machine'
 import { PlannedLandingStrategy } from 'src/core/reels/strategies/planned-landing'
 import { ReelPhase } from 'src/core/reels/types'
 import { describe, expect, it } from 'vitest'
@@ -5,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 import {
   advanceUntilIdle,
   CELL_HEIGHT,
+  createConfig,
   createGrid,
   createMachine,
   LANDING_OPTIONS,
@@ -171,26 +173,54 @@ describe('Reel', () => {
     expect(anticipated).toEqual([])
   })
 
-  it('по сигналу промотки посреди посадки сажает все барабаны в один кадр на значения раунда', async () => {
-    const grid = createGrid()
-    const machine = createMachine()
-    const stop = new AbortController()
+  it.each(['до прокрутки', 'на прокрутке'])(
+    'запоминает slam %s и сажает все барабаны в один кадр на значения раунда',
+    async (moment) => {
+      const grid = createGrid()
+      const machine = createMachine()
 
-    machine.spin()
-    machine.advance(25)
-    machine.setData(grid)
+      if (moment === 'до прокрутки') machine.slam()
 
-    const landing = machine.land({ slamSignal: stop.signal })
+      machine.spin()
+      machine.advance(25)
 
-    for (let frame = 0; frame < 5; frame += 1) {
-      machine.advance(1)
+      if (moment === 'на прокрутке') machine.slam()
+
+      machine.setData(grid)
+
+      const landing = machine.land()
+
+      expect(new Set(recordStopFrames(machine)).size).toBe(1)
+      await landing
+      expect(readVisibleGrid(machine)).toEqual(grid)
     }
+  )
 
-    stop.abort()
+  it('снимает запомненный slam с концом посадки и после reset', async () => {
+    const afterLanding = createMachine()
+    const afterReset = createMachine()
 
-    expect(new Set(recordStopFrames(machine)).size).toBe(1)
-    await landing
-    expect(readVisibleGrid(machine)).toEqual(grid)
+    afterLanding.spin()
+    afterLanding.slam()
+    afterLanding.setData(createGrid())
+
+    const slammed = afterLanding.land()
+
+    advanceUntilIdle(afterLanding)
+    await slammed
+
+    afterReset.slam()
+    afterReset.reset()
+
+    // Следующая посадка идёт с обычным stagger: барабаны встают в разные кадры
+    for (const machine of [afterLanding, afterReset]) {
+      machine.spin()
+      machine.advance(25)
+      machine.setData(createGrid())
+      void machine.land()
+
+      expect(new Set(recordStopFrames(machine)).size).toBe(REELS)
+    }
   })
 
   it('объявляет вход в паузу только ждущим барабанам, через stagger после посадки соседа слева', () => {
@@ -252,6 +282,21 @@ describe('Reel', () => {
     expect(stopFrames[4]).toBeGreaterThan(stopFrames[3])
   })
 
+  it('не даёт паузу anticipation барабанам справа от удержанного барабана из списка', () => {
+    const [plain, withHeldAnticipation] = [[], [2]].map((anticipation) => {
+      const machine = createAnticipationMachine()
+
+      machine.spin({ held: [2] })
+      machine.advance(25)
+      machine.setData(createGrid())
+      void machine.land({ anticipation })
+
+      return recordStopFrames(machine)
+    })
+
+    expect(withHeldAnticipation).toEqual(plain)
+  })
+
   it('не трогает удержанные барабаны и сажает остальные на данные шага', async () => {
     const held = [1, 3]
     const board = createGrid()
@@ -297,6 +342,24 @@ describe('Reel', () => {
 
     expect(heldStops[2]).toBe(baselineStops[0])
     expect(heldStops[3]).toBe(baselineStops[1])
+  })
+
+  it('без getFillerValue наполняет слоты значениями из данных раунда', () => {
+    const { reels, rows, buffer, cellHeight, spinStrategy, landingStrategy, fallStrategy } = createConfig()
+    const grid = createGrid()
+    const values = new Set(grid.flat())
+    const machine = new ReelsMachine({ reels, rows, buffer, cellHeight, spinStrategy, landingStrategy, fallStrategy, data: grid })
+
+    machine.spin()
+
+    // За 40 кадров каждый слот переносится хотя бы раз и получает наполнение
+    for (let frame = 0; frame < 40; frame += 1) {
+      machine.advance(1)
+    }
+
+    machine.getReels().forEach((reel) => {
+      reel.getStrip().forEach((slot) => expect(values.has(slot.value)).toBe(true))
+    })
   })
 
   it('садится одинаково при любом размере шага', async () => {

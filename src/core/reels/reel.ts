@@ -21,16 +21,16 @@ import { ReelPhase } from './types'
  * Барабан: ячейки, лента слотов и текущее движение. Движения строятся по стратегиям,
  * значения слотов берутся из данных машины.
  */
-export class Reel<TData, TValue> implements ReelModel<TValue> {
+export class Reel<TValue> implements ReelModel<TValue> {
   readonly id: string
   readonly index: number
   readonly rows: number
-  readonly def: ReelDef<TData, TValue>
-  readonly machine: ReelsMachine<TData, TValue>
+  readonly def: ReelDef
+  readonly machine: ReelsMachine<TValue>
 
-  private readonly options: ReelOptions<TData, TValue>
+  private readonly options: ReelOptions<TValue>
   private readonly context: ReelContext
-  private readonly cells: Cell<TData, TValue>[]
+  private readonly cells: Cell<TValue>[]
   private readonly strip: ReelStrip<TValue>
 
   /** Текущее движение барабана; `null` — барабан в покое. */
@@ -42,12 +42,7 @@ export class Reel<TData, TValue> implements ReelModel<TValue> {
   private motionReject: ((reason: Error) => void) | null = null
   private motionSignal: AbortSignal | null = null
 
-  constructor(
-    machine: ReelsMachine<TData, TValue>,
-    def: ReelDef<TData, TValue>,
-    index: number,
-    options: ReelOptions<TData, TValue>
-  ) {
+  constructor(machine: ReelsMachine<TValue>, def: ReelDef, index: number, options: ReelOptions<TValue>) {
     const { rows, buffer, cellHeight } = options
 
     this.machine = machine
@@ -73,16 +68,11 @@ export class Reel<TData, TValue> implements ReelModel<TValue> {
     return this.motion?.phase ?? ReelPhase.idle
   }
 
-  /** Счётчик правок ленты; адаптер перерисовывает барабан, только когда он вырос. */
-  getRevision(): number {
-    return this.strip.getRevision()
-  }
-
-  getCells(): Cell<TData, TValue>[] {
+  getCells(): Cell<TValue>[] {
     return this.cells
   }
 
-  getCell(row: number): Cell<TData, TValue> | undefined {
+  getCell(row: number): Cell<TValue> | undefined {
     return this.cells[row]
   }
 
@@ -104,11 +94,7 @@ export class Reel<TData, TValue> implements ReelModel<TValue> {
 
   /** Значение ряда в данных раунда; `undefined` — результата на него нет. */
   readValue(row: number): TValue | undefined {
-    const data = this.machine.getData()
-
-    if (data === null) return undefined
-
-    return this.options.accessorFn(data, { reel: this.index, row })
+    return this.machine.getData()?.[this.index]?.[row]
   }
 
   /** Обнуляет путь ленты и записывает в видимые слоты значения из данных раунда. Работает только в покое. */
@@ -125,8 +111,6 @@ export class Reel<TData, TValue> implements ReelModel<TValue> {
       slot.value = value
       slot.moving = false
     })
-
-    this.strip.touch()
   }
 
   /** Запускает прокрутку: фиксирует стратегии раунда и переводит слоты в позу движения. */
@@ -134,13 +118,13 @@ export class Reel<TData, TValue> implements ReelModel<TValue> {
     if (this.motion) return
 
     this.strategies = this.resolveStrategies()
-    this.motion = new SpinMotion(this.strip, this.strategies.spinStrategy, this.context, (slot) => this.fill(slot))
+    this.motion = new SpinMotion(this.strip, this.strategies.spinStrategy.plan(this.context), (slot) =>
+      this.fill(slot)
+    )
 
     for (const slot of this.strip.getSlots()) {
       slot.moving = true
     }
-
-    this.strip.touch()
   }
 
   /**
@@ -181,12 +165,6 @@ export class Reel<TData, TValue> implements ReelModel<TValue> {
 
     if (signal?.aborted) return Promise.reject(signal.reason as Error)
 
-    const { fallStrategy } = this.strategies
-
-    if (!fallStrategy) {
-      throw new Error(`Reel ${this.id} has no fall strategy`)
-    }
-
     const count = removed.size
     const visible = this.getVisibleSlotIndices()
     const falling: FallingSlot[] = []
@@ -215,7 +193,7 @@ export class Reel<TData, TValue> implements ReelModel<TValue> {
         falling.push({ slotIndex, row, from, to: row * cellHeight })
       })
 
-    const plan = fallStrategy.plan({
+    const plan = this.strategies.fallStrategy.plan({
       ...this.context,
       order,
       drops: falling.map(({ row, from, to }) => ({ row, distance: to - from })),
@@ -307,6 +285,7 @@ export class Reel<TData, TValue> implements ReelModel<TValue> {
     slot.moving = false
   }
 
+  // Поле, а не метод: отписка в stopMotion требует той же ссылки, что и подписка в run
   private handleAbort = (): void => {
     const reject = this.motionReject
     const reason = this.motionSignal?.reason as Error

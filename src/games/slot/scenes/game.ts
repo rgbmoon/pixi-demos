@@ -17,7 +17,7 @@ import type { SettingsModalController } from 'src/games/slot/controllers/hud/set
 import type { SoundToggleButtonController } from 'src/games/slot/controllers/hud/sound-toggle-button'
 import type { SpinButtonController } from 'src/games/slot/controllers/hud/spin-button'
 import type { WinLabelController } from 'src/games/slot/controllers/hud/win-label'
-import type { HoldWinController } from 'src/games/slot/controllers/reels/hold-win'
+import type { HoldWinMachineController } from 'src/games/slot/controllers/reels/hold-win-machine'
 import type { ReelsMachineController } from 'src/games/slot/controllers/reels/reels-machine'
 import type { SoundController } from 'src/games/slot/controllers/sound'
 import { SLOT_TOKENS } from 'src/games/slot/tokens'
@@ -50,7 +50,7 @@ export class GameScene extends Container {
   private readonly content = new Container()
   private readonly logo = new Sprite()
   private readonly reelsMachine: ReelsMachineController
-  private readonly holdWin: HoldWinController
+  private readonly holdWinMachine: HoldWinMachineController
   private readonly spinButton: SpinButtonController
   private readonly soundToggleButton: SoundToggleButtonController
   private readonly settingsButton: SettingsButtonController
@@ -62,7 +62,7 @@ export class GameScene extends Container {
   constructor(
     @inject(SLOT_TOKENS.BackgroundController) background: BackgroundController,
     @inject(SLOT_TOKENS.ReelsMachineController) reelsMachine: ReelsMachineController,
-    @inject(SLOT_TOKENS.HoldWinController) holdWin: HoldWinController,
+    @inject(SLOT_TOKENS.HoldWinMachineController) holdWinMachine: HoldWinMachineController,
     @inject(SLOT_TOKENS.SpinButtonController) spinButton: SpinButtonController,
     @inject(SLOT_TOKENS.SoundToggleButtonController) soundToggleButton: SoundToggleButtonController,
     @inject(SLOT_TOKENS.SettingsButtonController) settingsButton: SettingsButtonController,
@@ -76,7 +76,7 @@ export class GameScene extends Container {
 
     this.background = background
     this.reelsMachine = reelsMachine
-    this.holdWin = holdWin
+    this.holdWinMachine = holdWinMachine
     this.spinButton = spinButton
     this.soundToggleButton = soundToggleButton
     this.settingsButton = settingsButton
@@ -92,7 +92,7 @@ export class GameScene extends Container {
     this.content.addChild(
       this.logo,
       reelsMachine,
-      holdWin,
+      holdWinMachine,
       spinButton,
       soundToggleButton,
       settingsButton,
@@ -165,8 +165,8 @@ export class GameScene extends Container {
     this.reelsMachine.position.set(centerX, reelsCenterY)
 
     // Доска бонуса подменяет машину на том же месте и в том же масштабе
-    this.holdWin.scale.set(reelsScale)
-    this.holdWin.position.set(centerX, reelsCenterY)
+    this.holdWinMachine.scale.set(reelsScale)
+    this.holdWinMachine.position.set(centerX, reelsCenterY)
 
     this.winLabel.position.set(centerX, reelsCenterY + reelsHalfHeight + WIN_LABEL_GAP + WIN_LABEL_HEIGHT / 2)
 

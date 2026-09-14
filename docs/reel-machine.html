@@ -159,6 +159,9 @@
   th { font-family: var(--display); font-weight: 600; background: #f1eef5; white-space: nowrap; }
   tbody tr:last-child td { border-bottom: 0; }
   td code { white-space: nowrap; }
+  /* Строка, на которую ведёт ссылка из словаря */
+  tr:target { scroll-margin-top: 24px; }
+  tr:target > td { background: var(--engine-band); }
 
   pre {
     margin: 0;
@@ -272,7 +275,6 @@
         <li><a href="#intro">Введение</a></li>
         <li><a href="#overview">Обзор</a></li>
         <li><a href="#quick-start">Быстрый старт</a></li>
-        <li><a href="#glossary">Словарь</a></li>
       </ol>
     </div>
     <div class="toc-group">
@@ -316,7 +318,6 @@
         <li><a href="#api-model">ReelsModel, ReelModel</a></li>
         <li><a href="#api-strategy-contracts">Контракты стратегий</a></li>
         <li><a href="#api-strategies">Готовые стратегии</a></li>
-        <li><a href="#api-internal">Внутренние классы</a></li>
         <li><a href="#api-utils">Утилиты и константы</a></li>
       </ol>
     </div>
@@ -339,6 +340,12 @@
         <li><a href="#ex-hold-win">Hold &amp; Win</a></li>
         <li><a href="#ex-integration">Интеграция в игру</a></li>
         <li><a href="#ex-checking">Как посмотреть и проверить</a></li>
+      </ol>
+    </div>
+    <div class="toc-group">
+      <span>Справочник</span>
+      <ol>
+        <li><a href="#glossary">Словарь</a></li>
       </ol>
     </div>
     <a class="toc-link" href="testing.html">Тестовая стратегия →</a>
@@ -397,12 +404,12 @@
           <thead><tr><th>Что</th><th>Как</th><th>Где смотреть</th></tr></thead>
           <tbody>
             <tr><td>Число барабанов и рядов, высота ячейки</td><td><code>ReelsConfig</code>, <code>ReelDef</code></td><td><a href="#guide-config">Данные раунда и конфиг</a></td></tr>
-            <tr><td>Формат данных раунда</td><td>тип <code>TData</code> и <code>accessorFn</code></td><td><a href="#guide-config">Данные раунда и конфиг</a></td></tr>
-            <tr><td>Символы на прокрутке</td><td><code>getFillerValue</code></td><td><a href="#guide-config">Данные раунда и конфиг</a></td></tr>
+            <tr><td>Символы на прокрутке</td><td><code>getFillerValue</code>; без неё — значения из данных раунда</td><td><a href="#guide-config">Данные раунда и конфиг</a></td></tr>
             <tr><td>Профиль движения: скорость, торможение, отскок, падение</td><td>готовые или свои <code>SpinStrategy</code>, <code>LandingStrategy</code>, <code>FallStrategy</code></td><td><a href="#guide-strategies">Стратегии</a></td></tr>
             <tr><td>Движение отдельного барабана</td><td>стратегии в <code>ReelDef</code></td><td><a href="#guide-config">Данные раунда и конфиг</a></td></tr>
             <tr><td>Набор стратегий между спинами (турбо)</td><td><code>setStrategies</code></td><td><a href="#mech-strategies">Смена стратегий</a></td></tr>
-            <tr><td>Параметры раунда: удержание, anticipation, каскад, промотка, отмена</td><td>опции <code>spin</code>, <code>land</code>, <code>cascade</code></td><td>раздел «Механики»</td></tr>
+            <tr><td>Параметры раунда: удержание, anticipation, каскад, отмена</td><td>опции <code>spin</code>, <code>land</code>, <code>cascade</code></td><td>раздел «Механики»</td></tr>
+            <tr><td>Промотка по Stop</td><td>метод <code>slam</code></td><td><a href="#mech-slam">Slam stop</a></td></tr>
             <tr><td>Отрисовка ячейки</td><td>свой <code>CellView</code>, фабрика <code>createCellView</code></td><td><a href="#adapter-api">API адаптера</a></td></tr>
             <tr><td>Расположение барабанов на экране</td><td><code>getReelPosition</code></td><td><a href="#mech-layout">Раскладка и нестандартная сетка</a></td></tr>
             <tr><td>Рендер целиком</td><td>свой адаптер над <code>ReelsModel</code></td><td><a href="#mech-extend">Своё расширение</a></td></tr>
@@ -421,20 +428,20 @@
         <table>
           <thead><tr><th>Объект</th><th>Часть</th><th>Что хранит и что делает</th></tr></thead>
           <tbody>
-            <tr><td>Данные раунда <code>TData</code></td><td>ваш код</td><td><b>Хранит:</b> значения ячеек раунда в формате вашего кода.<br><b>Делает:</b> ничего; машина читает их через <code>accessorFn</code>.</td></tr>
-            <tr><td><code>ReelsConfig</code></td><td>ядро</td><td><b>Хранит:</b> описания барабанов, число рядов, буфер, высоту ячейки, начальные данные раунда, <code>accessorFn</code>, <code>getFillerValue</code> и стратегии по умолчанию.<br><b>Делает:</b> ничего; машина читает конфиг в конструкторе.</td></tr>
-            <tr><td><code>ReelDef</code></td><td>ядро</td><td><b>Хранит:</b> <code>id</code> барабана и поля, которые перекрывают конфиг для этого барабана: ряды, буфер, <code>accessorFn</code>, стратегии, <code>meta</code>.<br><b>Делает:</b> ничего; машина применяет описание при создании барабана.</td></tr>
-            <tr><td><code>ReelsMachine</code></td><td>ядро</td><td><b>Хранит:</b> данные раунда, стратегии по умолчанию, барабаны и ряды.<br><b>Делает:</b> передаёт барабанам вызовы <code>reset</code>, <code>spin</code>, <code>land</code>, <code>cascade</code>, <code>slam</code> и <code>advance</code>; вычисляет для каждого барабана номер в очереди остановки и число пауз anticipation; вычисляет фазу машины.</td></tr>
-            <tr><td><code>Reel</code></td><td>ядро</td><td><b>Хранит:</b> ячейки, ленту (<code>ReelStrip</code>), текущее движение и стратегии текущего спина.<br><b>Делает:</b> запускает прокрутку, посадку и падение по стратегиям; записывает значения слотам: наполнение на прокрутке, значение ряда остановки на посадке; резолвит промис движения по его концу и отклоняет по <code>signal</code>.</td></tr>
-            <tr><td><code>Cell</code></td><td>ядро</td><td><b>Хранит:</b> адрес <code>(барабан, ряд)</code>.<br><b>Делает:</b> возвращает значение ячейки из данных раунда (<code>getValue</code>) и слот, который стоит в ячейке сейчас (<code>getSlot</code>).</td></tr>
-            <tr><td><code>Row</code></td><td>ядро</td><td><b>Хранит:</b> номер ряда.<br><b>Делает:</b> возвращает ячейки этого ряда со всех барабанов.</td></tr>
-            <tr><td><code>ReelStrip</code></td><td>ядро</td><td><b>Хранит:</b> слоты ленты, базу и номер круга каждого слота, путь ленты и ревизию.<br><b>Делает:</b> пересчитывает позиции слотов при сдвиге ленты, находит перенесённые слоты, выравнивает слоты на границы ячеек. Других классов, которые меняют позиции слотов, нет.</td></tr>
-            <tr><td><code>StripSlot</code></td><td>ядро</td><td><b>Хранит:</b> значение, позицию и позу одного слота.<br><b>Делает:</b> ничего; по этим данным адаптер рисует <code>CellView</code>.</td></tr>
-            <tr><td><code>ReelMotion</code></td><td>ядро</td><td><b>Хранит:</b> ленту, стратегию прокрутки или план посадки и падения, время с начала движения.<br><b>Делает:</b> на каждом кадре сдвигает ленту (<code>SpinMotion</code>, <code>LandingMotion</code>) или слоты каскада (<code>FallMotion</code>); сообщает о конце движения; по <code>slam</code> переводит время к финальному участку.</td></tr>
-            <tr><td>Стратегия</td><td>ядро</td><td><b>Хранит:</b> настройки профиля движения: скорость, торможение, отскок, stagger.<br><b>Делает:</b> вычисляет шаг прокрутки на кадр или план посадки и падения.</td></tr>
-            <tr><td><code>ReelsModel</code>, <code>ReelModel</code></td><td>ядро</td><td><b>Хранит:</b> ничего; это типы.<br><b>Делает:</b> задаёт, что адаптер читает у модели (барабаны, слоты, ревизию, единицу длины) и какой метод вызывает на каждом кадре (<code>advance</code>).</td></tr>
-            <tr><td><code>ReelsView</code></td><td>адаптер</td><td><b>Хранит:</b> <code>ReelView</code> барабанов, маски, масштаб единиц модели и ревизию каждого барабана на момент последней отрисовки.<br><b>Делает:</b> раскладывает барабаны и накрывает их масками; на каждом кадре вызывает <code>advance</code> модели и переносит изменившиеся барабаны в <code>CellView</code>; находит <code>CellView</code> по адресу ячейки.</td></tr>
-            <tr><td><code>ReelView</code></td><td>адаптер</td><td><b>Хранит:</b> <code>CellView</code> одного барабана, по одному на слот ленты.<br><b>Делает:</b> задаёт каждому <code>CellView</code> позицию, значение и позу его слота.</td></tr>
+            <tr><td>Данные раунда <code>ReelsData</code></td><td>ваш код</td><td><b>Хранит:</b> значения ячеек раунда — сетку <code>[барабан][ряд]</code>; <code>undefined</code> — ячейки в результате нет.<br><b>Делает:</b> ничего; машина читает значение ячейки по её адресу.</td></tr>
+            <tr><td><code>ReelsConfig</code></td><td>ядро</td><td><b>Хранит:</b> описания барабанов, число рядов, буфер, высоту ячейки, начальные данные раунда, <code>getFillerValue</code> и стратегии по умолчанию.<br><b>Делает:</b> ничего; машина читает конфиг в конструкторе.</td></tr>
+            <tr><td><code>ReelDef</code></td><td>ядро</td><td><b>Хранит:</b> <code>id</code> барабана и поля, которые перекрывают конфиг для этого барабана: ряды, буфер, стратегии, <code>meta</code>.<br><b>Делает:</b> ничего; машина применяет описание при создании барабана.</td></tr>
+            <tr><td><code>ReelsMachine</code></td><td>ядро</td><td><b>Хранит:</b> данные раунда, стратегии по умолчанию, барабаны, ряды и запрошенную промотку.<br><b>Делает:</b> передаёт барабанам вызовы <code>reset</code>, <code>spin</code>, <code>land</code>, <code>cascade</code>, <code>slam</code> и <code>advance</code>; вычисляет для каждого барабана номер в очереди остановки и число пауз anticipation; запоминает промотку, запрошенную до старта посадки или падения; вычисляет фазу машины.</td></tr>
+            <tr id="obj-reel"><td>Барабан <code>Reel</code></td><td>ядро</td><td><b>Хранит:</b> вертикальную колонку ячеек, ленту (<code>ReelStrip</code>), текущее движение и стратегии текущего спина.<br><b>Делает:</b> запускает прокрутку, посадку и падение по стратегиям; записывает значения слотам: наполнение на прокрутке, значение ряда остановки на посадке; резолвит промис движения по его концу и отклоняет по <code>signal</code>.</td></tr>
+            <tr id="obj-cell"><td>Ячейка <code>Cell</code></td><td>ядро</td><td><b>Хранит:</b> адрес <code>(барабан, ряд)</code>; адрес не меняется, пока барабан вращается.<br><b>Делает:</b> возвращает значение ячейки из данных раунда (<code>getValue</code>) и слот, который стоит в ячейке сейчас (<code>getSlot</code>).</td></tr>
+            <tr id="obj-row"><td>Ряд <code>Row</code></td><td>ядро</td><td><b>Хранит:</b> номер ряда; нумерация сверху, с 0.<br><b>Делает:</b> возвращает ячейки этого ряда со всех барабанов.</td></tr>
+            <tr id="obj-strip"><td>Лента <code>ReelStrip</code></td><td>ядро</td><td><b>Хранит:</b> замкнутую последовательность слотов барабана длиной <code>(rows + buffer) × cellHeight</code>, базу и номер круга каждого слота, путь ленты.<br><b>Делает:</b> пересчитывает позиции слотов при сдвиге ленты, находит перенесённые слоты, выравнивает слоты на границы ячеек. Других классов, которые меняют позиции слотов, нет.</td></tr>
+            <tr id="obj-slot"><td>Слот ленты <code>StripSlot</code></td><td>ядро</td><td><b>Хранит:</b> значение, позицию и позу одного слота.<br><b>Делает:</b> ничего; по слоту адаптер рисует один <code>CellView</code>.</td></tr>
+            <tr><td><code>ReelMotion</code></td><td>ядро</td><td><b>Хранит:</b> ленту, план прокрутки, посадки или падения и время с начала движения.<br><b>Делает:</b> на каждом кадре ставит ленту (<code>SpinMotion</code>, <code>LandingMotion</code>) или слоты каскада (<code>FallMotion</code>) по плану; сообщает о конце движения; по <code>slam</code> переводит время к финальному участку.</td></tr>
+            <tr id="obj-strategy"><td>Стратегия</td><td>ядро</td><td><b>Хранит:</b> настройки профиля движения: скорость, торможение, отскок, stagger.<br><b>Делает:</b> вычисляет план прокрутки, посадки или падения — путь на любом кадре движения.</td></tr>
+            <tr><td><code>ReelsModel</code>, <code>ReelModel</code></td><td>ядро</td><td><b>Хранит:</b> ничего; это типы.<br><b>Делает:</b> задаёт, что адаптер читает у модели (барабаны, ряды, слоты, единицу длины) и какой метод вызывает на каждом кадре (<code>advance</code>).</td></tr>
+            <tr><td><code>ReelsView</code></td><td>адаптер</td><td><b>Хранит:</b> <code>ReelView</code> барабанов, маски и масштаб единиц модели.<br><b>Делает:</b> раскладывает барабаны и накрывает их масками; на каждом кадре вызывает <code>advance</code> модели и переносит слоты в <code>CellView</code>; находит <code>CellView</code> по адресу ячейки.</td></tr>
+            <tr><td><code>ReelView</code></td><td>адаптер</td><td><b>Хранит:</b> <code>CellView</code> одного барабана, по одному на слот ленты.<br><b>Делает:</b> задаёт каждому <code>CellView</code> позицию, значение и позу его слота; <code>CellView</code>, перенесённый в другой контейнер, пропускает.</td></tr>
             <tr><td><code>CellView</code></td><td>ваш код</td><td><b>Хранит:</b> то, чем рисуется значение: спрайт, скелет или другой PIXI-объект, на выбор реализации.<br><b>Делает:</b> показывает значение (<code>setValue</code>) и позу движения (<code>setMoving</code>).</td></tr>
           </tbody>
         </table>
@@ -443,7 +450,7 @@
       <h3>Схема композиции</h3>
       <figure>
         <div class="canvas">
-          <svg class="dg" viewBox="0 0 1090 690" role="img" aria-label="Ваш код создаёт ReelsMachine и ReelsView. ReelsMachine создаёт барабаны Reel; барабан хранит ленту ReelStrip и запускает ReelMotion, которое получает шаг и план от стратегий и сдвигает ленту. ReelsMachine и Reel реализуют контракт ReelsModel и ReelModel; ReelsView читает модель через контракт, создаёт ReelView на каждый барабан и обновляет CellView, который реализует ваш код">
+          <svg class="dg" viewBox="0 0 1090 690" role="img" aria-label="Ваш код создаёт ReelsMachine и ReelsView. ReelsMachine создаёт барабаны Reel; барабан хранит ленту ReelStrip и запускает ReelMotion, которое получает план от стратегий и двигает ленту. ReelsMachine и Reel реализуют контракт ReelsModel и ReelModel; ReelsView читает модель через контракт, создаёт ReelView на каждый барабан и обновляет CellView, который реализует ваш код">
             <defs>
               <marker id="c-k" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mk"/></marker>
             </defs>
@@ -491,7 +498,7 @@
             <text x="602" y="166" class="h">ReelModel</text>
             <text x="602" y="192" class="d">что адаптер читает</text>
             <text x="602" y="210" class="d">у модели: барабаны,</text>
-            <text x="602" y="228" class="d">слоты, ревизию;</text>
+            <text x="602" y="228" class="d">ряды, слоты;</text>
             <text x="602" y="246" class="d">метод advance</text>
 
             <!-- адаптер -->
@@ -532,7 +539,7 @@
             <text x="286" y="482" class="lbl" text-anchor="middle">сдвигает</text>
 
             <line x1="425" y1="574" x2="425" y2="536" class="ar" marker-end="url(#c-k)"/>
-            <text x="433" y="560" class="lbl">шаг и план</text>
+            <text x="433" y="560" class="lbl">план</text>
 
             <line x1="250" y1="179" x2="588" y2="179" class="ar dash" marker-end="url(#c-k)"/>
             <text x="420" y="171" class="lbl" text-anchor="middle">реализует</text>
@@ -563,20 +570,22 @@
         прокрутка, посадка на результат.</p>
       <pre><code>import { Container, Sprite, Texture } from 'pixi.js'
 import { ReelsMachine } from 'src/core/reels/reels-machine'
+import { GravityFallStrategy } from 'src/core/reels/strategies/gravity-fall'
 import { LinearSpinStrategy } from 'src/core/reels/strategies/linear-spin'
 import { PlannedLandingStrategy } from 'src/core/reels/strategies/planned-landing'
 import { ReelsView } from 'src/engine/reels/reels-view'
 import type { CellView } from 'src/engine/reels/types'
 
-type Grid = string[][] // [барабан][ряд]
+// Стартовая доска: сетка значений [барабан][ряд]
+const board = [['A', 'B', 'C'], ['A', 'A', 'B'], ['C', 'B', 'A']]
 
-// Модель: три барабана по три ряда, единица длины — ячейка
-const machine = new ReelsMachine&lt;Grid, string&gt;({
+// Модель: три барабана по три ряда, единица длины — ячейка. Без getFillerValue слоты на прокрутке
+// получают случайные значения из данных раунда, поэтому стартовая доска передаётся в конфиге
+const machine = new ReelsMachine&lt;string&gt;({
   reels: [{ id: 'r0' }, { id: 'r1' }, { id: 'r2' }],
   rows: 3,
   cellHeight: 1,
-  accessorFn: (data, { reel, row }) =&gt; data[reel]?.[row],
-  getFillerValue: () =&gt; 'blank',
+  data: board,
   spinStrategy: new LinearSpinStrategy({ speed: 0.3 }),
   landingStrategy: new PlannedLandingStrategy({
     speed: 0.3,
@@ -586,9 +595,10 @@ const machine = new ReelsMachine&lt;Grid, string&gt;({
     backStrength: 0.35,
     staggerCells: 2,
   }),
+  fallStrategy: new GravityFallStrategy({ gravity: 0.012, staggerFrames: 3, rowStaggerFrames: 2 }),
 })
 
-// View-компонент ячейки: адаптер вызывает оба метода на каждой синхронизации барабана
+// View-компонент ячейки: адаптер вызывает оба метода на каждом кадре
 class SymbolView extends Container implements CellView&lt;string&gt; {
   private readonly sprite = new Sprite()
   private value: string | null = null
@@ -622,7 +632,6 @@ const reelsView = new ReelsView(app.ticker, machine, {
 app.stage.addChild(reelsView)
 
 // Раунд: стартовая доска, прокрутка, посадка на результат
-machine.setData([['A', 'B', 'C'], ['A', 'A', 'B'], ['C', 'B', 'A']])
 machine.reset()
 
 machine.spin()
@@ -638,23 +647,25 @@ await machine.land()</code></pre>
         <li>Ваш код вызывает <code>machine.spin()</code>.
           <a href="../src/core/reels/reels-machine.ts"><code>ReelsMachine.spin</code></a> вызывает
           <code>Reel.spin</code> у барабанов в фазе <code>idle</code>, кроме удержанных.</li>
-        <li><a href="../src/core/reels/reel.ts"><code>Reel.spin</code></a> фиксирует стратегии спина, делает
-          текущим движением <code>SpinMotion</code> и переводит слоты в позу движения.</li>
+        <li><a href="../src/core/reels/reel.ts"><code>Reel.spin</code></a> фиксирует стратегии спина, получает
+          план прокрутки <code>spinStrategy.plan(...)</code>, делает текущим движением <code>SpinMotion</code> и
+          переводит слоты в позу движения.</li>
         <li>На каждом кадре <a href="../src/engine/reels/reels-view.ts"><code>ReelsView</code></a> вызывает
           <code>machine.advance(deltaTime)</code>. Машина вызывает <code>advance</code> каждого барабана,
           барабан — <code>advance</code> своего движения.</li>
-        <li><a href="../src/core/reels/motions/spin-motion.ts"><code>SpinMotion.advance</code></a> сдвигает
-          ленту на <code>spinStrategy.step(...)</code> через
+        <li><a href="../src/core/reels/motions/spin-motion.ts"><code>SpinMotion.advance</code></a> ставит
+          ленту на путь <code>plan.positionAt(elapsed)</code> от старта спина через
           <a href="../src/core/reels/reel-strip.ts"><code>ReelStrip.moveTo</code></a>. Перенесённые слоты
           получают значение наполнения.</li>
-        <li>Затем в том же кадре <code>ReelsView.sync</code> сравнивает ревизии и для изменившихся
-          барабанов вызывает <a href="../src/engine/reels/reel-view.ts"><code>ReelView.sync</code></a>: тот
+        <li>Затем в том же кадре <code>ReelsView.sync</code> вызывает
+          <a href="../src/engine/reels/reel-view.ts"><code>ReelView.sync</code></a> каждого барабана: тот
           задаёт каждому <code>CellView</code> барабана <code>y</code>, <code>setValue</code> и
           <code>setMoving</code>.</li>
         <li>Ваш код получает результат раунда и вызывает <code>machine.setData(data)</code> и
           <code>machine.land(options)</code>.</li>
         <li><code>ReelsMachine.land</code> выбирает барабаны в фазе <code>spinning</code>, вычисляет для
-          каждого <code>order</code> и число пауз anticipation и вызывает <code>Reel.land</code>.</li>
+          каждого <code>order</code> и число пауз anticipation и вызывает <code>Reel.land</code>. Если до
+          посадки был вызван <code>slam</code>, машина сразу проматывает запущенные посадки.</li>
         <li><code>Reel.land</code> передаёт стратегии посадки <code>LandingContext</code> с числом кадров
           прокрутки <code>spunFrames</code>, получает <code>LandingPlan</code> и делает текущим движением
           <code>LandingMotion</code>.</li>
@@ -671,47 +682,6 @@ await machine.land()</code></pre>
         в разделе <a href="#guide-frame">«Кадр и единицы»</a>.</p>
     </section>
 
-    <section id="glossary">
-      <h2>Словарь</h2>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Термин</th><th>Определение</th><th>В коде</th></tr></thead>
-          <tbody>
-            <tr><td>Барабан</td><td>вертикальная колонка ячеек с собственной лентой и движением</td><td><code>Reel</code>, <code>ReelDef</code></td></tr>
-            <tr><td>Ряд</td><td>ячейки с одним номером ряда со всех барабанов; нумерация сверху, с 0</td><td><code>Row</code>, <code>CellIndex.row</code></td></tr>
-            <tr><td>Ячейка</td><td>место на пересечении барабана и ряда; адрес ячейки не меняется, пока барабан вращается</td><td><code>Cell</code>, <code>CellIndex</code></td></tr>
-            <tr><td>Лента</td><td>замкнутая последовательность слотов барабана длиной <code>(rows + buffer) × cellHeight</code></td><td><code>ReelStrip</code></td></tr>
-            <tr><td>Слот ленты</td><td>элемент ленты со значением, позицией и позой; адаптер рисует по слоту один <code>CellView</code></td><td><code>StripSlot</code></td></tr>
-            <tr><td>Буфер</td><td>слоты над видимой зоной, за маской</td><td><code>buffer</code>, <code>DEFAULT_BUFFER</code></td></tr>
-            <tr><td>Путь ленты</td><td>сдвиг ленты от базовых позиций слотов, в единицах длины</td><td><code>ReelStrip.getOffset()</code></td></tr>
-            <tr><td>База слота</td><td>позиция слота при нулевом пути ленты</td><td>поле <code>bases</code> в <code>ReelStrip</code></td></tr>
-            <tr><td>Номер круга</td><td>сколько раз слот прошёл границу диапазона ленты в любую сторону</td><td><code>getLap</code></td></tr>
-            <tr><td>Перенос слота</td><td>слот, прошедший нижнюю границу ленты, переносится в буфер над видимой зоной и получает новое значение</td><td><code>onWrap</code>, <code>wrapOffset</code></td></tr>
-            <tr><td>Данные раунда</td><td>значения ячеек раунда в формате вашего кода</td><td><code>TData</code>, <code>setData</code></td></tr>
-            <tr><td>Значение наполнения</td><td>значение слота вне результата раунда: на прокрутке, в буфере, в ячейке без значения в данных</td><td><code>getFillerValue</code></td></tr>
-            <tr><td>Ревизия</td><td>число, которое растёт при каждом изменении слотов барабана: сдвиге ленты, перестановке слотов, записи значений и поз. Адаптер сравнивает его с числом на момент прошлой отрисовки и перерисовывает барабан, только если число выросло</td><td><code>getRevision</code></td></tr>
-            <tr><td>Кадр</td><td>единица времени модели: <code>deltaFrames = 1</code> соответствует одному кадру при 60 fps</td><td><code>advance(deltaFrames)</code></td></tr>
-            <tr><td>Единица длины</td><td>высота ячейки модели; в ней заданы пути, скорости и ускорения</td><td><code>ReelsConfig.cellHeight</code></td></tr>
-            <tr><td>Фаза барабана</td><td><code>idle</code>, <code>spinning</code>, <code>landing</code> или <code>falling</code>; равна фазе текущего движения</td><td><code>ReelPhase</code></td></tr>
-            <tr><td>Спин</td><td>вращение барабана без конечной точки</td><td><code>spin</code>, <code>SpinMotion</code></td></tr>
-            <tr><td>Посадка</td><td>движение барабана по плану до остановки на значениях из данных раунда</td><td><code>land</code>, <code>LandingMotion</code></td></tr>
-            <tr><td>Падение</td><td>движение слотов каскада на освободившиеся ряды</td><td><code>cascade</code>, <code>FallMotion</code></td></tr>
-            <tr><td>Stagger</td><td>задержка остановки каждого следующего барабана относительно предыдущего</td><td><code>order</code>, <code>staggerCells</code>, <code>staggerFrames</code></td></tr>
-            <tr><td>Anticipation</td><td>пауза перед остановкой барабана: барабан крутится дольше остальных</td><td><code>LandOptions.anticipation</code>, <code>anticipationCells</code></td></tr>
-            <tr><td>Slam stop</td><td>перевод времени посадки или падения к началу финального участка</td><td><code>slam</code>, <code>slamSignal</code></td></tr>
-            <tr><td>Удержанный барабан</td><td>барабан, который не крутится в этом спине</td><td><code>SpinOptions.held</code></td></tr>
-            <tr><td>Стратегия</td><td>объект с одним методом, который вычисляет движение</td><td><code>SpinStrategy</code>, <code>LandingStrategy</code>, <code>FallStrategy</code></td></tr>
-            <tr><td>План движения</td><td>результат стратегии посадки или падения: длительность и путь на любом кадре</td><td><code>LandingPlan</code>, <code>FallPlan</code></td></tr>
-            <tr><td>Финальный участок</td><td>часть плана от <code>settleFrames</code> до <code>totalFrames</code>; slam его не пропускает</td><td><code>settleFrames</code></td></tr>
-            <tr><td>Респин (механика игры)</td><td>повторный спин, в котором часть барабанов удержана</td><td><code>spin({ held })</code> и <code>land</code></td></tr>
-            <tr><td>Каскад (механика игры)</td><td>выигравшие символы уходят, уцелевшие падают вниз, сверху падают новые</td><td><code>cascade({ removed })</code></td></tr>
-            <tr><td>Hold &amp; Win (механика игры)</td><td>бонус: поле монет, пустые ячейки крутятся, монеты стоят</td><td>вторая машина из барабанов высотой 1</td></tr>
-            <tr><td>Линия выплат (механика игры)</td><td>ломаная через ячейки выигрышной комбинации</td><td>в ядре нет; игра находит <code>CellView</code> ячеек через <code>getCellView</code></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
     <!-- ============================ Руководства по ядру ============================ -->
 
     <div class="part"><span>Руководства по ядру</span>
@@ -720,26 +690,28 @@ await machine.land()</code></pre>
     <section id="guide-config">
       <h2>Данные раунда и конфиг</h2>
       <p>Машина создаётся из <code>ReelsConfig</code> один раз. Конфиг задаёт состав барабанов, геометрию,
-        чтение данных раунда и стратегии по умолчанию. Поля — в <a href="#api-config">API</a>.</p>
+        стартовые данные раунда, наполнение и стратегии по умолчанию. Поля — в <a href="#api-config">API</a>.</p>
 
       <h3>Данные раунда</h3>
-      <p>Формат данных раунда выбирает ваш код. Ядро читает их только через
-        <code>accessorFn(data, { reel, row })</code>: функция возвращает значение ячейки или
-        <code>undefined</code>, если результата на ячейку нет.</p>
-      <pre><code>type Grid = string[][] // [барабан][ряд]
-
-const data: Grid = [['A', 'K', 'W'], ['S', 'A', 'A'], ['W', 'M', 'K']]
-const accessorFn = (data: Grid, { reel, row }: CellIndex) =&gt; data[reel]?.[row]
+      <p>Данные раунда — сетка значений по барабанам <code>ReelsData&lt;TValue&gt;</code>: значение ячейки
+        <code>{ reel, row }</code> лежит в <code>data[reel][row]</code>, <code>undefined</code> — результата на
+        ячейку нет. Данные в другом формате ваш код переводит в сетку перед <code>setData</code>: так, к примеру, поле
+        Hold &amp; Win раскладывается по барабанам высотой 1, см. <a href="#ex-hold-win">Hold &amp; Win</a>.</p>
+      <pre><code>const data: ReelsData&lt;string&gt; = [['A', 'K', 'W'], ['S', 'A', 'A'], ['W', 'M', 'K']]
 // ячейка { reel: 1, row: 0 } → 'S'</code></pre>
       <p>Данные записывает <code>machine.setData(data)</code>, начальные можно передать полем
         <code>data</code> конфига. Из данных читают <code>reset</code>, посадка, каскад и
         <code>Cell.getValue</code>. Посадка читает значение в момент переноса каждого слота, поэтому
-        <code>setData</code> вызывается до <code>land</code>. Если <code>accessorFn</code> вернул
-        <code>undefined</code>, слот останавливается со значением наполнения и позой движения.</p>
+        <code>setData</code> вызывается до <code>land</code>. Если значения ячейки в данных нет, слот
+        останавливается со значением наполнения и позой движения.</p>
 
       <h3>Значение наполнения</h3>
       <p><code>getFillerValue(reel)</code> отдаёт значение слота вне результата раунда. Машина вызывает её
         при создании машины, при каждом переносе слота на прокрутке и для ячейки без значения в данных.</p>
+      <p>Без <code>getFillerValue</code> машина берёт случайное значение из последних непустых данных раунда.
+        Тогда стартовые данные в конфиге обязательны — слотам нужно значение с момента создания машины; тип
+        <code>ReelsConfig</code> требует одно из двух. Если в стартовых данных нет ни одного значения,
+        конструктор бросает ошибку.</p>
 
       <h3>Геометрия</h3>
       <ul>
@@ -753,9 +725,9 @@ const accessorFn = (data: Grid, { reel, row }: CellIndex) =&gt; data[reel]?.[row
       <h3>Описание барабана</h3>
       <p><code>reels</code> — массив <code>ReelDef</code>, по одному на барабан; индекс в массиве — индекс
         барабана. Поле <code>id</code> обязательно. Поля <code>rows</code>, <code>buffer</code>,
-        <code>accessorFn</code>, <code>spinStrategy</code>, <code>landingStrategy</code> и
-        <code>fallStrategy</code> перекрывают конфиг машины для одного барабана. <code>cellHeight</code> и
-        <code>getFillerValue</code> общие для всех барабанов.</p>
+        <code>spinStrategy</code>, <code>landingStrategy</code> и <code>fallStrategy</code> перекрывают конфиг
+        машины для одного барабана. <code>cellHeight</code> и <code>getFillerValue</code> общие для всех
+        барабанов.</p>
       <pre><code>reels: [
   { id: 'r0' },
   { id: 'r1', rows: 4 },                      // барабан выше соседей
@@ -780,13 +752,15 @@ const accessorFn = (data: Grid, { reel, row }: CellIndex) =&gt; data[reel]?.[row
         вызовы раунда. Методы — в <a href="#api-machine">API</a>.</p>
 
       <h3>Что машина вычисляет</h3>
+      <p>Порядок остановки задаёт машина: барабаны встают по индексу, слева направо. Стратегия получает
+        номер барабана в этом порядке и превращает его во время.</p>
       <ul>
         <li><code>order</code> посадки — порядковый номер барабана среди барабанов в фазе
           <code>spinning</code>. Удержанные барабаны в счёт не входят.</li>
         <li><code>order</code> каскада — порядковый номер среди барабанов, в которых есть ячейки из
-          <code>removed</code>.</li>
-        <li><code>anticipationPauses</code> — число индексов из <code>anticipation</code>, не больших индекса
-          барабана; <code>isAnticipating</code> — индекс барабана есть в списке.</li>
+          <code>removed</code> в пределах их рядов.</li>
+        <li><code>anticipationPauses</code> — число садящихся барабанов из <code>anticipation</code> с индексом
+          не больше своего; <code>isAnticipating</code> — барабан сам есть в списке.</li>
         <li>Фазу машины: <code>landing</code>, <code>spinning</code> или <code>falling</code> — первая по
           этому порядку фаза, которая есть хотя бы у одного барабана; иначе <code>idle</code>.</li>
       </ul>
@@ -798,11 +772,11 @@ const accessorFn = (data: Grid, { reel, row }: CellIndex) =&gt; data[reel]?.[row
         <code>onReelAnticipated(reel)</code> вызывается синхронно внутри <code>advance</code>, в кадре
         начала паузы.</p>
 
-      <h3>Промотка по сигналу</h3>
-      <p><code>slamSignal</code> в опциях <code>land</code> и <code>cascade</code> — <code>AbortSignal</code>.
-        Если сигнал сработал до вызова, машина вызывает <code>slam()</code> сразу после запуска движений;
-        если по ходу движения — в момент срабатывания. После конца движения машина снимает подписку на
-        сигнал.</p>
+      <h3>Промотка</h3>
+      <p><code>slam()</code> переводит текущие посадку и падение к началу финального участка. Вызов до их
+        старта — пока барабаны крутятся в ожидании результата или стоят перед каскадом — машина
+        запоминает: ближайшие <code>land</code> или <code>cascade</code> проматывают движения сразу после
+        запуска. С концом этих движений машина снимает промотку; <code>reset</code> снимает её сразу.</p>
     </section>
 
     <section id="guide-cells">
@@ -818,7 +792,7 @@ const accessorFn = (data: Grid, { reel, row }: CellIndex) =&gt; data[reel]?.[row
           <tbody>
             <tr><td>Что это</td><td>постоянный адрес <code>(барабан, ряд)</code></td><td>элемент ленты, который движется</td></tr>
             <tr><td>Сколько на барабан</td><td><code>rows</code></td><td><code>rows + buffer</code></td></tr>
-            <tr><td>Значение</td><td>из данных раунда через <code>accessorFn</code></td><td>то, что показывает <code>CellView</code> сейчас</td></tr>
+            <tr><td>Значение</td><td>из данных раунда, <code>data[барабан][ряд]</code></td><td>то, что показывает <code>CellView</code> сейчас</td></tr>
             <tr><td>Кто использует</td><td>ваш код: поиск по адресу</td><td>адаптер</td></tr>
           </tbody>
         </table>
@@ -834,11 +808,6 @@ const accessorFn = (data: Grid, { reel, row }: CellIndex) =&gt; data[reel]?.[row
         <code>row.getCells()</code> — ячейки ряда слева направо, барабан без такого ряда пропускается.
         <code>machine.getGrid()</code> возвращает ячейки по барабанам, <code>[барабан][ряд]</code>;
         <code>machine.getCell({ reel, row })</code> — одну ячейку.</p>
-
-      <h3>Контекст ячейки</h3>
-      <p><code>cell.getContext()</code> собирает машину, барабан, ячейку и функцию <code>getValue</code> в
-        один объект <code>CellContext</code>. Его передают в функции, которым нужна ячейка вместе с барабаном
-        и машиной.</p>
     </section>
 
     <section id="guide-strip">
@@ -936,12 +905,6 @@ const accessorFn = (data: Grid, { reel, row }: CellIndex) =&gt; data[reel]?.[row
       <p>Что записывает <code>onWrap</code>, определяет текущее движение: на прокрутке — значение
         наполнения, на посадке — значение ряда, в котором слот остановится.</p>
 
-      <h3>Ревизия</h3>
-      <p>Каждый вызов <code>moveTo</code>, <code>place</code>, <code>rebase</code> и <code>touch</code>
-        увеличивает ревизию ленты. <code>Reel.getRevision()</code> отдаёт её адаптеру: барабан с прежней
-        ревизией адаптер не перерисовывает. <code>touch()</code> <code>Reel</code> вызывает после записи
-        значений или поз в обход методов ленты — в <code>reset</code> и <code>spin</code>.</p>
-
       <h3>Выравнивание и базы</h3>
       <ul>
         <li><code>snap()</code> в конце посадки округляет путь и позиции слотов до границ ячеек. Позы слотов
@@ -961,26 +924,13 @@ const accessorFn = (data: Grid, { reel, row }: CellIndex) =&gt; data[reel]?.[row
         <code>land</code> или <code>cascade</code> при этом резолвится.</p>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Движение</th><th>Фаза</th><th>Создаёт</th><th>Кадр</th><th>Конец</th><th><code>slam()</code></th></tr></thead>
+          <thead><tr><th>Вызов</th><th>Из фазы</th><th>Движение и фаза</th><th>Кадр</th><th>Конец</th><th><code>slam()</code></th></tr></thead>
           <tbody>
-            <tr><td><code>SpinMotion</code></td><td><code>spinning</code></td><td><code>Reel.spin</code></td><td>сдвигает путь на <code>spinStrategy.step(...)</code>; перенесённые слоты получают значение наполнения</td><td>нет, до <code>land</code></td><td>ничего не делает</td></tr>
-            <tr><td><code>LandingMotion</code></td><td><code>landing</code></td><td><code>Reel.land</code></td><td>ставит путь <code>start + plan.positionAt(elapsed)</code>; перенесённые слоты получают значение ряда остановки</td><td><code>elapsed ≥ totalFrames</code>: <code>snap()</code></td><td><code>elapsed</code> → <code>settleFrames</code></td></tr>
-            <tr><td><code>FallMotion</code></td><td><code>falling</code></td><td><code>Reel.cascade</code></td><td>ставит каждый падающий слот на <code>from + plan.positionAt(drop, elapsed)</code></td><td><code>elapsed ≥ totalFrames</code>: слоты на рядах, <code>rebase()</code></td><td><code>elapsed</code> → <code>settleFrames</code></td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <h3>Переходы</h3>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Вызов</th><th>Из фазы</th><th>Движение</th><th>Фаза на ходу</th><th>Конец</th></tr></thead>
-          <tbody>
-            <tr><td><code>reset()</code></td><td><code>idle</code></td><td>—</td><td>—</td><td>путь 0, видимые слоты получают данные раунда</td></tr>
-            <tr><td><code>spin()</code></td><td><code>idle</code></td><td><code>SpinMotion</code></td><td><code>spinning</code></td><td>без конца, до <code>land</code></td></tr>
-            <tr><td><code>land(options)</code></td><td><code>spinning</code></td><td><code>LandingMotion</code></td><td><code>landing</code></td><td><code>snap()</code> на границу ячейки, промис резолвится</td></tr>
-            <tr><td><code>cascade(options)</code></td><td><code>idle</code></td><td><code>FallMotion</code></td><td><code>falling</code></td><td>слоты на рядах, <code>rebase()</code>, промис резолвится</td></tr>
-            <tr><td><code>slam()</code></td><td><code>landing</code>, <code>falling</code></td><td>время движения переходит к <code>settleFrames</code></td><td>—</td><td>—</td></tr>
-            <tr><td>отмена по <code>signal</code></td><td><code>landing</code>, <code>falling</code></td><td>движение снимается</td><td><code>idle</code></td><td>промис отклоняется с <code>signal.reason</code></td></tr>
+            <tr><td><code>reset()</code></td><td><code>idle</code></td><td>—</td><td>—</td><td>путь 0, видимые слоты получают данные раунда</td><td>—</td></tr>
+            <tr id="motion-spin"><td><code>spin()</code></td><td><code>idle</code></td><td><code>SpinMotion</code>, <code>spinning</code></td><td>ставит путь <code>start + plan.positionAt(elapsed)</code>; перенесённые слоты получают значение наполнения</td><td>нет, до <code>land</code></td><td>машина запоминает промотку до <code>land</code></td></tr>
+            <tr id="motion-land"><td><code>land(options)</code></td><td><code>spinning</code></td><td><code>LandingMotion</code>, <code>landing</code></td><td>ставит путь <code>start + plan.positionAt(elapsed)</code>; перенесённые слоты получают значение ряда остановки</td><td><code>elapsed ≥ totalFrames</code>: <code>snap()</code> на границу ячейки, промис резолвится</td><td><code>elapsed</code> → <code>settleFrames</code></td></tr>
+            <tr id="motion-fall"><td><code>cascade(options)</code></td><td><code>idle</code></td><td><code>FallMotion</code>, <code>falling</code></td><td>ставит каждый падающий слот на <code>from + plan.positionAt(drop, elapsed)</code></td><td><code>elapsed ≥ totalFrames</code>: слоты на рядах, <code>rebase()</code>, промис резолвится</td><td><code>elapsed</code> → <code>settleFrames</code></td></tr>
+            <tr><td>отмена по <code>signal</code></td><td><code>landing</code>, <code>falling</code></td><td>движение снимается, <code>idle</code></td><td>—</td><td>промис отклоняется с <code>signal.reason</code></td><td>—</td></tr>
           </tbody>
         </table>
       </div>
@@ -1050,10 +1000,10 @@ const accessorFn = (data: Grid, { reel, row }: CellIndex) =&gt; data[reel]?.[row
       <h2>Кадр и единицы</h2>
       <p>Своего таймера у модели нет. Вызывающий код продвигает её вызовом
         <code>machine.advance(deltaFrames)</code> один раз за кадр. Адаптер делает это из тикер-колбэка и
-        затем переносит изменившиеся барабаны в <code>CellView</code>.</p>
+        затем переносит слоты в <code>CellView</code>.</p>
       <figure>
         <div class="canvas">
-          <svg class="dg" viewBox="0 0 1070 490" role="img" aria-label="Кадр: Ticker вызывает ReelsView.step, модель продвигает движения барабанов, затем ReelsView переносит изменившиеся слоты в CellView">
+          <svg class="dg" viewBox="0 0 1070 490" role="img" aria-label="Кадр: Ticker вызывает ReelsView.step, модель продвигает движения барабанов, затем ReelsView переносит слоты в CellView">
             <defs>
               <marker id="f-k" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mk"/></marker>
             </defs>
@@ -1095,7 +1045,6 @@ const accessorFn = (data: Grid, { reel, row }: CellIndex) =&gt; data[reel]?.[row
 
             <line x1="680" y1="220" x2="828" y2="220" class="ar" marker-end="url(#f-k)"/>
             <text x="755" y="214" class="lbl" text-anchor="middle">moveTo / place</text>
-            <text x="838" y="240" class="sub">revision + 1</text>
 
             <line x1="830" y1="272" x2="532" y2="272" class="ar dash" marker-end="url(#f-k)"/>
             <text x="681" y="266" class="lbl" text-anchor="middle">onWrap(slot): Reel записывает значение</text>
@@ -1104,18 +1053,18 @@ const accessorFn = (data: Grid, { reel, row }: CellIndex) =&gt; data[reel]?.[row
             <text x="606" y="310" class="lbl" text-anchor="middle">isDone(): motion = null, resolve</text>
 
             <path d="M220 348 H262 V372 H222" class="ar" marker-end="url(#f-k)"/>
-            <text x="270" y="364" class="lbl">sync(): ревизия выросла?</text>
+            <text x="270" y="364" class="lbl">sync(): по каждому барабану</text>
 
             <line x1="220" y1="414" x2="983" y2="414" class="ar" marker-end="url(#f-k)"/>
-            <text x="600" y="408" class="lbl" text-anchor="middle">sync(strip, unitScale) — только изменившиеся барабаны</text>
+            <text x="600" y="408" class="lbl" text-anchor="middle">sync(strip, unitScale) — слоты барабана</text>
 
             <text x="975" y="440" class="sub" text-anchor="end">y = offset × unitScale</text>
             <text x="975" y="458" class="sub" text-anchor="end">setValue · setMoving</text>
           </svg>
         </div>
         <figcaption>Сплошные стрелки — вызовы, пунктирные — колбэки и возвраты. <code>onWrap</code> вызывается
-          внутри <code>moveTo</code> для каждого перенесённого слота.
-          <code>ReelsView.sync</code> пропускает барабаны с прежней ревизией.</figcaption>
+          внутри <code>moveTo</code> для каждого перенесённого слота. <code>ReelView.sync</code> пропускает
+          <code>CellView</code>, перенесённые в другой контейнер.</figcaption>
       </figure>
 
       <h3>Единицы</h3>
@@ -1149,40 +1098,23 @@ const accessorFn = (data: Grid, { reel, row }: CellIndex) =&gt; data[reel]?.[row
 
     <section id="guide-strategies">
       <h2>Стратегии</h2>
-      <p>Стратегия — объект с одним методом. Машина получает стратегии из конфига или
-        <code>setStrategies</code>, барабан фиксирует набор в начале спина. Стратегия из <code>ReelDef</code>
-        перекрывает стратегию машины.</p>
+      <p>Стратегия — объект с одним методом: по контексту барабана она строит план движения, путь на любом
+        кадре. Машина получает стратегии из конфига или <code>setStrategies</code>, барабан фиксирует набор в
+        начале спина. Стратегия из <code>ReelDef</code> перекрывает стратегию машины. Поля контекстов и
+        планов — в <a href="#api-strategy-contracts">API</a>.</p>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Контракт</th><th>Метод</th><th>Когда вызывается</th><th>Результат</th></tr></thead>
           <tbody>
-            <tr><td><code>SpinStrategy</code></td><td><code>step(deltaFrames, ReelContext)</code></td><td>на каждом кадре прокрутки</td><td>путь ленты за кадр; отрицательный путь вращает барабан вверх</td></tr>
+            <tr><td><code>SpinStrategy</code></td><td><code>plan(ReelContext)</code></td><td>один раз в <code>Reel.spin</code></td><td><code>SpinPlan</code>: путь ленты от старта спина; отрицательный путь вращает барабан вверх</td></tr>
             <tr><td><code>LandingStrategy</code></td><td><code>plan(LandingContext)</code></td><td>один раз в <code>Reel.land</code></td><td><code>LandingPlan</code></td></tr>
             <tr><td><code>FallStrategy</code></td><td><code>plan(FallContext)</code></td><td>один раз в <code>Reel.cascade</code></td><td><code>FallPlan</code></td></tr>
           </tbody>
         </table>
       </div>
-
-      <h3>Контекст</h3>
-      <p><code>ReelContext</code> — геометрия барабана: <code>index</code>, <code>rows</code>,
-        <code>buffer</code>, <code>cellHeight</code>, <code>stripHeight</code>. <code>LandingContext</code>
-        добавляет <code>order</code>, <code>fromOffset</code>, <code>spunFrames</code>,
-        <code>anticipationPauses</code> и <code>isAnticipating</code>. <code>FallContext</code> добавляет
-        <code>order</code> и <code>drops</code> — падающие слоты с рядом назначения и путём до него.</p>
-
-      <h3>План</h3>
-      <ul>
-        <li><code>totalFrames</code> — длительность движения в кадрах.</li>
-        <li><code>settleFrames</code> — начало финального участка. <code>slam</code> переводит время движения
-          к этому кадру. Стратегия без финального участка отдаёт <code>totalFrames</code>, и по slam барабан
-          останавливается на следующем кадре.</li>
-        <li><code>LandingPlan.positionAt(frames)</code> — путь ленты от начала посадки;
-          <code>FallPlan.positionAt(drop, frames)</code> — путь слота <code>drops[drop]</code>.</li>
-        <li><code>LandingPlan.distance</code> — полный путь ленты до остановки; из него вычисляется остаток
-          пути для перенесённых слотов.</li>
-        <li><code>LandingPlan.anticipationFrames</code> — кадр начала собственной паузы anticipation; в этом
-          кадре барабан вызывает <code>onAnticipated</code>.</li>
-      </ul>
+      <p><code>settleFrames</code> плана посадки и падения — начало финального участка: к этому кадру
+        <code>slam</code> переводит время движения. Стратегия без финального участка отдаёт
+        <code>totalFrames</code>, и по slam барабан останавливается на следующем кадре.</p>
 
       <h3>Требования к стратегии посадки</h3>
       <ul>
@@ -1210,9 +1142,6 @@ const accessorFn = (data: Grid, { reel, row }: CellIndex) =&gt; data[reel]?.[row
       <ul>
         <li><strong>Один вызов <code>advance</code> на кадр.</strong> Второй адаптер или второй цикл над той же
           моделью продвинет её дважды за кадр.</li>
-        <li><strong>Позиции меняет <code>ReelStrip</code>, значения — <code>Reel</code>.</strong> Значения
-          слотам <code>Reel</code> записывает в колбэке переноса, в <code>reset</code> и в
-          <code>cascade</code>.</li>
         <li><strong>Порядок <code>getStrip()</code> постоянен.</strong> Адаптер хранит <code>CellView</code> по
           индексу из <code>getStrip()</code>. Порядок <code>getVisibleSlotIndices()</code> пересчитывается по
           позициям на каждом вызове.</li>
@@ -1222,13 +1151,8 @@ const accessorFn = (data: Grid, { reel, row }: CellIndex) =&gt; data[reel]?.[row
           <code>wrapOffset</code> и <code>getLap</code> применяют одинаковый допуск
           <code>WRAP_EPSILON</code>. Регрессию проверяет
           <a href="../tests/core/reels/strip-wrap.test.ts"><code>strip-wrap.test.ts</code></a>.</li>
-        <li><strong><code>snap()</code> не меняет позы.</strong> Позу покоя слот получил при последнем
-          переносе; повторная смена позы сбросила бы idle-анимацию <code>CellView</code>.</li>
         <li><strong>После падения базы переписываются.</strong> Без <code>rebase()</code> первый сдвиг ленты
           вернул бы слоты на прежние места.</li>
-        <li><strong>Адаптер пропускает барабаны с прежней ревизией.</strong> Пока барабан стоит, ваш код может
-          временно перенести его <code>CellView</code> в другой контейнер, и адаптер их позиции не
-          перезаписывает.</li>
       </ul>
     </section>
 
@@ -1256,25 +1180,18 @@ await machine.land({ onReelLanded: (reel) =&gt; playStopSound(reel) })</code></p
 
     <section id="mech-stagger">
       <h2>Stagger</h2>
-      <p>Барабаны останавливаются слева направо с интервалом. Машина передаёт стратегии посадки
-        <code>order</code> — порядковый номер барабана среди садящихся. <code>PlannedLandingStrategy</code>
-        добавляет к пути <code>order × staggerCells</code> ячеек. Удержанные барабаны в счёт не входят:
-        первый крутящийся барабан получает <code>order = 0</code>.</p>
-      <p>В каскаде <code>order</code> — номер среди падающих барабанов; <code>GravityFallStrategy</code>
-        сдвигает их старт на <code>order × staggerFrames</code> кадров.</p>
-      <p>Другой порядок остановки — справа налево, от центра — задаёт своя стратегия посадки: ей доступны
-        <code>order</code> и <code>index</code> из контекста. Пример —
-        <a href="#mech-extend">«Своё расширение»</a>.</p>
+      <p>Барабаны останавливаются слева направо с интервалом. Порядок задаёт машина: она передаёт стратегии
+        <code>order</code> — номер барабана среди садящихся по индексу; удержанные барабаны в счёт не входят.
+        Интервал на каждый номер задаёт стратегия: <code>staggerCells</code> у
+        <code>PlannedLandingStrategy</code>, <code>staggerFrames</code> у <code>GravityFallStrategy</code> — в
+        каскаде <code>order</code> считается среди падающих барабанов.</p>
     </section>
 
     <section id="mech-min-spin">
       <h2>Минимум вращения</h2>
       <p>Спин длится не меньше заданного времени, даже если <code>land</code> вызван сразу после
-        <code>spin</code>. <code>SpinMotion</code> считает кадры прокрутки, <code>Reel.land</code> передаёт
-        их стратегии в <code>spunFrames</code>. <code>PlannedLandingStrategy</code> с опцией
-        <code>minSpinFrames</code> удлиняет равномерный участок на
-        <code>max(0, minSpinFrames − spunFrames)</code> кадров. Если <code>land</code> вызван позже минимума,
-        путь не удлиняется.</p>
+        <code>spin</code>: барабан передаёт стратегии посадки число кадров прокрутки <code>spunFrames</code>,
+        и <code>PlannedLandingStrategy</code> с опцией <code>minSpinFrames</code> добирает недостающие кадры.</p>
     </section>
 
     <section id="mech-anticipation">
@@ -1287,36 +1204,31 @@ await machine.land({ onReelLanded: (reel) =&gt; playStopSound(reel) })</code></p
   onReelLanded: (reel) =&gt; glow.hide(reel),
 })</code></pre>
       <ul>
-        <li>Барабан получает <code>anticipationPauses</code> — число индексов из <code>anticipation</code>,
-          не больших своего. Барабан 4 при <code>anticipation: [3, 4]</code> получает две паузы: одну за
-          барабаном 3 и свою.</li>
+        <li>Барабан получает <code>anticipationPauses</code> — число садящихся барабанов из
+          <code>anticipation</code> с индексом не больше своего. Барабан 4 при <code>anticipation: [3, 4]</code>
+          получает две паузы: одну за барабаном 3 и свою. Удержанный барабан из списка пауз не добавляет.</li>
         <li><code>isAnticipating</code> — барабан сам есть в списке. Собственная пауза и вызов
           <code>onReelAnticipated</code> есть только у такого барабана.</li>
-        <li><code>PlannedLandingStrategy</code> добавляет <code>anticipationPauses × anticipationCells</code>
-          ячеек к равномерному участку и отдаёт <code>anticipationFrames</code> — кадр, в котором барабан
-          остановился бы без собственной паузы.</li>
         <li><code>onReelAnticipated</code> вызывается синхронно внутри <code>advance</code>, в кадре
-          <code>anticipationFrames</code>. Конец паузы — <code>onReelLanded</code> того же барабана.</li>
-        <li>Пауза входит в равномерный участок, поэтому slam проматывает её вместе с ним. О промотанной паузе
-          <code>onReelAnticipated</code> не сообщает: <code>slam</code> переносит время вне
-          <code>advance</code>.</li>
+          <code>anticipationFrames</code> плана. Конец паузы — <code>onReelLanded</code> того же барабана.</li>
+        <li>О паузе, промотанной <code>slam</code>, <code>onReelAnticipated</code> не сообщает:
+          <code>slam</code> переносит время вне <code>advance</code>.</li>
       </ul>
+      <p>Длину паузы задаёт стратегия посадки; у <code>PlannedLandingStrategy</code> это
+        <code>anticipationCells</code>, см. <a href="#api-strategies">API</a>.</p>
     </section>
 
     <section id="mech-slam">
       <h2>Slam stop</h2>
-      <p>Игрок нажимает Stop во время посадки: барабаны сразу переходят к финальному отскоку и
-        останавливаются одновременно.</p>
-      <pre><code>const stop = new AbortController()
+      <p>Игрок нажимает Stop: барабаны сразу переходят к финальному отскоку и останавливаются одновременно.</p>
+      <pre><code>stopButton.onTap = () =&gt; machine.slam()
 
-stopButton.onTap = () =&gt; stop.abort()
-
-await machine.land({ slamSignal: stop.signal })</code></pre>
-      <p>По <code>slamSignal</code> машина вызывает <code>slam()</code> каждого барабана, барабан — текущего
-        движения. Посадка и падение переводят время к <code>settleFrames</code>, план не меняется.
-        <code>SpinMotion</code> на slam не реагирует: у прокрутки нет финального участка. Сигнал, сработавший
-        до вызова <code>land</code>, машина применяет сразу после запуска посадки.</p>
-      <p><code>machine.slam()</code> можно вызвать и напрямую.</p>
+await machine.land()</code></pre>
+      <p><code>slam()</code> вызывает <code>slam</code> каждого барабана, барабан — текущего движения.
+        Посадка и падение переводят время к <code>settleFrames</code>, план не меняется. Stop, нажатый до
+        посадки — пока барабаны крутятся в ожидании результата, — машина запоминает и проматывает посадку
+        сразу после её запуска; то же для падения каскада. Промотку снимают конец посадки или падения и
+        <code>reset</code>.</p>
     </section>
 
     <section id="mech-abort">
@@ -1348,8 +1260,8 @@ await machine.land({ slamSignal: stop.signal })</code></pre>
 machine.setData(nextGrid)
 await machine.cascade({ removed })</code></pre>
       <ol>
-        <li>Машина выбирает барабаны, в которых есть ячейки из <code>removed</code>; <code>order</code> —
-          порядковый номер среди них.</li>
+        <li>Машина выбирает барабаны, в которых есть ячейки из <code>removed</code> в пределах их рядов;
+          <code>order</code> — порядковый номер среди них.</li>
         <li>Уцелевшие слоты сохраняют порядок и опускаются на число убранных рядов под ними. Слот, чей ряд не
           изменился, остаётся на месте.</li>
         <li>Слоты убранных ячеек получают значения новых верхних рядов <code>0..k−1</code> из данных раунда,
@@ -1365,8 +1277,6 @@ await machine.cascade({ removed })</code></pre>
           рядах.</li>
         <li>Каскад запускается только у барабанов в <code>idle</code>; у движущегося барабана промис
           резолвится сразу.</li>
-        <li>Без <code>fallStrategy</code> в конфиге, в <code>ReelDef</code> или в <code>setStrategies</code>
-          промис <code>cascade</code> отклоняется с ошибкой <code>Reel &lt;id&gt; has no fall strategy</code>.</li>
         <li><code>cascade</code> переставляет слоты синхронно внутри вызова. <code>CellView</code> убранных
           ячеек нужно получить через <code>getCellView</code> до вызова: после него по тем же адресам стоят
           другие слоты.</li>
@@ -1392,13 +1302,14 @@ await machine.cascade({ removed })</code></pre>
         <li>По умолчанию <code>ReelsView</code> ставит центр верхней ячейки барабана <code>i</code> в точку
           <code>(cellWidth × i, 0)</code>. Функция <code>getReelPosition(index)</code> в
           <code>ReelsViewConfig</code> задаёт другую раскладку.</li>
-        <li>Барабаны с одинаковым <code>y</code> делят одну маску-полосу. Маска PIXI 8 — stencil: она прерывает
-          батч и рисуется дважды, поэтому <code>ReelsView</code> создаёт по маске на полосу раскладки.</li>
-        <li>Высоту отдельного барабана задаёт <code>ReelDef.rows</code>. Маска полосы получает высоту самого
-          высокого барабана полосы.</li>
-        <li>Поле, в котором каждая ячейка крутится отдельно, собирается из барабанов высотой 1.
-          <code>accessorFn</code> переводит индекс барабана в адрес ячейки ваших данных,
-          <code>getReelPosition</code> ставит барабаны сеткой. Пример — <a href="#ex-hold-win">Hold &amp; Win</a>.</li>
+        <li>Барабаны с одинаковым <code>y</code> делят одну маску-полосу: в ней прямоугольник видимой зоны на
+          каждый барабан. Маска PIXI 8 — stencil: она прерывает батч и рисуется дважды, поэтому
+          <code>ReelsView</code> создаёт по маске на полосу раскладки.</li>
+        <li>Высоту отдельного барабана задаёт <code>ReelDef.rows</code>; прямоугольник барабана в маске
+          получает его высоту, поэтому барабаны разной высоты делят полосу.</li>
+        <li>Поле, в котором каждая ячейка крутится отдельно, собирается из барабанов высотой 1. Ваш код
+          раскладывает данные поля по барабанам перед <code>setData</code>, <code>getReelPosition</code> ставит
+          барабаны сеткой. Пример — <a href="#ex-hold-win">Hold &amp; Win</a>.</li>
         <li>Скрытый <code>ReelsView</code> (<code>visible = false</code>) масок не рисует.</li>
       </ul>
     </section>
@@ -1408,43 +1319,71 @@ await machine.cascade({ removed })</code></pre>
 
       <h3>Своя стратегия</h3>
       <p>Стратегия реализует контракт из <a href="../src/core/reels/types.ts"><code>types.ts</code></a> и
-        передаётся в конфиг, в <code>ReelDef</code> или в <code>setStrategies</code>. Пример — остановка
-        справа налево поверх готовой посадки:</p>
-      <pre><code>class RightToLeftLanding implements LandingStrategy {
-  private readonly inner: LandingStrategy
-  private readonly reelCount: number
+        передаётся в конфиг, в <code>ReelDef</code> или в <code>setStrategies</code>. Пример — посадка без
+        отскока: равномерный ход, затем торможение до нуля. Она выполняет требования к стратегии посадки:
+        путь не короче оборота ленты, кратен ячейке и заканчивается в <code>distance</code>. Паузы anticipation
+        пример не делает: <code>anticipationPauses</code> из контекста он не читает.</p>
+      <pre><code>class BrakeLanding implements LandingStrategy {
+  private readonly speed: number
+  private readonly brakeCells: number
 
-  constructor(inner: LandingStrategy, reelCount: number) {
-    this.inner = inner
-    this.reelCount = reelCount
+  constructor(speed: number, brakeCells: number) {
+    this.speed = speed
+    this.brakeCells = brakeCells
   }
 
-  plan(context: LandingContext): LandingPlan {
-    // Правый барабан получает order = 0 и останавливается первым
-    return this.inner.plan({ ...context, order: this.reelCount - 1 - context.order })
-  }
-}
+  plan({ order, fromOffset, cellHeight, stripHeight }: LandingContext): LandingPlan {
+    const brakeDistance = this.brakeCells * cellHeight
+    // Оборот ленты, stagger по order и торможение; добор делает путь кратным ячейке
+    const planned = stripHeight + order * 2 * cellHeight + brakeDistance
+    const distance = planned + getAlignmentGap(fromOffset + planned, cellHeight)
+    const cruiseFrames = (distance - brakeDistance) / this.speed
+    // Торможение с постоянным замедлением: скорость падает с speed до нуля
+    const brakeFrames = (2 * brakeDistance) / this.speed
 
-const landingStrategy = new RightToLeftLanding(new PlannedLandingStrategy(options), 5)</code></pre>
-      <p><code>SpinStrategy</code> может возвращать отрицательный шаг: номер круга меняется при переходе
-        границы в обе стороны, и барабан крутится вверх. Готовая
-        <code>PlannedLandingStrategy</code> рассчитана на движение вниз.</p>
+    return {
+      distance,
+      totalFrames: cruiseFrames + brakeFrames,
+      settleFrames: cruiseFrames,
+      positionAt: (frames) =&gt; {
+        if (frames &lt;= cruiseFrames) return this.speed * frames
+
+        const t = Math.min(frames - cruiseFrames, brakeFrames)
+
+        return distance - brakeDistance + this.speed * t - (this.speed * t ** 2) / (2 * brakeFrames)
+      },
+    }
+  }
+}</code></pre>
+      <p>Своя прокрутка строит <code>SpinPlan</code>: путь ленты от старта спина. Пример — разгон до
+        скорости <code>speed</code> за <code>rampFrames</code> кадров:</p>
+      <pre><code>const rampSpin = (speed: number, rampFrames: number): SpinStrategy =&gt; ({
+  plan: () =&gt; ({
+    positionAt: (frames) =&gt;
+      frames &lt; rampFrames ? (speed * frames ** 2) / (2 * rampFrames) : speed * (frames - rampFrames / 2),
+  }),
+})</code></pre>
+      <p>Посадка начинается со скорости своей стратегии: <code>PlannedLandingStrategy</code> — со скорости
+        <code>speed</code>, поэтому спин с разгоном стыкуется с ней без скачка, только если разгон кончился до
+        <code>land</code>. Путь прокрутки может уходить в минус: номер круга меняется при переходе границы в
+        обе стороны, и барабан крутится вверх. Готовая <code>PlannedLandingStrategy</code> рассчитана на
+        движение вниз.</p>
 
       <h3>Свой <code>CellView</code></h3>
       <p><code>CellView</code> — PIXI-контейнер с методами <code>setValue(value)</code> и
-        <code>setMoving(moving)</code>. Адаптер задаёт ему <code>y</code> и вызывает оба метода на каждой
-        синхронизации барабана, поэтому повторный вызов с тем же аргументом не должен ничего менять. Другие
-        позы — выигрыш, взрыв — ставит ваш код через <code>getCellView</code>; <code>setMoving</code> может их
-        сохранять, так сделано в <a href="../src/games/slot/ui/reels/reel-symbol.ts"><code>ReelSymbol</code></a>.</p>
+        <code>setMoving(moving)</code>. Адаптер задаёт ему <code>y</code> и вызывает оба метода на каждом кадре,
+        поэтому повторный вызов с тем же аргументом не должен ничего менять. Другие позы — выигрыш, взрыв —
+        ставит ваш код через <code>getCellView</code>; <code>setMoving</code> может их сохранять, так сделано в
+        <a href="../src/games/slot/ui/reels/reel-symbol.ts"><code>ReelSymbol</code></a>. <code>CellView</code>,
+        перенесённый в другой контейнер, адаптер не трогает, пока ваш код не вернёт его в барабан: так
+        выигравший символ поднимается над затемнением.</p>
 
       <h3>Свой адаптер</h3>
       <p>Адаптер для другого рендера — Canvas 2D, DOM, другого движка — строится над контрактом
         <code>ReelsModel</code>:</p>
       <ol>
         <li>На каждом кадре вызвать <code>model.advance(deltaFrames)</code> один раз.</li>
-        <li>Для барабанов из <code>getReels()</code> сравнить <code>getRevision()</code> с последней
-          отрисованной; при полной перерисовке кадра этот шаг не нужен.</li>
-        <li>Для изменившегося барабана пройти <code>getStrip()</code>: слот <code>i</code> рисуется элементом
+        <li>Для каждого барабана из <code>getReels()</code> пройти <code>getStrip()</code>: слот <code>i</code> рисуется элементом
           <code>i</code>, позиция — <code>slot.offset × масштаб</code>, значение — <code>slot.value</code>,
           поза — <code>slot.moving</code>.</li>
         <li>Обрезать каждый барабан по видимой зоне высотой <code>rows × cellHeight</code>: буферные слоты
@@ -1492,10 +1431,11 @@ requestAnimationFrame(frame)</code></pre>
       <h2><code>ReelsConfig</code>, <code>ReelDef</code>, <code>ReelMeta</code></h2>
       <p class="api-src"><code>src/core/reels/types.ts</code></p>
 
-      <h3><code>ReelsConfig&lt;TData, TValue&gt;</code></h3>
-      <p>Конфиг машины; включает поля <code>ReelStrategies</code>.</p>
+      <h3><code>ReelsConfig&lt;TValue&gt;</code></h3>
+      <p>Конфиг машины; включает поля <code>ReelStrategies</code>. Тип требует одно из двух:
+        <code>getFillerValue</code> или стартовые <code>data</code>.</p>
       <dl class="api">
-        <dt><code>reels: readonly ReelDef&lt;TData, TValue&gt;[]</code></dt>
+        <dt><code>reels: readonly ReelDef[]</code></dt>
         <dd>Описания барабанов; индекс в массиве — индекс барабана.</dd>
         <dt><code>rows: number</code></dt>
         <dd>Число видимых рядов барабана по умолчанию; по нему же создаются <code>Row</code>.</dd>
@@ -1503,30 +1443,27 @@ requestAnimationFrame(frame)</code></pre>
         <dd>Число слотов над видимой зоной; по умолчанию <code>DEFAULT_BUFFER</code> (1).</dd>
         <dt><code>cellHeight: number</code></dt>
         <dd>Высота ячейки — единица длины модели; общая для всех барабанов.</dd>
-        <dt><code>data?: TData | null</code></dt>
-        <dd>Начальные данные раунда; по умолчанию <code>null</code>.</dd>
-        <dt><code>accessorFn: (data: TData, index: CellIndex) =&gt; TValue | undefined</code></dt>
-        <dd>Возвращает значение ячейки из данных раунда; <code>undefined</code> — результата на ячейку нет.</dd>
-        <dt><code>getFillerValue: (reel: number) =&gt; TValue</code></dt>
+        <dt><code>data?: ReelsData&lt;TValue&gt; | null</code></dt>
+        <dd>Начальные данные раунда; по умолчанию <code>null</code>. Без <code>getFillerValue</code>
+          обязательны.</dd>
+        <dt><code>getFillerValue?: (reel: number) =&gt; TValue</code></dt>
         <dd>Значение слота вне результата раунда: при создании машины, при переносе на прокрутке, в ячейке без
-          значения в данных.</dd>
+          значения в данных. Без неё — случайное значение из последних непустых данных раунда.</dd>
         <dt><code>spinStrategy: SpinStrategy</code></dt>
         <dd>Стратегия прокрутки по умолчанию.</dd>
         <dt><code>landingStrategy: LandingStrategy</code></dt>
         <dd>Стратегия посадки по умолчанию.</dd>
-        <dt><code>fallStrategy?: FallStrategy</code></dt>
-        <dd>Стратегия падения по умолчанию; без неё <code>cascade</code> отклоняется.</dd>
+        <dt><code>fallStrategy: FallStrategy</code></dt>
+        <dd>Стратегия падения по умолчанию.</dd>
       </dl>
 
-      <h3><code>ReelDef&lt;TData, TValue&gt;</code></h3>
+      <h3><code>ReelDef</code></h3>
       <dl class="api">
         <dt><code>id: string</code></dt>
         <dd>Идентификатор барабана; из него строятся <code>id</code> ячеек (<code>&lt;id&gt;_&lt;ряд&gt;</code>)
           и слотов (<code>&lt;id&gt;_slot_&lt;индекс&gt;</code>).</dd>
         <dt><code>rows?: number</code>, <code>buffer?: number</code></dt>
         <dd>Перекрывают поля конфига для этого барабана.</dd>
-        <dt><code>accessorFn?: (data: TData, index: CellIndex) =&gt; TValue | undefined</code></dt>
-        <dd>Перекрывает аксессор конфига.</dd>
         <dt><code>spinStrategy?</code>, <code>landingStrategy?</code>, <code>fallStrategy?</code></dt>
         <dd>Перекрывают стратегии машины, в том числе заданные <code>setStrategies</code>.</dd>
         <dt><code>meta?: ReelMeta</code></dt>
@@ -1541,21 +1478,22 @@ requestAnimationFrame(frame)</code></pre>
     </section>
 
     <section id="api-machine">
-      <h2><code>ReelsMachine&lt;TData, TValue&gt;</code></h2>
+      <h2><code>ReelsMachine&lt;TValue&gt;</code></h2>
       <p class="api-src"><code>src/core/reels/reels-machine.ts</code> · implements
         <code>ReelsModel&lt;TValue&gt;</code></p>
       <dl class="api">
         <div class="sub-h">Создание</div>
-        <dt><code>constructor(config: ReelsConfig&lt;TData, TValue&gt;)</code></dt>
+        <dt><code>constructor(config: ReelsConfig&lt;TValue&gt;)</code></dt>
         <dd>Создаёт барабаны и ряды по конфигу. Барабаны в фазе <code>idle</code>, слоты со значениями
-          наполнения.</dd>
+          наполнения. Бросает ошибку, если <code>getFillerValue</code> нет, а в данных нет ни одного
+          значения.</dd>
         <dt><code>readonly cellHeight: number</code></dt>
         <dd>Единица длины модели из конфига.</dd>
 
         <div class="sub-h">Данные и стратегии</div>
-        <dt><code>getData(): TData | null</code></dt>
+        <dt><code>getData(): ReelsData&lt;TValue&gt; | null</code></dt>
         <dd>Текущие данные раунда.</dd>
-        <dt><code>setData(data: TData | null): void</code></dt>
+        <dt><code>setData(data: ReelsData&lt;TValue&gt; | null): void</code></dt>
         <dd>Записывает данные раунда. Движение не запускает.</dd>
         <dt><code>getStrategies(): ReelStrategies</code></dt>
         <dd>Текущие стратегии по умолчанию.</dd>
@@ -1563,15 +1501,15 @@ requestAnimationFrame(frame)</code></pre>
         <dd>Заменяет стратегии по умолчанию; барабаны применяют их со следующего <code>spin</code>.</dd>
 
         <div class="sub-h">Состав</div>
-        <dt><code>getReels(): Reel&lt;TData, TValue&gt;[]</code></dt>
+        <dt><code>getReels(): Reel&lt;TValue&gt;[]</code></dt>
         <dd>Барабаны в порядке <code>config.reels</code>.</dd>
-        <dt><code>getReel(index: number): Reel&lt;TData, TValue&gt; | undefined</code></dt>
+        <dt><code>getReel(index: number): Reel&lt;TValue&gt; | undefined</code></dt>
         <dd>Барабан по индексу.</dd>
-        <dt><code>getRows(): Row&lt;TData, TValue&gt;[]</code></dt>
+        <dt><code>getRows(): Row&lt;TValue&gt;[]</code></dt>
         <dd>Ряды по числу <code>config.rows</code>.</dd>
-        <dt><code>getCell(index: CellIndex): Cell&lt;TData, TValue&gt; | undefined</code></dt>
+        <dt><code>getCell(index: CellIndex): Cell&lt;TValue&gt; | undefined</code></dt>
         <dd>Ячейка по адресу.</dd>
-        <dt><code>getGrid(): Cell&lt;TData, TValue&gt;[][]</code></dt>
+        <dt><code>getGrid(): Cell&lt;TValue&gt;[][]</code></dt>
         <dd>Ячейки по барабанам, <code>[барабан][ряд]</code>.</dd>
         <dt><code>getPhase(): ReelPhase</code></dt>
         <dd><code>landing</code>, <code>spinning</code> или <code>falling</code> — первая по этому порядку
@@ -1588,9 +1526,10 @@ requestAnimationFrame(frame)</code></pre>
           <code>signal</code>.</dd>
         <dt><code>cascade(options: CascadeOptions): Promise&lt;void&gt;</code></dt>
         <dd>Падение в барабанах с ячейками из <code>removed</code>. Резолвится после остановки всех,
-          отклоняется по <code>signal</code> и при отсутствии <code>fallStrategy</code>.</dd>
+          отклоняется по <code>signal</code>.</dd>
         <dt><code>slam(): void</code></dt>
-        <dd>Переводит посадку и падение всех барабанов к <code>settleFrames</code>.</dd>
+        <dd>Переводит посадку и падение всех барабанов к <code>settleFrames</code>. До их старта запоминает
+          промотку для ближайших <code>land</code> или <code>cascade</code>; <code>reset</code> её снимает.</dd>
         <dt><code>advance(deltaFrames: number): void</code></dt>
         <dd>Продвигает движения всех барабанов на <code>deltaFrames</code> кадров.</dd>
       </dl>
@@ -1610,10 +1549,8 @@ requestAnimationFrame(frame)</code></pre>
       <dl class="api">
         <dt><code>signal?: AbortSignal</code></dt>
         <dd>Отмена посадки: движения снимаются, промис отклоняется с <code>signal.reason</code>.</dd>
-        <dt><code>slamSignal?: AbortSignal</code></dt>
-        <dd>При срабатывании до вызова или во время посадки машина вызывает <code>slam()</code>.</dd>
         <dt><code>anticipation?: readonly number[]</code></dt>
-        <dd>Индексы барабанов с паузой anticipation.</dd>
+        <dd>Индексы барабанов с паузой anticipation; удержанные барабаны из списка пауз не дают.</dd>
         <dt><code>onReelLanded?: (reel: number) =&gt; void</code></dt>
         <dd>Вызывается после остановки барабана, в микрозадаче после <code>advance</code>.</dd>
         <dt><code>onReelAnticipated?: (reel: number) =&gt; void</code></dt>
@@ -1625,7 +1562,7 @@ requestAnimationFrame(frame)</code></pre>
       <dl class="api">
         <dt><code>removed: readonly CellIndex[]</code></dt>
         <dd>Ячейки, ушедшие из поля. Ряды вне диапазона барабана игнорируются.</dd>
-        <dt><code>signal?: AbortSignal</code>, <code>slamSignal?: AbortSignal</code></dt>
+        <dt><code>signal?: AbortSignal</code></dt>
         <dd>Как в <code>LandOptions</code>.</dd>
         <dt><code>onReelLanded?: (reel: number) =&gt; void</code></dt>
         <dd>Вызывается после остановки слотов барабана.</dd>
@@ -1633,7 +1570,7 @@ requestAnimationFrame(frame)</code></pre>
     </section>
 
     <section id="api-reel">
-      <h2><code>Reel&lt;TData, TValue&gt;</code></h2>
+      <h2><code>Reel&lt;TValue&gt;</code></h2>
       <p class="api-src"><code>src/core/reels/reel.ts</code> · implements <code>ReelModel&lt;TValue&gt;</code>.
         Барабаны создаёт машина; ваш код получает их через <code>getReels</code> и <code>getReel</code>.</p>
       <dl class="api">
@@ -1644,17 +1581,15 @@ requestAnimationFrame(frame)</code></pre>
         <dd>Индекс в <code>config.reels</code>.</dd>
         <dt><code>readonly rows: number</code></dt>
         <dd>Видимые ряды с учётом <code>ReelDef.rows</code>.</dd>
-        <dt><code>readonly def: ReelDef&lt;TData, TValue&gt;</code></dt>
+        <dt><code>readonly def: ReelDef</code></dt>
         <dd>Описание барабана из конфига.</dd>
-        <dt><code>readonly machine: ReelsMachine&lt;TData, TValue&gt;</code></dt>
+        <dt><code>readonly machine: ReelsMachine&lt;TValue&gt;</code></dt>
         <dd>Машина-владелец.</dd>
 
         <div class="sub-h">Чтение</div>
         <dt><code>getPhase(): ReelPhase</code></dt>
         <dd>Фаза текущего движения; без движения <code>idle</code>.</dd>
-        <dt><code>getRevision(): number</code></dt>
-        <dd>Число, которое растёт при каждом изменении слотов барабана.</dd>
-        <dt><code>getCells(): Cell&lt;TData, TValue&gt;[]</code>, <code>getCell(row: number): Cell | undefined</code></dt>
+        <dt><code>getCells(): Cell&lt;TValue&gt;[]</code>, <code>getCell(row: number): Cell | undefined</code></dt>
         <dd>Ячейки барабана сверху вниз.</dd>
         <dt><code>getStrip(): readonly Readonly&lt;StripSlot&lt;TValue&gt;&gt;[]</code></dt>
         <dd>Слоты в порядке создания; порядок не меняется.</dd>
@@ -1663,77 +1598,55 @@ requestAnimationFrame(frame)</code></pre>
         <dt><code>getSlotAt(row: number): Readonly&lt;StripSlot&lt;TValue&gt;&gt; | undefined</code></dt>
         <dd>Слот, стоящий в ряду сейчас.</dd>
         <dt><code>readValue(row: number): TValue | undefined</code></dt>
-        <dd>Значение ряда в данных раунда через <code>accessorFn</code>.</dd>
+        <dd>Значение ряда в данных раунда, <code>data[index][row]</code>.</dd>
 
         <div class="sub-h">Раунд</div>
         <dt><code>reset(): void</code></dt>
         <dd>В <code>idle</code>: путь 0, видимые слоты получают значения из данных раунда.</dd>
         <dt><code>spin(): void</code></dt>
-        <dd>В <code>idle</code>: фиксирует стратегии, запускает <code>SpinMotion</code>, переводит слоты в позу
-          движения.</dd>
+        <dd>В <code>idle</code>: фиксирует стратегии, запускает <code>SpinMotion</code> по плану
+          <code>spinStrategy</code>, переводит слоты в позу движения.</dd>
         <dt><code>land(options?: ReelLandOptions): Promise&lt;void&gt;</code></dt>
         <dd>В <code>spinning</code>: строит план <code>landingStrategy</code> и запускает
           <code>LandingMotion</code>. В другой фазе резолвится сразу.</dd>
         <dt><code>cascade(options: ReelCascadeOptions): Promise&lt;void&gt;</code></dt>
         <dd>В <code>idle</code> при непустом <code>removedRows</code>: падение по плану
-          <code>fallStrategy</code>; иначе резолвится сразу. Без <code>fallStrategy</code> синхронно бросает
-          <code>Error</code>; <code>ReelsMachine.cascade</code> возвращает его отклонённым промисом.</dd>
+          <code>fallStrategy</code>; иначе резолвится сразу.</dd>
         <dt><code>slam(): void</code></dt>
         <dd>Переводит текущее движение к <code>settleFrames</code>.</dd>
         <dt><code>advance(deltaFrames: number): void</code></dt>
         <dd>Продвигает текущее движение; закончившееся движение снимает и резолвит его промис.</dd>
       </dl>
-
-      <h3><code>ReelLandOptions</code></h3>
-      <dl class="api">
-        <dt><code>signal?: AbortSignal</code></dt>
-        <dd>Отмена посадки барабана.</dd>
-        <dt><code>order?: number</code></dt>
-        <dd>Порядковый номер среди садящихся; по умолчанию индекс барабана.</dd>
-        <dt><code>anticipationPauses?: number</code></dt>
-        <dd>Число пауз anticipation до посадки, включая собственную; по умолчанию 0.</dd>
-        <dt><code>isAnticipating?: boolean</code></dt>
-        <dd>У барабана есть собственная пауза; по умолчанию <code>false</code>.</dd>
-        <dt><code>onAnticipated?: () =&gt; void</code></dt>
-        <dd>Вызывается в кадре начала собственной паузы.</dd>
-      </dl>
-
-      <h3><code>ReelCascadeOptions</code></h3>
-      <dl class="api">
-        <dt><code>removedRows: readonly number[]</code></dt>
-        <dd>Ряды, ушедшие из поля.</dd>
-        <dt><code>order?: number</code></dt>
-        <dd>Порядковый номер среди падающих; по умолчанию индекс барабана.</dd>
-        <dt><code>signal?: AbortSignal</code></dt>
-        <dd>Отмена падения.</dd>
-      </dl>
+      <p>Опции барабана заполняет машина: <code>ReelLandOptions</code> — <code>signal</code>,
+        <code>order</code>, <code>anticipationPauses</code>, <code>isAnticipating</code>,
+        <code>onAnticipated</code>; <code>ReelCascadeOptions</code> — <code>removedRows</code>,
+        <code>order</code>, <code>signal</code>. Без машины <code>order</code> по умолчанию — индекс барабана,
+        пауз нет.</p>
     </section>
 
     <section id="api-cell">
       <h2><code>Cell</code>, <code>Row</code> и типы ячеек</h2>
       <p class="api-src"><code>src/core/reels/cell.ts</code>, <code>row.ts</code>, <code>types.ts</code></p>
 
-      <h3><code>Cell&lt;TData, TValue&gt;</code></h3>
+      <h3><code>Cell&lt;TValue&gt;</code></h3>
       <dl class="api">
         <dt><code>readonly id: string</code></dt>
         <dd><code>&lt;reel.id&gt;_&lt;row&gt;</code>.</dd>
         <dt><code>readonly index: CellIndex</code></dt>
         <dd>Адрес ячейки.</dd>
-        <dt><code>readonly reel: Reel&lt;TData, TValue&gt;</code>, <code>readonly machine: ReelsMachine&lt;TData, TValue&gt;</code></dt>
+        <dt><code>readonly reel: Reel&lt;TValue&gt;</code>, <code>readonly machine: ReelsMachine&lt;TValue&gt;</code></dt>
         <dd>Барабан и машина ячейки.</dd>
         <dt><code>getValue(): TValue | undefined</code></dt>
         <dd>Значение ячейки в данных раунда.</dd>
         <dt><code>getSlot(): Readonly&lt;StripSlot&lt;TValue&gt;&gt; | undefined</code></dt>
         <dd>Слот, стоящий в ячейке сейчас.</dd>
-        <dt><code>getContext(): CellContext&lt;TData, TValue&gt;</code></dt>
-        <dd>Машина, барабан, ячейка и <code>getValue</code> одним объектом.</dd>
       </dl>
 
-      <h3><code>Row&lt;TData, TValue&gt;</code></h3>
+      <h3><code>Row&lt;TValue&gt;</code></h3>
       <dl class="api">
-        <dt><code>readonly index: number</code>, <code>readonly machine: ReelsMachine&lt;TData, TValue&gt;</code></dt>
+        <dt><code>readonly index: number</code>, <code>readonly machine: ReelsMachine&lt;TValue&gt;</code></dt>
         <dd>Номер ряда и машина.</dd>
-        <dt><code>getCells(): Cell&lt;TData, TValue&gt;[]</code></dt>
+        <dt><code>getCells(): Cell&lt;TValue&gt;[]</code></dt>
         <dd>Ячейки ряда слева направо; барабан без такого ряда пропускается.</dd>
       </dl>
 
@@ -1741,8 +1654,9 @@ requestAnimationFrame(frame)</code></pre>
       <dl class="api">
         <dt><code>type CellIndex = { readonly reel: number; readonly row: number }</code></dt>
         <dd>Адрес ячейки.</dd>
-        <dt><code>type CellContext&lt;TData, TValue&gt; = { machine; reel; cell; getValue(): TValue | undefined }</code></dt>
-        <dd>Результат <code>Cell.getContext()</code>.</dd>
+        <dt><code>type ReelsData&lt;TValue&gt; = readonly (readonly (TValue | undefined)[])[]</code></dt>
+        <dd>Данные раунда: значения ячеек по барабанам, <code>[барабан][ряд]</code>; <code>undefined</code> —
+          ячейки в результате нет.</dd>
         <dt><code>type StripSlot&lt;TValue&gt; = { readonly id: string; value: TValue; offset: number; moving: boolean }</code></dt>
         <dd>Слот ленты. <code>value</code> — значение, которое слот показывает; <code>offset</code> — позиция в
           единицах длины, в диапазоне ленты везде, кроме падения каскада; <code>moving</code> — поза движения.
@@ -1771,9 +1685,7 @@ requestAnimationFrame(frame)</code></pre>
       <h3><code>ReelModel&lt;TValue&gt;</code></h3>
       <dl class="api">
         <dt><code>readonly rows: number</code></dt>
-        <dd>Высота маски полосы в ячейках.</dd>
-        <dt><code>getRevision(): number</code></dt>
-        <dd>Число, которое растёт при каждом изменении слотов барабана; барабан с прежним значением адаптер не перерисовывает.</dd>
+        <dd>Высота видимой зоны барабана в ячейках: по ней адаптер строит маску.</dd>
         <dt><code>getStrip(): readonly Readonly&lt;StripSlot&lt;TValue&gt;&gt;[]</code></dt>
         <dd>Слоты в постоянном порядке; по индексу адаптер хранит <code>CellView</code>.</dd>
         <dt><code>getVisibleSlotIndices(): number[]</code></dt>
@@ -1787,7 +1699,7 @@ requestAnimationFrame(frame)</code></pre>
 
       <h3><code>ReelStrategies</code></h3>
       <dl class="api">
-        <dt><code>spinStrategy: SpinStrategy</code>, <code>landingStrategy: LandingStrategy</code>, <code>fallStrategy?: FallStrategy</code></dt>
+        <dt><code>spinStrategy: SpinStrategy</code>, <code>landingStrategy: LandingStrategy</code>, <code>fallStrategy: FallStrategy</code></dt>
         <dd>Набор стратегий машины или барабана.</dd>
       </dl>
 
@@ -1799,10 +1711,15 @@ requestAnimationFrame(frame)</code></pre>
         <dd>Высота ячейки и длина ленты <code>(rows + buffer) × cellHeight</code>.</dd>
       </dl>
 
-      <h3><code>SpinStrategy</code></h3>
+      <h3><code>SpinStrategy</code>, <code>SpinPlan</code></h3>
       <dl class="api">
-        <dt><code>step(deltaFrames: number, context: ReelContext): number</code></dt>
-        <dd>Путь ленты за <code>deltaFrames</code> кадров; знак задаёт направление.</dd>
+        <div class="sub-h">SpinStrategy</div>
+        <dt><code>plan(context: ReelContext): SpinPlan</code></dt>
+        <dd>План прокрутки; барабан строит его один раз на старте спина.</dd>
+        <div class="sub-h">SpinPlan</div>
+        <dt><code>positionAt(frames: number): number</code></dt>
+        <dd>Путь ленты от старта спина через <code>frames</code> кадров; знак задаёт направление. Конца у плана
+          нет: прокрутка идёт до <code>land</code>.</dd>
       </dl>
 
       <h3><code>LandingStrategy</code>, <code>LandingContext</code>, <code>LandingPlan</code></h3>
@@ -1865,7 +1782,7 @@ requestAnimationFrame(frame)</code></pre>
       <h3><code>LinearSpinStrategy</code></h3>
       <dl class="api">
         <dt><code>new LinearSpinStrategy(options: LinearSpinOptions)</code></dt>
-        <dd>Прокрутка с постоянной скоростью: <code>step = speed × deltaFrames</code>.</dd>
+        <dd>Прокрутка с постоянной скоростью: <code>positionAt(frames) = speed × frames</code>.</dd>
         <dt><code>speed: number</code></dt>
         <dd>Скорость вращения барабана.</dd>
       </dl>
@@ -1892,6 +1809,16 @@ requestAnimationFrame(frame)</code></pre>
         <dt><code>anticipationCells?: number</code></dt>
         <dd>Дополнительный путь на каждую паузу anticipation, в ячейках; по умолчанию 0.</dd>
       </dl>
+      <pre><code>путь = оборот ленты + недокрученный минимум вращения + order × staggerCells
+       + anticipationPauses × anticipationCells + тормозной путь + путь отскока + добор до границы ячейки</code></pre>
+      <ul>
+        <li>Оборот ленты в пути: каждый слот переносится хотя бы раз и получает значение из данных раунда.</li>
+        <li>Недокрученный минимум — <code>max(0, minSpinFrames − spunFrames)</code> кадров равномерного хода.</li>
+        <li>Паузы anticipation лежат на равномерном участке, slam проматывает их вместе с ним;
+          <code>anticipationFrames</code> — кадр, в котором барабан встал бы без собственной паузы.</li>
+        <li>Длительность отскока подобрана по производной <code>easeOutBack</code> в нуле: скорость на входе в
+          отскок равна <code>handoverSpeed</code>, скачка скорости нет.</li>
+      </ul>
 
       <h3><code>GravityFallStrategy</code></h3>
       <dl class="api">
@@ -1909,66 +1836,18 @@ requestAnimationFrame(frame)</code></pre>
         <dt><code>bounceFrames?: number</code></dt>
         <dd>Длительность отскока в кадрах; по умолчанию 0.</dd>
       </dl>
-    </section>
-
-    <section id="api-internal">
-      <h2>Внутренние классы</h2>
-      <p>Классы ниже ваш код не создаёт: их создаёт <code>Reel</code>. Описание показывает устройство
-        барабана; напрямую ваш код с этими классами не работает.</p>
-
-      <h3><code>ReelStrip&lt;TValue&gt;</code></h3>
-      <p class="api-src"><code>src/core/reels/reel-strip.ts</code></p>
-      <dl class="api">
-        <dt><code>constructor(id: string, context: ReelContext, createValue: () =&gt; TValue)</code></dt>
-        <dd>Создаёт <code>rows + buffer</code> слотов со значениями <code>createValue()</code>.</dd>
-        <dt><code>getSlots(): readonly StripSlot&lt;TValue&gt;[]</code>, <code>getSlot(slotIndex: number): StripSlot&lt;TValue&gt;</code></dt>
-        <dd>Изменяемые слоты в порядке создания.</dd>
-        <dt><code>getOffset(): number</code></dt>
-        <dd>Путь ленты.</dd>
-        <dt><code>getRevision(): number</code></dt>
-        <dd>Число, которое растёт при каждом изменении слотов.</dd>
-        <dt><code>touch(): void</code></dt>
-        <dd>Увеличивает ревизию после записи значений или поз в обход методов ленты.</dd>
-        <dt><code>getVisibleSlotIndices(): number[]</code></dt>
-        <dd>Индексы слотов, отсортированные по позиции, без первых <code>buffer</code>.</dd>
-        <dt><code>moveTo(offset: number, onWrap?: (slot: StripSlot&lt;TValue&gt;) =&gt; void): void</code></dt>
-        <dd>Задаёт путь ленты, пересчитывает позиции; для перенесённых слотов вызывает <code>onWrap</code>.</dd>
-        <dt><code>place(slotIndex: number, position: number): void</code></dt>
-        <dd>Ставит слот на позицию без приведения к диапазону.</dd>
-        <dt><code>snap(): void</code></dt>
-        <dd>Округляет путь и позиции до границ ячеек; позы не меняет.</dd>
-        <dt><code>rebase(): void</code></dt>
-        <dd>Записывает текущие позиции в базы и обнуляет путь.</dd>
-      </dl>
-
-      <h3><code>ReelMotion</code> и движения</h3>
-      <p class="api-src"><code>src/core/reels/motions/</code></p>
-      <dl class="api">
-        <div class="sub-h">ReelMotion</div>
-        <dt><code>readonly phase: ReelPhase</code></dt>
-        <dd>Фаза барабана, пока идёт движение.</dd>
-        <dt><code>advance(deltaFrames: number): void</code></dt>
-        <dd>Шаг движения.</dd>
-        <dt><code>slam(): void</code></dt>
-        <dd>Переводит время к началу финального участка; без такого участка ничего не делает.</dd>
-        <dt><code>isDone(): boolean</code></dt>
-        <dd>Движение закончено; барабан его снимает.</dd>
-        <div class="sub-h">Реализации</div>
-        <dt><code>new SpinMotion(strip, strategy: SpinStrategy, context: ReelContext, onWrap)</code></dt>
-        <dd>Прокрутка без конца. <code>getSpunFrames(): number</code> — кадры с начала прокрутки.</dd>
-        <dt><code>new LandingMotion(strip, plan: LandingPlan, onWrap: (slot, remaining) =&gt; void, onAnticipated?)</code></dt>
-        <dd>Посадка по плану; <code>onWrap</code> получает остаток пути.</dd>
-        <dt><code>new FallMotion(strip, plan: FallPlan, slots: readonly FallingSlot[])</code></dt>
-        <dd>Падение каскада по плану.</dd>
-        <dt><code>type FallingSlot = { slotIndex; row; from; to }</code></dt>
-        <dd>Падающий слот: индекс, ряд назначения, начальная и конечная позиция.</dd>
-      </dl>
+      <pre><code>старт слота = order × staggerFrames + (нижний ряд падения − ряд слота) × rowStaggerFrames
+путь слота  = gravity × t² / 2 до касания ряда, затем отскок на bounceCells за bounceFrames</code></pre>
+      <p>Нижний слот барабана стартует первым, слот выше падает не меньше соседа снизу, поэтому слоты не
+        перекрываются.</p>
     </section>
 
     <section id="api-utils">
       <h2>Утилиты и константы</h2>
       <p class="api-src"><code>src/core/reels/utils.ts</code>, <code>constants.ts</code></p>
       <dl class="api">
+        <dt><code>getDataValues(data: ReelsData&lt;TValue&gt;): TValue[]</code></dt>
+        <dd>Значения данных раунда по всем ячейкам без пустых; из них машина берёт наполнение по умолчанию.</dd>
         <dt><code>wrapOffset(position: number, min: number, stripHeight: number): number</code></dt>
         <dd>Приводит позицию к диапазону <code>[min, min + stripHeight)</code>; позиция ближе
           <code>WRAP_EPSILON</code> к верхней границе переходит в начало диапазона.</dd>
@@ -1990,30 +1869,19 @@ requestAnimationFrame(frame)</code></pre>
     <section id="adapter-guide">
       <h2>Как работает адаптер</h2>
       <p><a href="../src/engine/reels/reels-view.ts"><code>ReelsView</code></a> — PIXI-<code>Container</code>.
-        Конструктор получает тикер, модель и <code>ReelsViewConfig</code> и выполняет шаги:</p>
-      <ol>
-        <li>Вычисляет <code>unitScale = config.cellHeight / model.cellHeight</code>.</li>
-        <li>Создаёт <code>ReelView</code> на каждый барабан модели, в нём — по <code>CellView</code> на слот
-          ленты через <code>createCellView</code>.</li>
-        <li>Ставит центр верхней ячейки барабана <code>i</code> в точку <code>getReelPosition(i)</code>, по
-          умолчанию <code>(cellWidth × i, 0)</code>.</li>
-        <li>Группирует барабаны с одинаковым <code>y</code> в полосу и накрывает её одной маской: по ширине — от
-          левого барабана до правого плюс половина ячейки с каждой стороны, по высоте — <code>rows × cellHeight</code>
-          самого высокого барабана полосы, от <code>y − cellHeight / 2</code>.</li>
-        <li>Переносит слоты в <code>CellView</code> и добавляет колбэк <code>step</code> в тикер.</li>
-      </ol>
-      <p>На каждом кадре <code>step</code> вызывает <code>model.advance(ticker.deltaTime)</code>, затем
-        <code>sync</code>. <code>sync</code> сравнивает ревизию каждого барабана с последней отрисованной и
-        для изменившихся вызывает <code>ReelView.sync</code>: тот задаёт каждому <code>CellView</code> барабана
-        <code>y = slot.offset × unitScale</code>, <code>setValue(slot.value)</code> и
-        <code>setMoving(slot.moving)</code>.</p>
+        Конструктор создаёт <code>ReelView</code> на каждый барабан модели, в нём — по <code>CellView</code> на
+        слот ленты через <code>createCellView</code>, расставляет барабаны и накрывает их масками, затем
+        добавляет колбэк <code>step</code> в тикер. Кадр адаптера описан в разделе
+        <a href="#guide-frame">«Кадр и единицы»</a>.</p>
       <ul>
+        <li>Барабаны с одинаковым <code>y</code> делят маску-полосу: одна <code>Graphics</code> с прямоугольником
+          видимой зоны на каждый барабан — ширина <code>cellWidth</code>, высота <code>rows × cellHeight</code>
+          своего барабана, от <code>y − cellHeight / 2</code>. Буферные слоты лежат над прямоугольником.</li>
         <li>Точка <code>(0, 0)</code> <code>CellView</code> — центр ячейки.</li>
         <li><code>getCellView({ reel, row })</code> находит <code>CellView</code> по текущим позициям слотов.
           На прокрутке и после каскада по одному адресу оказываются разные <code>CellView</code>.</li>
-        <li>Пока ревизия барабана не изменилась, адаптер его <code>CellView</code> не трогает. Ваш код может
-          временно перенести <code>CellView</code> стоящего барабана в другой контейнер — например, поднять
-          выигравший символ над затемнением — и вернуть до следующего движения.</li>
+        <li><code>CellView</code>, перенесённый в другой контейнер, адаптер не трогает, пока ваш код не вернёт
+          его в барабан: так выигравший символ поднимается над затемнением.</li>
         <li>Над одной моделью — один <code>ReelsView</code>: каждый экземпляр вызывает
           <code>advance</code>.</li>
         <li><code>destroy()</code> снимает <code>step</code> с тикера и уничтожает контейнер вместе с
@@ -2057,8 +1925,8 @@ requestAnimationFrame(frame)</code></pre>
         <dt><code>setMoving(moving: boolean): void</code></dt>
         <dd>Переключает позу движения.</dd>
       </dl>
-      <p>Адаптер вызывает оба метода на каждой синхронизации барабана, поэтому реализация сравнивает аргумент
-        с текущим состоянием.</p>
+      <p>Адаптер вызывает оба метода на каждом кадре, поэтому реализация сравнивает аргумент с текущим
+        состоянием.</p>
 
       <h3><code>ReelView&lt;TValue, TView&gt;</code></h3>
       <p class="api-src"><code>src/engine/reels/reel-view.ts</code> · extends <code>Container</code>; создаёт
@@ -2069,7 +1937,8 @@ requestAnimationFrame(frame)</code></pre>
         <dt><code>getView(slotIndex: number): TView | undefined</code></dt>
         <dd><code>CellView</code> слота по индексу из <code>getStrip()</code>.</dd>
         <dt><code>sync(strip: readonly Readonly&lt;StripSlot&lt;TValue&gt;&gt;[], scale: number): void</code></dt>
-        <dd>Задаёт каждому <code>CellView</code> позицию, значение и позу слота.</dd>
+        <dd>Задаёт каждому <code>CellView</code> позицию, значение и позу слота; <code>CellView</code>,
+          перенесённый в другой контейнер, пропускает.</dd>
       </dl>
     </section>
 
@@ -2085,39 +1954,22 @@ requestAnimationFrame(frame)</code></pre>
         собирает набор из трёх стратегий с одной скоростью <code>SPIN_SPEED × speedFactor</code> для
         <code>LinearSpinStrategy</code> и равномерного участка <code>PlannedLandingStrategy</code>. Ускорения
         растут квадратом множителя, интервалы падения делятся на него. Длины заданы в пикселях зоны символов,
-        высота ячейки — 610 / 3 px.</p>
+        высота ячейки — 610 / 3 px. Падение есть во всех наборах: <code>fallStrategy</code> обязательна, хотя
+        каскада в бонусе нет.</p>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Набор</th><th><code>speedFactor</code></th><th><code>staggerCells</code></th><th><code>minSpinFrames</code></th><th><code>anticipationCells</code></th><th>Падение</th></tr></thead>
           <tbody>
             <tr><td><code>SLOT_STRATEGIES</code></td><td>1</td><td>2</td><td>30</td><td>24</td><td><code>GravityFallStrategy</code></td></tr>
             <tr><td><code>SLOT_TURBO_STRATEGIES</code></td><td>1.5</td><td>0.5</td><td>—</td><td>—</td><td><code>GravityFallStrategy</code></td></tr>
-            <tr><td><code>HOLD_WIN_STRATEGIES</code></td><td>1</td><td>0.5</td><td>30</td><td>—</td><td>—</td></tr>
-            <tr><td><code>HOLD_WIN_TURBO_STRATEGIES</code></td><td>1.5</td><td>0.15</td><td>—</td><td>—</td><td>—</td></tr>
+            <tr><td><code>HOLD_WIN_STRATEGIES</code></td><td>1</td><td>0.5</td><td>30</td><td>—</td><td><code>GravityFallStrategy</code></td></tr>
+            <tr><td><code>HOLD_WIN_TURBO_STRATEGIES</code></td><td>1.5</td><td>0.15</td><td>—</td><td>—</td><td><code>GravityFallStrategy</code></td></tr>
           </tbody>
         </table>
       </div>
-
-      <h3>Посадка <code>PlannedLandingStrategy</code></h3>
-      <pre><code>путь = оборот ленты + недокрученный минимум вращения + order × staggerCells
-       + anticipationPauses × anticipationCells + тормозной путь + путь отскока + добор до границы ячейки
-
-  скорость
-     speed ├──────────────┐
-           │  равномерно   \  линейное торможение
-  handover │                \────┐
-           │                     │  отскок easeOutBack
-         0 └─────────────────────┴──── кадры</code></pre>
-      <ul>
-        <li>Оборот ленты в пути: каждый слот переносится хотя бы раз и получает значение из данных раунда.</li>
-        <li>Добор до границы ячейки делает <code>fromOffset + путь</code> кратным высоте ячейки: барабан
-          останавливается ровно на границе ячейки.</li>
-        <li>Паузы anticipation лежат на равномерном участке, slam проматывает их вместе с ним.</li>
-        <li>Длительность отскока подобрана по производной <code>easeOutBack</code> в нуле: скорость на входе в
-          отскок равна <code>handoverSpeed</code>, скачка скорости нет. Точка промотки — начало отскока.</li>
-      </ul>
       <p>Кадры ниже посчитаны <code>PlannedLandingStrategy</code> с настройками <code>SLOT_STRATEGIES</code>:
-        <code>land</code> вызван на 40-м кадре прокрутки с <code>anticipation: [3, 4]</code>.</p>
+        <code>land</code> вызван на 40-м кадре прокрутки с <code>anticipation: [3, 4]</code>. Из чего складывается
+        путь посадки — в <a href="#api-strategies">API готовых стратегий</a>.</p>
       <figure>
         <div class="canvas">
           <svg class="dg" viewBox="0 0 1040 380" role="img" aria-label="Посадка пяти барабанов по кадрам: барабаны 0, 1, 2 встают на кадрах 46, 53, 59; барабаны 3 и 4 с паузами anticipation на кадрах 148 и 236; Stop на кадре 20 сажает все барабаны на кадре 35">
@@ -2212,25 +2064,21 @@ requestAnimationFrame(frame)</code></pre>
           одновременно. Если <code>land</code> вызван раньше 30 кадров прокрутки (<code>minSpinFrames</code>),
           равномерный ход удлиняется на недостающие кадры.</figcaption>
       </figure>
-
-      <h3>Падение <code>GravityFallStrategy</code></h3>
-      <pre><code>старт слота = order × staggerFrames + (нижний ряд падения − ряд слота) × rowStaggerFrames
-путь слота  = gravity × t² / 2 до касания ряда, затем отскок на bounceCells за bounceFrames</code></pre>
-      <p>Нижний слот барабана стартует первым, слот выше падает не меньше соседа снизу, поэтому слоты не
-        перекрываются. Точка промотки — кадр касания последнего слота.</p>
     </section>
 
     <section id="ex-slot">
       <h2>Слот 5×3</h2>
-      <pre><code>export const SLOT_REELS: ReelsConfig&lt;SlotReelsData, SymbolKey&gt; = {
+      <pre><code>export const SLOT_REELS: ReelsConfig&lt;SymbolKey&gt; = {
   reels: Array.from({ length: REELS_COUNT }, (_, index) =&gt; ({ id: `reel-${index}` })),
   rows: VISIBLE_SYMBOLS_COUNT,
   buffer: BUFFER_SYMBOLS_COUNT,
   cellHeight: CELL_HEIGHT,
-  accessorFn: (data, { reel, row }) =&gt; data[reel]?.[row],
   getFillerValue: () =&gt; getRandomSymbolKey(),
   ...SLOT_STRATEGIES,
 }</code></pre>
+      <p>Сервер присылает символы сеткой <code>[барабан][ряд]</code>, поэтому данные уходят в
+        <code>setData</code> без преобразования. <code>getFillerValue</code> даёт случайные символы игры: их
+        больше, чем символов в данных раунда.</p>
       <ul>
         <li><a href="../src/games/slot/ui/reels/reels-board.ts"><code>ReelsBoard</code></a> создаёт
           <code>ReelsView</code> с фабрикой <code>() =&gt; new ReelSymbol(pool)</code>.</li>
@@ -2254,7 +2102,6 @@ requestAnimationFrame(frame)</code></pre>
         <code>reel:landed</code>. На оба события подписан звук.</p>
       <pre><code>await this.machine.land({
   signal,
-  slamSignal: stopSignal,
   anticipation,
   onReelLanded: this.handleReelLanded,
   onReelAnticipated: this.handleReelAnticipated,
@@ -2263,20 +2110,24 @@ requestAnimationFrame(frame)</code></pre>
 
     <section id="ex-slam">
       <h2>Slam stop в игре</h2>
-      <p>Кнопка спина во время движения эмитит <code>ui:stopRequested</code>. Фаза
-        <code>spinning</code> превращает событие в сигнал <code>stopSignal</code> через
-        <code>emitter.signalOn</code> и передаёт его аргументом <code>reels.land(...)</code>; контроллер
-        передаёт сигнал в машину как <code>slamSignal</code>. Подписку снимает <code>scope.abort()</code> в
-        конце фазы.</p>
+      <p>Кнопка спина во время движения эмитит <code>ui:stopRequested</code>. Фаза вращения подписывается на
+        событие на время фазы и при <code>canStop</code> зовёт <code>reelsMachine.slam()</code>; контроллер
+        передаёт вызов машине. Stop, нажатый до посадки, машина применяет при её старте. Подписку снимает
+        <code>scope.abort()</code> в конце фазы. Так же устроены фазы <code>respin</code>,
+        <code>cascade</code> и <code>holdWinSpin</code>.</p>
       <pre><code>const scope = new AbortController()
-const stopSignal = this.emitter.signalOn('ui:stopRequested', {
-  signal: scope.signal,
-  filter: () =&gt; this.slotStore.canStop,
-})
+
+this.emitter.on(
+  'ui:stopRequested',
+  () =&gt; {
+    if (this.slotStore.canStop) this.reelsMachine.slam()
+  },
+  { signal: scope.signal }
+)
 
 try {
   // ...
-  await this.reels.land(this.slotStore.spinSymbols, this.slotStore.presentedAnticipation, signal, stopSignal)
+  await this.reelsMachine.land(this.slotStore.spinSymbols, this.slotStore.presentedAnticipation, signal)
 } finally {
   scope.abort()
 }</code></pre>
@@ -2288,7 +2139,7 @@ try {
       <h2>Респин</h2>
       <p>Шаг респина в ответе сервера содержит индексы удержанных барабанов. Фаза
         <a href="../src/games/slot/phases/respin.ts"><code>respin</code></a> вызывает
-        <code>reels.spin(step.held)</code> и <code>reels.land(stepSymbols, [])</code>; контроллер передаёт
+        <code>reelsMachine.spin(step.held)</code> и <code>reelsMachine.land(stepSymbols, [])</code>; контроллер передаёт
         <code>held</code> в <code>machine.spin({ held })</code>. Данные шага повторяют символы удержанных
         барабанов. Рамку удержания рисует <code>HeldFrameController</code> по <code>heldReels</code> из
         стора.</p>
@@ -2297,16 +2148,17 @@ try {
     <section id="ex-cascade">
       <h2>Каскад в игре</h2>
       <p>Фаза <a href="../src/games/slot/phases/cascade.ts"><code>cascade</code></a> вызывает
-        <code>reels.explode(removed)</code> — символы убранных ячеек проигрывают взрыв — затем
-        <code>reels.cascade(frame, removed)</code>.</p>
+        <code>reelsMachine.explode(removed)</code> — символы убранных ячеек проигрывают взрыв — затем
+        <code>reelsMachine.cascade(frame, removed)</code>. Взрыв — анимация <code>ReelSymbol</code>: у машины и
+        адаптера такого понятия нет, поэтому позу взрыва ставит и снимает контроллер.</p>
       <pre><code>// CellView взорванных ячеек берутся до каскада: модель переставит слоты
 const exploded = removed.flatMap((cell) =&gt; this.board.getCellView(cell) ?? [])
 
 this.machine.setData(symbolKeys)
 
-const falling = this.machine.cascade({ removed, signal, slamSignal: stopSignal, onReelLanded: this.handleReelLanded })
+const falling = this.machine.cascade({ removed, signal, onReelLanded: this.handleReelLanded })
 
-// Слоты уже подняты над зоной: адаптер перенесёт позиции раньше, чем кадр отрисуется
+// Позу взрыва синхронизация адаптера не снимает; слоты уже подняты над зоной
 exploded.forEach((symbol) =&gt; symbol.idle())
 
 await falling</code></pre>
@@ -2314,21 +2166,24 @@ await falling</code></pre>
 
     <section id="ex-hold-win">
       <h2>Hold &amp; Win</h2>
-      <p>Бонус использует вторую машину на тех же классах: 15 барабанов высотой 1, по одному на ячейку поля
-        5×3.</p>
-      <pre><code>export const HOLD_WIN_REELS: ReelsConfig&lt;HoldWinReelsData, HoldWinCell&gt; = {
+      <p>Бонус использует вторую рил-машину на тех же классах: 15 барабанов высотой 1, по одному на ячейку
+        поля 5×3. Ею владеет <code>HoldWinMachineController</code>.</p>
+      <pre><code>export const HOLD_WIN_REELS: ReelsConfig&lt;HoldWinCell&gt; = {
   reels: Array.from({ length: HOLD_WIN_CELLS_COUNT }, (_, index) =&gt; ({ id: `cell-${index}` })),
   rows: 1,
   buffer: BUFFER_SYMBOLS_COUNT,
   cellHeight: CELL_HEIGHT,
-  accessorFn: (data, { reel }) =&gt; {
-    const cell = toHoldWinCell(reel) // барабан reel × 3 + row → ячейка { reel, row } поля
-
-    return data[cell.reel]?.[cell.row]
-  },
   getFillerValue: () =&gt; getRandomSymbolKey(),
   ...HOLD_WIN_STRATEGIES,
 }
+
+// Поле шага [барабан][ряд] → 15 барабанов по одному ряду: барабан reel × 3 + row
+export const toHoldWinReelsData = (frame: readonly (readonly CoinValue[])[]): (CoinValue | undefined)[][] =&gt;
+  Array.from({ length: HOLD_WIN_CELLS_COUNT }, (_, index) =&gt; {
+    const { reel, row } = toHoldWinCell(index)
+
+    return [frame[reel]?.[row]]
+  })
 
 export const getHoldWinReelPosition = (index: number): PointData =&gt; {
   const { reel, row } = toHoldWinCell(index)
@@ -2336,6 +2191,8 @@ export const getHoldWinReelPosition = (index: number): PointData =&gt; {
   return { x: CELL_WIDTH * reel, y: CELL_HEIGHT * row }
 }</code></pre>
       <ul>
+        <li>Контроллер раскладывает поле шага по барабанам <code>toHoldWinReelsData</code> перед
+          <code>setData</code>.</li>
         <li><code>getReelPosition</code> ставит барабаны сеткой в тех же координатах, что ячейки основной
           доски. Барабаны одного ряда поля имеют одинаковый <code>y</code> и делят маску: 15 барабанов рисуют три
           маски.</li>
@@ -2379,111 +2236,6 @@ export const getHoldWinReelPosition = (index: number): PointData =&gt; {
           </tbody>
         </table>
       </div>
-      <figure>
-        <div class="canvas">
-          <svg class="dg" viewBox="0 0 1040 580" role="img" aria-label="Три части машины: игра импортирует ядро и адаптер, адаптер импортирует из ядра только типы">
-            <defs>
-              <marker id="p-k" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mk"/></marker>
-            </defs>
-
-            <rect x="10" y="16" width="1020" height="170" rx="6" class="band-game"/>
-            <text x="26" y="48" class="band-t t-game">Игра</text>
-            <text x="26" y="68" class="sub">games/slot</text>
-
-            <rect x="10" y="222" width="1020" height="120" rx="6" class="band-engine"/>
-            <text x="26" y="254" class="band-t t-engine">Адаптер</text>
-            <text x="26" y="274" class="sub">engine/reels</text>
-
-            <rect x="10" y="378" width="1020" height="182" rx="6" class="band-core"/>
-            <text x="26" y="410" class="band-t t-core">Ядро</text>
-            <text x="26" y="430" class="sub">core/reels</text>
-
-            <!-- игра -->
-            <rect x="150" y="52" width="160" height="116" rx="4" class="b-game"/>
-            <text x="162" y="74" class="h">phases/</text>
-            <text x="162" y="96">spinning · result</text>
-            <text x="162" y="114">cascade · respin</text>
-            <text x="162" y="132">holdWinIntro</text>
-            <text x="162" y="150">holdWinSpin/Collect</text>
-
-            <rect x="370" y="52" width="190" height="116" rx="4" class="b-game"/>
-            <text x="382" y="74" class="h">controllers/reels/</text>
-            <text x="382" y="96">ReelsMachineController</text>
-            <text x="382" y="114">HoldWinController</text>
-            <text x="382" y="132" class="sub">+ листья оверлеев</text>
-
-            <rect x="640" y="52" width="180" height="116" rx="4" class="b-game"/>
-            <text x="652" y="74" class="h">ui/reels/</text>
-            <text x="652" y="96">ReelsBoard</text>
-            <text x="652" y="114">HoldWinBoard</text>
-            <text x="652" y="132">ReelSymbol · Coin</text>
-
-            <rect x="860" y="52" width="160" height="116" rx="4" class="b-game"/>
-            <text x="872" y="74" class="h">reels.ts</text>
-            <text x="872" y="96">SLOT_REELS</text>
-            <text x="872" y="114">HOLD_WIN_REELS</text>
-            <text x="872" y="132">createStrategies</text>
-
-            <!-- адаптер -->
-            <rect x="640" y="252" width="180" height="76" rx="4" class="b-engine"/>
-            <text x="652" y="272" class="h">engine/reels/</text>
-            <text x="652" y="292">ReelsView → ReelView</text>
-            <text x="652" y="312">CellView — контракт</text>
-
-            <!-- ядро -->
-            <rect x="370" y="414" width="190" height="126" rx="4" class="b-core"/>
-            <text x="382" y="436" class="h">модель</text>
-            <text x="382" y="456">ReelsMachine</text>
-            <text x="382" y="474">Reel · ReelStrip</text>
-            <text x="382" y="492">Cell · Row</text>
-            <text x="382" y="510">motions/</text>
-            <text x="382" y="528" class="sub">Spin · Landing · Fall</text>
-
-            <rect x="640" y="414" width="180" height="126" rx="4" class="b-core"/>
-            <text x="652" y="436" class="h">types.ts</text>
-            <text x="652" y="456">ReelsModel</text>
-            <text x="652" y="474">ReelModel</text>
-            <text x="652" y="492">StripSlot</text>
-            <text x="652" y="510">ReelsConfig</text>
-
-            <rect x="860" y="414" width="160" height="126" rx="4" class="b-core"/>
-            <text x="872" y="436" class="h">strategies/</text>
-            <text x="872" y="456">LinearSpin</text>
-            <text x="872" y="474">PlannedLanding</text>
-            <text x="872" y="492">GravityFall</text>
-            <text x="872" y="510" class="sub">→ core/easing</text>
-
-            <!-- стрелки -->
-            <line x1="310" y1="110" x2="368" y2="110" class="ar dash" marker-end="url(#p-k)"/>
-            <text x="339" y="102" class="lbl" text-anchor="middle">type</text>
-
-            <line x1="560" y1="110" x2="638" y2="110" class="ar" marker-end="url(#p-k)"/>
-            <text x="600" y="102" class="lbl" text-anchor="middle">new</text>
-
-            <line x1="465" y1="168" x2="465" y2="412" class="ar" marker-end="url(#p-k)"/>
-            <text x="473" y="290" class="lbl">new ReelsMachine</text>
-            <text x="473" y="304" class="lbl">(config)</text>
-
-            <line x1="730" y1="168" x2="730" y2="250" class="ar" marker-end="url(#p-k)"/>
-            <text x="722" y="198" class="lbl" text-anchor="end">new ReelsView</text>
-            <text x="722" y="212" class="lbl" text-anchor="end">implements CellView</text>
-
-            <line x1="730" y1="328" x2="730" y2="412" class="ar dash" marker-end="url(#p-k)"/>
-            <text x="722" y="360" class="lbl" text-anchor="end">import type</text>
-            <text x="722" y="374" class="lbl" text-anchor="end">ReelsModel</text>
-
-            <line x1="940" y1="168" x2="940" y2="412" class="ar" marker-end="url(#p-k)"/>
-            <text x="932" y="290" class="lbl" text-anchor="end">new *Strategy</text>
-
-            <line x1="560" y1="477" x2="638" y2="477" class="ar dash" marker-end="url(#p-k)"/>
-            <text x="600" y="469" class="lbl" text-anchor="middle">implements</text>
-          </svg>
-        </div>
-        <figcaption>Полосы — части кода: игра, адаптер, ядро; пунктирная стрелка — <code>import type</code>.
-          Импорты идут в одну сторону: игра → адаптер → ядро. Адаптер импортирует из ядра только
-          типы, фазы импортируют контроллеры только как типы. Контроллеры и конфиг игры импортируют ядро
-          напрямую, поэтому в полосе адаптера под ними пусто.</figcaption>
-      </figure>
 
       <h3>Контроллеры</h3>
       <div class="table-wrap">
@@ -2493,183 +2245,30 @@ export const getHoldWinReelPosition = (index: number): PointData =&gt; {
             <tr>
               <td><a href="../src/games/slot/controllers/reels/reels-machine.ts"><code>ReelsMachineController</code></a></td>
               <td><code>ReelsMachine(SLOT_REELS)</code>, <code>ReelsBoard</code> с <code>ReelsView</code></td>
-              <td><code>spin(held)</code>, <code>land(data, anticipation, signal, stopSignal)</code>, <code>explode(removed)</code>, <code>cascade(data, removed, signal, stopSignal)</code>, <code>showAllWins</code>, <code>playWinLines</code>, <code>showTint</code>/<code>hideTint</code>, <code>show</code>/<code>hide</code></td>
+              <td><code>spin(held)</code>, <code>land(data, anticipation, signal)</code>, <code>slam()</code>, <code>explode(removed)</code>, <code>cascade(data, removed, signal)</code>, <code>showAllWins</code>, <code>playWinLines</code>, <code>showTint</code>/<code>hideTint</code>, <code>show</code>/<code>hide</code></td>
               <td><code>watch</code>: <code>initialSymbols</code> → <code>setData</code> + <code>reset</code>, <code>isTurboEnabled</code> → <code>setStrategies</code>; эмитит <code>reel:landed</code>, <code>reel:anticipationStarted</code></td>
             </tr>
             <tr>
-              <td><a href="../src/games/slot/controllers/reels/hold-win.ts"><code>HoldWinController</code></a></td>
+              <td><a href="../src/games/slot/controllers/reels/hold-win-machine.ts"><code>HoldWinMachineController</code></a></td>
               <td><code>ReelsMachine(HOLD_WIN_REELS)</code>, <code>HoldWinBoard</code></td>
-              <td><code>show(frame)</code>, <code>hide</code>, <code>spin(held)</code>, <code>land(frame, signal, stopSignal)</code>, <code>collect(staggerMs)</code></td>
+              <td><code>show(frame)</code>, <code>hide</code>, <code>spin(held)</code>, <code>land(frame, signal)</code>, <code>slam()</code>, <code>collect(staggerMs)</code></td>
               <td><code>watch</code>: <code>isTurboEnabled</code> → <code>setStrategies</code>; эмитит <code>holdWin:cellLanded</code></td>
             </tr>
           </tbody>
         </table>
       </div>
+      <p>Это две разные рил-машины: базовой доской владеет <code>ReelsMachineController</code>, полем бонуса —
+        <code>HoldWinMachineController</code>. Фазы держат их в полях <code>reelsMachine</code> и
+        <code>holdWinMachine</code>.</p>
       <p>Вложенные контроллеры <code>ReelsMachineController</code> лежат в слое оверлеев доски:
         <code>HeldFrameController</code> (подсветка <code>heldReels</code> из стора),
         <code>PaylinesController</code> (линии выплат и их превью при смене режима),
         <code>WinOverlayController</code> (поднимает выигравшие символы над затемнением, находит их через
         <code>ReelsView.getCellView</code>), <code>CascadeMultiplierController</code>.</p>
-      <figure>
-        <div class="canvas">
-          <svg class="dg" viewBox="0 0 1200 610" role="img" aria-label="Фазы вызывают ReelsMachineController и HoldWinController; контроллеры создают доски и машины; ReelsView вызывает advance машины; события уходят в эмиттер и звук; Stop приходит в фазы и уходит в машину как slamSignal">
-            <defs>
-              <marker id="g-k" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mk"/></marker>
-              <marker id="g-e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mk-ev"/></marker>
-              <marker id="g-s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mk-stop"/></marker>
-            </defs>
-
-            <!-- фазы -->
-            <rect x="290" y="30" width="670" height="60" rx="4" class="b-game"/>
-            <text x="302" y="54" class="h">Фазы FSM</text>
-            <text x="302" y="76">spinning · result · cascade · respin · holdWinIntro · holdWinSpin · holdWinCollect</text>
-
-            <!-- стор -->
-            <rect x="30" y="170" width="210" height="290" rx="4" class="b-game"/>
-            <text x="42" y="192" class="h">SlotStore</text>
-            <text x="42" y="212" class="sub">пишут только фазы</text>
-            <text x="42" y="240" class="sub">читают через watch:</text>
-            <text x="42" y="260">isTurboEnabled</text>
-            <text x="42" y="278">initialSymbols</text>
-            <text x="42" y="296">heldReels</text>
-            <text x="42" y="314">cascadeMultiplier</text>
-            <text x="42" y="342" class="sub">читают в момент вызова:</text>
-            <text x="42" y="362">stepPaylines</text>
-            <text x="42" y="380">spinHoldWin</text>
-
-            <!-- контроллеры -->
-            <rect x="290" y="170" width="350" height="90" rx="4" class="b-game"/>
-            <text x="302" y="192" class="h">ReelsMachineController</text>
-            <text x="302" y="214">spin · land · explode · cascade</text>
-            <text x="302" y="232">showAllWins · playWinLines</text>
-            <text x="302" y="250">showTint · hideTint · show · hide</text>
-
-            <rect x="680" y="170" width="280" height="90" rx="4" class="b-game"/>
-            <text x="692" y="192" class="h">HoldWinController</text>
-            <text x="692" y="214">show · hide · spin</text>
-            <text x="692" y="232">land · collect(staggerMs)</text>
-
-            <!-- доски и машины -->
-            <rect x="290" y="330" width="190" height="126" rx="4" class="b-game"/>
-            <text x="302" y="352" class="h">ReelsBoard</text>
-            <text x="302" y="370" class="sub">вложенные контроллеры:</text>
-            <text x="302" y="388">HeldFrame · Paylines</text>
-            <text x="302" y="406">WinOverlay</text>
-            <text x="302" y="424">CascadeMultiplier</text>
-            <text x="302" y="442">AnticipationGlowFrame</text>
-
-            <rect x="510" y="330" width="130" height="70" rx="4" class="b-core"/>
-            <text x="522" y="352" class="h">ReelsMachine</text>
-            <text x="522" y="372" class="sub">SLOT_REELS</text>
-
-            <rect x="680" y="330" width="130" height="70" rx="4" class="b-game"/>
-            <text x="692" y="352" class="h">HoldWinBoard</text>
-            <text x="692" y="372" class="sub">Coin</text>
-
-            <rect x="830" y="330" width="130" height="70" rx="4" class="b-core"/>
-            <text x="842" y="352" class="h">ReelsMachine</text>
-            <text x="842" y="372" class="sub">HOLD_WIN_REELS</text>
-
-            <!-- адаптеры -->
-            <rect x="290" y="530" width="190" height="60" rx="4" class="b-engine"/>
-            <text x="302" y="552" class="h">ReelsView</text>
-            <text x="302" y="572" class="sub">ReelView · ReelSymbol</text>
-
-            <rect x="680" y="530" width="130" height="60" rx="4" class="b-engine"/>
-            <text x="692" y="552" class="h">ReelsView</text>
-            <text x="692" y="572" class="sub">ReelView · Coin</text>
-
-            <!-- эмиттер и звук -->
-            <rect x="1000" y="100" width="180" height="60" rx="4" class="b-plain"/>
-            <text x="1012" y="122" class="h">GameEmitter</text>
-            <text x="1012" y="142" class="sub">события игры</text>
-
-            <rect x="1000" y="250" width="180" height="60" rx="4" class="b-plain"/>
-            <text x="1012" y="272" class="h">SoundController</text>
-            <text x="1012" y="292" class="sub">SFX по событиям</text>
-
-            <!-- стрелки: фазы -->
-            <line x1="465" y1="90" x2="465" y2="168" class="ar" marker-end="url(#g-k)"/>
-            <text x="473" y="134" class="lbl">await методов</text>
-
-            <line x1="940" y1="90" x2="940" y2="168" class="ar" marker-end="url(#g-k)"/>
-            <text x="932" y="150" class="lbl" text-anchor="end">await</text>
-
-            <path d="M290 60 H135 V168" class="ar" marker-end="url(#g-k)"/>
-            <text x="280" y="52" class="lbl" text-anchor="end">applySpin · advance*Step</text>
-
-            <!-- стрелки: стор -->
-            <line x1="240" y1="215" x2="288" y2="215" class="ar dash" marker-end="url(#g-k)"/>
-            <text x="264" y="207" class="lbl" text-anchor="middle">watch</text>
-
-            <line x1="240" y1="400" x2="288" y2="400" class="ar dash" marker-end="url(#g-k)"/>
-            <text x="264" y="392" class="lbl" text-anchor="middle">watch</text>
-
-            <!-- стрелки: владение -->
-            <line x1="385" y1="260" x2="385" y2="328" class="ar" marker-end="url(#g-k)"/>
-            <text x="393" y="298" class="lbl">new</text>
-
-            <line x1="575" y1="260" x2="575" y2="328" class="ar" marker-end="url(#g-k)"/>
-            <text x="583" y="286" class="lbl">spin · land</text>
-            <text x="583" y="300" class="lbl-stop">slamSignal</text>
-
-            <line x1="385" y1="456" x2="385" y2="528" class="ar" marker-end="url(#g-k)"/>
-            <text x="393" y="496" class="lbl">new ReelsView</text>
-
-            <line x1="480" y1="555" x2="570" y2="402" class="ar" marker-end="url(#g-k)"/>
-            <text x="540" y="490" class="lbl">advance</text>
-            <text x="540" y="504" class="lbl">ReelsModel</text>
-
-            <line x1="745" y1="260" x2="745" y2="328" class="ar" marker-end="url(#g-k)"/>
-            <text x="753" y="298" class="lbl">new</text>
-
-            <line x1="895" y1="260" x2="895" y2="328" class="ar" marker-end="url(#g-k)"/>
-            <text x="903" y="286" class="lbl">spin · land</text>
-            <text x="903" y="300" class="lbl-stop">slamSignal</text>
-
-            <line x1="745" y1="400" x2="745" y2="528" class="ar" marker-end="url(#g-k)"/>
-            <text x="753" y="470" class="lbl">new ReelsView</text>
-
-            <line x1="810" y1="555" x2="890" y2="402" class="ar" marker-end="url(#g-k)"/>
-            <text x="858" y="490" class="lbl">advance</text>
-
-            <!-- стрелки: события -->
-            <path d="M600 170 V130 H998" class="ar ev" marker-end="url(#g-e)"/>
-            <text x="612" y="122" class="lbl-ev">reel:landed · reel:anticipationStarted</text>
-
-            <line x1="960" y1="190" x2="1010" y2="162" class="ar ev" marker-end="url(#g-e)"/>
-            <text x="968" y="214" class="lbl-ev">holdWin:cellLanded</text>
-
-            <line x1="1090" y1="160" x2="1090" y2="248" class="ar ev" marker-end="url(#g-e)"/>
-            <text x="1098" y="238" class="lbl-ev">listen</text>
-
-            <!-- Stop -->
-            <path d="M1040 100 V70 H962" class="ar stop" marker-end="url(#g-s)"/>
-            <text x="968" y="40" class="lbl-stop">ui:stopRequested</text>
-            <text x="968" y="56" class="lbl-stop">→ signalOn → stopSignal</text>
-          </svg>
-        </div>
-        <figcaption>Бирюзовые пунктирные стрелки — события эмиттера, чёрные пунктирные — подписки
-          <code>watch</code>, красные — путь Stop. Кнопка эмитит <code>ui:stopRequested</code>, фаза превращает его в
-          <code>stopSignal</code> через <code>emitter.signalOn</code>, контроллер передаёт сигнал в
-          <code>land</code> или <code>cascade</code> машины как <code>slamSignal</code>.</figcaption>
-      </figure>
 
       <h3>Фазы раунда</h3>
       <p>Фазы импортируют контроллеры только как типы и к ядру и адаптеру не обращаются. Следующую фазу
         выбирает текущая по данным ответа в сторе: есть ли следующий шаг каскада, респина или бонуса.</p>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Фаза</th><th>Вызовы</th></tr></thead>
-          <tbody>
-            <tr><td><code>spinning</code></td><td><code>spin()</code> → запрос → <code>applySpin</code> → <code>land(spinSymbols, presentedAnticipation)</code> → <code>spin:landed</code></td></tr>
-            <tr><td><code>result</code></td><td><code>showAllWins</code>, <code>playWinLines</code>, <code>showTint</code>/<code>hideTint</code>; переход в <code>cascade</code>, <code>respin</code>, Hold &amp; Win, следующий спин турбо-серии или <code>idle</code></td></tr>
-            <tr><td><code>cascade</code></td><td><code>explode(removed)</code> → <code>advanceCascadeStep</code> → <code>cascade(frame, removed)</code></td></tr>
-            <tr><td><code>respin</code></td><td><code>spin(held)</code> → <code>land(stepSymbols, [])</code></td></tr>
-            <tr><td><code>holdWinIntro</code> / <code>holdWinSpin</code> / <code>holdWinCollect</code></td><td><code>reels.hide</code> + <code>holdWin.show</code>; <code>holdWin.spin</code> + <code>holdWin.land</code>; <code>holdWin.collect</code> → <code>holdWin.hide</code> + <code>reels.show</code></td></tr>
-          </tbody>
-        </table>
-      </div>
       <figure>
         <div class="canvas">
           <svg class="dg" viewBox="0 0 980 450" role="img" aria-label="Фазы раунда: idle, spinning, result и ветви cascade, respin, Hold and Win; каждая ветвь возвращается в result, из result раунд уходит в idle или в следующий спин турбо-серии">
@@ -2684,7 +2283,7 @@ export const getHoldWinReelPosition = (index: number): PointData =&gt; {
 
             <rect x="250" y="40" width="180" height="60" rx="6" class="b-game"/>
             <text x="340" y="64" class="h" text-anchor="middle">spinning</text>
-            <text x="340" y="84" class="sub" text-anchor="middle">reels.spin · land</text>
+            <text x="340" y="84" class="sub" text-anchor="middle">прокрутка · посадка</text>
 
             <rect x="470" y="175" width="180" height="60" rx="6" class="b-game"/>
             <text x="560" y="200" class="h" text-anchor="middle">result</text>
@@ -2692,23 +2291,23 @@ export const getHoldWinReelPosition = (index: number): PointData =&gt; {
 
             <rect x="750" y="40" width="180" height="60" rx="6" class="b-game"/>
             <text x="840" y="64" class="h" text-anchor="middle">cascade</text>
-            <text x="840" y="84" class="sub" text-anchor="middle">explode · cascade</text>
+            <text x="840" y="84" class="sub" text-anchor="middle">взрыв · падение</text>
 
             <rect x="750" y="175" width="180" height="60" rx="6" class="b-game"/>
             <text x="840" y="200" class="h" text-anchor="middle">respin</text>
-            <text x="840" y="220" class="sub" text-anchor="middle">spin(held) · land</text>
+            <text x="840" y="220" class="sub" text-anchor="middle">прокрутка без удержанных</text>
 
             <rect x="250" y="330" width="180" height="60" rx="6" class="b-game"/>
             <text x="340" y="354" class="h" text-anchor="middle">holdWinCollect</text>
-            <text x="340" y="374" class="sub" text-anchor="middle">collect · reels.show</text>
+            <text x="340" y="374" class="sub" text-anchor="middle">сбор монет · базовая доска</text>
 
             <rect x="470" y="330" width="180" height="60" rx="6" class="b-game"/>
             <text x="560" y="354" class="h" text-anchor="middle">holdWinIntro</text>
-            <text x="560" y="374" class="sub" text-anchor="middle">reels.hide · holdWin.show</text>
+            <text x="560" y="374" class="sub" text-anchor="middle">смена доски на поле бонуса</text>
 
             <rect x="750" y="330" width="180" height="60" rx="6" class="b-game"/>
             <text x="840" y="354" class="h" text-anchor="middle">holdWinSpin</text>
-            <text x="840" y="374" class="sub" text-anchor="middle">holdWin.spin · land</text>
+            <text x="840" y="374" class="sub" text-anchor="middle">прокрутка ячеек · посадка</text>
 
             <line x1="110" y1="175" x2="248" y2="64" class="ar" marker-end="url(#r-k)"/>
             <text x="172" y="108" class="lbl" text-anchor="end">ui:spinRequested</text>
@@ -2815,17 +2414,17 @@ export const getHoldWinReelPosition = (index: number): PointData =&gt; {
             <text x="180" y="284" class="lbl" text-anchor="middle">applySpin(result)</text>
 
             <line x1="90" y1="324" x2="638" y2="324" class="ar" marker-end="url(#q-k)"/>
-            <text x="364" y="318" class="lbl" text-anchor="middle">land(spinSymbols, anticipation, signal, stopSignal)</text>
+            <text x="364" y="318" class="lbl" text-anchor="middle">land(spinSymbols, anticipation, signal)</text>
 
             <line x1="640" y1="358" x2="838" y2="358" class="ar" marker-end="url(#q-k)"/>
             <text x="740" y="352" class="lbl" text-anchor="middle">setData(data)</text>
 
             <line x1="640" y1="392" x2="838" y2="392" class="ar" marker-end="url(#q-k)"/>
-            <text x="740" y="386" class="lbl" text-anchor="middle">land({ slamSignal, … })</text>
+            <text x="740" y="386" class="lbl" text-anchor="middle">land({ anticipation, … })</text>
 
             <line x1="840" y1="426" x2="642" y2="426" class="ar dash" marker-end="url(#q-k)"/>
             <text x="740" y="420" class="lbl" text-anchor="middle">onReelLanded(i) × барабан</text>
-            <text x="848" y="446" class="lbl-stop">Stop: slamSignal → slam()</text>
+            <text x="848" y="446" class="lbl-stop">Stop: фаза → slam()</text>
 
             <line x1="640" y1="460" x2="1008" y2="460" class="ar ev" marker-end="url(#q-e)"/>
             <text x="930" y="476" class="lbl-ev" text-anchor="middle">emit reel:landed</text>
@@ -2866,9 +2465,53 @@ export const getHoldWinReelPosition = (index: number): PointData =&gt; {
         <li><strong>Раунд целиком.</strong> <a href="../tests/games/slot/round.test.ts"><code>tests/games/slot/round.test.ts</code></a>
           проводит фазы с дублёрами контроллеров из
           <a href="../tests/setup/doubles.ts"><code>tests/setup/doubles.ts</code></a>; дублёры
-          <code>ReelsMachineController</code> и <code>HoldWinController</code> работают на настоящих машинах. Подход к тестам —
+          <code>ReelsMachineController</code> и <code>HoldWinMachineController</code> работают на настоящих машинах. Подход к тестам —
           <a href="testing.html">«Тестовая стратегия»</a>.</li>
       </ul>
+    </section>
+
+    <!-- ============================ Справочник ============================ -->
+
+    <div class="part"><span>Справочник</span></div>
+
+    <section id="glossary">
+      <h2>Словарь</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Термин</th><th>Определение</th><th>В коде</th></tr></thead>
+          <tbody>
+            <tr><td>Барабан</td><td><a href="#obj-reel">таблица «Объекты»</a></td><td><code>Reel</code>, <code>ReelDef</code></td></tr>
+            <tr><td>Ряд</td><td><a href="#obj-row">таблица «Объекты»</a></td><td><code>Row</code>, <code>CellIndex.row</code></td></tr>
+            <tr><td>Ячейка</td><td><a href="#obj-cell">таблица «Объекты»</a></td><td><code>Cell</code>, <code>CellIndex</code></td></tr>
+            <tr><td>Лента</td><td><a href="#obj-strip">таблица «Объекты»</a></td><td><code>ReelStrip</code></td></tr>
+            <tr><td>Слот ленты</td><td><a href="#obj-slot">таблица «Объекты»</a></td><td><code>StripSlot</code></td></tr>
+            <tr><td>Буфер</td><td>слоты над видимой зоной, за маской</td><td><code>buffer</code>, <code>DEFAULT_BUFFER</code></td></tr>
+            <tr><td>Путь ленты</td><td>сдвиг ленты от базовых позиций слотов, в единицах длины</td><td><code>ReelStrip.getOffset()</code></td></tr>
+            <tr><td>База слота</td><td>позиция слота при нулевом пути ленты</td><td>поле <code>bases</code> в <code>ReelStrip</code></td></tr>
+            <tr><td>Номер круга</td><td>сколько раз слот прошёл границу диапазона ленты в любую сторону</td><td><code>getLap</code></td></tr>
+            <tr><td>Перенос слота</td><td>слот, прошедший нижнюю границу ленты, переносится в буфер над видимой зоной и получает новое значение</td><td><code>onWrap</code>, <code>wrapOffset</code></td></tr>
+            <tr><td>Данные раунда</td><td>значения ячеек раунда: сетка <code>[барабан][ряд]</code></td><td><code>ReelsData</code>, <code>setData</code></td></tr>
+            <tr><td>Значение наполнения</td><td>значение слота вне результата раунда: на прокрутке, в буфере, в ячейке без значения в данных; без <code>getFillerValue</code> — случайное значение из данных раунда</td><td><code>getFillerValue</code></td></tr>
+            <tr><td>Кадр</td><td>единица времени модели: <code>deltaFrames = 1</code> соответствует одному кадру при 60 fps</td><td><code>advance(deltaFrames)</code></td></tr>
+            <tr><td>Единица длины</td><td>высота ячейки модели; в ней заданы пути, скорости и ускорения</td><td><code>ReelsConfig.cellHeight</code></td></tr>
+            <tr><td>Фаза барабана</td><td><code>idle</code>, <code>spinning</code>, <code>landing</code> или <code>falling</code>; равна фазе текущего движения</td><td><code>ReelPhase</code></td></tr>
+            <tr><td>Спин</td><td><a href="#motion-spin">таблица «Движения и фазы барабана»</a></td><td><code>spin</code>, <code>SpinMotion</code></td></tr>
+            <tr><td>Посадка</td><td><a href="#motion-land">таблица «Движения и фазы барабана»</a></td><td><code>land</code>, <code>LandingMotion</code></td></tr>
+            <tr><td>Падение</td><td><a href="#motion-fall">таблица «Движения и фазы барабана»</a></td><td><code>cascade</code>, <code>FallMotion</code></td></tr>
+            <tr><td>Stagger</td><td>задержка остановки каждого следующего барабана относительно предыдущего; порядок остановки — по индексу барабана</td><td><code>order</code>, <code>staggerCells</code>, <code>staggerFrames</code></td></tr>
+            <tr><td>Anticipation</td><td>пауза перед остановкой барабана: барабан крутится дольше остальных</td><td><code>LandOptions.anticipation</code>, <code>anticipationCells</code></td></tr>
+            <tr><td>Slam stop</td><td>перевод времени посадки или падения к началу финального участка; вызванный до их старта, применяется при старте</td><td><code>slam</code></td></tr>
+            <tr><td>Удержанный барабан</td><td>барабан, который не крутится в этом спине</td><td><code>SpinOptions.held</code></td></tr>
+            <tr><td>Стратегия</td><td><a href="#obj-strategy">таблица «Объекты»</a></td><td><code>SpinStrategy</code>, <code>LandingStrategy</code>, <code>FallStrategy</code></td></tr>
+            <tr><td>План движения</td><td>результат стратегии: путь на любом кадре движения; у посадки и падения — ещё длительность и начало финального участка</td><td><code>SpinPlan</code>, <code>LandingPlan</code>, <code>FallPlan</code></td></tr>
+            <tr><td>Финальный участок</td><td>часть плана от <code>settleFrames</code> до <code>totalFrames</code>; slam его не пропускает</td><td><code>settleFrames</code></td></tr>
+            <tr><td>Респин (механика игры)</td><td>повторный спин, в котором часть барабанов удержана</td><td><code>spin({ held })</code> и <code>land</code></td></tr>
+            <tr><td>Каскад (механика игры)</td><td>выигравшие символы уходят, уцелевшие падают вниз, сверху падают новые</td><td><code>cascade({ removed })</code></td></tr>
+            <tr><td>Hold &amp; Win (механика игры)</td><td>бонус: поле монет, пустые ячейки крутятся, монеты стоят</td><td>вторая машина из барабанов высотой 1</td></tr>
+            <tr><td>Линия выплат (механика игры)</td><td>ломаная через ячейки выигрышной комбинации</td><td>в ядре нет; игра находит <code>CellView</code> ячеек через <code>getCellView</code></td></tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <footer>Код: <code>src/core/reels</code>, <code>src/engine/reels</code>, <code>src/games/slot</code>.

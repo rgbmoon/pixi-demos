@@ -1,4 +1,9 @@
 import { WRAP_EPSILON } from './constants'
+import type { ReelsData } from './types'
+
+/** Значения данных раунда по всем ячейкам, без ячеек, которых в результате нет. */
+export const getDataValues = <TValue>(data: ReelsData<TValue>): TValue[] =>
+  data.flatMap((reel) => reel.filter((value): value is TValue => value !== undefined))
 
 /** Сколько пути не хватает до ближайшей границы ячейки: добор до ровной посадки слотов. */
 export const getAlignmentGap = (position: number, cellHeight: number): number => {

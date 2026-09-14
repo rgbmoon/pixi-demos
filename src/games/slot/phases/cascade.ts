@@ -17,16 +17,16 @@ export class CascadePhase implements Phase<PhaseName> {
 
   private readonly emitter: GameEmitter<GameEvents>
   private readonly slotStore: SlotStore
-  private readonly reels: ReelsMachineController
+  private readonly reelsMachine: ReelsMachineController
 
   constructor(
     @inject(SLOT_TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>,
     @inject(SLOT_TOKENS.SlotStore) slotStore: SlotStore,
-    @inject(SLOT_TOKENS.ReelsMachineController) reels: ReelsMachineController
+    @inject(SLOT_TOKENS.ReelsMachineController) reelsMachine: ReelsMachineController
   ) {
     this.emitter = emitter
     this.slotStore = slotStore
-    this.reels = reels
+    this.reelsMachine = reelsMachine
   }
 
   async enter(signal: AbortSignal): Promise<typeof PhaseName.result> {
@@ -37,22 +37,27 @@ export class CascadePhase implements Phase<PhaseName> {
       throw new Error('Cascade phase entered without a cascade step')
     }
 
-    // Stop принимается, пока идёт фаза и Stop доступен по стору: сигнал Stop и его подписку снимает scope
+    // Stop принимается, пока идёт фаза и Stop доступен по стору: подписку снимает scope. Stop во время
+    // взрыва машина запоминает и проматывает падение с его старта
     const scope = new AbortController()
-    const stopSignal = this.emitter.signalOn('ui:stopRequested', {
-      signal: scope.signal,
-      filter: () => this.slotStore.canStop,
-    })
+
+    this.emitter.on(
+      'ui:stopRequested',
+      () => {
+        if (this.slotStore.canStop) this.reelsMachine.slam()
+      },
+      { signal: scope.signal }
+    )
 
     try {
       this.emitter.emit('cascade:started', { removed: step.removed })
 
-      await this.reels.explode(step.removed, signal)
+      await this.reelsMachine.explode(step.removed, signal)
 
       // Шаг переключается между взрывом и падением: множитель шага появляется до новых символов
       this.slotStore.advanceCascadeStep()
 
-      await this.reels.cascade(step.frame, step.removed, signal, stopSignal)
+      await this.reelsMachine.cascade(step.frame, step.removed, signal)
 
       this.emitter.emit('cascade:landed', step)
 

@@ -1,4 +1,4 @@
-import type { SpinStrategy } from 'src/core/reels/types'
+import type { SpinPlan, SpinStrategy } from 'src/core/reels/types'
 
 import type { LinearSpinOptions } from './types'
 
@@ -10,7 +10,7 @@ export class LinearSpinStrategy implements SpinStrategy {
     this.speed = options.speed
   }
 
-  step(deltaFrames: number): number {
-    return this.speed * deltaFrames
+  plan(): SpinPlan {
+    return { positionAt: (frames) => this.speed * frames }
   }
 }

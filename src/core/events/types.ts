@@ -9,11 +9,9 @@ export type WaitForOptions<P> = {
   filter?: (payload: P) => boolean
 }
 
-export type SignalOnOptions<P> = {
-  // Время жизни подписки: без него сигнал, так и не дождавшийся события, держал бы подписчика вечно.
-  signal: AbortSignal
-  // Срабатывать не на любое событие, а на подходящее.
-  filter?: (payload: P) => boolean
+export type OnOptions = {
+  // Время жизни подписки: по отмене сигнала она снимается без вызова функции отписки.
+  signal?: AbortSignal
 }
 
 export type EventMap = Record<string, unknown>

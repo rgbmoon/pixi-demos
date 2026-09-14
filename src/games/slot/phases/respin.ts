@@ -20,18 +20,18 @@ export class RespinPhase implements Phase<PhaseName> {
 
   private readonly emitter: GameEmitter<GameEvents>
   private readonly slotStore: SlotStore
-  private readonly reels: ReelsMachineController
+  private readonly reelsMachine: ReelsMachineController
   private readonly ticker: GameTicker
 
   constructor(
     @inject(SLOT_TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>,
     @inject(SLOT_TOKENS.SlotStore) slotStore: SlotStore,
-    @inject(SLOT_TOKENS.ReelsMachineController) reels: ReelsMachineController,
+    @inject(SLOT_TOKENS.ReelsMachineController) reelsMachine: ReelsMachineController,
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker
   ) {
     this.emitter = emitter
     this.slotStore = slotStore
-    this.reels = reels
+    this.reelsMachine = reelsMachine
     this.ticker = ticker
   }
 
@@ -43,12 +43,16 @@ export class RespinPhase implements Phase<PhaseName> {
       throw new Error('Respin phase entered without a respin step')
     }
 
-    // Stop принимается, пока идёт фаза и Stop доступен по стору: сигнал Stop и его подписку снимает scope
+    // Stop принимается, пока идёт фаза и Stop доступен по стору: подписку снимает scope
     const scope = new AbortController()
-    const stopSignal = this.emitter.signalOn('ui:stopRequested', {
-      signal: scope.signal,
-      filter: () => this.slotStore.canStop,
-    })
+
+    this.emitter.on(
+      'ui:stopRequested',
+      () => {
+        if (this.slotStore.canStop) this.reelsMachine.slam()
+      },
+      { signal: scope.signal }
+    )
 
     // Шаг переключается до старта: подсветка удержанных барабанов появляется раньше прокрутки
     this.slotStore.advanceRoundStep()
@@ -59,9 +63,9 @@ export class RespinPhase implements Phase<PhaseName> {
       }
 
       this.emitter.emit('respin:started', { held: step.held })
-      this.reels.spin(step.held)
+      this.reelsMachine.spin(step.held)
 
-      await this.reels.land(this.slotStore.stepSymbols, [], signal, stopSignal)
+      await this.reelsMachine.land(this.slotStore.stepSymbols, [], signal)
 
       this.emitter.emit('respin:landed', step)
 

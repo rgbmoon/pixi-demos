@@ -20,7 +20,6 @@ export class ReelStrip<TValue> {
 
   /** Путь ленты: позиции слотов вычисляются из него и баз. */
   private offset = 0
-  private revision = 0
 
   constructor(id: string, context: ReelContext, createValue: () => TValue) {
     const { rows, buffer, cellHeight } = context
@@ -50,16 +49,6 @@ export class ReelStrip<TValue> {
     return this.offset
   }
 
-  /** Счётчик правок ленты: растёт на каждом сдвиге, перестановке и смене значений слотов. */
-  getRevision(): number {
-    return this.revision
-  }
-
-  /** Увеличивает ревизию после правки значений или поз слотов в обход методов ленты. */
-  touch(): void {
-    this.revision += 1
-  }
-
   /** Индексы слотов видимых рядов сверху вниз, отсортированные по позиции. */
   getVisibleSlotIndices(): number[] {
     return [...this.slots.keys()].sort((a, b) => this.slots[a].offset - this.slots[b].offset).slice(this.context.buffer)
@@ -87,15 +76,11 @@ export class ReelStrip<TValue> {
 
       onWrap?.(slot)
     }
-
-    this.revision += 1
   }
 
   /** Ставит слот на позицию без приведения к диапазону ленты: у падающих слотов каскада пути разные. */
   place(slotIndex: number, position: number): void {
     this.slots[slotIndex].offset = position
-
-    this.revision += 1
   }
 
   /**
@@ -126,7 +111,5 @@ export class ReelStrip<TValue> {
       this.bases[slotIndex] = slot.offset
       this.laps[slotIndex] = getLap(slot.offset, this.min, stripHeight)
     })
-
-    this.revision += 1
   }
 }

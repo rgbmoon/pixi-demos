@@ -21,8 +21,8 @@ import { WsTransport } from 'src/net/ws-transport'
 
 import {
   createBackgroundStub,
-  createHoldWinStub,
-  createReelsStub,
+  createHoldWinMachineStub,
+  createReelsMachineStub,
   createTickerStub,
   type PresentationLog,
 } from './doubles'
@@ -94,8 +94,8 @@ export const createRound = ({
 
   const log: PresentationLog = []
 
-  container.bind(SLOT_TOKENS.ReelsMachineController).toConstantValue(createReelsStub(log))
-  container.bind(SLOT_TOKENS.HoldWinController).toConstantValue(createHoldWinStub(log))
+  container.bind(SLOT_TOKENS.ReelsMachineController).toConstantValue(createReelsMachineStub(log))
+  container.bind(SLOT_TOKENS.HoldWinMachineController).toConstantValue(createHoldWinMachineStub(log))
   container.bind(SLOT_TOKENS.BackgroundController).toConstantValue(createBackgroundStub(log))
   container.bind(ENGINE_TOKENS.GameTicker).toConstantValue(createTickerStub(log))
 

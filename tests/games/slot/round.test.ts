@@ -8,7 +8,7 @@ import { SLOT_TOKENS } from 'src/games/slot/tokens'
 import { ForcedMechanic, PhaseName, StepDirection } from 'src/games/slot/types'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import type { HoldWinStub, ReelsStub } from '../../setup/doubles'
+import type { HoldWinMachineStub, ReelsMachineStub } from '../../setup/doubles'
 import { type Round, startRound } from '../../setup/round'
 
 /** Сид сценария `holdwin`, в котором выигрывает и базовый спин. */
@@ -35,7 +35,8 @@ afterEach(async () => {
   expect(notices).toEqual([])
 })
 
-const getReels = (current: Round) => current.container.get(SLOT_TOKENS.ReelsMachineController) as unknown as ReelsStub
+const getReelsMachine = (current: Round) =>
+  current.container.get(SLOT_TOKENS.ReelsMachineController) as unknown as ReelsMachineStub
 
 describe('раунд', () => {
   it('проводит выигрышный раунд от ставки до нового idle', async () => {
@@ -65,7 +66,7 @@ describe('раунд', () => {
   it('сажает барабаны ровно на серверную сетку', async () => {
     round = await startRound({ scenario: MockScenario.bigwin })
 
-    const reels = getReels(round)
+    const reels = getReelsMachine(round)
 
     await round.playSpin()
 
@@ -88,7 +89,7 @@ describe('раунд', () => {
     round = await startRound({ scenario: MockScenario.bigwin })
 
     const { store, emitter } = round
-    const reels = getReels(round)
+    const reels = getReelsMachine(round)
 
     round.requestSpin()
     await round.waitForPhase(PhaseName.spinning)
@@ -102,7 +103,7 @@ describe('раунд', () => {
     expect(round.log).toEqual(expect.arrayContaining(['slam', 'land']))
     expect(reels.readGrid()).toEqual(store.spinSymbols)
     expect(store.credit).toBe(store.spinResult?.balance)
-    // Сигнал Stop живёт только фазу вращения
+    // Подписка на Stop живёт только фазу вращения
     expect(emitter.listenerCounts()['ui:stopRequested'] ?? 0).toBe(0)
   })
 
@@ -156,7 +157,7 @@ describe('anticipation', () => {
 
     expect(store.spinAnticipation.length).toBeGreaterThan(0)
     // Барабаны получили ровно те паузы, что прислал сервер
-    expect(getReels(round).readAnticipation()).toEqual(store.spinAnticipation)
+    expect(getReelsMachine(round).readAnticipation()).toEqual(store.spinAnticipation)
     // Вспышка идёт вместе с показом всех линий, разбор линий — после них
     expect(log).toEqual(expect.arrayContaining(['flash', 'showAllWins', 'playWinLines']))
     expect(log.indexOf('flash')).toBeLessThan(log.indexOf('playWinLines'))
@@ -169,7 +170,7 @@ describe('anticipation', () => {
 
     // Выигрыш есть: вспышку отличает от обычного показа только пауза
     expect(round.store.spinWin).toBeGreaterThan(0)
-    expect(getReels(round).readAnticipation()).toEqual([])
+    expect(getReelsMachine(round).readAnticipation()).toEqual([])
     expect(round.log).not.toContain('flash')
   })
 
@@ -185,7 +186,7 @@ describe('anticipation', () => {
     // Сид даёт паузу и выигрыш: без них отсутствие вспышки ничего не доказывает
     expect(store.spinAnticipation.length).toBeGreaterThan(0)
     expect(store.spinWin).toBeGreaterThan(0)
-    expect(getReels(round).readAnticipation()).toEqual([])
+    expect(getReelsMachine(round).readAnticipation()).toEqual([])
     expect(log).not.toContain('flash')
   })
 })
@@ -195,7 +196,7 @@ describe('респин', () => {
     round = await startRound({ scenario: MockScenario.respin })
 
     const { store, emitter, log } = round
-    const reels = getReels(round)
+    const reels = getReelsMachine(round)
     const creditBefore = store.credit
     const { bet } = store
     const credits: number[] = []
@@ -243,7 +244,7 @@ describe('респин', () => {
     round = await startRound({ scenario: MockScenario.respin })
 
     const { store, emitter, log } = round
-    const reels = getReels(round)
+    const reels = getReelsMachine(round)
     const canStop: boolean[] = []
 
     emitter.on('respin:started', () => {
@@ -256,7 +257,7 @@ describe('респин', () => {
     expect(canStop.every(Boolean)).toBe(true)
     expect(log.indexOf('slam')).toBeGreaterThan(log.indexOf('respin'))
     expect(reels.readGrid()).toEqual(store.spinRespins.at(-1)?.frame)
-    // Сигнал Stop живёт только фазу респина
+    // Подписка на Stop живёт только фазу респина
     expect(emitter.listenerCounts()['ui:stopRequested'] ?? 0).toBe(0)
   })
 
@@ -282,7 +283,7 @@ describe('Hold & Win', () => {
     round = await startRound({ scenario: MockScenario.holdwin })
 
     const { store, emitter, log } = round
-    const holdWin = round.container.get(SLOT_TOKENS.HoldWinController) as unknown as HoldWinStub
+    const holdWinMachine = round.container.get(SLOT_TOKENS.HoldWinMachineController) as unknown as HoldWinMachineStub
     const creditBefore = store.credit
     const { bet } = store
     const credits: number[] = []
@@ -297,7 +298,7 @@ describe('Hold & Win', () => {
 
     // Каждый шаг сервера показан одной посадкой, поле встаёт на кадр последнего шага
     expect(log.filter((entry) => entry === 'holdWinLand')).toHaveLength(bonus.steps.length)
-    expect(holdWin.readGrid()).toEqual(bonus.steps.at(-1)?.frame)
+    expect(holdWinMachine.readGrid()).toEqual(bonus.steps.at(-1)?.frame)
     // Доска бонуса появляется до первого шага, сбор идёт после последнего, базовая доска возвращается после сбора
     expect(log.indexOf('showHoldWin')).toBeLessThan(log.indexOf('holdWinSpin'))
     expect(log.indexOf('holdWinCollect')).toBeGreaterThan(log.lastIndexOf('holdWinLand'))
@@ -344,7 +345,7 @@ describe('Hold & Win', () => {
 
     expect(canStop).toEqual(steps.map(() => true))
     expect(log.filter((entry) => entry === 'holdWinSlam')).toHaveLength(steps.length)
-    // Сигнал Stop живёт только фазу шага
+    // Подписка на Stop живёт только фазу шага
     expect(emitter.listenerCounts()['ui:stopRequested'] ?? 0).toBe(0)
   })
 
@@ -369,7 +370,7 @@ describe('каскад', () => {
     round = await startRound({ scenario: MockScenario.cascade })
 
     const { store, emitter, log } = round
-    const reels = getReels(round)
+    const reels = getReelsMachine(round)
     const creditBefore = store.credit
     const { bet } = store
     const credits: number[] = []
@@ -424,7 +425,7 @@ describe('каскад', () => {
     round = await startRound({ scenario: MockScenario.cascade })
 
     const { store, emitter, log } = round
-    const reels = getReels(round)
+    const reels = getReelsMachine(round)
     const canStop: boolean[] = []
 
     emitter.on('cascade:started', () => {
@@ -439,7 +440,7 @@ describe('каскад', () => {
     expect(canStop).toEqual(steps.map(() => true))
     expect(log.filter((entry) => entry === 'cascadeSlam')).toHaveLength(steps.length)
     expect(reels.readGrid()).toEqual(steps.at(-1)?.frame)
-    // Сигнал Stop живёт только фазу каскада
+    // Подписка на Stop живёт только фазу каскада
     expect(emitter.listenerCounts()['ui:stopRequested'] ?? 0).toBe(0)
   })
 

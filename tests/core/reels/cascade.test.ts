@@ -203,10 +203,53 @@ describe('каскад', () => {
     expect(readVisibleGrid(slammed)).toEqual(frame)
   })
 
+  it('по slam, вызванному до каскада, проматывает падение с его старта', async () => {
+    const frame = applyCascade(createGrid(), REMOVED)
+    const plain = await createLandedMachine()
+    const slammed = await createLandedMachine()
+
+    // Stop пришёл, пока барабаны стоят: например, во время взрыва символов
+    slammed.slam()
+
+    plain.setData(frame)
+    slammed.setData(frame)
+
+    const plainFalling = plain.cascade({ removed: REMOVED })
+    const slammedFalling = slammed.cascade({ removed: REMOVED })
+
+    const plainFrames = advanceUntilIdle(plain)
+    const slammedFrames = advanceUntilIdle(slammed)
+
+    await Promise.all([plainFalling, slammedFalling])
+
+    expect(slammedFrames).toBeLessThan(plainFrames)
+    expect(readVisibleGrid(slammed)).toEqual(frame)
+  })
+
+  it('не считает в stagger барабан, у которого убраны только ряды вне поля', async () => {
+    const frame = applyCascade(createGrid(), REMOVED)
+    const [plainFrames, withOutsideFrames] = await Promise.all(
+      [REMOVED, [...REMOVED, { reel: 1, row: ROWS + 2 }]].map(async (removed) => {
+        const machine = await createLandedMachine()
+
+        machine.setData(frame)
+
+        const falling = machine.cascade({ removed })
+        const frames = advanceUntilIdle(machine)
+
+        await falling
+
+        return frames
+      })
+    )
+
+    expect(withOutsideFrames).toBe(plainFrames)
+  })
+
   it('не трогает барабан без убранных ячеек и не объявляет его вставшим', async () => {
     const machine = await createLandedMachine()
     const untouched = machine.getReel(1)
-    const revision = untouched?.getRevision()
+    const before = untouched?.getStrip().map((slot) => ({ ...slot }))
     const landed: number[] = []
 
     machine.setData(applyCascade(createGrid(), REMOVED))
@@ -216,7 +259,7 @@ describe('каскад', () => {
     advanceUntilIdle(machine)
     await falling
 
-    expect(untouched?.getRevision()).toBe(revision)
+    expect(untouched?.getStrip()).toEqual(before)
     expect(landed.sort()).toEqual([...new Set(REMOVED.map((cell) => cell.reel))].sort())
   })
 
