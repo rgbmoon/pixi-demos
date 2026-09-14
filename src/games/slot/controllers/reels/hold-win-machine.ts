@@ -9,28 +9,23 @@ import { ENGINE_TOKENS } from 'src/engine/tokens'
 import { tweenAlpha } from 'src/engine/utils'
 import { HOLD_WIN_COLLECT_HOLD_MS, HOLD_WIN_SWAP_MS } from 'src/games/slot/constants'
 import type { GameEvents } from 'src/games/slot/events'
-import {
-  HOLD_WIN_REELS,
-  HOLD_WIN_STRATEGIES,
-  HOLD_WIN_TURBO_STRATEGIES,
-  type HoldWinReelsData,
-} from 'src/games/slot/reels'
+import { HOLD_WIN_REELS, HOLD_WIN_STRATEGIES, HOLD_WIN_TURBO_STRATEGIES } from 'src/games/slot/reels'
 import type { SlotStore } from 'src/games/slot/stores/slot'
 import { SLOT_TOKENS } from 'src/games/slot/tokens'
-import type { HoldWinCell } from 'src/games/slot/types'
+import type { CoinValue, HoldWinCell } from 'src/games/slot/types'
 import { HoldWinBoard } from 'src/games/slot/ui/reels/hold-win-board'
-import { formatAmount, toHoldWinCell, toHoldWinReel } from 'src/games/slot/utils'
+import { formatAmount, toHoldWinCell, toHoldWinReel, toHoldWinReelsData } from 'src/games/slot/utils'
 
 /**
- * Контроллер поля Hold & Win: создаёт машину ячеек и доску, меняет стратегии по турбо-режиму. Фазам даёт
- * методы бонуса: показ доски, прокрутку незанятых ячеек, посадку и сбор монет.
+ * Контроллер рил-машины Hold & Win: создаёт машину ячеек и доску, меняет стратегии по турбо-режиму. Фазам
+ * даёт методы бонуса: показ доски, прокрутку незанятых ячеек, посадку, промотку и сбор монет.
  */
 @injectable()
-export class HoldWinController extends LiveContainer {
+export class HoldWinMachineController extends LiveContainer {
   private readonly ticker: GameTicker
   private readonly slotStore: SlotStore
   private readonly emitter: GameEmitter<GameEvents>
-  private readonly machine: ReelsMachine<HoldWinReelsData, HoldWinCell>
+  private readonly machine: ReelsMachine<HoldWinCell>
   private readonly board: HoldWinBoard
   /** Индексы барабанов, где стоит монета: их рамки подсвечены. */
   private readonly coinCells = new Set<number>()
@@ -64,8 +59,8 @@ export class HoldWinController extends LiveContainer {
   }
 
   /** Ставит ячейки на стартовое поле бонуса, подсвечивает стартовые монеты и проявляет доску. */
-  async show(frame: HoldWinReelsData | undefined, signal?: AbortSignal): Promise<void> {
-    this.machine.setData(frame ?? null)
+  async show(frame: CoinValue[][] | undefined, signal?: AbortSignal): Promise<void> {
+    this.machine.setData(frame ? toHoldWinReelsData(frame) : null)
     this.machine.reset()
 
     this.coinCells.clear()
@@ -94,13 +89,18 @@ export class HoldWinController extends LiveContainer {
   }
 
   /**
-   * Сажает крутящиеся ячейки на поле шага; `stopSignal` уходит в машину как `slamSignal`. Остановка ячейки
-   * объявляется `holdWin:cellLanded`, ячейка с монетой получает подсвеченную рамку.
+   * Сажает крутящиеся ячейки на поле шага. Остановка ячейки объявляется `holdWin:cellLanded`, ячейка с
+   * монетой получает подсвеченную рамку.
    */
-  async land(frame: HoldWinReelsData, signal?: AbortSignal, stopSignal?: AbortSignal): Promise<void> {
-    this.machine.setData(frame)
+  async land(frame: CoinValue[][], signal?: AbortSignal): Promise<void> {
+    this.machine.setData(toHoldWinReelsData(frame))
 
-    await this.machine.land({ signal, slamSignal: stopSignal, onReelLanded: this.handleCellLanded })
+    await this.machine.land({ signal, onReelLanded: this.handleCellLanded })
+  }
+
+  /** Проматывает посадку ячеек; нажатая до посадки промотка применяется при её старте. */
+  slam(): void {
+    this.machine.slam()
   }
 
   /**
@@ -141,6 +141,9 @@ export class HoldWinController extends LiveContainer {
       this.board.setCoinCells([...this.coinCells])
     }
 
-    this.emitter.emit('holdWin:cellLanded', { ...toHoldWinCell(index), value: typeof value === 'number' ? value : null })
+    this.emitter.emit('holdWin:cellLanded', {
+      ...toHoldWinCell(index),
+      value: typeof value === 'number' ? value : null,
+    })
   }
 }

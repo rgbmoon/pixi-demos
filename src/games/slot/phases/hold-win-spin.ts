@@ -4,7 +4,7 @@ import type { Phase } from 'src/core/fsm/types'
 import type { GameTicker } from 'src/engine/game-ticker'
 import { ENGINE_TOKENS } from 'src/engine/tokens'
 import { HOLD_WIN_STEP_MS } from 'src/games/slot/constants'
-import type { HoldWinController } from 'src/games/slot/controllers/reels/hold-win'
+import type { HoldWinMachineController } from 'src/games/slot/controllers/reels/hold-win-machine'
 import type { GameEvents } from 'src/games/slot/events'
 import type { SlotStore } from 'src/games/slot/stores/slot'
 import { SLOT_TOKENS } from 'src/games/slot/tokens'
@@ -20,18 +20,18 @@ export class HoldWinSpinPhase implements Phase<PhaseName> {
 
   private readonly emitter: GameEmitter<GameEvents>
   private readonly slotStore: SlotStore
-  private readonly holdWin: HoldWinController
+  private readonly holdWinMachine: HoldWinMachineController
   private readonly ticker: GameTicker
 
   constructor(
     @inject(SLOT_TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>,
     @inject(SLOT_TOKENS.SlotStore) slotStore: SlotStore,
-    @inject(SLOT_TOKENS.HoldWinController) holdWin: HoldWinController,
+    @inject(SLOT_TOKENS.HoldWinMachineController) holdWinMachine: HoldWinMachineController,
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker
   ) {
     this.emitter = emitter
     this.slotStore = slotStore
-    this.holdWin = holdWin
+    this.holdWinMachine = holdWinMachine
     this.ticker = ticker
   }
 
@@ -43,12 +43,16 @@ export class HoldWinSpinPhase implements Phase<PhaseName> {
       throw new Error('Hold & Win spin phase entered without a step')
     }
 
-    // Stop принимается, пока идёт фаза и Stop доступен по стору: сигнал Stop и его подписку снимает scope
+    // Stop принимается, пока идёт фаза и Stop доступен по стору: подписку снимает scope
     const scope = new AbortController()
-    const stopSignal = this.emitter.signalOn('ui:stopRequested', {
-      signal: scope.signal,
-      filter: () => this.slotStore.canStop,
-    })
+
+    this.emitter.on(
+      'ui:stopRequested',
+      () => {
+        if (this.slotStore.canStop) this.holdWinMachine.slam()
+      },
+      { signal: scope.signal }
+    )
 
     try {
       if (!this.slotStore.isTurboEnabled) {
@@ -56,9 +60,9 @@ export class HoldWinSpinPhase implements Phase<PhaseName> {
       }
 
       this.emitter.emit('holdWin:spinStarted', { held: step.held })
-      this.holdWin.spin(step.held)
+      this.holdWinMachine.spin(step.held)
 
-      await this.holdWin.land(step.frame, signal, stopSignal)
+      await this.holdWinMachine.land(step.frame, signal)
 
       // Шаг засчитывается после посадки: счётчик респинов меняется, когда ячейки встали
       this.slotStore.advanceHoldWinStep()

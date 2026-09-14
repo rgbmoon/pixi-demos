@@ -1,6 +1,6 @@
 import EventEmitter from 'eventemitter3'
 
-import type { AnyHandler, EmitArgs, EventMap, EventName, SignalOnOptions, WaitForOptions } from './types'
+import type { AnyHandler, EmitArgs, EventMap, EventName, OnOptions, WaitForOptions } from './types'
 
 /**
  * Типизированный эмиттер игровых событий: имена и payload'ы типизированы, эмит произвольной строки невозможен.
@@ -9,7 +9,7 @@ import type { AnyHandler, EmitArgs, EventMap, EventName, SignalOnOptions, WaitFo
  * Обёртка добавляет к нему четыре недостающие вещи:
  *   1. on() отдаёт функцию отписки вместо `this` — не нужно хранить ссылку на колбэк ради off();
  *   2. ожидание события промисом (метод waitFor);
- *   3. сигнал события — AbortSignal, который срабатывает на событие (метод signalOn);
+ *   3. подписку на время `signal` владельца: on() с `signal` снимает её по отмене сигнала;
  *   4. точку, куда вешается общий лог всех событий: wildcard-подписки у ee3 нет.
  */
 export class GameEmitter<E extends EventMap> {
@@ -22,14 +22,23 @@ export class GameEmitter<E extends EventMap> {
 
   /**
    * Подписывает `handler` на событие `event`.
-   * Возвращает функцию отписки — её обязан вызвать владелец подписки.
+   * Возвращает функцию отписки — её обязан вызвать владелец подписки; с `signal` подписка снимается и по его отмене.
    */
-  on<K extends EventName<E>>(event: K, handler: (payload: E[K]) => void): () => void {
+  on<K extends EventName<E>>(event: K, handler: (payload: E[K]) => void, { signal }: OnOptions = {}): () => void {
     this.emitter.on(event, handler as AnyHandler)
 
-    return () => {
+    const off = (): void => {
       this.emitter.off(event, handler as AnyHandler)
+      signal?.removeEventListener('abort', off)
     }
+
+    if (signal?.aborted) {
+      off()
+    } else {
+      signal?.addEventListener('abort', off, { once: true })
+    }
+
+    return off
   }
 
   /** Доставляет `payload` всем, кто подписан на `event`, и отдаёт то же событие в трассировку. */
@@ -86,36 +95,6 @@ export class GameEmitter<E extends EventMap> {
         clearTimeout(timeoutId)
       }
     })
-  }
-
-  /**
-   * Отдаёт сигнал события: `AbortSignal`, который срабатывает на первое событие `event`, прошедшее `filter`.
-   * Подписка снимается по событию или по `signal` владельца — смотря что наступит раньше.
-   */
-  signalOn<K extends EventName<E>>(event: K, { signal, filter }: SignalOnOptions<E[K]>): AbortSignal {
-    const eventSignal = new AbortController()
-
-    if (signal.aborted) {
-      return eventSignal.signal
-    }
-
-    const offEvent = this.on(event, (payload) => {
-      if (filter && !filter(payload)) {
-        return
-      }
-
-      cleanup()
-      eventSignal.abort()
-    })
-
-    signal.addEventListener('abort', cleanup, { once: true })
-
-    function cleanup() {
-      offEvent()
-      signal.removeEventListener('abort', cleanup)
-    }
-
-    return eventSignal.signal
   }
 
   /**

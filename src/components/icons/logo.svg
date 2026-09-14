@@ -5,6 +5,8 @@
     отдельный контур выреза не нужен. Узкая тёмная обводка поверх широкой
     затемняет середину полосы и оставляет по краям светлые фаски — грани стекла.
     Градиент идёт по токенам палитры: accent → cyan → primary.
+    Острия внешних углов срезает logo-round: внешний контур рамки со скруглением
+    r = 6, это 2 px при показе в 40 px.
   -->
   <defs>
     <linearGradient id="logo-edge" x1="6%" y1="92%" x2="100%" y2="45%">
@@ -14,9 +16,13 @@
     </linearGradient>
 
     <path id="logo-mark" d="M31 27 L94 60 L31 93 Z"/>
+
+    <clipPath id="logo-round">
+      <path d="M32.88 20.2 L98.72 54.69 A6 6 0 0 1 98.72 65.31 L32.88 99.8 A6 6 0 0 1 24.1 94.49 L24.1 25.51 A6 6 0 0 1 32.88 20.2 Z"/>
+    </clipPath>
   </defs>
 
-  <g fill="none" stroke-linejoin="miter" stroke-miterlimit="6">
+  <g fill="none" stroke-linejoin="miter" stroke-miterlimit="6" clip-path="url(#logo-round)">
     <use href="#logo-mark" stroke="url(#logo-edge)" stroke-width="13.8"/>
     <use href="#logo-mark" stroke="#0f172a" stroke-width="5.4" opacity="0.6"/>
     <path d="M38.4 25 L90.1 52.1" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" opacity="0.45"/>

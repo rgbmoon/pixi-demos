@@ -23,7 +23,7 @@ import { SettingsModalController } from './controllers/hud/settings-modal'
 import { SoundToggleButtonController } from './controllers/hud/sound-toggle-button'
 import { SpinButtonController } from './controllers/hud/spin-button'
 import { WinLabelController } from './controllers/hud/win-label'
-import { HoldWinController } from './controllers/reels/hold-win'
+import { HoldWinMachineController } from './controllers/reels/hold-win-machine'
 import { ReelsMachineController } from './controllers/reels/reels-machine'
 import { SoundController } from './controllers/sound'
 import type { GameEvents } from './events'
@@ -107,15 +107,15 @@ const bindScene = (container: Container): void => {
   container
     .bind(SLOT_TOKENS.ReelsMachineController)
     .to(ReelsMachineController)
-    .onDeactivation((reels) => {
-      if (!reels.destroyed) reels.destroy({ children: true })
+    .onDeactivation((reelsMachine) => {
+      if (!reelsMachine.destroyed) reelsMachine.destroy({ children: true })
     })
 
   container
-    .bind(SLOT_TOKENS.HoldWinController)
-    .to(HoldWinController)
-    .onDeactivation((holdWin) => {
-      if (!holdWin.destroyed) holdWin.destroy({ children: true })
+    .bind(SLOT_TOKENS.HoldWinMachineController)
+    .to(HoldWinMachineController)
+    .onDeactivation((holdWinMachine) => {
+      if (!holdWinMachine.destroyed) holdWinMachine.destroy({ children: true })
     })
 
   container

@@ -14,8 +14,6 @@ export class ReelsView<TValue, TView extends CellView<TValue>> extends Container
   private readonly reelViews: ReelView<TValue, TView>[]
   /** Пикселей view на единицу длины модели. */
   private readonly unitScale: number
-  /** Ревизия каждого барабана на момент последней отрисовки: с ней сверяется `sync`. */
-  private readonly drawnRevisions: number[]
 
   constructor(ticker: Ticker, model: ReelsModel<TValue>, config: ReelsViewConfig<TValue, TView>) {
     super()
@@ -24,7 +22,6 @@ export class ReelsView<TValue, TView extends CellView<TValue>> extends Container
     this.model = model
     this.unitScale = config.cellHeight / model.cellHeight
     this.reelViews = model.getReels().map((reel) => new ReelView(reel.getStrip().length, config.createCellView))
-    this.drawnRevisions = this.reelViews.map(() => -1)
 
     this.layoutLanes(config)
     this.sync()
@@ -46,8 +43,9 @@ export class ReelsView<TValue, TView extends CellView<TValue>> extends Container
   }
 
   /**
-   * Расставляет барабаны по раскладке и накрывает масками. Барабаны с одним `y` делят маску-полосу:
-   * число stencil-масок равно числу рядов раскладки, буферные слоты лежат над полосой.
+   * Расставляет барабаны по раскладке и накрывает масками. Барабаны с одним `y` делят маску-полосу: в ней
+   * по прямоугольнику видимой зоны на барабан, поэтому число stencil-масок равно числу рядов раскладки,
+   * а буферные слоты лежат над полосой.
    */
   private layoutLanes(config: ReelsViewConfig<TValue, TView>): void {
     const { cellWidth, cellHeight, getReelPosition } = config
@@ -61,14 +59,18 @@ export class ReelsView<TValue, TView extends CellView<TValue>> extends Container
       lanes.set(y, [...(lanes.get(y) ?? []), index])
     })
 
-    lanes.forEach((indices, y) => {
-      const xs = indices.map((index) => this.reelViews[index].x)
-      const rows = Math.max(...indices.map((index) => reels[index].rows))
-      const left = Math.min(...xs) - cellWidth / 2
+    lanes.forEach((indices) => {
       const lane = new Container()
       const mask = new Graphics()
-        .rect(left, y - cellHeight / 2, Math.max(...xs) + cellWidth / 2 - left, rows * cellHeight)
-        .fill(0xffffff)
+
+      // Высота прямоугольника — видимая зона своего барабана: у барабана короче соседей слот на переносе не виден
+      for (const index of indices) {
+        const { x, y } = this.reelViews[index].position
+
+        mask.rect(x - cellWidth / 2, y - cellHeight / 2, cellWidth, reels[index].rows * cellHeight)
+      }
+
+      mask.fill(0xffffff)
 
       lane.mask = mask
       lane.addChild(mask, ...indices.map((index) => this.reelViews[index]))
@@ -83,20 +85,11 @@ export class ReelsView<TValue, TView extends CellView<TValue>> extends Container
     this.sync()
   }
 
-  /**
-   * Переносит в view только барабаны с выросшей ревизией, поэтому view стоящего барабана можно временно
-   * перенести в другой контейнер.
-   */
+  /** Переносит слоты всех барабанов в view: повтор того же значения, позы и позиции view ничего не меняет. */
   private sync(): void {
     const reels = this.model.getReels()
 
     for (let index = 0; index < reels.length; index++) {
-      const revision = reels[index].getRevision()
-
-      if (revision === this.drawnRevisions[index]) continue
-
-      this.drawnRevisions[index] = revision
-
       this.reelViews[index].sync(reels[index].getStrip(), this.unitScale)
     }
   }

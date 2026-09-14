@@ -20,18 +20,18 @@ export class SpinningPhase implements Phase<PhaseName> {
   private readonly emitter: GameEmitter<GameEvents>
   private readonly slotStore: SlotStore
   private readonly api: SlotApi
-  private readonly reels: ReelsMachineController
+  private readonly reelsMachine: ReelsMachineController
 
   constructor(
     @inject(SLOT_TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>,
     @inject(SLOT_TOKENS.SlotStore) slotStore: SlotStore,
     @inject(SLOT_TOKENS.SlotApi) api: SlotApi,
-    @inject(SLOT_TOKENS.ReelsMachineController) reels: ReelsMachineController
+    @inject(SLOT_TOKENS.ReelsMachineController) reelsMachine: ReelsMachineController
   ) {
     this.emitter = emitter
     this.slotStore = slotStore
     this.api = api
-    this.reels = reels
+    this.reelsMachine = reelsMachine
   }
 
   async enter(signal: AbortSignal): Promise<typeof PhaseName.idle | typeof PhaseName.result> {
@@ -40,12 +40,16 @@ export class SpinningPhase implements Phase<PhaseName> {
     const board = this.slotStore.stepSymbols ?? this.slotStore.initialSymbols
     // Прошлый ответ сервера: его балансом закрывается серия, если спин провалится
     const previousResult = this.slotStore.spinResult
-    // Stop принимается, пока идёт фаза и Stop доступен по стору: сигнал Stop и его подписку снимает scope
+    // Stop принимается, пока идёт фаза и Stop доступен по стору: подписку снимает scope
     const scope = new AbortController()
-    const stopSignal = this.emitter.signalOn('ui:stopRequested', {
-      signal: scope.signal,
-      filter: () => this.slotStore.canStop,
-    })
+
+    this.emitter.on(
+      'ui:stopRequested',
+      () => {
+        if (this.slotStore.canStop) this.reelsMachine.slam()
+      },
+      { signal: scope.signal }
+    )
 
     this.emitter.emit('spin:started')
 
@@ -60,7 +64,7 @@ export class SpinningPhase implements Phase<PhaseName> {
 
     this.slotStore.clearSpin()
     this.slotStore.chargeBet()
-    this.reels.spin()
+    this.reelsMachine.spin()
 
     try {
       let result: SpinResult
@@ -93,14 +97,14 @@ export class SpinningPhase implements Phase<PhaseName> {
         this.slotStore.endSeries()
         notifyError(error, 'Spin failed, the bet has been refunded')
 
-        await this.reels.land(board, [], signal, stopSignal)
+        await this.reelsMachine.land(board, [], signal)
 
         return PhaseName.idle
       }
 
       this.slotStore.applySpin(result)
 
-      await this.reels.land(this.slotStore.spinSymbols, this.slotStore.presentedAnticipation, signal, stopSignal)
+      await this.reelsMachine.land(this.slotStore.spinSymbols, this.slotStore.presentedAnticipation, signal)
 
       // Событие в прошедшем времени эмитится после посадки: подписчик (звук, аналитика) видит реально остановленные барабаны
       this.emitter.emit('spin:landed', result)

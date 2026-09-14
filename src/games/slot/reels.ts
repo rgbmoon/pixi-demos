@@ -3,8 +3,8 @@ import { LinearSpinStrategy } from 'src/core/reels/strategies/linear-spin'
 import { PlannedLandingStrategy } from 'src/core/reels/strategies/planned-landing'
 import type { ReelsConfig, ReelStrategies } from 'src/core/reels/types'
 import { CELL_HEIGHT, HOLD_WIN_CELLS_COUNT, REELS_COUNT, VISIBLE_SYMBOLS_COUNT } from 'src/games/slot/constants'
-import type { CoinValue, HoldWinCell, SymbolKey } from 'src/games/slot/types'
-import { getRandomSymbolKey, toHoldWinCell } from 'src/games/slot/utils'
+import type { HoldWinCell, SymbolKey } from 'src/games/slot/types'
+import { getRandomSymbolKey } from 'src/games/slot/utils'
 
 // Скорости — единиц за кадр, ускорения — единиц за кадр² (deltaFrames = 1 при 60 fps);
 // длины — в пикселях зоны символов
@@ -43,9 +43,8 @@ const createStrategies = (options: {
   staggerCells: number
   minSpinFrames?: number
   anticipationCells?: number
-  hasFall?: boolean
 }): ReelStrategies => {
-  const { speedFactor, staggerCells, minSpinFrames, anticipationCells, hasFall = false } = options
+  const { speedFactor, staggerCells, minSpinFrames, anticipationCells } = options
   const speed = SPIN_SPEED * speedFactor
 
   return {
@@ -60,15 +59,13 @@ const createStrategies = (options: {
       minSpinFrames,
       anticipationCells,
     }),
-    fallStrategy: hasFall
-      ? new GravityFallStrategy({
-          gravity: FALL_GRAVITY * speedFactor ** 2,
-          staggerFrames: FALL_STAGGER_FRAMES / speedFactor,
-          rowStaggerFrames: FALL_ROW_STAGGER_FRAMES / speedFactor,
-          bounceCells: FALL_BOUNCE_CELLS,
-          bounceFrames: FALL_BOUNCE_FRAMES / speedFactor,
-        })
-      : undefined,
+    fallStrategy: new GravityFallStrategy({
+      gravity: FALL_GRAVITY * speedFactor ** 2,
+      staggerFrames: FALL_STAGGER_FRAMES / speedFactor,
+      rowStaggerFrames: FALL_ROW_STAGGER_FRAMES / speedFactor,
+      bounceCells: FALL_BOUNCE_CELLS,
+      bounceFrames: FALL_BOUNCE_FRAMES / speedFactor,
+    }),
   }
 }
 
@@ -81,29 +78,23 @@ export const SLOT_STRATEGIES = createStrategies({
   staggerCells: LAND_STAGGER_CELLS,
   minSpinFrames: MIN_SPIN_FRAMES,
   anticipationCells: ANTICIPATION_CELLS,
-  hasFall: true,
 })
 
 /** Турбо: вращение и падение быстрее, stagger короче, без минимума вращения и пауз anticipation. */
 export const SLOT_TURBO_STRATEGIES = createStrategies({
   speedFactor: TURBO_SPEED_FACTOR,
   staggerCells: TURBO_STAGGER_CELLS,
-  hasFall: true,
 })
 
 /** Состав барабанов слота: пять одинаковых барабанов, значение ячейки — символ сетки раунда. */
-export const SLOT_REELS: ReelsConfig<SlotReelsData, SymbolKey> = {
+export const SLOT_REELS: ReelsConfig<SymbolKey> = {
   reels: Array.from({ length: REELS_COUNT }, (_, index) => ({ id: `reel-${index}` })),
   rows: VISIBLE_SYMBOLS_COUNT,
   buffer: BUFFER_SYMBOLS_COUNT,
   cellHeight: CELL_HEIGHT,
-  accessorFn: (data, { reel, row }) => data[reel]?.[row],
   getFillerValue: () => getRandomSymbolKey(),
   ...SLOT_STRATEGIES,
 }
-
-/** Данные раунда для ячеек Hold & Win: поле `[барабан][ряд]` с номиналами монет. */
-export type HoldWinReelsData = CoinValue[][]
 
 /** Движение ячеек бонуса: как у барабанов, с коротким stagger. */
 export const HOLD_WIN_STRATEGIES = createStrategies({
@@ -120,18 +111,14 @@ export const HOLD_WIN_TURBO_STRATEGIES = createStrategies({
 
 /**
  * Состав ячеек Hold & Win: по барабану высотой 1 на каждую ячейку сетки 5×3, нумерация по колонкам.
- * Значение ячейки — номинал монеты из поля шага; наполнение — случайные символы игры, как у барабанов.
+ * Данные раунда — поле шага, разложенное по барабанам `toHoldWinReelsData`; наполнение — случайные
+ * символы игры, как у барабанов.
  */
-export const HOLD_WIN_REELS: ReelsConfig<HoldWinReelsData, HoldWinCell> = {
+export const HOLD_WIN_REELS: ReelsConfig<HoldWinCell> = {
   reels: Array.from({ length: HOLD_WIN_CELLS_COUNT }, (_, index) => ({ id: `cell-${index}` })),
   rows: 1,
   buffer: BUFFER_SYMBOLS_COUNT,
   cellHeight: CELL_HEIGHT,
-  accessorFn: (data, { reel }) => {
-    const cell = toHoldWinCell(reel)
-
-    return data[cell.reel]?.[cell.row]
-  },
   getFillerValue: () => getRandomSymbolKey(),
   ...HOLD_WIN_STRATEGIES,
 }

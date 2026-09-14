@@ -22,18 +22,18 @@ export class ResultPhase implements Phase<PhaseName> {
   readonly name = PhaseName.result
 
   private readonly slotStore: SlotStore
-  private readonly reels: ReelsMachineController
+  private readonly reelsMachine: ReelsMachineController
   private readonly background: BackgroundController
   private readonly ticker: GameTicker
 
   constructor(
     @inject(SLOT_TOKENS.SlotStore) slotStore: SlotStore,
-    @inject(SLOT_TOKENS.ReelsMachineController) reels: ReelsMachineController,
+    @inject(SLOT_TOKENS.ReelsMachineController) reelsMachine: ReelsMachineController,
     @inject(SLOT_TOKENS.BackgroundController) background: BackgroundController,
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker
   ) {
     this.slotStore = slotStore
-    this.reels = reels
+    this.reelsMachine = reelsMachine
     this.background = background
     this.ticker = ticker
   }
@@ -121,19 +121,19 @@ export class ResultPhase implements Phase<PhaseName> {
    */
   private async presentWin(signal: AbortSignal): Promise<void> {
     if (this.slotStore.isTurboEnabled) {
-      await this.reels.showAllWins(signal, TURBO_WIN_SHOWCASE_MS)
+      await this.reelsMachine.showAllWins(signal, TURBO_WIN_SHOWCASE_MS)
 
       return
     }
 
     if (this.slotStore.isAnticipationWin) {
-      await Promise.all([this.background.flash(signal), this.reels.showAllWins(signal)])
+      await Promise.all([this.background.flash(signal), this.reelsMachine.showAllWins(signal)])
     } else {
-      await this.reels.showAllWins(signal)
+      await this.reelsMachine.showAllWins(signal)
     }
-    await this.reels.showTint(signal)
-    await this.reels.playWinLines(signal)
-    await this.reels.hideTint(signal)
+    await this.reelsMachine.showTint(signal)
+    await this.reelsMachine.playWinLines(signal)
+    await this.reelsMachine.hideTint(signal)
     await this.ticker.waitTicks(WIN_DISPLAY_MS, signal)
   }
 
@@ -145,9 +145,9 @@ export class ResultPhase implements Phase<PhaseName> {
     const durationMs = this.slotStore.isTurboEnabled ? TURBO_WIN_SHOWCASE_MS : undefined
 
     if (this.slotStore.isAnticipationWin) {
-      await Promise.all([this.background.flash(signal), this.reels.showAllWins(signal, durationMs)])
+      await Promise.all([this.background.flash(signal), this.reelsMachine.showAllWins(signal, durationMs)])
     } else {
-      await this.reels.showAllWins(signal, durationMs)
+      await this.reelsMachine.showAllWins(signal, durationMs)
     }
   }
 

@@ -112,6 +112,16 @@ export const SpinButtonMode = {
 
 export type SpinButtonMode = (typeof SpinButtonMode)[keyof typeof SpinButtonMode]
 
+export type SpinButtonOptions = {
+  icon: string
+  iconRatio?: number
+  label?: string
+  onTap: () => void
+  /** Удержание дольше порога; `false` — удержание не принято, отпускание кнопки даст обычный тап. */
+  onHoldStart: () => boolean
+  onRelease: () => void
+}
+
 /** Направление шага по упорядоченному списку значений: ставки, режимы, страницы. */
 export const StepDirection = {
   forward: 'forward',

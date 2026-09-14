@@ -19,11 +19,16 @@ export class ReelView<TValue, TView extends CellView<TValue>> extends Container 
     return this.views[slotIndex]
   }
 
-  /** Записывает в view позицию, значение и позу слотов; `scale` переводит единицы модели в пиксели. */
+  /**
+   * Записывает в view позицию, значение и позу слотов; `scale` переводит единицы модели в пиксели.
+   * View, перенесённый в другой контейнер, пропускает, пока тот не вернёт его в барабан.
+   */
   sync(strip: readonly Readonly<StripSlot<TValue>>[], scale: number): void {
     for (let slotIndex = 0; slotIndex < strip.length; slotIndex++) {
       const slot = strip[slotIndex]
       const view = this.views[slotIndex]
+
+      if (view.parent !== this) continue
 
       view.y = slot.offset * scale
 

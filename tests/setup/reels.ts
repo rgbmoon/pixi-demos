@@ -40,26 +40,25 @@ export const FALL_OPTIONS: GravityFallOptions = {
   bounceFrames: 8,
 }
 
-export const createConfig = (): ReelsConfig<TestData, string> => ({
+export const createConfig = (): ReelsConfig<string> => ({
   reels: Array.from({ length: REELS }, (_, index) => ({ id: `reel-${index}` })),
   rows: ROWS,
   buffer: BUFFER,
   cellHeight: CELL_HEIGHT,
-  accessorFn: (data, { reel, row }) => data[reel]?.[row],
   getFillerValue: () => FILLER,
   spinStrategy: new LinearSpinStrategy({ speed: SPIN_SPEED }),
   landingStrategy: new PlannedLandingStrategy(LANDING_OPTIONS),
   fallStrategy: new GravityFallStrategy(FALL_OPTIONS),
 })
 
-export const createMachine = (): ReelsMachine<TestData, string> => new ReelsMachine(createConfig())
+export const createMachine = (): ReelsMachine<string> => new ReelsMachine(createConfig())
 
 /** Сетка вида `r<барабан>c<ряд>`: значение ячейки однозначно называет свой адрес. */
 export const createGrid = (): TestData =>
   Array.from({ length: REELS }, (_, reel) => Array.from({ length: ROWS }, (_, row) => `r${reel}c${row}`))
 
 /** Крутит модель до полной остановки; шаг задаётся вызывающим. */
-export const advanceUntilIdle = <TData, TValue>(machine: ReelsMachine<TData, TValue>, deltaFrames = 1): number => {
+export const advanceUntilIdle = <TValue>(machine: ReelsMachine<TValue>, deltaFrames = 1): number => {
   let frames = 0
 
   while (machine.getPhase() !== ReelPhase.idle) {
@@ -73,5 +72,5 @@ export const advanceUntilIdle = <TData, TValue>(machine: ReelsMachine<TData, TVa
 }
 
 /** Значения видимых ячеек машины: сетка `[барабан][ряд]` того, что стоит на экране. */
-export const readVisibleGrid = (machine: ReelsMachine<TestData, string>): (string | undefined)[][] =>
+export const readVisibleGrid = (machine: ReelsMachine<string>): (string | undefined)[][] =>
   machine.getReels().map((reel) => reel.getCells().map((cell) => cell.getSlot()?.value))

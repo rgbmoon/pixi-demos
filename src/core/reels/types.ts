@@ -1,12 +1,11 @@
-import type { Cell } from './cell'
-import type { Reel } from './reel'
-import type { ReelsMachine } from './reels-machine'
-
 /** Адрес ячейки поля: барабан и ряд в нём. */
 export type CellIndex = {
   readonly reel: number
   readonly row: number
 }
+
+/** Данные раунда: значения ячеек по барабанам, `[барабан][ряд]`; `undefined` — ячейки в результате нет. */
+export type ReelsData<TValue> = readonly (readonly (TValue | undefined)[])[]
 
 /** Фаза барабана: покой, прокрутка, посадка, падение каскада. */
 export const ReelPhase = {
@@ -27,9 +26,15 @@ export type ReelContext = {
   readonly stripHeight: number
 }
 
-/** Стратегия прокрутки: путь ленты за `deltaFrames` кадров. */
+/** Расписание прокрутки: позиция ленты на любом кадре от старта спина. Конца у прокрутки нет. */
+export type SpinPlan = {
+  /** Путь ленты от старта спина через `frames` кадров; отрицательный путь двигает ленту вверх. */
+  positionAt(frames: number): number
+}
+
+/** Стратегия прокрутки: план пути ленты от старта спина. */
 export type SpinStrategy = {
-  step(deltaFrames: number, context: ReelContext): number
+  plan(context: ReelContext): SpinPlan
 }
 
 /** Расписание посадки барабана: путь ленты до остановки и её позиция на любом кадре посадки. */
@@ -81,8 +86,6 @@ export type SpinOptions = {
 /** Настройки посадки машины на раунд. */
 export type LandOptions = {
   readonly signal?: AbortSignal
-  /** Сигнал промотки: при срабатывании до или во время посадки машина вызывает `slam`. */
-  readonly slamSignal?: AbortSignal
   /** Индексы барабанов, которые садятся с паузой anticipation. */
   readonly anticipation?: readonly number[]
   /** Вызывается с номером барабана после его остановки. */
@@ -129,8 +132,7 @@ export type FallStrategy = {
 export type ReelStrategies = {
   readonly spinStrategy: SpinStrategy
   readonly landingStrategy: LandingStrategy
-  /** Нужна для `cascade`; без неё каскад бросает ошибку конфигурации. */
-  readonly fallStrategy?: FallStrategy
+  readonly fallStrategy: FallStrategy
 }
 
 /** Настройки падения одного барабана. */
@@ -147,8 +149,6 @@ export type CascadeOptions = {
   /** Ячейки, ушедшие из поля: уцелевшие символы их колонок падают вниз, сверху падают новые. */
   readonly removed: readonly CellIndex[]
   readonly signal?: AbortSignal
-  /** Сигнал промотки: при срабатывании до или во время падения машина вызывает `slam`. */
-  readonly slamSignal?: AbortSignal
   /** Вызывается с номером барабана после остановки его слотов. */
   readonly onReelLanded?: (reel: number) => void
 }
@@ -170,47 +170,56 @@ export interface ReelMeta {
 }
 
 /** Описание барабана: перекрывает конфиг машины для этого барабана. */
-export type ReelDef<TData, TValue> = {
+export type ReelDef = {
   readonly id: string
   readonly rows?: number
   readonly buffer?: number
   readonly spinStrategy?: SpinStrategy
   readonly landingStrategy?: LandingStrategy
   readonly fallStrategy?: FallStrategy
-  readonly accessorFn?: (data: TData, index: CellIndex) => TValue | undefined
   readonly meta?: ReelMeta
 }
 
-/** Конфиг машины: данные раунда, состав барабанов, геометрия и стратегии по умолчанию. */
-export type ReelsConfig<TData, TValue> = ReelStrategies & {
-  readonly reels: readonly ReelDef<TData, TValue>[]
+/** Состав барабанов, геометрия и стратегии по умолчанию. */
+type ReelsLayoutConfig = ReelStrategies & {
+  readonly reels: readonly ReelDef[]
   readonly rows: number
   readonly buffer?: number
   /** Высота ячейки — единица длины модели; адаптер переводит её в пиксели через свою высоту ячейки. */
   readonly cellHeight: number
-  readonly data?: TData | null
-  /** Достаёт значение ячейки из данных раунда; `undefined` — ячейки в результате нет. */
-  readonly accessorFn: (data: TData, index: CellIndex) => TValue | undefined
-  /** Значение слота вне результата раунда: на прокрутке и в буфере. */
-  readonly getFillerValue: (reel: number) => TValue
 }
+
+/**
+ * Конфиг машины. Значения слотов вне результата раунда берутся из `getFillerValue`; без неё — случайные
+ * значения из данных раунда, поэтому тогда стартовые данные обязательны.
+ */
+export type ReelsConfig<TValue> = ReelsLayoutConfig &
+  (
+    | {
+        /** Значение слота вне результата раунда: на прокрутке, в буфере, в ячейке без значения в данных. */
+        readonly getFillerValue: (reel: number) => TValue
+        readonly data?: ReelsData<TValue> | null
+      }
+    | {
+        readonly getFillerValue?: undefined
+        readonly data: ReelsData<TValue>
+      }
+  )
 
 /**
  * Опции барабана: конфиг машины, перекрытый `ReelDef`. Стратегий здесь нет: барабан получает их у машины
  * на каждом `spin`.
  */
-export type ReelOptions<TData, TValue> = {
+export type ReelOptions<TValue> = {
   readonly rows: number
   readonly buffer: number
   readonly cellHeight: number
-  readonly accessorFn: (data: TData, index: CellIndex) => TValue | undefined
   readonly getFillerValue: (reel: number) => TValue
 }
 
-/** Барабан в контракте адаптера: число рядов, слоты ленты и счётчик их правок. */
+/** Барабан в контракте адаптера: число рядов и слоты ленты. */
 export type ReelModel<TValue> = {
   readonly rows: number
-  getRevision(): number
   getStrip(): readonly Readonly<StripSlot<TValue>>[]
   getVisibleSlotIndices(): number[]
 }
@@ -220,12 +229,4 @@ export type ReelsModel<TValue> = {
   readonly cellHeight: number
   getReels(): readonly ReelModel<TValue>[]
   advance(deltaFrames: number): void
-}
-
-/** Контекст ячейки: машина, барабан, ячейка и её значение одним объектом. */
-export type CellContext<TData, TValue> = {
-  readonly machine: ReelsMachine<TData, TValue>
-  readonly reel: Reel<TData, TValue>
-  readonly cell: Cell<TData, TValue>
-  getValue(): TValue | undefined
 }
