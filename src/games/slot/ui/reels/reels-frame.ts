@@ -5,7 +5,7 @@ import { REELS_FRAME_ALIAS } from 'src/games/slot/assets'
 import { REELS_ZONE_HEIGHT, REELS_ZONE_OFFSET_X, REELS_ZONE_OFFSET_Y, REELS_ZONE_WIDTH, TINT_ALPHA, TINT_FADE_MS } from 'src/games/slot/constants'
 
 
-/** Рамка барабанов: арт рамки, затемнение и слоты, в которые владелец кладёт ленты и оверлеи. */
+/** Рамка барабанов: арт рамки, затемнение и слоты, в которые владелец кладёт барабаны и оверлеи. */
 export class ReelsFrame extends Container {
   private readonly ticker: GameTicker
   private readonly symbolsContainer = new Container()

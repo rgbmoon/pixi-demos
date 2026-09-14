@@ -2,8 +2,8 @@ import type { ReelContext, StripSlot } from './types'
 import { getLap, wrapOffset } from './utils'
 
 /**
- * Лента барабана: слоты, их базы, номера кругов и путь ленты. Позиция слота — база плюс путь, свёрнутые
- * в диапазон ленты; `place` ставит слот на позицию напрямую.
+ * Лента барабана: слоты, их базы, номера кругов и путь ленты. Позиция слота — база плюс путь, приведённые
+ * к диапазону ленты; `place` ставит слот на позицию напрямую.
  */
 export class ReelStrip<TValue> {
   private readonly context: ReelContext
@@ -91,7 +91,7 @@ export class ReelStrip<TValue> {
     this.revision += 1
   }
 
-  /** Ставит слот на позицию без свёртки: у падающих слотов каскада пути разные. */
+  /** Ставит слот на позицию без приведения к диапазону ленты: у падающих слотов каскада пути разные. */
   place(slotIndex: number, position: number): void {
     this.slots[slotIndex].offset = position
 
@@ -107,7 +107,7 @@ export class ReelStrip<TValue> {
 
     this.moveTo(Math.round(this.offset / cellHeight) * cellHeight)
 
-    // После свёртки на позициях остаётся погрешность округления
+    // После приведения к диапазону на позициях остаётся погрешность округления
     for (const slot of this.slots) {
       slot.offset = Math.round(slot.offset / cellHeight) * cellHeight
     }

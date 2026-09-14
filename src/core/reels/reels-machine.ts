@@ -16,7 +16,7 @@ import type {
 import { ReelPhase } from './types'
 
 /**
- * Машина барабанов: данные раунда, барабаны и стратегии по умолчанию. Передаёт вызовы раунда барабанам
+ * Рил-машина: данные раунда, барабаны и стратегии по умолчанию. Передаёт вызовы раунда барабанам
  * и вычисляет параметры, которые зависят от соседних барабанов.
  */
 export class ReelsMachine<TData, TValue> implements ReelsModel<TValue> {
@@ -93,7 +93,7 @@ export class ReelsMachine<TData, TValue> implements ReelsModel<TValue> {
     return ReelPhase.idle
   }
 
-  /** Ставит ленты барабанов в покое на текущие данные: стартовая доска. */
+  /** Ставит барабаны в покое на текущие данные: стартовая доска. */
   reset(): void {
     for (const reel of this.reels) {
       reel.reset()
@@ -110,7 +110,7 @@ export class ReelsMachine<TData, TValue> implements ReelsModel<TValue> {
   }
 
   /**
-   * Сажает крутящиеся барабаны лесенкой по их порядку. Барабан получает паузу за каждый барабан
+   * Сажает крутящиеся барабаны со stagger по их порядку. Барабан получает паузу за каждый барабан
    * из `anticipation` с индексом не больше своего, собственную — только если он сам в списке.
    */
   async land(options: LandOptions = {}): Promise<void> {
@@ -134,7 +134,7 @@ export class ReelsMachine<TData, TValue> implements ReelsModel<TValue> {
     await this.awaitWithSlam(landing, slamSignal)
   }
 
-  /** Каскад по текущим данным в барабанах с ячейками из `removed`; место в лесенке — номер среди падающих. */
+  /** Каскад по текущим данным в барабанах с ячейками из `removed`; номер для stagger — порядковый среди падающих. */
   async cascade(options: CascadeOptions): Promise<void> {
     const { removed, signal, slamSignal, onReelLanded } = options
     const falling = this.reels.flatMap((reel) => {

@@ -24,7 +24,7 @@ import { Coin } from './coin'
 import { ReelsFrame } from './reels-frame'
 
 /**
- * Поле Hold & Win: та же рамка, что у барабанов, ячейки-ленты по сетке 5×3 над моделью машины бонуса,
+ * Поле Hold & Win: та же рамка, что у барабанов, ячейки-барабаны по сетке 5×3 над моделью машины бонуса,
  * неподвижная полупрозрачная сетка по границам ячеек и циан-рамки ячеек с монетами.
  * Надпись Grand лежит в popup-слоте рамки поверх ячеек.
  */
@@ -59,7 +59,7 @@ export class HoldWinBoard extends Container {
 
     this.frame = new ReelsFrame(ticker)
     this.frame.addChildToSymbolsSlot(this.reelsView)
-    // Сетка над лентами: символы прокрутки проезжают под ней
+    // Сетка над барабанами: символы прокрутки проезжают под ней
     this.frame.addChildToSymbolsSlot(this.grid)
     this.frame.addChildToSymbolsSlot(this.coinFrames)
     this.frame.addChildToPopupSlot(this.grandLabel)
@@ -67,7 +67,7 @@ export class HoldWinBoard extends Container {
     this.addChild(this.frame)
   }
 
-  /** View единственной видимой ячейки ленты бонуса. */
+  /** View единственной видимой ячейки барабана бонуса. */
   getCoin(index: number): Coin | undefined {
     return this.reelsView.getCellView({ reel: index, row: 0 })
   }

@@ -7,16 +7,16 @@ import { SymbolKey } from 'src/games/slot/types'
 import { CELL_HEIGHT, CELL_WIDTH, PAYLINES, VISIBLE_SYMBOLS_COUNT } from './constants'
 import type { PaylineShape } from './types'
 
-/** Индекс ленты Hold & Win по адресу ячейки сетки: ленты пронумерованы по колонкам, сверху вниз. */
+/** Индекс барабана Hold & Win по адресу ячейки сетки: барабаны пронумерованы по колонкам, сверху вниз. */
 export const toHoldWinReel = ({ reel, row }: CellIndex): number => reel * VISIBLE_SYMBOLS_COUNT + row
 
-/** Адрес ячейки сетки по индексу ленты Hold & Win. */
+/** Адрес ячейки сетки по индексу барабана Hold & Win. */
 export const toHoldWinCell = (index: number): CellIndex => ({
   reel: Math.floor(index / VISIBLE_SYMBOLS_COUNT),
   row: index % VISIBLE_SYMBOLS_COUNT,
 })
 
-/** Центр ленты Hold & Win в координатах зоны символов: там же, где ячейка базовой доски. */
+/** Центр барабана Hold & Win в координатах зоны символов: там же, где ячейка базовой доски. */
 export const getHoldWinReelPosition = (index: number): PointData => {
   const { reel, row } = toHoldWinCell(index)
 

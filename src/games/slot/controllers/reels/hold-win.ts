@@ -32,7 +32,7 @@ export class HoldWinController extends LiveContainer {
   private readonly emitter: GameEmitter<GameEvents>
   private readonly machine: ReelsMachine<HoldWinReelsData, HoldWinCell>
   private readonly board: HoldWinBoard
-  /** Индексы лент, где стоит монета: их рамки подсвечены. */
+  /** Индексы барабанов, где стоит монета: их рамки подсвечены. */
   private readonly coinCells = new Set<number>()
 
   constructor(
@@ -104,7 +104,7 @@ export class HoldWinController extends LiveContainer {
   }
 
   /**
-   * Собирает монеты поля: переводит их в выигрышную позу по порядку лент с интервалом `staggerMs` и
+   * Собирает монеты поля: переводит их в выигрышную позу по порядку барабанов с интервалом `staggerMs` и
    * оставляет в ней до конца показа. Полное поле объявляется надписью Grand с выплатой из ответа.
    */
   async collect(staggerMs: number, signal?: AbortSignal): Promise<void> {
