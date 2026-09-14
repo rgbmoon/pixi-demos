@@ -74,7 +74,7 @@ const playRound = async (grid: TestData, spinFrames = 25, deltaFrames = 1) => {
 }
 
 describe('Reel', () => {
-  it('сажает ленту на значения раунда', async () => {
+  it('сажает барабаны на значения раунда', async () => {
     const grid = createGrid()
     const machine = await playRound(grid)
 
@@ -119,7 +119,7 @@ describe('Reel', () => {
     expect(machine.getPhase()).toBe(ReelPhase.idle)
   })
 
-  it('объявляет посадку каждого барабана по лесенке', async () => {
+  it('объявляет посадку каждого барабана в порядке stagger', async () => {
     const machine = createMachine()
     const landed: number[] = []
 
@@ -135,7 +135,7 @@ describe('Reel', () => {
     expect(landed).toEqual(Array.from({ length: REELS }, (_, reel) => reel))
   })
 
-  it.each([0, 5, 20, 40, 60])('после slam на %d-м кадре посадки сажает ленту на значения раунда', async (landingFrames) => {
+  it.each([0, 5, 20, 40, 60])('после slam на %d-м кадре посадки сажает барабаны на значения раунда', async (landingFrames) => {
     const grid = createGrid()
     const machine = createMachine()
 
@@ -193,7 +193,7 @@ describe('Reel', () => {
     expect(readVisibleGrid(machine)).toEqual(grid)
   })
 
-  it('объявляет вход в паузу только ждущим барабанам, через лесенку после посадки соседа слева', () => {
+  it('объявляет вход в паузу только ждущим барабанам, через stagger после посадки соседа слева', () => {
     const machine = createAnticipationMachine()
     const clock = { frame: 0 }
     const anticipated: { reel: number; frame: number }[] = []
@@ -211,14 +211,14 @@ describe('Reel', () => {
 
     expect(anticipated.map(({ reel }) => reel)).toEqual([3, 4])
 
-    // Пауза начинается там, где барабан встал бы без неё: на лесенку позже соседа слева
+    // Пауза начинается там, где барабан встал бы без неё: на stagger позже соседа слева
     anticipated.forEach(({ reel, frame }) => {
       expect(Math.abs(frame - stopFrames[reel - 1] - staggerFrames)).toBeLessThanOrEqual(1)
       expect(frame).toBeLessThan(stopFrames[reel])
     })
   })
 
-  it('сажает барабаны anticipation по очереди, с паузой сверх лесенки, на значения раунда', () => {
+  it('сажает барабаны anticipation по очереди, с паузой сверх stagger, на значения раунда', () => {
     const grid = createGrid()
     const machine = createAnticipationMachine()
 
@@ -231,7 +231,7 @@ describe('Reel', () => {
     const gaps = stopFrames.slice(1).map((frame, previousIndex) => frame - stopFrames[previousIndex])
     const pauseFrames = (ANTICIPATION_CELLS * CELL_HEIGHT) / LANDING_OPTIONS.speed
 
-    // До барабана anticipation — обычная лесенка, перед каждым ждущим — лесенка плюс пауза
+    // До барабана anticipation — обычный stagger, перед каждым ждущим — stagger плюс пауза
     // Кадр остановки целый: допуск — один кадр
     expect(Math.abs(gaps[2] - gaps[1] - pauseFrames)).toBeLessThanOrEqual(1)
     expect(Math.abs(gaps[3] - gaps[1] - pauseFrames)).toBeLessThanOrEqual(1)
@@ -280,7 +280,7 @@ describe('Reel', () => {
     expect(landed).toEqual([0, 2, 4])
   })
 
-  it('начинает лесенку с первого крутящегося барабана', () => {
+  it('отсчитывает stagger от первого крутящегося барабана', () => {
     const baseline = createMachine()
     const heldMachine = createMachine()
 

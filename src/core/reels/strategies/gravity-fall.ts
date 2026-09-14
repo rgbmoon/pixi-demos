@@ -3,7 +3,7 @@ import type { FallContext, FallPlan, FallStrategy } from 'src/core/reels/types'
 import type { GravityFallOptions } from './types'
 
 /**
- * Падение под постоянным ускорением с отскоком после касания ряда. Барабаны стартуют лесенкой, внутри
+ * Падение под постоянным ускорением с отскоком после касания ряда. Барабаны стартуют со stagger, внутри
  * барабана нижний слот стартует первым, поэтому слоты не перекрываются.
  */
 export class GravityFallStrategy implements FallStrategy {

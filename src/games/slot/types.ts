@@ -41,7 +41,7 @@ export type ForcedMechanic = (typeof ForcedMechanic)[keyof typeof ForcedMechanic
 /** Значение ячейки поля Hold & Win: номинал монеты в деньгах или `null` — пустая ячейка. */
 export type CoinValue = number | null
 
-/** Значение слота ленты Hold & Win: ячейка поля или символ наполнения, который виден только в движении. */
+/** Значение слота в машине Hold & Win: ячейка поля или символ наполнения, который виден только в движении. */
 export type HoldWinCell = CoinValue | SymbolKey
 
 /** Геометрия линии выплат: ряд (0..2) на каждом барабане и вертикальный сдвиг линии в долях высоты ячейки. */

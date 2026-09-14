@@ -47,7 +47,7 @@ export type LandingPlan = {
 }
 
 export type LandingContext = ReelContext & {
-  /** Место барабана в лесенке посадки: номер среди садящихся барабанов раунда. */
+  /** Порядковый номер барабана среди садящихся в раунде: по нему стратегия считает stagger. */
   readonly order: number
   /** Позиция ленты в момент начала посадки. */
   readonly fromOffset: number
@@ -62,7 +62,7 @@ export type LandingContext = ReelContext & {
 /** Настройки посадки одного барабана. */
 export type ReelLandOptions = {
   readonly signal?: AbortSignal
-  /** Место барабана в лесенке посадки; по умолчанию — его индекс. */
+  /** Порядковый номер барабана среди садящихся, для stagger; по умолчанию — его индекс. */
   readonly order?: number
   /** Число пауз anticipation до посадки барабана, включая его собственную. */
   readonly anticipationPauses?: number
@@ -104,7 +104,7 @@ export type FallDrop = {
 }
 
 export type FallContext = ReelContext & {
-  /** Место барабана в лесенке падения: номер среди падающих барабанов каскада. */
+  /** Порядковый номер барабана среди падающих в каскаде: по нему стратегия считает stagger. */
   readonly order: number
   /** Падающие слоты барабана. */
   readonly drops: readonly FallDrop[]
@@ -137,7 +137,7 @@ export type ReelStrategies = {
 export type ReelCascadeOptions = {
   /** Ряды, ушедшие из поля. */
   readonly removedRows: readonly number[]
-  /** Место барабана в лесенке падения; по умолчанию — его индекс. */
+  /** Порядковый номер барабана среди падающих, для stagger; по умолчанию — его индекс. */
   readonly order?: number
   readonly signal?: AbortSignal
 }
@@ -158,7 +158,7 @@ export type StripSlot<TValue> = {
   readonly id: string
   /** Значение, которое слот показывает сейчас. */
   value: TValue
-  /** Позиция слота в единицах длины модели, свёрнутая в диапазон ленты. */
+  /** Позиция слота в единицах длины модели, приведённая к диапазону ленты. */
   offset: number
   /** Слот в движении: view показывает размытую позу. */
   moving: boolean
@@ -169,7 +169,7 @@ export interface ReelMeta {
   readonly [key: string]: unknown
 }
 
-/** Описание барабана: перекрывает конфиг машины на своей ленте. */
+/** Описание барабана: перекрывает конфиг машины для этого барабана. */
 export type ReelDef<TData, TValue> = {
   readonly id: string
   readonly rows?: number

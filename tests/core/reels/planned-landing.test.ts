@@ -18,7 +18,7 @@ const BUFFER = 1
 const CELL_HEIGHT = 610 / 3
 const STRIP_HEIGHT = (ROWS + BUFFER) * CELL_HEIGHT
 
-// Стартовые позиции ленты: ноль, доли ячейки, точная граница и отрицательная сторона диапазона
+// Стартовые позиции барабана: ноль, доли ячейки, точная граница и отрицательная сторона диапазона
 const START_OFFSETS = [0, 1, CELL_HEIGHT / 3, CELL_HEIGHT / 2, CELL_HEIGHT, STRIP_HEIGHT - 0.001, -CELL_HEIGHT / 4]
 
 const createContext = (
@@ -40,7 +40,7 @@ const createContext = (
   isAnticipating,
 })
 
-/** Насколько лента промахнулась мимо ближайшей границы ячейки. */
+/** Насколько барабан промахнулся мимо ближайшей границы ячейки. */
 const distanceToCellBorder = (position: number): number => {
   const rest = ((position % CELL_HEIGHT) + CELL_HEIGHT) % CELL_HEIGHT
 
@@ -50,14 +50,14 @@ const distanceToCellBorder = (position: number): number => {
 describe('PlannedLandingStrategy', () => {
   const strategy = new PlannedLandingStrategy(OPTIONS)
 
-  it.each(START_OFFSETS)('сажает ленту на границу ячейки со старта %d', (fromOffset) => {
+  it.each(START_OFFSETS)('сажает барабан на границу ячейки со старта %d', (fromOffset) => {
     const { distance } = strategy.plan(createContext(fromOffset))
 
     expect(distanceToCellBorder(fromOffset + distance)).toBeLessThan(1e-9)
   })
 
-  it.each(START_OFFSETS)('прокручивает ленту хотя бы на полный оборот со старта %d', (fromOffset) => {
-    // Оборот в дистанции — гарантия, что каждый слот обернётся и получит значение раунда
+  it.each(START_OFFSETS)('прокручивает барабан хотя бы на полный оборот со старта %d', (fromOffset) => {
+    // Оборот в дистанции — гарантия, что каждый слот перенесётся и получит значение раунда
     const { distance } = strategy.plan(createContext(fromOffset))
 
     expect(distance).toBeGreaterThanOrEqual(STRIP_HEIGHT)
@@ -70,7 +70,7 @@ describe('PlannedLandingStrategy', () => {
     expect(positionAt(totalFrames)).toBeCloseTo(distance, 9)
   })
 
-  it('ведёт ленту без разрывов на стыках участков', () => {
+  it('строит путь барабана без разрывов на стыках участков', () => {
     // Расписание склеено из трёх кусков; рассогласование границ дало бы скачок позиции
     const { totalFrames, positionAt } = strategy.plan(createContext(0))
     const step = totalFrames / 5000
@@ -85,11 +85,11 @@ describe('PlannedLandingStrategy', () => {
       previous = position
     }
 
-    // Быстрее равномерного участка лента не идёт нигде, кроме погрешности выборки
+    // Быстрее равномерного участка барабан не движется нигде, кроме погрешности выборки
     expect(maxJump).toBeLessThan(OPTIONS.speed * step * 1.01)
   })
 
-  it('забрасывает ленту за точку посадки и возвращает её обратно', () => {
+  it('забрасывает барабан за точку посадки и возвращает его обратно', () => {
     const { distance, totalFrames, positionAt } = strategy.plan(createContext(0))
     const step = totalFrames / 5000
 

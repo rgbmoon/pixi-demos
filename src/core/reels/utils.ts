@@ -1,6 +1,6 @@
 import { WRAP_EPSILON } from './constants'
 
-/** Сколько ленте не хватает до ближайшей границы ячейки: добор до ровной посадки слотов. */
+/** Сколько пути не хватает до ближайшей границы ячейки: добор до ровной посадки слотов. */
 export const getAlignmentGap = (position: number, cellHeight: number): number => {
   const offset = ((position % cellHeight) + cellHeight) % cellHeight
 
@@ -8,7 +8,7 @@ export const getAlignmentGap = (position: number, cellHeight: number): number =>
 }
 
 /**
- * Сворачивает позицию слота в диапазон ленты `[min, min + stripHeight)`. Позиция ближе `WRAP_EPSILON`
+ * Приводит позицию слота к диапазону ленты `[min, min + stripHeight)`. Позиция ближе `WRAP_EPSILON`
  * к верхней границе переходит в начало диапазона.
  */
 export const wrapOffset = (position: number, min: number, stripHeight: number): number => {

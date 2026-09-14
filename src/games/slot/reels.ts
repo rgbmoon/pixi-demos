@@ -19,15 +19,15 @@ const MIN_SPIN_FRAMES = 30
 const ANTICIPATION_CELLS = 24
 const BUFFER_SYMBOLS_COUNT = 1
 
-// Турбо ускоряет ленту и падение и сжимает лесенку
+// Турбо ускоряет вращение барабанов и падение и сокращает stagger
 const TURBO_SPEED_FACTOR = 1.5
 const TURBO_STAGGER_CELLS = 0.5
 
-// Ячеек бонуса втрое больше, чем барабанов: лесенка короче, чтобы посадка шага не растягивалась
+// Ячеек бонуса втрое больше, чем барабанов: stagger короче, чтобы посадка шага не растягивалась
 const HOLD_WIN_STAGGER_CELLS = 0.5
 const HOLD_WIN_TURBO_STAGGER_CELLS = 0.15
 
-// Падение каскада: одна ячейка за ~13 кадров, барабаны и ряды стартуют лесенкой
+// Падение каскада: одна ячейка за ~13 кадров, барабаны и ряды стартуют со stagger
 const FALL_GRAVITY = 2.5
 const FALL_STAGGER_FRAMES = 3
 const FALL_ROW_STAGGER_FRAMES = 2
@@ -72,10 +72,10 @@ const createStrategies = (options: {
   }
 }
 
-/** Данные раунда для лент: сетка символов `[барабан][ряд]`. */
+/** Данные раунда для барабанов: сетка символов `[барабан][ряд]`. */
 export type SlotReelsData = SymbolKey[][]
 
-/** Обычное движение: минимум вращения, полная лесенка остановки, паузы anticipation и падение каскада. */
+/** Обычное движение: минимум вращения, полный stagger остановки, паузы anticipation и падение каскада. */
 export const SLOT_STRATEGIES = createStrategies({
   speedFactor: 1,
   staggerCells: LAND_STAGGER_CELLS,
@@ -84,14 +84,14 @@ export const SLOT_STRATEGIES = createStrategies({
   hasFall: true,
 })
 
-/** Турбо: лента и падение быстрее, лесенка короче, без минимума вращения и пауз anticipation. */
+/** Турбо: вращение и падение быстрее, stagger короче, без минимума вращения и пауз anticipation. */
 export const SLOT_TURBO_STRATEGIES = createStrategies({
   speedFactor: TURBO_SPEED_FACTOR,
   staggerCells: TURBO_STAGGER_CELLS,
   hasFall: true,
 })
 
-/** Состав барабанов слота: пять одинаковых лент, значение ячейки — символ сетки раунда. */
+/** Состав барабанов слота: пять одинаковых барабанов, значение ячейки — символ сетки раунда. */
 export const SLOT_REELS: ReelsConfig<SlotReelsData, SymbolKey> = {
   reels: Array.from({ length: REELS_COUNT }, (_, index) => ({ id: `reel-${index}` })),
   rows: VISIBLE_SYMBOLS_COUNT,
@@ -105,14 +105,14 @@ export const SLOT_REELS: ReelsConfig<SlotReelsData, SymbolKey> = {
 /** Данные раунда для ячеек Hold & Win: поле `[барабан][ряд]` с номиналами монет. */
 export type HoldWinReelsData = CoinValue[][]
 
-/** Движение ячеек бонуса: как у барабанов, с короткой лесенкой. */
+/** Движение ячеек бонуса: как у барабанов, с коротким stagger. */
 export const HOLD_WIN_STRATEGIES = createStrategies({
   speedFactor: 1,
   staggerCells: HOLD_WIN_STAGGER_CELLS,
   minSpinFrames: MIN_SPIN_FRAMES,
 })
 
-/** Турбо ячеек бонуса: лента быстрее, лесенка минимальная. */
+/** Турбо ячеек бонуса: вращение быстрее, stagger минимальный. */
 export const HOLD_WIN_TURBO_STRATEGIES = createStrategies({
   speedFactor: TURBO_SPEED_FACTOR,
   staggerCells: HOLD_WIN_TURBO_STAGGER_CELLS,

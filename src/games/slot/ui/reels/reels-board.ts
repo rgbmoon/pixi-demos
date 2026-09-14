@@ -9,7 +9,7 @@ import type { SymbolKey } from 'src/games/slot/types'
 import { ReelSymbol } from './reel-symbol'
 import { ReelsFrame } from './reels-frame'
 
-/** Доска барабанов: рамка, ленты `ReelsView` в зоне символов и слои оверлеев поверх неё. */
+/** Доска барабанов: рамка, барабаны `ReelsView` в зоне символов и слои оверлеев поверх неё. */
 export class ReelsBoard extends Container {
   private readonly frame: ReelsFrame
   private readonly reelsView: ReelsView<SymbolKey, ReelSymbol>

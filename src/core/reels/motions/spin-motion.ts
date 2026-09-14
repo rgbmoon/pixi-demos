@@ -3,7 +3,7 @@ import { ReelPhase, type ReelContext, type SpinStrategy, type StripSlot } from '
 
 import type { ReelMotion } from './types'
 
-/** Прокрутка без конца: каждый кадр лента сдвигается на шаг `SpinStrategy`, обёрнутые слоты получают наполнение. */
+/** Прокрутка без конца: каждый кадр лента сдвигается на шаг `SpinStrategy`, перенесённые слоты получают наполнение. */
 export class SpinMotion<TValue> implements ReelMotion {
   readonly phase = ReelPhase.spinning
 

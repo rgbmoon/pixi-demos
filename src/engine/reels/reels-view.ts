@@ -5,7 +5,7 @@ import { ReelView } from './reel-view'
 import type { CellView, ReelsViewConfig } from './types'
 
 /**
- * PIXI-адаптер модели барабанов: раскладывает ленты и накрывает их масками; на каждом кадре тикера
+ * PIXI-адаптер модели барабанов: раскладывает барабаны и накрывает их масками; на каждом кадре тикера
  * вызывает `advance` модели и переносит слоты в view.
  */
 export class ReelsView<TValue, TView extends CellView<TValue>> extends Container {
@@ -46,7 +46,7 @@ export class ReelsView<TValue, TView extends CellView<TValue>> extends Container
   }
 
   /**
-   * Расставляет ленты по раскладке и накрывает масками. Ленты с одним `y` делят маску-полосу:
+   * Расставляет барабаны по раскладке и накрывает масками. Барабаны с одним `y` делят маску-полосу:
    * число stencil-масок равно числу рядов раскладки, буферные слоты лежат над полосой.
    */
   private layoutLanes(config: ReelsViewConfig<TValue, TView>): void {

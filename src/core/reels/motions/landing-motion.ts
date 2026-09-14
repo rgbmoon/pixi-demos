@@ -5,7 +5,7 @@ import type { ReelMotion } from './types'
 
 /**
  * Посадка: позиция ленты на каждом кадре берётся из `LandingPlan`, в конце лента выравнивается на границу
- * ячейки. Для обёрнутого слота `onWrap` получает непройденный остаток пути.
+ * ячейки. Для перенесённого слота `onWrap` получает непройденный остаток пути.
  */
 export class LandingMotion<TValue> implements ReelMotion {
   readonly phase = ReelPhase.landing
@@ -55,7 +55,7 @@ export class LandingMotion<TValue> implements ReelMotion {
   }
 
   /**
-   * Переводит время посадки к `settleFrames`. План не меняется, поэтому обёрнутые слоты получают значения
+   * Переводит время посадки к `settleFrames`. План не меняется, поэтому перенесённые слоты получают значения
    * так же, как без промотки.
    */
   slam(): void {

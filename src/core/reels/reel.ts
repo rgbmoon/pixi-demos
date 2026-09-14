@@ -33,7 +33,7 @@ export class Reel<TData, TValue> implements ReelModel<TValue> {
   private readonly cells: Cell<TData, TValue>[]
   private readonly strip: ReelStrip<TValue>
 
-  /** Текущее движение ленты; `null` — барабан в покое. */
+  /** Текущее движение барабана; `null` — барабан в покое. */
   private motion: ReelMotion | null = null
   /** Стратегии текущего раунда: фиксируются на старте спина. */
   private strategies: ReelStrategies
@@ -283,7 +283,7 @@ export class Reel<TData, TValue> implements ReelModel<TValue> {
   }
 
   /**
-   * Значение обёрнутого слота на посадке: ряд остановки вычисляется из остатка пути. Слот, которому
+   * Значение перенесённого слота на посадке: ряд остановки вычисляется из остатка пути. Слот, которому
    * предстоит ещё круг, получает наполнение.
    */
   private fillLanding(slot: StripSlot<TValue>, remaining: number): void {

@@ -38,7 +38,7 @@ export class PlannedLandingStrategy implements LandingStrategy {
     const minSpinDistance = Math.max(0, minSpinFrames - spunFrames) * speed
     // Паузы anticipation — часть равномерного участка, slam проматывает их вместе с ним
     const anticipationDistance = anticipationPauses * anticipationCells * cellHeight
-    // Оборот ленты в пути: каждый слот обернётся хотя бы раз и получит значение раунда
+    // Оборот ленты в пути: каждый слот перенесётся хотя бы раз и получит значение раунда
     const plannedDistance =
       stripHeight +
       minSpinDistance +
