@@ -62,19 +62,22 @@ jobs:
       # пакетов без спеков в выводе turbo команда <NONEXISTENT>
       - id: plan
         run: |
+          echo "playwright=$(pnpm exec playwright --version | cut -d ' ' -f 2)" >> "$GITHUB_OUTPUT"
           if [ -n "$FORCE" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           misses=$(pnpm exec turbo run e2e --dry=json | jq '[.tasks[] | select(.task == "e2e" and .command != "<NONEXISTENT>" and .cache.status == "MISS")] | length')
           echo "run=$([ "$misses" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      # Ключ кэша — версия Playwright: ревизия браузера зависит только от неё, поэтому прочие правки lockfile кэш не сбрасывают
       - uses: actions/cache@v4
         if: steps.plan.outputs.run == 'true'
         with:
           path: ~/.cache/ms-playwright
-          key: pw-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          key: pw-${{ runner.os }}-${{ steps.plan.outputs.playwright }}-chromium-headless-shell
+      # В headless-режиме Playwright запускает chromium-headless-shell, поэтому устанавливается только он
       - if: steps.plan.outputs.run == 'true'
-        run: pnpm exec playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps --only-shell chromium
       # Задачи e2e выполняются последовательно: каждый тест создаёт свой WebGL-контекст на программном рендерере
       - run: pnpm exec turbo run e2e --concurrency=1 $FORCE
       - uses: actions/upload-artifact@v4
