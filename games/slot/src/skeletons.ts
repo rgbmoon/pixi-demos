@@ -1,0 +1,74 @@
+import { SYMBOL_SPRITES } from '#src/assets'
+import { SYMBOL_SKELETONS } from '#src/constants'
+import type { SymbolKey } from '#src/types'
+import type { StubAnimationData, StubSkeletonData } from '@pixi-demos/engine/skeleton/types'
+
+// База стаб-скелетов слота: описание на каждое имя скелета, которым оперирует SpinePool.
+
+/** Слот с артом символа. */
+const ART_SLOT = 'art'
+/** Длительность выигрышного пульса, с. */
+const WIN_DURATION = 0.6
+/** Пик масштаба на пульсе. */
+const WIN_SCALE = 1.15
+
+/** Выигрыш: арт разъезжается и возвращается. Ставится с петлёй — идёт, пока держится поза `win`. */
+const WIN_ANIMATION: StubAnimationData = {
+  duration: WIN_DURATION,
+  timelines: [
+    {
+      slot: ART_SLOT,
+      property: 'scale',
+      keys: [
+        { time: 0, value: 1 },
+        { time: WIN_DURATION / 2, value: WIN_SCALE },
+        { time: WIN_DURATION, value: 1 },
+      ],
+    },
+  ],
+}
+
+/** Длительность взрыва символа на каскаде, с. */
+const EXPLODE_DURATION = 0.35
+/** Доля взрыва, за которую арт раздувается до пика. */
+const EXPLODE_SWELL = 0.3
+/** Пик масштаба на взрыве. */
+const EXPLODE_SCALE = 1.3
+
+/** Взрыв: арт раздувается и схлопывается в точку, исчезая. Одноразовый клип держит пустой последний кадр. */
+const EXPLODE_ANIMATION: StubAnimationData = {
+  duration: EXPLODE_DURATION,
+  timelines: [
+    {
+      slot: ART_SLOT,
+      property: 'scale',
+      keys: [
+        { time: 0, value: 1 },
+        { time: EXPLODE_DURATION * EXPLODE_SWELL, value: EXPLODE_SCALE },
+        { time: EXPLODE_DURATION, value: 0 },
+      ],
+    },
+    {
+      slot: ART_SLOT,
+      property: 'alpha',
+      keys: [
+        { time: EXPLODE_DURATION * EXPLODE_SWELL, value: 1 },
+        { time: EXPLODE_DURATION, value: 0 },
+      ],
+    },
+  ],
+}
+
+// Скелет рисует тот же арт покоя и в тех же единицах ячейки, что и спрайт: масштаб уже стоит
+// на контейнере символа, поправка позиции слоту не нужна
+const symbolSkeleton = (key: SymbolKey): StubSkeletonData => ({
+  slots: [{ name: ART_SLOT, texture: SYMBOL_SPRITES[key].idle }],
+  animations: { win: WIN_ANIMATION, explode: EXPLODE_ANIMATION },
+})
+
+const symbolEntries = Object.entries(SYMBOL_SKELETONS) as [SymbolKey, string][]
+
+/** Описание скелета по его имени. */
+export const STUB_SKELETONS: ReadonlyMap<string, StubSkeletonData> = new Map<string, StubSkeletonData>(
+  symbolEntries.map(([key, skeleton]): [string, StubSkeletonData] => [skeleton, symbolSkeleton(key)])
+)

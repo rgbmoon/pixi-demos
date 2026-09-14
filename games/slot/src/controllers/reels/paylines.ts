@@ -1,0 +1,99 @@
+import { PAYLINE_PREVIEW_MS } from '#src/constants'
+import type { SlotStore } from '#src/stores/slot'
+import { Paylines } from '#src/ui/reels/paylines'
+import { getActiveLineIds } from '#src/utils'
+import type { GameTicker } from '@pixi-demos/engine/game-ticker'
+import { LiveContainer } from '@pixi-demos/engine/live-container'
+
+/** Линии выплат: показывает линии по вызову фаз, а при смене режима вне раунда — превью активных линий. */
+export class PaylinesController extends LiveContainer {
+  private readonly ticker: GameTicker
+  private readonly slotStore: SlotStore
+  private readonly paylines = new Paylines()
+  private previewAbort?: AbortController
+  private pendingPreview = false
+
+  constructor(ticker: GameTicker, slotStore: SlotStore) {
+    super()
+
+    this.ticker = ticker
+    this.slotStore = slotStore
+
+    this.addChild(this.paylines)
+
+    // Барабаны за открытой модалкой не видны, поэтому показ откладывается до её закрытия
+    this.watch(
+      () => slotStore.gameMode,
+      () => {
+        if (slotStore.isSettingsOpen) {
+          this.pendingPreview = true
+
+          return
+        }
+
+        void this.preview()
+      }
+    )
+
+    this.watch(
+      () => slotStore.isSettingsOpen,
+      (isOpen) => {
+        if (isOpen || !this.pendingPreview) return
+
+        this.pendingPreview = false
+
+        void this.preview()
+      }
+    )
+
+    this.watch(
+      () => slotStore.isIdle,
+      (isIdle) => {
+        if (isIdle) return
+
+        this.cancelPreview()
+        this.hide()
+      }
+    )
+  }
+
+  /** Показывает переданные линии, остальные гасит. */
+  show(lineIds: string[]): void {
+    if (this.destroyed) return
+
+    this.paylines.show(lineIds)
+  }
+
+  hide(): void {
+    if (this.destroyed) return
+
+    this.paylines.hide()
+  }
+
+  /** Показ линий режима на `PAYLINE_PREVIEW_MS`; следующее нажатие рисует новый набор, не дожидаясь конца показа. */
+  private async preview(): Promise<void> {
+    this.cancelPreview()
+
+    const abort = new AbortController()
+
+    this.previewAbort = abort
+
+    this.show(getActiveLineIds(this.slotStore.lines))
+
+    try {
+      await this.ticker.waitTicks(PAYLINE_PREVIEW_MS, abort.signal)
+
+      this.hide()
+    } catch {
+      // Показ прерван следующим нажатием: линии уже перерисованы его вызовом show
+    } finally {
+      // Отклонение приходит после того, как новый показ записал свой AbortController; его не сбрасываем
+      if (this.previewAbort === abort) this.previewAbort = undefined
+    }
+  }
+
+  private cancelPreview(): void {
+    this.previewAbort?.abort()
+    this.previewAbort = undefined
+  }
+}

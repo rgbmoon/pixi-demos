@@ -1,0 +1,26 @@
+{
+  "name": "@pixi-demos/reels",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./tests/setup/*": "./tests/setup/*.ts"
+  },
+  "imports": {
+    "#src/*": "./src/*.ts"
+  },
+  "scripts": {
+    "lint": "eslint --quiet --fix .",
+    "lint:ci": "eslint --quiet .",
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "catalog:",
+    "vitest": "catalog:"
+  }
+}

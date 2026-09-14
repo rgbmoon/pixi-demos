@@ -1,0 +1,60 @@
+import type { PointData } from 'pixi.js'
+
+import { pickRandom } from '@pixi-demos/core/random'
+import type { Random } from '@pixi-demos/core/types'
+import type { CellIndex } from '@pixi-demos/reels'
+
+import { CELL_HEIGHT, CELL_WIDTH, HOLD_WIN_CELLS_COUNT, PAYLINES, VISIBLE_SYMBOLS_COUNT } from './constants'
+import { type CoinValue, type PaylineShape, SymbolKey } from './types'
+
+/** Индекс барабана Hold & Win по адресу ячейки сетки: барабаны пронумерованы по колонкам, сверху вниз. */
+export const toHoldWinReel = ({ reel, row }: CellIndex): number => reel * VISIBLE_SYMBOLS_COUNT + row
+
+/** Адрес ячейки сетки по индексу барабана Hold & Win. */
+export const toHoldWinCell = (index: number): CellIndex => ({
+  reel: Math.floor(index / VISIBLE_SYMBOLS_COUNT),
+  row: index % VISIBLE_SYMBOLS_COUNT,
+})
+
+/** Данные раунда машины Hold & Win: поле шага `[барабан][ряд]`, разложенное по барабанам высотой 1. */
+export const toHoldWinReelsData = (frame: readonly (readonly CoinValue[])[]): (CoinValue | undefined)[][] =>
+  Array.from({ length: HOLD_WIN_CELLS_COUNT }, (_, index) => {
+    const { reel, row } = toHoldWinCell(index)
+
+    return [frame[reel]?.[row]]
+  })
+
+/** Центр барабана Hold & Win в координатах зоны символов: там же, где ячейка базовой доски. */
+export const getHoldWinReelPosition = (index: number): PointData => {
+  const { reel, row } = toHoldWinCell(index)
+
+  return { x: CELL_WIDTH * reel, y: CELL_HEIGHT * row }
+}
+
+/** Возвращает линии, участвующие в раунде: первые `lines` ключей конфига. */
+export const getActiveLineIds = (lines: number): string[] => Object.keys(PAYLINES).slice(0, lines)
+
+/** Возвращает точки ломаной линии выплат в координатах зоны символов: от левой границы рамки через центры ячеек к правой. */
+export const getPaylinePoints = ({ rows, offsetCells }: PaylineShape): PointData[] => {
+  const offsetY = offsetCells * CELL_HEIGHT
+  const cells = rows.map((row, reel) => ({ x: CELL_WIDTH * reel, y: CELL_HEIGHT * row + offsetY }))
+  const first = cells[0]
+  const last = cells[cells.length - 1]
+
+  return [{ x: first.x - CELL_WIDTH / 2, y: first.y }, ...cells, { x: last.x + CELL_WIDTH / 2, y: last.y }]
+}
+
+const SYMBOL_KEYS = Object.values<SymbolKey>(SymbolKey)
+
+export const getRandomSymbolKey = (random: Random = Math.random): SymbolKey => pickRandom(SYMBOL_KEYS, random)
+
+// Скаттер в пустой ячейке бонуса читался бы как монета без номинала
+const EMPTY_CELL_SYMBOL_KEYS = SYMBOL_KEYS.filter((key) => key !== SymbolKey.S)
+
+/** Случайный символ для пустой ячейки бонуса: любой, кроме скаттера. */
+export const getRandomEmptyCellSymbolKey = (random: Random = Math.random): SymbolKey =>
+  pickRandom(EMPTY_CELL_SYMBOL_KEYS, random)
+
+/** Форматирует денежную сумму для HUD: разряды через запятую, два знака после точки. */
+export const formatAmount = (value: number): string =>
+  value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })

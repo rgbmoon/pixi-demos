@@ -1,0 +1,382 @@
+import { describe, expect, it } from 'vitest'
+
+import { ReelsMachine } from '#src/reels-machine'
+import { PlannedLandingStrategy } from '#src/strategies/planned-landing'
+import { ReelPhase } from '#src/types'
+
+import {
+  advanceUntilIdle,
+  CELL_HEIGHT,
+  createConfig,
+  createGrid,
+  createMachine,
+  LANDING_OPTIONS,
+  readVisibleGrid,
+  REELS,
+  type TestData,
+} from './setup/reels'
+
+/** Насколько слот промахнулся мимо ближайшей границы ячейки. */
+const distanceToCellBorder = (position: number): number => {
+  const rest = ((position % CELL_HEIGHT) + CELL_HEIGHT) % CELL_HEIGHT
+
+  return Math.min(rest, CELL_HEIGHT - rest)
+}
+
+const ANTICIPATION_CELLS = 18
+
+/** Машина с паузами anticipation: стратегии фиксируются на старте спина, поэтому ставятся до него. */
+const createAnticipationMachine = () => {
+  const machine = createMachine()
+
+  machine.setStrategies({
+    ...machine.getStrategies(),
+    landingStrategy: new PlannedLandingStrategy({ ...LANDING_OPTIONS, anticipationCells: ANTICIPATION_CELLS }),
+  })
+
+  return machine
+}
+
+/**
+ * Крутит машину до покоя и отдаёт кадр, на котором встал каждый барабан.
+ * `clock` показывает текущий кадр колбэкам модели, которые приходят посреди `advance`.
+ */
+const recordStopFrames = (machine: ReturnType<typeof createMachine>, clock = { frame: 0 }): number[] => {
+  const stopFrames = machine.getReels().map(() => 0)
+
+  for (let frame = 1; machine.getPhase() !== ReelPhase.idle; frame += 1) {
+    clock.frame = frame
+    machine.advance(1)
+
+    machine.getReels().forEach((reel, index) => {
+      if (reel.getPhase() === ReelPhase.idle && stopFrames[index] === 0) stopFrames[index] = frame
+    })
+  }
+
+  return stopFrames
+}
+
+/** Прогоняет полный раунд барабанов: прокрутка, посадка на данные, остановка. */
+const playRound = async (grid: TestData, spinFrames = 25, deltaFrames = 1) => {
+  const machine = createMachine()
+
+  machine.spin()
+
+  for (let frame = 0; frame < spinFrames; frame += 1) {
+    machine.advance(deltaFrames)
+  }
+
+  machine.setData(grid)
+
+  const landing = machine.land()
+
+  advanceUntilIdle(machine, deltaFrames)
+  await landing
+
+  return machine
+}
+
+describe('Reel', () => {
+  it('сажает барабаны на значения раунда', async () => {
+    const grid = createGrid()
+    const machine = await playRound(grid)
+
+    expect(readVisibleGrid(machine)).toEqual(grid)
+  })
+
+  it('оставляет слоты на границах ячеек', async () => {
+    const machine = await playRound(createGrid())
+
+    machine.getReels().forEach((reel) => {
+      reel.getStrip().forEach((slot) => {
+        expect(distanceToCellBorder(slot.offset)).toBeLessThan(1e-9)
+      })
+    })
+  })
+
+  it('возвращает барабаны в покой и гасит движение слотов', async () => {
+    const machine = await playRound(createGrid())
+
+    expect(machine.getPhase()).toBe(ReelPhase.idle)
+
+    machine.getReels().forEach((reel) => {
+      reel.getCells().forEach((cell) => {
+        expect(cell.getSlot()?.moving).toBe(false)
+      })
+    })
+  })
+
+  it('реджектит посадку по отмене и возвращает барабаны в покой', async () => {
+    const machine = createMachine()
+    const controller = new AbortController()
+
+    machine.spin()
+    machine.advance(10)
+
+    const landing = machine.land({ signal: controller.signal })
+
+    machine.advance(5)
+    controller.abort(new Error('round cancelled'))
+
+    await expect(landing).rejects.toThrow('round cancelled')
+    expect(machine.getPhase()).toBe(ReelPhase.idle)
+  })
+
+  it('объявляет посадку каждого барабана в порядке stagger', async () => {
+    const machine = createMachine()
+    const landed: number[] = []
+
+    machine.spin()
+    machine.advance(25)
+    machine.setData(createGrid())
+
+    const landing = machine.land({ onReelLanded: (reel) => landed.push(reel) })
+
+    advanceUntilIdle(machine)
+    await landing
+
+    expect(landed).toEqual(Array.from({ length: REELS }, (_, reel) => reel))
+  })
+
+  it.each([0, 5, 20, 40, 60])('после slam на %d-м кадре посадки сажает барабаны на значения раунда', async (landingFrames) => {
+    const grid = createGrid()
+    const machine = createMachine()
+
+    machine.spin()
+    machine.advance(25)
+    machine.setData(grid)
+
+    const landing = machine.land()
+
+    for (let frame = 0; frame < landingFrames; frame += 1) {
+      machine.advance(1)
+    }
+
+    machine.slam()
+    advanceUntilIdle(machine)
+    await landing
+
+    expect(readVisibleGrid(machine)).toEqual(grid)
+  })
+
+  it.each([[[]], [[3, 4]]])('после slam сажает все барабаны в один кадр, anticipation %j', (anticipation) => {
+    const machine = createAnticipationMachine()
+    const anticipated: number[] = []
+
+    machine.spin()
+    machine.advance(25)
+    machine.setData(createGrid())
+    void machine.land({ anticipation, onReelAnticipated: (reel) => anticipated.push(reel) })
+    machine.slam()
+
+    expect(new Set(recordStopFrames(machine)).size).toBe(1)
+    // Промотанная пауза не начиналась: объявлять нечего
+    expect(anticipated).toEqual([])
+  })
+
+  it.each(['до прокрутки', 'на прокрутке'])(
+    'запоминает slam %s и сажает все барабаны в один кадр на значения раунда',
+    async (moment) => {
+      const grid = createGrid()
+      const machine = createMachine()
+
+      if (moment === 'до прокрутки') machine.slam()
+
+      machine.spin()
+      machine.advance(25)
+
+      if (moment === 'на прокрутке') machine.slam()
+
+      machine.setData(grid)
+
+      const landing = machine.land()
+
+      expect(new Set(recordStopFrames(machine)).size).toBe(1)
+      await landing
+      expect(readVisibleGrid(machine)).toEqual(grid)
+    }
+  )
+
+  it('снимает запомненный slam с концом посадки и после reset', async () => {
+    const afterLanding = createMachine()
+    const afterReset = createMachine()
+
+    afterLanding.spin()
+    afterLanding.slam()
+    afterLanding.setData(createGrid())
+
+    const slammed = afterLanding.land()
+
+    advanceUntilIdle(afterLanding)
+    await slammed
+
+    afterReset.slam()
+    afterReset.reset()
+
+    // Следующая посадка идёт с обычным stagger: барабаны встают в разные кадры
+    for (const machine of [afterLanding, afterReset]) {
+      machine.spin()
+      machine.advance(25)
+      machine.setData(createGrid())
+      void machine.land()
+
+      expect(new Set(recordStopFrames(machine)).size).toBe(REELS)
+    }
+  })
+
+  it('объявляет вход в паузу только ждущим барабанам, через stagger после посадки соседа слева', () => {
+    const machine = createAnticipationMachine()
+    const clock = { frame: 0 }
+    const anticipated: { reel: number; frame: number }[] = []
+
+    machine.spin()
+    machine.advance(25)
+    machine.setData(createGrid())
+    void machine.land({
+      anticipation: [3, 4],
+      onReelAnticipated: (reel) => anticipated.push({ reel, frame: clock.frame }),
+    })
+
+    const stopFrames = recordStopFrames(machine, clock)
+    const staggerFrames = (LANDING_OPTIONS.staggerCells * CELL_HEIGHT) / LANDING_OPTIONS.speed
+
+    expect(anticipated.map(({ reel }) => reel)).toEqual([3, 4])
+
+    // Пауза начинается там, где барабан встал бы без неё: на stagger позже соседа слева
+    anticipated.forEach(({ reel, frame }) => {
+      expect(Math.abs(frame - stopFrames[reel - 1] - staggerFrames)).toBeLessThanOrEqual(1)
+      expect(frame).toBeLessThan(stopFrames[reel])
+    })
+  })
+
+  it('сажает барабаны anticipation по очереди, с паузой сверх stagger, на значения раунда', () => {
+    const grid = createGrid()
+    const machine = createAnticipationMachine()
+
+    machine.spin()
+    machine.advance(25)
+    machine.setData(grid)
+    void machine.land({ anticipation: [3, 4] })
+
+    const stopFrames = recordStopFrames(machine)
+    const gaps = stopFrames.slice(1).map((frame, previousIndex) => frame - stopFrames[previousIndex])
+    const pauseFrames = (ANTICIPATION_CELLS * CELL_HEIGHT) / LANDING_OPTIONS.speed
+
+    // До барабана anticipation — обычный stagger, перед каждым ждущим — stagger плюс пауза
+    // Кадр остановки целый: допуск — один кадр
+    expect(Math.abs(gaps[2] - gaps[1] - pauseFrames)).toBeLessThanOrEqual(1)
+    expect(Math.abs(gaps[3] - gaps[1] - pauseFrames)).toBeLessThanOrEqual(1)
+    expect(readVisibleGrid(machine)).toEqual(grid)
+  })
+
+  it('держит барабан за anticipation после ждущего соседа, даже если сам он не ждёт', () => {
+    const machine = createAnticipationMachine()
+
+    machine.spin()
+    machine.advance(25)
+    machine.setData(createGrid())
+    void machine.land({ anticipation: [2] })
+
+    const stopFrames = recordStopFrames(machine)
+
+    expect(stopFrames[3]).toBeGreaterThan(stopFrames[2])
+    expect(stopFrames[4]).toBeGreaterThan(stopFrames[3])
+  })
+
+  it('не даёт паузу anticipation барабанам справа от удержанного барабана из списка', () => {
+    const [plain, withHeldAnticipation] = [[], [2]].map((anticipation) => {
+      const machine = createAnticipationMachine()
+
+      machine.spin({ held: [2] })
+      machine.advance(25)
+      machine.setData(createGrid())
+      void machine.land({ anticipation })
+
+      return recordStopFrames(machine)
+    })
+
+    expect(withHeldAnticipation).toEqual(plain)
+  })
+
+  it('не трогает удержанные барабаны и сажает остальные на данные шага', async () => {
+    const held = [1, 3]
+    const board = createGrid()
+    // Сервер повторяет удержанные колонки, остальные получают новые значения
+    const step = board.map((column, reel) => (held.includes(reel) ? column : column.map((value) => `next-${value}`)))
+    const machine = createMachine()
+    const landed: number[] = []
+
+    machine.setData(board)
+    machine.reset()
+
+    const heldStrips = held.map((reel) => machine.getReel(reel)?.getStrip().map((slot) => ({ ...slot })))
+
+    machine.spin({ held })
+    machine.advance(25)
+    machine.setData(step)
+
+    const landing = machine.land({ onReelLanded: (reel) => landed.push(reel) })
+
+    advanceUntilIdle(machine)
+    await landing
+
+    expect(readVisibleGrid(machine)).toEqual(step)
+    expect(held.map((reel) => machine.getReel(reel)?.getStrip())).toEqual(heldStrips)
+    // Удержанный барабан не садился: объявлять его посадку нечего
+    expect(landed).toEqual([0, 2, 4])
+  })
+
+  it('отсчитывает stagger от первого крутящегося барабана', () => {
+    const baseline = createMachine()
+    const heldMachine = createMachine()
+
+    baseline.spin()
+    heldMachine.spin({ held: [0, 1] })
+
+    const [baselineStops, heldStops] = [baseline, heldMachine].map((machine) => {
+      machine.advance(25)
+      machine.setData(createGrid())
+      void machine.land()
+
+      return recordStopFrames(machine)
+    })
+
+    expect(heldStops[2]).toBe(baselineStops[0])
+    expect(heldStops[3]).toBe(baselineStops[1])
+  })
+
+  it('без getFillerValue наполняет слоты значениями из данных раунда', () => {
+    const { reels, rows, buffer, cellHeight, spinStrategy, landingStrategy, fallStrategy } = createConfig()
+    const grid = createGrid()
+    const values = new Set(grid.flat())
+    const machine = new ReelsMachine({ reels, rows, buffer, cellHeight, spinStrategy, landingStrategy, fallStrategy, data: grid })
+
+    machine.spin()
+
+    // За 40 кадров каждый слот переносится хотя бы раз и получает наполнение
+    for (let frame = 0; frame < 40; frame += 1) {
+      machine.advance(1)
+    }
+
+    machine.getReels().forEach((reel) => {
+      reel.getStrip().forEach((slot) => expect(values.has(slot.value)).toBe(true))
+    })
+  })
+
+  it('садится одинаково при любом размере шага', async () => {
+    const grid = createGrid()
+    // Одинаковый путь до посадки: 25 кадров по 1 против 50 по 0.5
+    const coarse = await playRound(grid, 25, 1)
+    const fine = await playRound(grid, 50, 0.5)
+
+    expect(readVisibleGrid(fine)).toEqual(readVisibleGrid(coarse))
+
+    fine.getReels().forEach((reel, index) => {
+      const expected = coarse.getReels()[index].getStrip()
+
+      reel.getStrip().forEach((slot, slotIndex) => {
+        expect(slot.offset).toBeCloseTo(expected[slotIndex].offset, 9)
+      })
+    })
+  })
+})

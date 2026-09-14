@@ -12,6 +12,9 @@ concurrency:
 
 env:
   HUSKY: 0 # prepare-скрипт не нужен в CI
+  TURBO_TELEMETRY_DISABLED: 1
+  # При ручном запуске turbo получает --force и выполняет все задачи без кэша
+  FORCE: ${{ github.event_name == 'workflow_dispatch' && '--force' || '' }}
 
 jobs:
   checks:
@@ -19,44 +22,78 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4 # версия pnpm — из поля packageManager
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
-      - run: npm run lint:ci
-      - run: npm test
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Кэш задач turbo сохраняется между запусками workflow: задача с прежним хэшем входов не выполняется повторно
+      - uses: actions/cache@v4
+        with:
+          path: .turbo/cache
+          key: turbo-${{ github.job }}-${{ github.sha }}
+          restore-keys: turbo-${{ github.job }}-
+      - run: pnpm exec turbo run lint:ci typecheck test $FORCE
+      - run: pnpm exec eslint --quiet '*.ts' # конфиги в корне репозитория, вне пакетов
+      # Удаляет записи кэша старше 7 дней: без этого размер кэша растёт с каждым запуском
+      - run: find .turbo/cache -type f -mtime +7 -delete
 
   e2e:
     name: e2e
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       - uses: actions/cache@v4
         with:
+          path: .turbo/cache
+          key: turbo-${{ github.job }}-${{ github.sha }}
+          restore-keys: turbo-${{ github.job }}-
+      # Сборка приложения или её восстановление из кэша. В графе turbo e2e от сборки не зависят,
+      # поэтому сборка запускается отдельным шагом
+      - run: pnpm exec turbo run build:mocks $FORCE
+      # Браузеры устанавливаются, только если у какой-то задачи e2e нет записи в кэше. У задач
+      # пакетов без спеков в выводе turbo команда <NONEXISTENT>
+      - id: plan
+        run: |
+          if [ -n "$FORCE" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          misses=$(pnpm exec turbo run e2e --dry=json | jq '[.tasks[] | select(.task == "e2e" and .command != "<NONEXISTENT>" and .cache.status == "MISS")] | length')
+          echo "run=$([ "$misses" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        if: steps.plan.outputs.run == 'true'
+        with:
           path: ~/.cache/ms-playwright
-          key: pw-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-      - run: npx playwright install --with-deps chromium
-      - run: npm run e2e # build:mocks + playwright test
+          key: pw-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - if: steps.plan.outputs.run == 'true'
+        run: pnpm exec playwright install --with-deps chromium
+      # Задачи e2e выполняются последовательно: каждый тест создаёт свой WebGL-контекст на программном рендерере
+      - run: pnpm exec turbo run e2e --concurrency=1 $FORCE
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: playwright-report
           path: |
-            playwright-report/
-            test-results/
+            games/*/playwright-report/
+            games/*/test-results/
+            web/playwright-report/
+            web/test-results/
           retention-days: 7
       # Деплоится именно эта сборка: пересборка в deploy дала бы непроверенный e2e артефакт
       - uses: actions/upload-artifact@v4
         with:
           name: dist
-          path: dist
+          path: web/dist
           retention-days: 7
+      - run: find .turbo/cache -type f -mtime +7 -delete
 
   deploy:
     name: deploy
