@@ -1,0 +1,25 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "e2e": {
+      "inputs": [
+        "e2e/**",
+        "playwright.config.ts",
+        "package.json",
+        "$TURBO_ROOT$/playwright.shared.ts",
+        "$TURBO_ROOT$/pnpm-lock.yaml",
+        "$TURBO_ROOT$/.env",
+        "$TURBO_ROOT$/web/*",
+        "$TURBO_ROOT$/web/src/*",
+        "$TURBO_ROOT$/web/src/app/**",
+        "$TURBO_ROOT$/web/src/components/**",
+        "$TURBO_ROOT$/web/src/styles/**",
+        "$TURBO_ROOT$/web/src/pages/toybox/**",
+        "$TURBO_ROOT$/web/public/*",
+        "$TURBO_ROOT$/web/public/games/toybox/**",
+        "!$TURBO_ROOT$/web/**/.DS_Store",
+      ],
+    },
+  },
+}

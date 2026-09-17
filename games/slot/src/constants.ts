@@ -1,12 +1,9 @@
 import { PhaseName, SymbolKey } from './types'
 import type { ButtonSize, PaylineShape } from './types'
 
-// Сцена раскладывается в координатах макета, а не в пикселях канваса: арт пака нарисован под этот
-// размер, поэтому рамка барабанов и фон ложатся в него один к одному. GameScene масштабируется
-// одним числом, все остальные размеры сцены — дизайн-единицы.
-/** Ширина макета сцены: нативная ширина фона. */
+/** Ширина макета сцены: нативная ширина арта рамки барабанов. */
 export const DESIGN_WIDTH = 941
-/** Высота макета сцены: нативная высота фона. */
+/** Высота макета сцены. */
 export const DESIGN_HEIGHT = 1672
 /** Пропорции игрового поля: выше CANVAS_FILL_MAX_WIDTH канвас повторяет их, и фон не обрезается. */
 export const GAME_ASPECT_RATIO = DESIGN_WIDTH / DESIGN_HEIGHT
@@ -279,7 +276,6 @@ export const MODAL_NINE_SLICE = 24
 
 /** Зазор между строками содержимого модалки. */
 export const MODAL_ROW_GAP = 48
-
 
 /** Кегль подписи чекбокса. */
 export const CHECKBOX_FONT_SIZE = 48

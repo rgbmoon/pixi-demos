@@ -37,7 +37,7 @@ const forbidLayers = (layers, message, allowTypeImports = false) => ({
 })
 
 /** Пакеты игр. Импортировать их могут только страница своей игры и агрегатор моков. */
-const GAMES = ['slot'].map((name) => `@pixi-demos/${name}`)
+const GAMES = ['slot', 'toybox'].map((name) => `@pixi-demos/${name}`)
 
 const NO_REACT = {
   group: ['react', 'react-dom', 'react-dom/*'],

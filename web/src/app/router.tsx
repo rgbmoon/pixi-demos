@@ -31,6 +31,16 @@ export const router = createBrowserRouter([
             },
           },
           {
+            path: '/toybox',
+            lazy: async () => {
+              const module = await import('src/pages/toybox')
+              const { ToyboxPage } = module
+              return {
+                element: <ToyboxPage />,
+              }
+            },
+          },
+          {
             path: '*',
             lazy: async () => {
               const module = await import('src/pages/not-found')

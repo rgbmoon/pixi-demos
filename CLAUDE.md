@@ -23,6 +23,11 @@
 пока в кадре есть выигрыш, множитель выигрыша растёт с каждым шагом.
 Звук — синтезированные SFX по моментам игры, без аудиоассетов.
 
+**Вторая игра — toybox**, автомат с игрушками: изометрическая сетка под кубом, клешня ходит по её осям
+и достаёт игрушку в лоток. Арт — покадровая пиксель-арт анимация, кадры из Aseprite; стек тот же, что
+у слота, без сетевых библиотек. Собраны пакет, роут и запуск (`booting → idle`), сцена пустая.
+Прод-сборка показывает на странице игры заглушку, канвас открывается флагом `?play`.
+
 **Стек:** React 19 · PIXI.js v8 · MobX 6 · inversify 8 · Tailwind CSS v4 · react-router-dom v7 ·
 TypeScript 6 · Vite 8; сеть — zod + partysocket, моки — MSW, скелеты — стаб из `engine/skeleton`,
 звук — Web Audio API без библиотек (`engine/audio`); монорепо — pnpm workspaces + Turborepo.
@@ -103,12 +108,14 @@ games/
   slot/                сама игра: api/ stores/ phases/ scenes/ mocks/ + листовые tokens, types,
                        constants, events, assets, utils, skeletons, reels, sounds; ui/ и controllers/
                        внутри разбиты по зонам сцены: hud/ и reels/
+  toybox/              автомат с игрушками: пока bindings, stores/ phases/ scenes/ + листовые
+                       tokens, types, constants, events
 web/                   приложение
   src/main.tsx         вход; сюда же подключён styles/index.css
   src/app/             composition root: контейнеры, биндинги, роутер, провайдеры
   src/pages/           роут-страницы; каждая — граница ленивого чанка
   src/components/      React-кит: Layout, Button, Snackbars, RouteError, BackgroundCanvas,
-                       GameCanvas, ApiProvider, icons/
+                       GameCanvas, GameTile, ApiProvider, icons/
   src/styles/          глобальный стиль и @theme-токены Tailwind
   public/              статика и ассеты игр
 ```
@@ -208,9 +215,10 @@ ui           →  лист, core и engine.  Не знает stores, api, events
 ### Композиция и DI
 
 Composition root — [app/container.ts](web/src/app/container.ts) (контейнеры) и
-[app/bindings.ts](web/src/app/bindings.ts): `bindApp` (транспорт через `bindNet` пакета `net`, адрес —
-опцией) и `bindRuntime` (хост, тикер, пул, движок автомата). Состав самой игры приносит её манифест —
-[games/slot/bindings.ts](games/slot/src/bindings.ts).
+[app/bindings.ts](web/src/app/bindings.ts): `bindApp` — транспорт через `bindNet` пакета `net`, адрес
+опцией. Рантайм и состав самой игры приносит её манифест — [games/slot/bindings.ts](games/slot/src/bindings.ts):
+`bindFsm` (движок автомата), `bindEngine` (хост и тикер), `bindSpinePool` и `bindAudioSynth` — по
+надобности игры, дальше её эндпоинты, сторы, фазы и сцена.
 
 - **Композиционный корень не знает игру статически.** `createGameContainer(bindGame)` принимает
   биндер аргументом, и знает игру только её страница. Иначе вторая игра склеится с первой в один чанк.
@@ -247,6 +255,9 @@ Composition root — [app/container.ts](web/src/app/container.ts) (контей�
   Игра: пакет `games/<name>` с контрактом во входе `.` → зависимость и роут-страница в `web` → имя в
   `GAMES` у [eslint.config.js](eslint.config.js) → `turbo.jsonc` пакета с входами e2e по образцу
   [слота](games/slot/turbo.jsonc) → ассеты в `web/public/games/<name>/`.
+- **Игра в разработке**: её страница показывает заглушку строкой, канвас открывается флагом `?play` —
+  им же e2e проверяет запуск в прод-сборке. Пакет игры импортируется статически, как у готовой игры:
+  ленивый чанк страницы приходит из роутера.
 
 ---
 
@@ -364,7 +375,9 @@ PIXI-мир держит `GameRoot` на стороне движка): `useRef` 
 styled-components нет, глобальный стиль один. Брендовые цвета — токены `@theme`, их TS-двойник для
 PIXI — `PALETTE` (живёт в `core/`, чтобы её видели и PIXI-слой, и React-кит). Страницы грузятся
 лениво через `lazy` в роутере. Провайдеры приложения — `StrictMode → ApiProvider → RouterProvider`.
-Ручную мемоизацию не добавляем — работает React Compiler.
+Ручную мемоизацию не добавляем — работает React Compiler. CSS сторонних библиотек (Swiper)
+подключается в `styles/index.css` через `@import … layer(components)`: CSS без слоя перекрывает
+утилиты Tailwind при любой специфичности, и классы на элементах библиотеки не применяются.
 
 ---
 
