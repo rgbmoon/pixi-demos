@@ -8,9 +8,9 @@ import { LinkOutIcon } from 'src/components/icons'
 const GAME_TILES = [
   {
     to: '/slot',
-    title: 'Slot machine',
+    title: 'Slot',
     description:
-      'Reel mechanics demo — the spin itself is the subject: slam stop and hold-to-spin turbo, anticipation spins, held reels and respins, hold-and-win cells and cascades. Rounds are server-authoritative; the client presents the result it receives.',
+      'Reel machine demo — demonstrates various reel mechanics. The game is built around the reel machine itself: an embeddable engine for any slot game, highly customizable for rapid development and optimized for mobile devices.',
     cover: (
       <picture>
         <source srcSet="/games/slot/tile.webp" type="image/webp" />
@@ -20,9 +20,9 @@ const GAME_TILES = [
   },
   {
     to: '/toybox',
-    title: 'Toy box',
+    title: 'Toy Box',
     description:
-      'Isometric toy box in frame-by-frame pixel art: Aseprite animations played through a custom PixiJS animation layer. A claw travels along the grid axes above an 8×8 field, drops into the cell beneath it, and hopefully carries the toy back to the tray.',
+      'Isometric claw machine made with frame-by-frame pixel art. Aseprite animations played through a custom PixiJS animation layer. Optimized for mobile devices with touch controls.',
     cover: (
       <picture>
         <source srcSet="/games/toybox/toy-box.webp" type="image/webp" />
@@ -38,24 +38,29 @@ export const MainPage = () => {
       <section className="flex flex-col items-start gap-4">
         <h1 className="text-4xl font-extralight">About</h1>
         <p className="max-w-3xl text-lg font-extralight text-slate-300">
-          Sergei Abrashkin — frontend developer. Five years of commercial work with React and TypeScript, enterprise
-          products in retail and logistics.
-          <br />
-          Since 2026 — web game development on PixiJS.
+          Sergei Abrashkin — frontend developer with five years of commercial experience in React and TypeScript,
+          shipping enterprise products for retail and logistics.
         </p>
         <p className="max-w-3xl text-lg font-extralight text-slate-300">
-          This site is the demo side of that work: PixiJS clients built to production-client conventions.
+          Since 2026 my focus is web game development on PixiJS — building high-performance games with a strong
+          architecture underneath, and close attention to performance and accessibility.
         </p>
         <p className="max-w-3xl text-lg font-extralight text-slate-300">
-          The code base of the project is hosted on GitHub. You are welcome to explore it.
+          Feel free to play the games below. The code behind them is available on{' '}
+          <a
+            href="https://github.com/rgbmoon/pixi-demos"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 align-baseline text-brand-primary hover:text-brand-white transition-colors duration-100"
+          >
+            GitHub
+            <LinkOutIcon width={16} height={16} />
+          </a>
+          .
         </p>
         <div className="flex flex-wrap gap-3">
           <Button link href="/cv/CV_Abrashkin_Sergei_EN_iGaming.pdf" target="_blank" rel="noreferrer">
             CV and Contacts (PDF)
-            <LinkOutIcon width={16} height={16} />
-          </Button>
-          <Button link href="https://github.com/rgbmoon/pixi-demos" target="_blank" rel="noreferrer">
-            Source on GitHub
             <LinkOutIcon width={16} height={16} />
           </Button>
         </div>

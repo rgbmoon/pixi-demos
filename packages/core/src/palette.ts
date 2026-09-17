@@ -3,6 +3,7 @@
  * CSS-двойник для Tailwind-классов — @theme в styles/index.css.
  */
 export const PALETTE = {
+  background: '#241b3e',
   primary: '#a98fc3',
   accent: '#6ec3a7',
   cyan: '#00e5ff',
