@@ -6,6 +6,7 @@ import { ENGINE_TOKENS } from '#src/tokens'
 import type { CanvasConfig, SceneLike } from '#src/types'
 import { notifyFatal } from '@pixi-demos/core/errors/utils'
 import type { Fsm } from '@pixi-demos/core/fsm/fsm'
+import { PALETTE } from '@pixi-demos/core/palette'
 import { CORE_TOKENS } from '@pixi-demos/core/tokens'
 
 import { MAX_RESOLUTION } from './constants'
@@ -95,7 +96,7 @@ export class GameRoot {
       // autoStart: false — свой тикер приложение не запускает
       await app.init({
         autoStart: false,
-        background: '#475569',
+        background: PALETTE.background,
         width,
         height,
         resolution: Math.min(window.devicePixelRatio || 1, MAX_RESOLUTION),

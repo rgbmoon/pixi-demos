@@ -29,7 +29,7 @@ type BlobConfig = {
 export const BG_SPAWN_DURATION = 1.2
 
 /** Фон канваса под блобами; его же берёт экран загрузки игры */
-export const BG_CANVAS_COLOR = '#1e293b'
+export const BG_CANVAS_COLOR = PALETTE.background
 
 export const BG_BLOBS: BlobConfig[] = [
   {

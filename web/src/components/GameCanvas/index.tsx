@@ -63,7 +63,7 @@ export const GameCanvas = ({ boot, dispose }: GameCanvasProps) => {
     <div className="grid h-full w-full select-none [-webkit-touch-callout:none]">
       <div ref={containerRef} className="col-start-1 row-start-1 flex items-center justify-center overflow-hidden" />
       {(loading || fatal) && (
-        <div className="col-start-1 row-start-1 z-10 flex items-center justify-center bg-slate-800">
+        <div className="col-start-1 row-start-1 z-10 flex items-center justify-center bg-brand-background">
           {fatal ? (
             <div role="alert" className="flex flex-col items-center gap-3 px-6 text-center text-white">
               <p>{fatal.message}</p>
