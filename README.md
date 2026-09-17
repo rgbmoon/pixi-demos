@@ -9,6 +9,8 @@ Demo game clients built with PixiJS v8 and React.
   hold-to-spin turbo, anticipation spins, sticky-wild respins with held reels, a hold-and-win
   bonus on single-cell reels, and cascades with a growing win multiplier. The server is the source
   of truth: the client presents the round it receives.
+- **Toy box** — an isometric claw machine in frame-by-frame pixel art: animation frames come from
+  Aseprite. Under development.
 
 ## Stack
 
@@ -26,6 +28,7 @@ packages/engine               PIXI runtime: host, ticker, skeleton pool, audio s
 packages/reels                reel machine model: standalone, no dependencies
 packages/reels-pixi-adapter   PIXI adapter for the reel machine model
 games/slot                    the slot game: its unit tests and e2e specs live here
+games/toybox                  the toy box game: : its unit tests and e2e specs live here
 web                           the application: composition root, pages, React kit, assets
 ```
 

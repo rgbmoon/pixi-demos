@@ -1,0 +1,50 @@
+import type { Container } from 'inversify'
+
+import { bindFsm } from '@pixi-demos/core/bindings'
+import { GameEmitter } from '@pixi-demos/core/events/game-emitter'
+import { traceEvent } from '@pixi-demos/core/events/utils'
+import { CORE_TOKENS } from '@pixi-demos/core/tokens'
+import { bindEngine } from '@pixi-demos/engine/bindings'
+import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
+
+import { CANVAS_FILL_MAX_WIDTH, GAME_ASPECT_RATIO, INITIAL_PHASE } from './constants'
+import type { GameEvents } from './events'
+import { BootingPhase } from './phases/booting'
+import { IdlePhase } from './phases/idle'
+import { GameScene } from './scenes/game'
+import { ToyboxStore } from './stores/toybox'
+import { TOYBOX_TOKENS } from './tokens'
+import { PhaseName } from './types'
+
+const bindFlow = (container: Container): void => {
+  container.bind(TOYBOX_TOKENS.ToyboxStore).to(ToyboxStore)
+  container.bind(CORE_TOKENS.PhaseSink).toDynamicValue(({ get }) => get(TOYBOX_TOKENS.ToyboxStore))
+  container.bind(TOYBOX_TOKENS.GameEmitter).toDynamicValue(() => new GameEmitter<GameEvents>(traceEvent))
+  container
+    .bind(CORE_TOKENS.FsmConfig)
+    .toDynamicValue(() => ({ initial: INITIAL_PHASE, names: Object.values(PhaseName) }))
+
+  container.bind(CORE_TOKENS.Phase).to(BootingPhase)
+  container.bind(CORE_TOKENS.Phase).to(IdlePhase)
+}
+
+const bindScene = (container: Container): void => {
+  container
+    .bind(ENGINE_TOKENS.CanvasConfig)
+    .toDynamicValue(() => ({ aspectRatio: GAME_ASPECT_RATIO, fillMaxWidth: CANVAS_FILL_MAX_WIDTH }))
+
+  container
+    .bind(ENGINE_TOKENS.Scene)
+    .to(GameScene)
+    .onDeactivation((scene) => {
+      if (!scene.destroyed) scene.destroy()
+    })
+}
+
+/** Манифест toybox: состав графа читается по доменным функциям. */
+export const bindToybox = (container: Container): void => {
+  bindFsm(container)
+  bindEngine(container)
+  bindFlow(container)
+  bindScene(container)
+}

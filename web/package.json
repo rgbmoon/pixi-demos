@@ -20,6 +20,7 @@
     "@pixi-demos/engine": "workspace:*",
     "@pixi-demos/net": "workspace:*",
     "@pixi-demos/slot": "workspace:*",
+    "@pixi-demos/toybox": "workspace:*",
     "@tailwindcss/vite": "^4.3.2",
     "inversify": "catalog:",
     "mobx": "catalog:",
@@ -28,6 +29,7 @@
     "react-dom": "^19.2.7",
     "react-router-dom": "^7.18.1",
     "reflect-metadata": "catalog:",
+    "swiper": "^14.2.0",
     "tailwindcss": "^4.3.2"
   },
   "devDependencies": {

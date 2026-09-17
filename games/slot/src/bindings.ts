@@ -4,7 +4,7 @@ import { bindFsm } from '@pixi-demos/core/bindings'
 import { GameEmitter } from '@pixi-demos/core/events/game-emitter'
 import { traceEvent } from '@pixi-demos/core/events/utils'
 import { CORE_TOKENS } from '@pixi-demos/core/tokens'
-import { bindEngine } from '@pixi-demos/engine/bindings'
+import { bindAudioSynth, bindEngine, bindSpinePool } from '@pixi-demos/engine/bindings'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 
 import { SlotApi } from './api/slot'
@@ -180,6 +180,8 @@ const bindScene = (container: Container): void => {
 export const bindSlot = (container: Container): void => {
   bindFsm(container)
   bindEngine(container)
+  bindSpinePool(container)
+  bindAudioSynth(container)
   bindFlow(container)
   bindScene(container)
 }

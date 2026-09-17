@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Стили Swiper лежат в слое components: CSS без слоя перекрывает утилиты Tailwind при любой специфичности. Поэтому импортируем их здесь */
+@import "swiper/css" layer(components);
+@import "swiper/css/a11y" layer(components);
+
 @theme {
   --header-height: 64px;
   --color-brand-primary: #a98fc3;
