@@ -10,7 +10,7 @@ const GAME_TILES = [
     to: '/slot',
     title: 'Slot',
     description:
-      'Reel machine demo — demonstrates various reel mechanics. The game is built around the reel machine itself: an embeddable engine for any slot game, highly customizable for rapid development and optimized for mobile devices.',
+      'Reel machine demo — a showcase of various reel mechanics. The game is built around the reel machine itself: an embeddable engine for any slot game, highly customizable for rapid development and optimized for mobile devices.',
     cover: (
       <picture>
         <source srcSet="/games/slot/tile.webp" type="image/webp" />
@@ -38,15 +38,15 @@ export const MainPage = () => {
       <section className="flex flex-col items-start gap-4">
         <h1 className="text-4xl font-extralight">About</h1>
         <p className="max-w-3xl text-lg font-extralight text-slate-300">
-          Sergei Abrashkin — frontend developer with five years of commercial experience in React and TypeScript,
-          shipping enterprise products for retail and logistics.
+          Hi! I'm Sergei — a frontend developer with solid experience in React and TypeScript, shipping enterprise
+          products for retail and logistics.
         </p>
         <p className="max-w-3xl text-lg font-extralight text-slate-300">
-          Since 2026 my focus is web game development on PixiJS — building high-performance games with a strong
-          architecture underneath, and close attention to performance and accessibility.
+          Since 2026 my focus is web game development with PixiJS — building high-performance games with a strong
+          architecture underneath and close attention to performance and accessibility.
         </p>
         <p className="max-w-3xl text-lg font-extralight text-slate-300">
-          Feel free to play the games below. The code behind them is available on{' '}
+          Feel free to play my demo games. The source code is available on{' '}
           <a
             href="https://github.com/rgbmoon/pixi-demos"
             target="_blank"
