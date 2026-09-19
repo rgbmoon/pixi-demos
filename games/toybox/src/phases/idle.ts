@@ -1,25 +1,34 @@
-import { injectable } from 'inversify'
+import { inject, injectable } from 'inversify'
 
+import type { GameEvents } from '#src/events'
+import type { ToyboxStore } from '#src/stores/toybox'
+import { TOYBOX_TOKENS } from '#src/tokens'
 import { PhaseName } from '#src/types'
+import type { GameEmitter } from '@pixi-demos/core/events/game-emitter'
 import type { Phase } from '@pixi-demos/core/fsm/types'
 
 /**
- * Фаза покоя: ввода игрока у игры пока нет, поэтому фаза длится до остановки автомата.
- * Реджект по `signal` петля автомата отсеивает и завершается без уведомления.
+ * Фаза покоя
  */
 @injectable()
 export class IdlePhase implements Phase<PhaseName> {
   readonly name = PhaseName.idle
 
-  enter(signal: AbortSignal): Promise<never> {
-    return new Promise<never>((_resolve, reject) => {
-      if (signal.aborted) {
-        reject(signal.reason as Error)
+  private readonly emitter: GameEmitter<GameEvents>
+  private readonly toyboxStore: ToyboxStore
 
-        return
-      }
+  constructor(
+    @inject(TOYBOX_TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>,
+    @inject(TOYBOX_TOKENS.ToyboxStore) toyboxStore: ToyboxStore
+  ) {
+    this.emitter = emitter
+    this.toyboxStore = toyboxStore
+  }
 
-      signal.addEventListener('abort', () => reject(signal.reason as Error), { once: true })
-    })
+  async enter(signal: AbortSignal): Promise<typeof PhaseName.descending> {
+    // Доступность проверяет фаза: запрос в обход кнопки не запустит цикл посреди другого цикла
+    await this.emitter.waitFor('ui:dropRequested', { signal, filter: () => this.toyboxStore.canDrop })
+
+    return PhaseName.descending
   }
 }

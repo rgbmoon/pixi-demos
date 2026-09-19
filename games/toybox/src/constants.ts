@@ -1,10 +1,120 @@
-import { PhaseName } from './types'
+import { type CellAddress, type GroundPoint, PhaseName, type ScreenPoint } from './types'
 
+/** Ширина макета сцены. */
+export const DESIGN_WIDTH = 941
+/** Высота макета сцены. */
+export const DESIGN_HEIGHT = 1672
 /** Пропорции игрового поля: выше CANVAS_FILL_MAX_WIDTH канвас повторяет их. */
-export const GAME_ASPECT_RATIO = 941 / 1672
+export const GAME_ASPECT_RATIO = DESIGN_WIDTH / DESIGN_HEIGHT
 
 /** Ширина контейнера, до которой канвас занимает его целиком. */
 export const CANVAS_FILL_MAX_WIDTH = 640
 
 /** Фаза, с которой автомат начинает петлю после запуска. */
 export const INITIAL_PHASE: PhaseName = PhaseName.booting
+
+/** Сторона сетки в ячейках. */
+export const GRID_SIZE = 8
+
+/** Экранный шаг на ячейку вдоль оси x: она уходит вглубь сцены, наклон 1:1. */
+export const AXIS_X: ScreenPoint = { x: 8, y: -8 }
+/** Экранный шаг на ячейку вдоль оси y: она идёт вдоль фронтальной грани влево, наклон 1:16. */
+export const AXIS_Y: ScreenPoint = { x: -64, y: -4 }
+/** Экранная длина единицы высоты `z`. */
+export const UNIT_HEIGHT = 68
+/** Высота куба в единицах мира: столько единиц `z` от пола до верхней грани. */
+export const CUBE_HEIGHT = 6
+
+/** Ширина пола в дизайн-единицах. */
+export const FLOOR_WIDTH = GRID_SIZE * (Math.abs(AXIS_X.x) + Math.abs(AXIS_Y.x))
+/** Высота пола в дизайн-единицах. */
+export const FLOOR_HEIGHT = GRID_SIZE * (Math.abs(AXIS_X.y) + Math.abs(AXIS_Y.y))
+/** Полная высота куба на экране: пол плюс вертикальные рёбра. */
+export const BOX_HEIGHT = FLOOR_HEIGHT + CUBE_HEIGHT * UNIT_HEIGHT
+// Начало координат куба — ближний угол пола, а сам пол несимметричен относительно него
+/** Сдвиг куба, при котором его пол встаёт по центру отведённого места. */
+export const BOX_CENTER_OFFSET_X = (-(AXIS_X.x + AXIS_Y.x) * GRID_SIZE) / 2
+
+/** Сторона лотка в ячейках. */
+export const TRAY_SIZE = 2
+/** Ближняя к игроку ячейка лотка: лоток стоит в левом углу фронтальной грани. */
+export const TRAY_ORIGIN: CellAddress = { col: 0, row: GRID_SIZE - TRAY_SIZE }
+/** Точка, над которой клешня отпускает игрушку. */
+export const TRAY_CENTER: GroundPoint = { x: TRAY_ORIGIN.col + TRAY_SIZE / 2, y: TRAY_ORIGIN.row + TRAY_SIZE / 2 }
+/** Точка, над которой клешня стоит в покое. */
+export const FIELD_CENTER: GroundPoint = { x: GRID_SIZE / 2, y: GRID_SIZE / 2 }
+
+/** Предельная скорость клешни при полном отклонении джойстика, ячеек в секунду. */
+export const CLAW_MAX_SPEED = 5.4
+/** Предел разгона клешни, ячеек в секунду за секунду: мотор выходит на скорость почти сразу. */
+export const CLAW_ACCELERATION = 60
+/** Предел торможения: клешня встаёт за доли ячейки после отпускания джойстика. */
+export const CLAW_BRAKE_ACCELERATION = 90
+/** Постоянная времени разгона: чем ближе цель, тем короче фаза ускорения. */
+export const CLAW_RESPONSE_MS = 25
+/** Постоянная времени торможения: клешня встаёт заметно резче, чем разгоняется. */
+export const CLAW_BRAKE_MS = 30
+/** Порог, ниже которого остаточная скорость гасится: иначе клешня ползёт после остановки. */
+export const CLAW_MIN_SPEED = 0.1
+/** Скорость переездов, которые ведёт автомат, ячеек в секунду. */
+export const CLAW_TRAVEL_SPEED = 4
+/** Длительность опускания клешни до пола, мс. */
+export const CLAW_DROP_MS = 1400
+/** Длительность подъёма клешни к верхней грани, мс. */
+export const CLAW_LIFT_MS = 1300
+/** Доля хода на разгон и на торможение у движений автомата: тросик набирает скорость коротко. */
+export const CLAW_RAMP_SHARE = 0.15
+/** Сколько клешня стоит над лотком: место под будущие падение игрушки и разжатие клешни. */
+export const TRAY_HOLD_MS = 1000
+
+/** Масштаб предметов у дальнего края поля: с глубиной они видны мельче. */
+export const DEPTH_SCALE_MIN = 0.72
+
+/** Радиус точки клешни в дизайн-единицах. */
+export const CLAW_RADIUS = 16
+/** Радиус точки-тени на полу. */
+export const CLAW_SHADOW_RADIUS = 12
+/** Прозрачность тени клешни. */
+export const CLAW_SHADOW_ALPHA = 0.45
+
+/** Толщина рёбер куба и линий сетки в пикселях. */
+export const LINE_THICKNESS = 1
+/** Прозрачность линий сетки: ими каркас отличается от рёбер. */
+export const GRID_ALPHA = 0.35
+/** Прозрачность заливки лотка. */
+export const TRAY_ALPHA = 0.35
+
+/** Доля хода ручки, ниже которой джойстик не трогает клешню. */
+export const JOYSTICK_DEADZONE = 0.3
+/** Доля хода ручки, с которой клешня идёт на полной скорости. */
+export const JOYSTICK_FULL_TILT = 0.7
+
+/** Радиус подложки джойстика в дизайн-единицах. */
+export const JOYSTICK_RADIUS = 95
+/** Радиус ручки джойстика. */
+export const JOYSTICK_KNOB_RADIUS = 46
+/** Толщина обводки подложки джойстика. */
+export const JOYSTICK_THICKNESS = 3
+/** Прозрачность заливки подложки джойстика. */
+export const JOYSTICK_FILL_ALPHA = 0.16
+
+/** Сторона подложки кнопки в дизайн-единицах. */
+export const BUTTON_SIZE_UNITS = 130
+/** Толщина обводки кнопки. */
+export const BUTTON_THICKNESS = 3
+/** Прозрачность заливки кнопки. */
+export const BUTTON_FILL_ALPHA = 0.2
+/** Прозрачность погашенного элемента управления. */
+export const DISABLED_ALPHA = 0.4
+/** Доля подложки, которую занимает иконка. */
+export const ICON_RATIO = 0.4
+
+/** Смещение джойстика от центра блока управления. */
+export const JOYSTICK_OFFSET_X = -170
+/** Смещение кнопки опускания от центра блока управления. */
+export const DROP_OFFSET_X = 230
+
+/** Отступ элементов сцены от края видимой области. */
+export const SCREEN_MARGIN = 32
+/** Отступ куба от верха игровой области. */
+export const BOX_TOP_MARGIN = 64
