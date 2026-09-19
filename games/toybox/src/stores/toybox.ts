@@ -1,10 +1,12 @@
 import { injectable } from 'inversify'
-import { action, makeObservable, observable } from 'mobx'
+import { action, computed, makeObservable, observable } from 'mobx'
 
 import { INITIAL_PHASE } from '#src/constants'
-import type { PhaseName } from '#src/types'
+import { PhaseName } from '#src/types'
 
-/** Состояние игры: пока только активная фаза автомата. */
+/**
+ * Состояние игры
+ */
 @injectable()
 export class ToyboxStore {
   constructor() {
@@ -13,6 +15,15 @@ export class ToyboxStore {
 
   /** Активная фаза. Единственный писатель — движок автомата через `setPhase`. */
   @observable phase: PhaseName = INITIAL_PHASE
+
+  @computed get isIdle(): boolean {
+    return this.phase === PhaseName.idle
+  }
+
+  /** Доступно ли опускание клешни: цикл идёт целиком, прервать его нечем. */
+  @computed get canDrop(): boolean {
+    return this.isIdle
+  }
 
   @action setPhase(phase: PhaseName) {
     this.phase = phase

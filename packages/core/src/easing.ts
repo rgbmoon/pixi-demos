@@ -32,3 +32,23 @@ export const getEaseOutBackInitialSpeed = (backStrength = 0.1) => {
   // Производная 3·cubicFactor·p² + 2·backFactor·p в точке progressFromEnd = -1
   return 3 * cubicFactor - 2 * backFactor
 }
+
+/**
+ * Трапецеидальный профиль хода: скорость линейно набирается на первой доле `rampShare` пути,
+ * держится постоянной и так же линейно гаснет в конце. Так движется привод с ограниченным
+ * ускорением — в отличие от плавных кривых, разброс скорости здесь невелик:
+ * её пик равен `1 / (1 - rampShare)` от средней. `progress` и результат — доли единицы.
+ */
+export const easeTrapezoid = (progress: number, rampShare = 0.2) => {
+  const ramp = Math.min(Math.max(rampShare, 0), 0.5)
+
+  if (ramp === 0) return progress
+
+  const peakSpeed = 1 / (1 - ramp)
+
+  if (progress < ramp) return (peakSpeed * progress ** 2) / (2 * ramp)
+
+  if (progress > 1 - ramp) return 1 - (peakSpeed * (1 - progress) ** 2) / (2 * ramp)
+
+  return peakSpeed * (progress - ramp / 2)
+}

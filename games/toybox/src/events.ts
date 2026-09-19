@@ -6,4 +6,5 @@
  */
 export type GameEvents = {
   'game:booted': void
+  'ui:dropRequested': void
 }
