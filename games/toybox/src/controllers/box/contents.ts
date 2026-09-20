@@ -1,5 +1,5 @@
 import { inject, injectable } from 'inversify'
-import type { DestroyOptions } from 'pixi.js'
+import type { DestroyOptions, Ticker } from 'pixi.js'
 
 import {
   GRID_SIZE,
@@ -7,16 +7,29 @@ import {
   TOY_BOUNCE_MS,
   TOY_COLLECT_MS,
   TOY_FALL_MS,
+  TOY_LANDING_IMPULSE,
   TOY_LAYER_CENTER,
+  TOY_PRESS_DEPTH,
   TOY_ROOT_COLOR,
+  TOY_SPRING_DAMPING,
+  TOY_SPRING_PERIOD_MS,
 } from '#src/constants'
 import type { ClawController } from '#src/controllers/box/claw'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
-import type { CellAddress, WorldPoint } from '#src/types'
+import { type CellAddress, PhaseName, type SpringState, type WorldPoint } from '#src/types'
 import { Toy } from '#src/ui/box/toy'
 import { TrayWalls } from '#src/ui/box/tray-walls'
-import { getCellCenter, getDomeHeight, getSettleSlides, resolveDrop, shiftColor, tweenWorld } from '#src/utils'
+import {
+  advanceSpring,
+  getCellCenter,
+  getDomeHeight,
+  getSettleSlides,
+  isReducedMotion,
+  resolveDrop,
+  shiftColor,
+  tweenWorld,
+} from '#src/utils'
 import { easeInQuad } from '@pixi-demos/core/easing'
 import { createAbortError, notifyError } from '@pixi-demos/core/errors/utils'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
@@ -40,8 +53,11 @@ export class ContentsController extends LiveContainer {
   private readonly motions = new Map<Toy, AbortController>()
   /** Стопки по ячейкам: `columns[col][row]` перечисляет игрушки снизу вверх. */
   private readonly columns: Toy[][][]
+  /** Пружины игрушек, которые качаются прямо сейчас: прожатая под клешнёй и отскоки после посадок. */
+  private readonly bounces = new Map<Toy, { state: SpringState; target: number }>()
   private target?: CellAddress
   private highlighted?: Toy
+  private pressed?: Toy
 
   constructor(
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
@@ -65,11 +81,21 @@ export class ContentsController extends LiveContainer {
       },
       { fireImmediately: true }
     )
+
+    // Прожатие идёт, пока автомат держит клешню сжатой на стопке: фаза захвата начинается с касания
+    this.watch(
+      () => toyboxStore.phase === PhaseName.grabbing,
+      (grabbing) => this.setPressed(grabbing ? claw.getCell() : undefined)
+    )
+
+    this.ticker.add(this.stepBounces)
   }
 
   override destroy(options?: DestroyOptions): void {
     this.life.abort(createAbortError('Contents destroyed'))
+    this.ticker.remove(this.stepBounces)
     this.motions.clear()
+    this.bounces.clear()
     this.contexts.plain.destroy()
     this.contexts.highlighted.destroy()
 
@@ -88,6 +114,7 @@ export class ContentsController extends LiveContainer {
     if (!toy) return undefined
 
     this.stopMotion(toy)
+    this.clearBounce(toy)
     toy.setHighlighted(false)
     this.removeChild(toy)
     this.refreshHighlight()
@@ -114,8 +141,12 @@ export class ContentsController extends LiveContainer {
         const isLast = index === path.length - 1
         // Ячейки по дороге полны: игрушка проходит по верху их стопок
         const level = isLast ? layer : MAX_LAYERS - 1
+        const fallFrom = toy.getWorld().z
 
         await this.moveToy(toy, this.getToyPoint(cell, level), signal)
+
+        // Промежуточные ячейки игрушка проходит по верхам стопок — садится она только в последней
+        if (isLast && !collected) this.land(toy, fallFrom - toy.getWorld().z)
       }
 
       if (collected) await this.sink(toy, signal)
@@ -129,7 +160,7 @@ export class ContentsController extends LiveContainer {
    * сползает в низкую и садится на её верхний слой.
    */
   settle(): void {
-    const slides: { toy: Toy; to: WorldPoint }[] = []
+    const slides: { toy: Toy; point: WorldPoint }[] = []
 
     for (const { from, to } of getSettleSlides(this.getHeights(), Math.random)) {
       const toy = this.columns[from.col][from.row].pop()
@@ -139,7 +170,7 @@ export class ContentsController extends LiveContainer {
       const target = this.columns[to.col][to.row]
 
       target.push(toy)
-      slides.push({ toy, to: this.getToyPoint(to, target.length - 1) })
+      slides.push({ toy, point: this.getToyPoint(to, target.length - 1) })
     }
 
     if (slides.length === 0) return
@@ -147,8 +178,11 @@ export class ContentsController extends LiveContainer {
     this.refreshHighlight()
 
     this.play(async (signal) => {
-      for (const { toy, to } of slides) {
-        await this.moveToy(toy, to, signal)
+      for (const { toy, point } of slides) {
+        const fallFrom = toy.getWorld().z
+
+        await this.moveToy(toy, point, signal)
+        this.land(toy, fallFrom - toy.getWorld().z)
       }
     })
   }
@@ -186,10 +220,71 @@ export class ContentsController extends LiveContainer {
     return columns
   }
 
+  /**
+   * Прожимает верхнюю игрушку ячейки под клешнёй. Без ячейки прожатие снимается сразу, без пружины:
+   * на подъёме клешни игрушка просто встаёт на место.
+   */
+  private setPressed(cell: CellAddress | undefined): void {
+    if (this.pressed) this.clearBounce(this.pressed)
+
+    if (!cell || isReducedMotion()) return
+
+    const toy = this.getTopToy(cell)
+
+    if (!toy) return
+
+    this.pressed = toy
+    this.bounces.set(toy, { state: { value: 0, velocity: 0 }, target: -TOY_PRESS_DEPTH })
+  }
+
+  /** Отыгрывает посадку игрушки: она проседает тем глубже, чем выше падала, и качается обратно. */
+  private land(toy: Toy, fallHeight: number): void {
+    // Прожатую клешнёй игрушку толчки не трогают: её держит вес клешни
+    if (isReducedMotion() || toy === this.pressed) return
+
+    const share = Math.min(Math.max(fallHeight, 0) / MAX_LAYERS, 1)
+    const bounce = this.bounces.get(toy) ?? { state: { value: 0, velocity: 0 }, target: 0 }
+
+    bounce.state = { value: bounce.state.value, velocity: bounce.state.velocity - TOY_LANDING_IMPULSE * share }
+
+    this.bounces.set(toy, bounce)
+  }
+
+  /** Снимает пружину игрушки и ставит её ровно на свой слой. */
+  private clearBounce(toy: Toy): void {
+    this.bounces.delete(toy)
+    toy.setBounce(0)
+
+    if (this.pressed === toy) this.pressed = undefined
+  }
+
+  /** Кадровый шаг пружин: отскоки гаснут и снимаются, прожатие держится у своей цели. */
+  private stepBounces = (ticker: Ticker): void => {
+    if (this.bounces.size === 0) return
+
+    for (const [toy, bounce] of this.bounces) {
+      bounce.state = advanceSpring(
+        bounce.state,
+        { target: bounce.target, periodMs: TOY_SPRING_PERIOD_MS, damping: TOY_SPRING_DAMPING },
+        ticker.deltaMS
+      )
+
+      toy.setBounce(bounce.state.value)
+
+      if (bounce.target === 0 && bounce.state.value === 0 && bounce.state.velocity === 0) this.bounces.delete(toy)
+    }
+  }
+
+  /** Верхняя игрушка ячейки; у пустой стопки её нет. */
+  private getTopToy({ col, row }: CellAddress): Toy | undefined {
+    const stack = this.columns[col][row]
+
+    return stack[stack.length - 1]
+  }
+
   /** Переставляет подсветку на верхнюю игрушку целевой ячейки. */
   private refreshHighlight(): void {
-    const stack = this.target && this.columns[this.target.col][this.target.row]
-    const toy = stack && stack[stack.length - 1]
+    const toy = this.target && this.getTopToy(this.target)
 
     if (toy === this.highlighted) return
 
@@ -274,6 +369,7 @@ export class ContentsController extends LiveContainer {
       signal
     )
 
+    this.bounces.delete(toy)
     toy.destroy()
   }
 }

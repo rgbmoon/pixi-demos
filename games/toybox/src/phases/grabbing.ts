@@ -1,6 +1,6 @@
 import { inject, injectable } from 'inversify'
 
-import { GRAB_CHANCE, GRAB_HOLD_MS } from '#src/constants'
+import { GRAB_CHANCE, GRAB_HOLD_MS, PHASE_PAUSE_MS } from '#src/constants'
 import type { ClawController } from '#src/controllers/box/claw'
 import type { ContentsController } from '#src/controllers/box/contents'
 import { TOYBOX_TOKENS } from '#src/tokens'
@@ -39,6 +39,8 @@ export class GrabbingPhase implements Phase<PhaseName> {
 
       if (toy) this.claw.hold(toy)
     }
+
+    await this.ticker.waitTicks(PHASE_PAUSE_MS, signal)
 
     return PhaseName.ascending
   }

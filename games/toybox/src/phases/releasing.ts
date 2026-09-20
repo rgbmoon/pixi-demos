@@ -1,6 +1,6 @@
 import { inject, injectable } from 'inversify'
 
-import { TRAY_HOLD_MS } from '#src/constants'
+import { TRAY_HOLD_MS, TRAY_RELEASE_MS } from '#src/constants'
 import type { ClawController } from '#src/controllers/box/claw'
 import type { ContentsController } from '#src/controllers/box/contents'
 import type { ToyboxStore } from '#src/stores/toybox'
@@ -11,8 +11,8 @@ import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 
 /**
- * Фаза сброса: клешня разжимается над лотком. Донесённая игрушка уходит в лоток и в счётчик,
- * пустая клешня просто выдерживает паузу.
+ * Фаза сброса: клешня выдерживает паузу над лотком и разжимается. Донесённая игрушка уходит в лоток
+ * и в счётчик, пустая клешня просто стоит.
  */
 @injectable()
 export class ReleasingPhase implements Phase<PhaseName> {
@@ -36,13 +36,18 @@ export class ReleasingPhase implements Phase<PhaseName> {
   }
 
   async enter(signal: AbortSignal): Promise<typeof PhaseName.returning> {
-    const toy = this.claw.release()
-
-    if (!toy) {
+    if (!this.claw.isHolding()) {
       await this.ticker.waitTicks(TRAY_HOLD_MS, signal)
 
       return PhaseName.returning
     }
+
+    // Клешня доводит игрушку над лотком и только потом разжимается
+    await this.ticker.waitTicks(TRAY_RELEASE_MS, signal)
+
+    const toy = this.claw.release()
+
+    if (!toy) return PhaseName.returning
 
     await this.contents.collect(toy, signal)
     this.toyboxStore.collect()

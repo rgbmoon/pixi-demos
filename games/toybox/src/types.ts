@@ -55,6 +55,25 @@ export type ClawDrop = {
   onDrop: (toy: Toy) => void
 }
 
+/** Потеря игрушки на подъёме: на какой доле хода клешня разжимается и кому отдаёт игрушку. */
+export type ClawSlip = {
+  share: number
+  onDrop: (toy: Toy) => void
+}
+
+/** Состояние пружины: отклонение от цели и скорость его изменения. */
+export type SpringState = {
+  value: number
+  velocity: number
+}
+
+/** Настройка пружины: куда она тянет, как часто колеблется и как быстро гаснет. */
+export type SpringOptions = {
+  target: number
+  periodMs: number
+  damping: number
+}
+
 export type WorldTweenOptions = {
   readonly from: WorldPoint
   readonly to: WorldPoint

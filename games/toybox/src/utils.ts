@@ -16,12 +16,14 @@ import {
   DOME_EDGE_LAYERS,
   GRID_SIZE,
   JOYSTICK_DEADZONE,
-  JOYSTICK_FULL_TILT,
   MAX_BOUNCES,
   MAX_LAYERS,
   PATH_STEP,
   SETTLE_CHANCE,
   SETTLE_GAP,
+  SPRING_MAX_DAMPING,
+  SPRING_MIN_VALUE,
+  SPRING_MIN_VELOCITY,
   TOY_HUE_SPREAD,
   TOY_LIGHTNESS_SPREAD,
   TRAY_BOUNCE_WEIGHT,
@@ -35,6 +37,8 @@ import type {
   DropResult,
   GroundPoint,
   ScreenPoint,
+  SpringOptions,
+  SpringState,
   ToySlide,
   WorldPoint,
   WorldTweenOptions,
@@ -64,9 +68,7 @@ export const screenToGround = ({ x, y }: ScreenPoint): GroundPoint => ({
 })
 
 /**
- * Переводит отклонение джойстика в направление хода по полю: сторону берёт из проекции, а силу —
- * из хода ручки за вычетом мёртвой зоны. Ход сверх `JOYSTICK_FULL_TILT` уже ничего не добавляет,
- * поэтому джойстик ощущается как переключатель, а не как аналоговый стик.
+ * Переводит отклонение джойстика в направление хода по полю
  */
 export const toGroundDirection = (vector: ScreenPoint): GroundPoint => {
   const tilt = Math.hypot(vector.x, vector.y)
@@ -78,9 +80,7 @@ export const toGroundDirection = (vector: ScreenPoint): GroundPoint => {
 
   if (length === 0) return { x: 0, y: 0 }
 
-  const strength = clamp((tilt - JOYSTICK_DEADZONE) / (JOYSTICK_FULL_TILT - JOYSTICK_DEADZONE), 0, 1)
-
-  return { x: (ground.x / length) * strength, y: (ground.y / length) * strength }
+  return { x: ground.x / length, y: ground.y / length }
 }
 
 /**
@@ -96,17 +96,16 @@ export const getDepthOrder = ({ x, y, z }: WorldPoint): number => -(x * VIEW_X +
 /** Масштаб предмета на глубине `x`: у дальнего края поля он мельче, чем у ближнего. */
 export const getDepthScale = (x: number): number => 1 - (1 - DEPTH_SCALE_MIN) * clamp(x / GRID_SIZE, 0, 1)
 
-/** Удерживает точку в пределах поля. */
-export const clampToField = ({ x, y }: GroundPoint): GroundPoint => ({
-  x: clamp(x, 0, GRID_SIZE),
-  y: clamp(y, 0, GRID_SIZE),
+/**
+ * Удерживает точку в пределах поля.
+ */
+export const clampToField = ({ x, y }: GroundPoint, margin = 0): GroundPoint => ({
+  x: clamp(x, margin, GRID_SIZE - margin),
+  y: clamp(y, margin, GRID_SIZE - margin),
 })
 
 /**
- * Ведёт скорость клешни к целевой за `deltaMs`. Скорость приближается к цели экспоненциально,
- * а её прирост за кадр ограничен ускорением: полное отклонение джойстика упирается в этот предел и
- * разгоняется кривой, слабое — выходит на свою небольшую цель почти сразу. Нулевая цель тормозит
- * отдельным, много большим пределом и гасит остаток скорости.
+ * Ведёт скорость клешни к целевой за `deltaMs`.
  */
 export const advanceVelocity = (velocity: GroundPoint, target: GroundPoint, deltaMs: number): GroundPoint => {
   const gapX = target.x - velocity.x
@@ -122,6 +121,37 @@ export const advanceVelocity = (velocity: GroundPoint, target: GroundPoint, delt
   const next = { x: velocity.x + (gapX / gap) * change, y: velocity.y + (gapY / gap) * change }
 
   return isBraking && Math.hypot(next.x, next.y) < CLAW_MIN_SPEED ? { x: 0, y: 0 } : next
+}
+
+/**
+ * Шаг затухающей пружины: ведёт отклонение к цели за `deltaMs`. Считается аналитическим решением
+ * осциллятора, поэтому устойчив на шаге любой длины — тикер отдаёт кадры до 100 мс, на которых
+ * явная схема разошлась бы. У цели отклонение и скорость гасятся, иначе пружина не остановится.
+ */
+export const advanceSpring = (
+  state: SpringState,
+  { target, periodMs, damping }: SpringOptions,
+  deltaMs: number
+): SpringState => {
+  const omega = (2 * Math.PI * 1000) / periodMs
+  const zeta = clamp(damping, 0, SPRING_MAX_DAMPING)
+  const dampedOmega = omega * Math.sqrt(1 - zeta * zeta)
+  const seconds = deltaMs / 1000
+  const decay = Math.exp(-zeta * omega * seconds)
+  const offset = state.value - target
+  // Коэффициенты решения x(t) = target + decay·(offset·cos + slope·sin), взятые из начальных условий
+  const slope = (state.velocity + zeta * omega * offset) / dampedOmega
+  const cos = Math.cos(dampedOmega * seconds)
+  const sin = Math.sin(dampedOmega * seconds)
+  const value = target + decay * (offset * cos + slope * sin)
+  const velocity =
+    decay * ((slope * dampedOmega - zeta * omega * offset) * cos - (offset * dampedOmega + zeta * omega * slope) * sin)
+
+  if (Math.abs(value - target) < SPRING_MIN_VALUE && Math.abs(velocity) < SPRING_MIN_VELOCITY) {
+    return { value: target, velocity: 0 }
+  }
+
+  return { value, velocity }
 }
 
 /** Контур грани куба на высоте `z`: четыре угла в порядке обхода. */
@@ -376,6 +406,9 @@ export const shiftColor = (base: string, random: Random): number => {
   return new Color({ h: hue, s: s * 100, l: lightness * 100 }).toNumber()
 }
 
+/** Просит ли система уменьшить движение: по нему декоративные анимации не проигрываются. */
+export const isReducedMotion = (): boolean => window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
 const interpolate = (from: WorldPoint, to: WorldPoint, progress: number): WorldPoint => ({
   x: from.x + (to.x - from.x) * progress,
   y: from.y + (to.y - from.y) * progress,
@@ -420,7 +453,7 @@ export const tweenWorld = (
 
     const handleAbort = () => settle(() => reject(signal?.reason as Error))
 
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (isReducedMotion()) {
       apply(to)
       resolve()
 

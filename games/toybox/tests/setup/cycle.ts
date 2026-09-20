@@ -9,7 +9,7 @@ import type { ContentsController } from '#src/controllers/box/contents'
 import type { GameEvents } from '#src/events'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
-import { type ClawDrop, type GroundPoint, PhaseName } from '#src/types'
+import { type ClawDrop, type ClawSlip, type GroundPoint, PhaseName } from '#src/types'
 import type { Toy } from '#src/ui/box/toy'
 import { toCell } from '#src/utils'
 import { bindFsm } from '@pixi-demos/core/bindings'
@@ -64,8 +64,15 @@ const createClawStub = (log: ClawLog): ClawController => {
     descend: async (toZ: number) => {
       log.push(`descend:${toZ}`)
     },
-    ascend: async () => {
-      log.push('ascend')
+    ascend: async (slip: ClawSlip | undefined) => {
+      log.push(slip ? 'ascend slip' : 'ascend')
+
+      if (!slip || !carried) return
+
+      const toy = carried
+
+      carried = undefined
+      slip.onDrop(toy)
     },
     moveTo: async (target: GroundPoint) => {
       position = target
