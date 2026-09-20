@@ -5,8 +5,8 @@ import { LiveContainer } from '@pixi-demos/engine/live-container'
 import type { ContentsController } from './contents'
 
 /**
- * Куб автомата: пол, рёбра каркаса и содержимое. Пол и рёбра лежат под содержимым и в его
- * сортировку не входят — точки мира у них нет.
+ * Куб автомата: пол, верхняя грань и содержимое. Пол и грань лежат под содержимым и в его
+ * сортировку не входят — точки мира у них нет. Вертикальные рёбра стоят в самом содержимом. Пока не знаю костыль это или нет
  */
 export class BoxController extends LiveContainer {
   constructor(contents: ContentsController) {

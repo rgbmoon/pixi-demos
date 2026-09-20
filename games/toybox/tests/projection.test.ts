@@ -5,7 +5,6 @@ import {
   AXIS_Y,
   DEPTH_SCALE_MIN,
   JOYSTICK_DEADZONE,
-  JOYSTICK_FULL_TILT,
   FIELD_CENTER,
   GRID_SIZE,
   TRAY_CENTER,
@@ -100,20 +99,12 @@ describe('toGroundDirection', () => {
     expect(toGroundDirection({ x: JOYSTICK_DEADZONE, y: 0 })).toEqual({ x: 0, y: 0 })
   })
 
-  it('выходит на полную силу уже на половине хода ручки', () => {
-    const full = toGroundDirection({ x: JOYSTICK_FULL_TILT, y: 0 })
+  it('идёт на полной скорости при любом ходе ручки за мёртвой зоной', () => {
+    const edge = toGroundDirection({ x: JOYSTICK_DEADZONE * 1.01, y: 0 })
     const beyond = toGroundDirection({ x: 3, y: -4 })
 
-    expect(Math.hypot(full.x, full.y)).toBeCloseTo(1)
+    expect(Math.hypot(edge.x, edge.y)).toBeCloseTo(1)
     expect(Math.hypot(beyond.x, beyond.y)).toBeCloseTo(1)
-  })
-
-  it('между мёртвой зоной и полным ходом наращивает силу', () => {
-    const middle = toGroundDirection({ x: (JOYSTICK_DEADZONE + JOYSTICK_FULL_TILT) / 2, y: 0 })
-    const strength = Math.hypot(middle.x, middle.y)
-
-    expect(strength).toBeGreaterThan(0)
-    expect(strength).toBeLessThan(1)
   })
 
   it('ведёт клешню туда же, куда тянут ручку', () => {

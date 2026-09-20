@@ -30,6 +30,7 @@ export class Toy extends Container {
   private readonly contexts: ToyContexts
   private readonly body: Graphics
   private point: WorldPoint = { x: 0, y: 0, z: 0 }
+  private bounce = 0
 
   constructor(contexts: ToyContexts, color: number) {
     super()
@@ -48,16 +49,31 @@ export class Toy extends Container {
 
   /** Ставит игрушку в точку мира; с глубиной она мельче. Порядок наложения обновляется вместе с ней. */
   setWorld(point: WorldPoint): void {
-    const screen = worldToScreen(point)
-
     this.point = point
-    this.position.set(screen.x, screen.y)
-    this.scale.set(getDepthScale(point.x))
-    this.zIndex = getDepthOrder(point)
+
+    this.place()
+  }
+
+  /**
+   * Смещение по высоте поверх точки мира: прожатие под весом клешни и отскок при посадке.
+   * Порядок наложения на него не отзывается — иначе сортировка дёргалась бы на каждом отскоке.
+   */
+  setBounce(offset: number): void {
+    this.bounce = offset
+
+    this.place()
   }
 
   /** Помечает игрушку как цель клешни. */
   setHighlighted(highlighted: boolean): void {
     this.body.context = highlighted ? this.contexts.highlighted : this.contexts.plain
+  }
+
+  private place(): void {
+    const screen = worldToScreen({ ...this.point, z: this.point.z + this.bounce })
+
+    this.position.set(screen.x, screen.y)
+    this.scale.set(getDepthScale(this.point.x))
+    this.zIndex = getDepthOrder(this.point)
   }
 }

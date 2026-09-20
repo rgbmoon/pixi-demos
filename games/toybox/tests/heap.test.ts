@@ -170,6 +170,24 @@ describe('getDepthOrder', () => {
     }
   })
 
+  it('проводит ребро ближнего угла перед кучей, а ребро дальнего — за ней', () => {
+    const near = getDepthOrder({ x: 0, y: 0, z: MAX_LAYERS })
+    const far = getDepthOrder({ x: GRID_SIZE, y: GRID_SIZE, z: MAX_LAYERS })
+
+    for (let col = 0; col < GRID_SIZE; col++) {
+      for (let row = 0; row < GRID_SIZE; row++) {
+        const cell = getCellCenter({ col, row })
+
+        for (let layer = 0; layer < MAX_LAYERS; layer++) {
+          const toy = getDepthOrder({ ...cell, z: layer + 0.5 })
+
+          expect(near).toBeGreaterThan(toy)
+          expect(far).toBeLessThan(toy)
+        }
+      }
+    }
+  })
+
   it('прячет за стенками лотка кучу, которая лежит за ними', () => {
     const wall = getDepthOrder({ x: TRAY_ORIGIN.col + TRAY_SIZE, y: TRAY_ORIGIN.row, z: 0 })
 
