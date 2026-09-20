@@ -18,12 +18,14 @@ import type { ClawController } from '#src/controllers/box/claw'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import { type CellAddress, PhaseName, type SpringState, type WorldPoint } from '#src/types'
+import { Pillar } from '#src/ui/box/pillar'
 import { Toy } from '#src/ui/box/toy'
 import { TrayWalls } from '#src/ui/box/tray-walls'
 import {
   advanceSpring,
   getCellCenter,
   getDomeHeight,
+  getFaceOutline,
   getSettleSlides,
   isReducedMotion,
   resolveDrop,
@@ -37,8 +39,9 @@ import { LiveContainer } from '@pixi-demos/engine/live-container'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 
 /**
- * Содержимое куба и слой его наложения: игрушки, стенки лотка и клешня сортируются одним ключом
- * глубины. Всё, у чего есть точка мира, живёт здесь прямым ребёнком и само держит свой `zIndex`.
+ * Содержимое куба и слой его наложения: игрушки, стенки лотка, вертикальные рёбра куба и клешня
+ * сортируются одним ключом глубины.
+ * Всё, у чего есть точка мира, живёт здесь прямым ребёнком и само держит свой `zIndex`.
  * На старте куча сложена куполом — по краям поля ниже, к центру выше.
  *
  * Перекладка игрушек внутри кучи идёт фоном: стопки пересчитываются сразу, а движение доигрывается
@@ -69,7 +72,7 @@ export class ContentsController extends LiveContainer {
     this.ticker = ticker
     this.sortableChildren = true
 
-    this.addChild(new TrayWalls(), claw)
+    this.addChild(new TrayWalls(), claw, ...getFaceOutline(0).map((corner) => new Pillar(corner)))
 
     this.columns = this.fill()
 
