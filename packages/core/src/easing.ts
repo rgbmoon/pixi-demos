@@ -34,6 +34,12 @@ export const getEaseOutBackInitialSpeed = (backStrength = 0.1) => {
 }
 
 /**
+ * Разгон из покоя: скорость нарастает линейно, путь — квадратично. Так падает предмет под тяжестью.
+ * `progress` и результат — доли единицы.
+ */
+export const easeInQuad = (progress: number) => progress * progress
+
+/**
  * Трапецеидальный профиль хода: скорость линейно набирается на первой доле `rampShare` пути,
  * держится постоянной и так же линейно гаснет в конце. Так движется привод с ограниченным
  * ускорением — в отличие от плавных кривых, разброс скорости здесь невелик:
@@ -51,4 +57,24 @@ export const easeTrapezoid = (progress: number, rampShare = 0.2) => {
   if (progress > 1 - ramp) return 1 - (peakSpeed * (1 - progress) ** 2) / (2 * ramp)
 
   return peakSpeed * (progress - ramp / 2)
+}
+
+/**
+ * Обращение `easeTrapezoid`: по пройденной доле пути отдаёт долю длительности, за которую привод
+ * её проходит. По нему отмеряют момент внутри хода, не прерывая его.
+ */
+export const easeTrapezoidInverse = (distance: number, rampShare = 0.2) => {
+  const ramp = Math.min(Math.max(rampShare, 0), 0.5)
+  const covered = Math.min(Math.max(distance, 0), 1)
+
+  if (ramp === 0) return covered
+
+  // Доли пути, пройденные к концу разгона и к началу торможения
+  const ramped = ramp / (2 * (1 - ramp))
+
+  if (covered < ramped) return Math.sqrt(2 * ramp * covered * (1 - ramp))
+
+  if (covered > 1 - ramped) return 1 - Math.sqrt(2 * ramp * (1 - covered) * (1 - ramp))
+
+  return covered * (1 - ramp) + ramp / 2
 }

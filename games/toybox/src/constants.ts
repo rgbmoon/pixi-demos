@@ -1,3 +1,5 @@
+import { PALETTE } from '@pixi-demos/core/palette'
+
 import { type CellAddress, type GroundPoint, PhaseName, type ScreenPoint } from './types'
 
 /** Ширина макета сцены. */
@@ -64,18 +66,66 @@ export const CLAW_DROP_MS = 1400
 export const CLAW_LIFT_MS = 1300
 /** Доля хода на разгон и на торможение у движений автомата: тросик набирает скорость коротко. */
 export const CLAW_RAMP_SHARE = 0.15
-/** Сколько клешня стоит над лотком: место под будущие падение игрушки и разжатие клешни. */
+/** Сколько пустая клешня стоит над лотком: место под разжатие клешни. */
 export const TRAY_HOLD_MS = 1000
+/** Сколько клешня сжимается на дне, прежде чем станет известен исход захвата, мс. */
+export const GRAB_HOLD_MS = 400
+
+/** Максимум слоёв игрушек в ячейке: куб делится по высоте так же, как пол — по осям. */
+export const MAX_LAYERS = 4
+/** Высота стопки у края поля на старте, в слоях. */
+export const DOME_EDGE_LAYERS = 2
+/** Высота стопки в центре поля на старте, в слоях. */
+export const DOME_CENTER_LAYERS = 4
+/** Высота стенок лотка в слоях: ниже предельной стопки, поэтому игрушка через них переваливается. */
+export const TRAY_WALL_LAYERS = 2
+
+/** Доля удачных захватов. */
+export const GRAB_CHANCE = 0.82
+/** Доля доставок, в которых клешня роняет игрушку по дороге к лотку. */
+export const FUMBLE_CHANCE = 0.35
+/** Шаг выборки пути в долях ячейки: мельче ячейки, поэтому пройденные ею не теряются. */
+export const PATH_STEP = 0.25
+/** Перепад между соседними стопками, выше которого верхняя игрушка сползает в низкую, в слоях. */
+export const SETTLE_GAP = 3
+/** Доля осыпаний, которые случаются при достаточном перепаде. */
+export const SETTLE_CHANCE = 0.5
+/** Вес лотка при выборе соседа для отскока: ячейка бокса идёт с весом 1. */
+export const TRAY_BOUNCE_WEIGHT = 0.35
+/** Предел отскоков подряд: дальше место ищется обходом поля, а не броском. */
+export const MAX_BOUNCES = 6
+
+/** Длительность падения игрушки на один слой, мс. */
+export const TOY_FALL_MS = 180
+/** Длительность отскока игрушки в соседнюю ячейку, мс. */
+export const TOY_BOUNCE_MS = 160
+/** Длительность ухода игрушки в лоток, мс. */
+export const TOY_COLLECT_MS = 320
+/** Насколько игрушка висит ниже клешни, в слоях. */
+export const CARRY_OFFSET = 0.5
+/** Насколько центр игрушки поднят над полом её слоя. */
+export const TOY_LAYER_CENTER = 0.5
 
 /** Масштаб предметов у дальнего края поля: с глубиной они видны мельче. */
 export const DEPTH_SCALE_MIN = 0.72
 
+/** Радиус игрушки в дизайн-единицах. */
+export const TOY_RADIUS = 26
+/** Толщина бордера игрушки. */
+export const TOY_THICKNESS = 2
+/** Толщина бордера подсвеченной игрушки: её клешня возьмёт. */
+export const TOY_HIGHLIGHT_THICKNESS = 6
+/** Прозрачность заливки игрушки: сквозь кучу видно её глубину. */
+export const TOY_FILL_ALPHA = 0.35
+/** Корневой цвет игрушек: от него каждая уходит случайным сдвигом. */
+export const TOY_ROOT_COLOR = PALETTE.orange
+/** Разброс тона игрушки вокруг корневого цвета, градусы в обе стороны. */
+export const TOY_HUE_SPREAD = 45
+/** Разброс светлоты игрушки вокруг корневого цвета, доли в обе стороны. */
+export const TOY_LIGHTNESS_SPREAD = 0.14
+
 /** Радиус точки клешни в дизайн-единицах. */
 export const CLAW_RADIUS = 16
-/** Радиус точки-тени на полу. */
-export const CLAW_SHADOW_RADIUS = 12
-/** Прозрачность тени клешни. */
-export const CLAW_SHADOW_ALPHA = 0.45
 
 /** Толщина рёбер куба и линий сетки в пикселях. */
 export const LINE_THICKNESS = 1
@@ -113,6 +163,11 @@ export const ICON_RATIO = 0.4
 export const JOYSTICK_OFFSET_X = -170
 /** Смещение кнопки опускания от центра блока управления. */
 export const DROP_OFFSET_X = 230
+
+/** Шрифт текстов сцены: своих ассетов у игры нет, берётся системный гротеск. */
+export const HUD_FONT_FAMILY = 'Arial, Helvetica, sans-serif'
+/** Кегль счётчика игрушек в дизайн-единицах. */
+export const COUNTER_FONT_SIZE = 44
 
 /** Отступ элементов сцены от края видимой области. */
 export const SCREEN_MARGIN = 32

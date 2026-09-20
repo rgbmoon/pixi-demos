@@ -1,25 +1,56 @@
 import { inject, injectable } from 'inversify'
 
-import { TRAY_CENTER } from '#src/constants'
+import { FUMBLE_CHANCE, TRAY_CENTER } from '#src/constants'
 import type { ClawController } from '#src/controllers/box/claw'
+import type { ContentsController } from '#src/controllers/box/contents'
+import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
-import { PhaseName } from '#src/types'
+import { type ClawDrop, PhaseName } from '#src/types'
+import { pickFumbleCell } from '#src/utils'
 import type { Phase } from '@pixi-demos/core/fsm/types'
 
-/** Фаза доставки: клешня идёт к центру лотка. */
+/**
+ * Фаза доставки: клешня одним ходом движется к лотку. С вероятностью `FUMBLE_CHANCE` она
+ * роняет игрушку над ячейкой по дороге, и та возвращается в кучу.
+ */
 @injectable()
 export class DeliveringPhase implements Phase<PhaseName> {
   readonly name = PhaseName.delivering
 
   private readonly claw: ClawController
+  private readonly contents: ContentsController
+  private readonly toyboxStore: ToyboxStore
 
-  constructor(@inject(TOYBOX_TOKENS.ClawController) claw: ClawController) {
+  constructor(
+    @inject(TOYBOX_TOKENS.ClawController) claw: ClawController,
+    @inject(TOYBOX_TOKENS.ContentsController) contents: ContentsController,
+    @inject(TOYBOX_TOKENS.ToyboxStore) toyboxStore: ToyboxStore
+  ) {
     this.claw = claw
+    this.contents = contents
+    this.toyboxStore = toyboxStore
   }
 
   async enter(signal: AbortSignal): Promise<typeof PhaseName.releasing> {
-    await this.claw.moveTo(TRAY_CENTER, signal)
+    await this.claw.carryTo(TRAY_CENTER, this.rollFumble(), signal)
 
     return PhaseName.releasing
+  }
+
+  // TODO смущает такая реализация метода. Проверить позже
+  // Важно недопустить расползание логики по фазам. Фазы отвечают только за оркестровку действий контроллеров.
+  private rollFumble(): ClawDrop | undefined {
+    if (!this.claw.isHolding() || Math.random() >= FUMBLE_CHANCE) return undefined
+
+    const cell = pickFumbleCell(this.claw.getPosition(), TRAY_CENTER, Math.random)
+
+    if (!cell) return undefined
+
+    return {
+      cell,
+      onDrop: (toy) => {
+        if (this.contents.drop(toy, cell)) this.toyboxStore.collect()
+      },
+    }
   }
 }
