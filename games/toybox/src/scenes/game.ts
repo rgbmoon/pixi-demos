@@ -12,7 +12,9 @@ import {
 } from '#src/constants'
 import { BoxController } from '#src/controllers/box/box'
 import type { ClawController } from '#src/controllers/box/claw'
+import type { ContentsController } from '#src/controllers/box/contents'
 import { ControlsController } from '#src/controllers/hud/controls'
+import { CounterController } from '#src/controllers/hud/counter'
 import type { GameEvents } from '#src/events'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
@@ -28,18 +30,21 @@ export class GameScene extends Container {
   private readonly content = new Container()
   private readonly box: BoxController
   private readonly controls: ControlsController
+  private readonly counter: CounterController
 
   constructor(
     @inject(TOYBOX_TOKENS.ClawController) claw: ClawController,
+    @inject(TOYBOX_TOKENS.ContentsController) contents: ContentsController,
     @inject(TOYBOX_TOKENS.ToyboxStore) toyboxStore: ToyboxStore,
     @inject(TOYBOX_TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>
   ) {
     super()
 
-    this.box = new BoxController(claw)
+    this.box = new BoxController(contents)
     this.controls = new ControlsController(claw, toyboxStore, emitter)
+    this.counter = new CounterController(toyboxStore)
 
-    this.content.addChild(this.box, this.controls)
+    this.content.addChild(this.box, this.controls, this.counter)
     this.addChild(this.content)
   }
 
@@ -64,10 +69,10 @@ export class GameScene extends Container {
     const controlsCenterY = viewBottom - SCREEN_MARGIN - this.controls.heightUnits / 2
 
     this.controls.position.set(centerX, controlsCenterY)
+    this.counter.position.set(viewLeft + SCREEN_MARGIN, viewTop + SCREEN_MARGIN)
 
-    // Куб занимает поле между верхом видимой области и блоком управления; начало его координат —
-    // ближний угол пола, поэтому позиция задаётся нижней точкой ромба
-    const playAreaTop = viewTop + BOX_TOP_MARGIN
+    const counterBottom = viewTop + SCREEN_MARGIN + this.counter.heightUnits
+    const playAreaTop = Math.max(viewTop + BOX_TOP_MARGIN, counterBottom + SCREEN_MARGIN)
     const playAreaHeight = controlsCenterY - this.controls.heightUnits / 2 - SCREEN_MARGIN - playAreaTop
     const boxScale = Math.min(1, (viewWidth - 2 * SCREEN_MARGIN) / FLOOR_WIDTH, playAreaHeight / BOX_HEIGHT)
 

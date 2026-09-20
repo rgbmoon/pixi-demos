@@ -2,6 +2,7 @@ import { inject, injectable } from 'inversify'
 import type { DestroyOptions, Ticker } from 'pixi.js'
 
 import {
+  CARRY_OFFSET,
   CLAW_DROP_MS,
   CLAW_LIFT_MS,
   CLAW_MAX_SPEED,
@@ -10,11 +11,22 @@ import {
   CUBE_HEIGHT,
   FIELD_CENTER,
 } from '#src/constants'
-import type { GroundPoint, ScreenPoint, WorldPoint } from '#src/types'
+import type { ToyboxStore } from '#src/stores/toybox'
+import { TOYBOX_TOKENS } from '#src/tokens'
+import type { CellAddress, ClawDrop, GroundPoint, ScreenPoint, WorldPoint } from '#src/types'
 import { Claw } from '#src/ui/box/claw'
-import { ClawShadow } from '#src/ui/box/claw-shadow'
-import { advanceVelocity, clampToField, toGroundDirection } from '#src/utils'
-import { easeTrapezoid } from '@pixi-demos/core/easing'
+import type { Toy } from '#src/ui/box/toy'
+import {
+  advanceVelocity,
+  clampToField,
+  getCellCenter,
+  getDepthOrder,
+  getPathShare,
+  toCell,
+  toGroundDirection,
+  tweenWorld,
+} from '#src/utils'
+import { easeTrapezoid, easeTrapezoidInverse } from '@pixi-demos/core/easing'
 import { createAbortError } from '@pixi-demos/core/errors/utils'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 import { LiveContainer } from '@pixi-demos/engine/live-container'
@@ -24,27 +36,29 @@ import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 const MIN_TRAVEL_MS = 1
 
 /**
- * Клешня и её тень: держит положение в кубе и ведёт его на игровом тикере.
- * Ход по джойстику свободный — направление приходит в `setDirection`, скорость набирается
- * и гаснет сама. Движения цикла (`moveTo`, `descend`, `ascend`) возвращают промис, их ждут фазы
- * и на время их хода ввод игрока не применяется.
+ * Клешня: держит своё положение в кубе и ведёт его на игровом тикере.
  */
 @injectable()
 export class ClawController extends LiveContainer {
   private readonly ticker: GameTicker
+  private readonly toyboxStore: ToyboxStore
   private readonly claw = new Claw()
-  private readonly shadow = new ClawShadow()
   private point: WorldPoint = { ...FIELD_CENTER, z: CUBE_HEIGHT }
   private velocity: GroundPoint = { x: 0, y: 0 }
   private direction: GroundPoint = { x: 0, y: 0 }
   private motion?: AbortController
+  private carried?: Toy
 
-  constructor(@inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker) {
+  constructor(
+    @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
+    @inject(TOYBOX_TOKENS.ToyboxStore) toyboxStore: ToyboxStore
+  ) {
     super()
 
     this.ticker = ticker
+    this.toyboxStore = toyboxStore
 
-    this.addChild(this.shadow, this.claw)
+    this.addChild(this.claw)
     this.apply(this.point)
 
     this.ticker.add(this.step)
@@ -62,6 +76,35 @@ export class ClawController extends LiveContainer {
     return { x: this.point.x, y: this.point.y }
   }
 
+  /** Ячейка поля под клешнёй. */
+  getCell(): CellAddress {
+    return toCell(this.point)
+  }
+
+  /** Несёт ли клешня игрушку. */
+  isHolding(): boolean {
+    return this.carried !== undefined
+  }
+
+  /** Берёт игрушку в клешню: дальше она ездит вместе с ней и рисуется под ней. */
+  hold(toy: Toy): void {
+    this.carried = toy
+
+    this.addChildAt(toy, this.getChildIndex(this.claw))
+    this.apply(this.point)
+  }
+
+  /** Разжимает клешню и отдаёт игрушку владельцу; с пустой клешни ничего не снимается. */
+  release(): Toy | undefined {
+    const toy = this.carried
+
+    this.carried = undefined
+
+    if (toy) this.removeChild(toy)
+
+    return toy
+  }
+
   /** Принимает отклонение джойстика в экранных осях: его длина задаёт долю предельной скорости. */
   setDirection(vector: ScreenPoint): void {
     this.direction = toGroundDirection(vector)
@@ -69,20 +112,61 @@ export class ClawController extends LiveContainer {
 
   /** Ведёт клешню к точке поля, сохраняя высоту. */
   async moveTo(target: GroundPoint, signal?: AbortSignal): Promise<void> {
-    const distance = Math.hypot(target.x - this.point.x, target.y - this.point.y)
-    const durationMs = Math.max((distance / CLAW_TRAVEL_SPEED) * 1000, MIN_TRAVEL_MS)
-
-    await this.tween({ ...target, z: this.point.z }, durationMs, signal)
+    await this.tween({ ...target, z: this.point.z }, this.getTravelMs(target), signal)
   }
 
-  /** Опускает клешню до пола. */
-  async descend(signal?: AbortSignal): Promise<void> {
-    await this.tween({ ...this.point, z: 0 }, CLAW_DROP_MS, signal)
+  /**
+   * Ведёт клешню к точке поля одним ходом. Если задан `drop`, над его ячейкой клешня разжимается
+   * и сразу отдаёт игрушку в `onDrop`, не прерывая ход.
+   */
+  async carryTo(target: GroundPoint, drop: ClawDrop | undefined, signal?: AbortSignal): Promise<void> {
+    if (!drop) {
+      await this.moveTo(target, signal)
+
+      return
+    }
+
+    const delayMs = this.getDropDelay(target, drop.cell)
+
+    await Promise.all([this.moveTo(target, signal), this.dropOnTheWay(drop, delayMs, signal)])
+  }
+
+  /** Опускает клешню до высоты `toZ` */
+  async descend(toZ: number, signal?: AbortSignal): Promise<void> {
+    await this.tween({ ...this.point, z: toZ }, this.getLiftDuration(toZ, CLAW_DROP_MS), signal)
   }
 
   /** Поднимает клешню к верхней грани. */
   async ascend(signal?: AbortSignal): Promise<void> {
-    await this.tween({ ...this.point, z: CUBE_HEIGHT }, CLAW_LIFT_MS, signal)
+    await this.tween({ ...this.point, z: CUBE_HEIGHT }, this.getLiftDuration(CUBE_HEIGHT, CLAW_LIFT_MS), signal)
+  }
+
+  /** Разжимает клешню через `delayMs` после старта хода и сразу отдаёт игрушку владельцу. */
+  private async dropOnTheWay(drop: ClawDrop, delayMs: number, signal?: AbortSignal): Promise<void> {
+    await this.ticker.waitTicks(delayMs, signal)
+
+    const toy = this.release()
+
+    if (toy) drop.onDrop(toy)
+  }
+
+  /** Время до ячейки `dropAt` от начала хода в `target`: привод разгоняется, и доля пути не равна доле времени. */
+  private getDropDelay(target: GroundPoint, dropAt: CellAddress): number {
+    const share = getPathShare(this.getPosition(), target, getCellCenter(dropAt))
+
+    return this.getTravelMs(target) * easeTrapezoidInverse(share, CLAW_RAMP_SHARE)
+  }
+
+  /** Сколько клешне идти до точки поля. */
+  private getTravelMs(target: GroundPoint): number {
+    const distance = Math.hypot(target.x - this.point.x, target.y - this.point.y)
+
+    return Math.max((distance / CLAW_TRAVEL_SPEED) * 1000, MIN_TRAVEL_MS)
+  }
+
+  /** Время хода по высоте: `fullMs` отмеряны на полную высоту куба. */
+  private getLiftDuration(toZ: number, fullMs: number): number {
+    return Math.max((fullMs * Math.abs(toZ - this.point.z)) / CUBE_HEIGHT, MIN_TRAVEL_MS)
   }
 
   /** Кадровый ход по джойстику. Пока идёт движение фазы, ввод игрока не применяется. */
@@ -108,27 +192,30 @@ export class ClawController extends LiveContainer {
 
   private apply(point: WorldPoint): void {
     this.point = point
+    this.zIndex = getDepthOrder(point)
 
     this.claw.setWorld(point)
-    this.shadow.setWorld(point)
+    this.carried?.setWorld({ ...point, z: point.z - CARRY_OFFSET })
+
+    this.publishCell()
   }
 
-  /** Точка пути между `from` и `to`: привод коротко разгоняется, идёт ровно и так же тормозит. */
-  private interpolate(from: WorldPoint, to: WorldPoint, linearProgress: number): WorldPoint {
-    const progress = easeTrapezoid(linearProgress, CLAW_RAMP_SHARE)
+  /** Публикует в стор ячейку под клешнёй, когда та сменилась. */
+  private publishCell(): void {
+    const cell = this.getCell()
+    const current = this.toyboxStore.clawCell
 
-    return {
-      x: from.x + (to.x - from.x) * progress,
-      y: from.y + (to.y - from.y) * progress,
-      z: from.z + (to.z - from.z) * progress,
-    }
+    if (current && current.col === cell.col && current.row === cell.row) return
+
+    this.toyboxStore.setClawCell(cell)
   }
 
   /**
-   * Ведёт положение клешни к точке за `durationMs` на игровом тикере: промис резолвится на последнем
-   * кадре, реджектится по отмене — своей, внешнего `signal` или следующего движения.
+   * Ведёт положение клешни к точке за `durationMs` на игровом тикере: привод коротко разгоняется,
+   * идёт ровно и так же тормозит. Промис реджектится по отмене — внешнего `signal` или следующего
+   * движения, которое прерывает текущее.
    */
-  private tween(to: WorldPoint, durationMs: number, signal?: AbortSignal): Promise<void> {
+  private async tween(to: WorldPoint, durationMs: number, signal?: AbortSignal): Promise<void> {
     this.motion?.abort(createAbortError('Claw motion replaced'))
 
     // Ход по джойстику обрывается: дальше клешню ведёт автомат
@@ -145,47 +232,20 @@ export class ClawController extends LiveContainer {
       signal?.addEventListener('abort', () => motion.abort(signal.reason), { once: true })
     }
 
-    return new Promise<void>((resolve, reject) => {
-      const from = this.point
-      let elapsed = 0
-
-      const settle = (finish: () => void) => {
-        this.ticker.remove(step)
-        motion.signal.removeEventListener('abort', handleAbort)
-
-        if (this.motion === motion) this.motion = undefined
-
-        finish()
-      }
-
-      const step = (ticker: Ticker) => {
-        elapsed += ticker.deltaMS
-
-        const progress = Math.min(elapsed / durationMs, 1)
-
-        this.apply(this.interpolate(from, to, progress))
-
-        if (progress === 1) settle(resolve)
-      }
-
-      const handleAbort = () => settle(() => reject(motion.signal.reason as Error))
-
-      if (motion.signal.aborted) {
-        settle(() => reject(motion.signal.reason as Error))
-
-        return
-      }
-
-      // Движение клешни несёт смысл, но при prefers-reduced-motion она встаёт на место без хода
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        this.apply(to)
-        settle(resolve)
-
-        return
-      }
-
-      motion.signal.addEventListener('abort', handleAbort, { once: true })
-      this.ticker.add(step)
-    })
+    try {
+      await tweenWorld(
+        this.ticker,
+        {
+          from: this.point,
+          to,
+          durationMs,
+          ease: (progress) => easeTrapezoid(progress, CLAW_RAMP_SHARE),
+          apply: (point) => this.apply(point),
+        },
+        motion.signal
+      )
+    } finally {
+      if (this.motion === motion) this.motion = undefined
+    }
   }
 }

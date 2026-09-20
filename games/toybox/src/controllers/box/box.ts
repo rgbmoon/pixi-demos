@@ -2,16 +2,16 @@ import { Floor } from '#src/ui/box/floor'
 import { Frame } from '#src/ui/box/frame'
 import { LiveContainer } from '@pixi-demos/engine/live-container'
 
-import type { ClawController } from './claw'
+import type { ContentsController } from './contents'
 
 /**
- * Куб автомата: дно с сеткой, клешня и рёбра каркаса. Порядок детей задаёт наложение —
- * содержимое куба лежит между полом и рёбрами, туда же встанут будущие игрушки.
+ * Куб автомата: пол, рёбра каркаса и содержимое. Пол и рёбра лежат под содержимым и в его
+ * сортировку не входят — точки мира у них нет.
  */
 export class BoxController extends LiveContainer {
-  constructor(claw: ClawController) {
+  constructor(contents: ContentsController) {
     super()
 
-    this.addChild(new Floor(), claw, new Frame())
+    this.addChild(new Floor(), new Frame(), contents)
   }
 }

@@ -1,7 +1,10 @@
+import type { Toy } from './ui/box/toy'
+
 export const PhaseName = {
   booting: 'booting',
   idle: 'idle',
   descending: 'descending',
+  grabbing: 'grabbing',
   ascending: 'ascending',
   delivering: 'delivering',
   releasing: 'releasing',
@@ -33,6 +36,31 @@ export type ScreenPoint = {
 export type CellAddress = {
   col: number
   row: number
+}
+
+export type DropResult = {
+  path: CellAddress[]
+  layer: number
+  collected: boolean
+}
+
+export type ToySlide = {
+  from: CellAddress
+  to: CellAddress
+}
+
+/** Потеря игрушки по дороге: над какой ячейкой клешня разжимается и кому отдаёт игрушку. */
+export type ClawDrop = {
+  cell: CellAddress
+  onDrop: (toy: Toy) => void
+}
+
+export type WorldTweenOptions = {
+  readonly from: WorldPoint
+  readonly to: WorldPoint
+  readonly durationMs: number
+  readonly ease: (progress: number) => number
+  readonly apply: (point: WorldPoint) => void
 }
 
 export type ButtonOptions = {
