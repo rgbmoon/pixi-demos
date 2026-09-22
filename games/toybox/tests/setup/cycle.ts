@@ -5,11 +5,19 @@ import { vi } from 'vitest'
 import { bindFlow } from '#src/bindings'
 import { FIELD_CENTER, HEAP_SNAPSHOT_VERSION } from '#src/constants'
 import type { ClawController } from '#src/controllers/box/claw'
+import type { PrizeOutputController } from '#src/controllers/box/prize-output'
 import type { GameEvents } from '#src/events'
 import type { HeapStore } from '#src/stores/heap'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
-import { type ClawDrop, type ClawSlip, type GroundPoint, PhaseName, type ToyId } from '#src/types'
+import {
+  type ClawDrop,
+  type ClawSlip,
+  type GroundPoint,
+  PhaseName,
+  type ToyAppearance,
+  type ToyId,
+} from '#src/types'
 import { getGrabChance, getWeight } from '#src/utils/heap'
 import { toCell } from '#src/utils/projection'
 import { bindFsm } from '@pixi-demos/core/bindings'
@@ -36,6 +44,7 @@ export type Cycle = {
   emitter: GameEmitter<GameEvents>
   log: ClawLog
   world: CycleWorld
+  prizes: Array<ToyAppearance & { readonly collected: number; readonly domainCollected: number }>
   /** Ждёт, когда автомат объявит указанную фазу. */
   waitForPhase: (phase: PhaseName) => Promise<void>
   requestDrop: () => void
@@ -104,10 +113,11 @@ const createClawStub = (log: ClawLog): ClawController => {
 }
 
 /** Дублёр тикера: игровые выдержки проходят мгновенно, но остаются видимыми в журнале. */
-const createTickerStub = (log: ClawLog): GameTicker => {
+const createTickerStub = (log: ClawLog, getHeap: () => HeapStore): GameTicker => {
   const stub = {
     waitTicks: async (durationMs: number) => {
       log.push(`wait:${durationMs}`)
+      getHeap().advance(durationMs)
     },
   }
 
@@ -129,9 +139,17 @@ export const createCycle = (): Cycle => {
 
   const log: ClawLog = []
   const world: CycleWorld = { rolls: [] }
+  const prizes: Cycle['prizes'] = []
 
   container.bind(TOYBOX_TOKENS.ClawController).toConstantValue(createClawStub(log))
-  container.bind(ENGINE_TOKENS.GameTicker).toConstantValue(createTickerStub(log))
+  container
+    .bind(ENGINE_TOKENS.GameTicker)
+    .toConstantValue(createTickerStub(log, () => container.get(TOYBOX_TOKENS.HeapStore)))
+  container.bind(TOYBOX_TOKENS.PrizeOutputController).toConstantValue({
+    present: async (appearance: ToyAppearance, collected: number) => {
+      prizes.push({ ...appearance, collected, domainCollected: container.get(TOYBOX_TOKENS.ToyboxStore).collected })
+    },
+  } as unknown as PrizeOutputController)
 
   // Исход захвата и потери задаёт сам тест очередью бросков
   const random = vi.spyOn(Math, 'random').mockImplementation(() => world.rolls.shift() ?? 0.5)
@@ -149,6 +167,7 @@ export const createCycle = (): Cycle => {
     emitter,
     log,
     world,
+    prizes,
     waitForPhase: async (phase: PhaseName) => {
       await when(() => store.phase === phase)
     },

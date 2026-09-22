@@ -1,11 +1,23 @@
 import { PALETTE } from '@pixi-demos/core/palette'
 
-import { type CellAddress, type GroundPoint, PhaseName, type ScreenPoint, type Shape, type ShapeKey } from './types'
+import {
+  type CellAddress,
+  type GroundPoint,
+  PhaseName,
+  type ScreenPoint,
+  type Shape,
+  type ShapeKey,
+  type WorldPoint,
+} from './types'
 
-/** Ширина макета сцены. */
-export const DESIGN_WIDTH = 941
-/** Высота макета сцены. */
-export const DESIGN_HEIGHT = 1672
+/** Ширина макета сцены и рабочего холста пиксель-арта до увеличения. */
+export const DESIGN_WIDTH = 1152
+export const ART_WIDTH = 288
+/** Высота макета сцены и рабочего холста пиксель-арта до увеличения. */
+export const DESIGN_HEIGHT = 2048
+export const ART_HEIGHT = 512
+/** Целочисленное увеличение будущих растровых ассетов. */
+export const PIXEL_SCALE = 4
 /** Пропорции игрового поля: выше CANVAS_FILL_MAX_WIDTH канвас повторяет их. */
 export const GAME_ASPECT_RATIO = DESIGN_WIDTH / DESIGN_HEIGHT
 
@@ -17,15 +29,18 @@ export const INITIAL_PHASE: PhaseName = PhaseName.booting
 
 /** Сторона сетки в ячейках. */
 export const GRID_SIZE = 8
+/** Базовая сторона ячейки в дизайн-пикселях; в исходном арте это 16 пикселей. */
+export const CELL_SIZE = 64
+export const ART_CELL_SIZE = CELL_SIZE / PIXEL_SCALE
 
 /** Экранный шаг на ячейку вдоль оси x: она уходит вглубь сцены, наклон 1:1. */
 export const AXIS_X: ScreenPoint = { x: 8, y: -8 }
 /** Экранный шаг на ячейку вдоль оси y: она идёт вдоль фронтальной грани влево, наклон 1:16. */
 export const AXIS_Y: ScreenPoint = { x: -64, y: -4 }
 /** Экранная длина единицы высоты `z`. */
-export const UNIT_HEIGHT = 68
-/** Высота куба в единицах мира: столько единиц `z` от пола до верхней грани. */
-export const CUBE_HEIGHT = 6
+export const UNIT_HEIGHT = CELL_SIZE
+/** Высота стеклянного бокса в ячейках. */
+export const CUBE_HEIGHT = 8
 
 /** Ширина пола в дизайн-единицах. */
 export const FLOOR_WIDTH = GRID_SIZE * (Math.abs(AXIS_X.x) + Math.abs(AXIS_Y.x))
@@ -33,9 +48,42 @@ export const FLOOR_WIDTH = GRID_SIZE * (Math.abs(AXIS_X.x) + Math.abs(AXIS_Y.x))
 export const FLOOR_HEIGHT = GRID_SIZE * (Math.abs(AXIS_X.y) + Math.abs(AXIS_Y.y))
 /** Полная высота куба на экране: пол плюс вертикальные рёбра. */
 export const BOX_HEIGHT = FLOOR_HEIGHT + CUBE_HEIGHT * UNIT_HEIGHT
-// Начало координат куба — ближний угол пола, а сам пол несимметричен относительно него
-/** Сдвиг куба, при котором его пол встаёт по центру отведённого места. */
-export const BOX_CENTER_OFFSET_X = (-(AXIS_X.x + AXIS_Y.x) * GRID_SIZE) / 2
+/** Высота верхнего табло равна стороне ячейки. */
+export const MARQUEE_HEIGHT = CELL_SIZE
+/** Полная высота автомата остаётся неизменной при перераспределении высоты бокса и тумбы. */
+export const MACHINE_HEIGHT = 1264
+/** Тумба занимает остаток общей высоты после табло и стеклянного бокса. */
+export const CABINET_HEIGHT = MACHINE_HEIGHT - MARQUEE_HEIGHT - BOX_HEIGHT
+
+/** Передний край панели выступает к игроку на три ячейки. */
+export const CABINET_FRONT_X = -3
+/** Верх передней грани тумбы на одну ячейку ниже пола бокса. */
+export const CABINET_TOP_Z = -1
+/** Нижняя плоскость тумбы сохраняет общую экранную высоту автомата после изменения бокса. */
+export const CABINET_BOTTOM_Z = (CABINET_FRONT_X * AXIS_X.y - CABINET_HEIGHT) / UNIT_HEIGHT
+/** Верх табло на одну ячейку выше стеклянного бокса. */
+export const MARQUEE_TOP_Z = CUBE_HEIGHT + 1
+
+/** Базисы плоскостей задают направления вправо и вниз относительно установленного элемента. */
+export const CONTROL_PANEL_HORIZONTAL: WorldPoint = { x: 0, y: -1, z: 0 }
+export const CONTROL_PANEL_VERTICAL: WorldPoint = { x: -1, y: 0, z: CABINET_TOP_Z / -CABINET_FRONT_X }
+export const CABINET_FRONT_HORIZONTAL: WorldPoint = { x: 0, y: -1, z: 0 }
+export const CABINET_FRONT_VERTICAL: WorldPoint = { x: 0, y: 0, z: -1 }
+
+/** Центры встроенных органов управления в координатах мира. */
+export const JOYSTICK_CENTER: WorldPoint = { x: CABINET_FRONT_X / 2, y: 2, z: CABINET_TOP_Z / 2 }
+export const DROP_BUTTON_CENTER: WorldPoint = { x: CABINET_FRONT_X / 2, y: 6, z: CABINET_TOP_Z / 2 }
+export const PRIZE_HATCH_CENTER: WorldPoint = {
+  x: CABINET_FRONT_X,
+  y: GRID_SIZE / 2,
+  z: (CABINET_TOP_Z + CABINET_BOTTOM_Z) / 2,
+}
+export const RESET_BUTTON_CENTER: WorldPoint = {
+  x: CABINET_FRONT_X,
+  y: 1,
+  z: CABINET_BOTTOM_Z + 1,
+}
+export const MARQUEE_TEXT_CENTER: WorldPoint = { x: 0, y: GRID_SIZE / 2, z: CUBE_HEIGHT + 0.5 }
 
 /** Сторона лотка в ячейках. */
 export const TRAY_SIZE = 2
@@ -60,8 +108,8 @@ export const CLAW_BRAKE_MS = 30
 export const CLAW_MIN_SPEED = 0.1
 /** Скорость переездов, которые ведёт автомат, ячеек в секунду. */
 export const CLAW_TRAVEL_SPEED = 4
-/** Длина троса в покое, в слоях: на столько клешня висит ниже каретки, пока её не опустили. */
-export const ROPE_REST_LENGTH = 0.8
+/** Длина троса в покое, в ячейках. */
+export const ROPE_REST_LENGTH = 1.5
 /** Высота клешни в покое: с неё начинается спуск и на неё же она возвращается. */
 export const CLAW_REST_HEIGHT = CUBE_HEIGHT - ROPE_REST_LENGTH
 /** Длительность опускания клешни до пола, мс. */
@@ -186,7 +234,7 @@ export const SHAPES: Record<ShapeKey, Shape> = {
 export const SUPPORT_SHARE = 0.5
 
 /** Сколько игрушка проходит один слой по высоте, мс. */
-export const TOY_FALL_MS = 180
+export const TOY_FALL_MS = 90
 /** Сколько игрушка проходит одну ячейку по полу, мс. */
 export const TOY_TRAVEL_MS = 140
 /** Нижний предел длительности хода: ход без спуска и почти без пути всё равно виден. */
@@ -223,8 +271,8 @@ export const HEAP_DB_NAME = 'toybox'
 export const HEAP_STORE_NAME = 'heap'
 export const HEAP_SNAPSHOT_KEY = 'current'
 
-/** Длительность вертикального падения на дно лотка, мс. */
-export const TRAY_FALL_MS = 320
+/** Конечная высота игрушки в шахте: ниже пола куба на одну ячейку. */
+export const TRAY_EXIT_Z = -1
 /** Насколько игрушка висит ниже клешни, в слоях. */
 export const CARRY_OFFSET = 0.5
 /** Насколько центр игрушки поднят над полом её слоя. */
@@ -243,13 +291,13 @@ export const TOY_LANDING_IMPULSE = 2.4
 export const DEPTH_SCALE_MIN = 0.92
 
 /** Число точек окружности клетки при построении контура игрушки. */
-export const TOY_OUTLINE_STEPS = 20
+export const TOY_OUTLINE_STEPS = 16
 /** Радиус игрушки в дизайн-единицах. */
-export const TOY_RADIUS = 26
+export const TOY_RADIUS = 28
 /** Толщина бордера игрушки. */
-export const TOY_THICKNESS = 2
+export const TOY_THICKNESS = 4
 /** Толщина бордера подсвеченной игрушки: её клешня возьмёт. */
-export const TOY_HIGHLIGHT_THICKNESS = 6
+export const TOY_HIGHLIGHT_THICKNESS = 8
 /** Прозрачность заливки игрушки: сквозь кучу видно её глубину. */
 export const TOY_FILL_ALPHA = 0.35
 /** Корневой цвет игрушек: от него каждая уходит случайным сдвигом. */
@@ -264,10 +312,10 @@ export const CLAW_RADIUS = 16
 /** Сторона каретки в ячейках: каретка занимает клетку и этой стороной упирается в край поля. */
 export const CART_SIZE = 1
 /** Толщина контура каретки. */
-export const CART_THICKNESS = 2
+export const CART_THICKNESS = 4
 
 /** Толщина рёбер куба и линий сетки в пикселях. */
-export const LINE_THICKNESS = 1
+export const LINE_THICKNESS = 4
 /** Прозрачность линий сетки: ими каркас отличается от рёбер. */
 export const GRID_ALPHA = 0.35
 /** Прозрачность заливки лотка. */
@@ -276,23 +324,27 @@ export const TRAY_ALPHA = 0.35
 /** Доля хода ручки, ниже которой джойстик не трогает клешню. */
 export const JOYSTICK_DEADZONE = 0.3
 
-/** Радиус подложки джойстика в дизайн-единицах. */
-export const JOYSTICK_RADIUS = 95
+/** Радиус подложки джойстика: диаметр совпадает с кнопкой Drop. */
+export const JOYSTICK_RADIUS = 48
 /** Радиус ручки джойстика. */
-export const JOYSTICK_KNOB_RADIUS = 46
+export const JOYSTICK_KNOB_RADIUS = 32
 /** Толщина обводки подложки джойстика. */
-export const JOYSTICK_THICKNESS = 3
+export const JOYSTICK_THICKNESS = 4
 /** Прозрачность заливки подложки джойстика. */
 export const JOYSTICK_FILL_ALPHA = 0.16
+/** Толщина стойки ручки джойстика. */
+export const JOYSTICK_STEM_THICKNESS = 16
+/** Радиус крупной невидимой области захвата джойстика. */
+export const JOYSTICK_HIT_RADIUS = 96
 
 /** Сторона подложки кнопки в дизайн-единицах. */
-export const BUTTON_SIZE_UNITS = 130
+export const BUTTON_SIZE_UNITS = 96
 /** Толщина обводки кнопки. */
-export const BUTTON_THICKNESS = 3
+export const BUTTON_THICKNESS = 4
 /** Прозрачность заливки кнопки. */
 export const BUTTON_FILL_ALPHA = 0.2
 /** Сторона кнопки сброса в дизайн-единицах: меньше кнопки опускания. */
-export const RESET_BUTTON_SIZE_UNITS = 84
+export const RESET_BUTTON_SIZE_UNITS = 88
 /** Начало и конец дуги круговой стрелки на кнопке сброса, радианы. */
 export const RESET_ARC_START = -Math.PI * 0.35
 export const RESET_ARC_END = Math.PI * 1.15
@@ -304,18 +356,33 @@ export const RESET_BUTTON_LABEL = 'Reset the heap'
 export const DISABLED_ALPHA = 0.4
 /** Доля подложки, которую занимает иконка. */
 export const ICON_RATIO = 0.4
-
-/** Смещение джойстика от центра блока управления. */
-export const JOYSTICK_OFFSET_X = -170
-/** Смещение кнопки опускания от центра блока управления. */
-export const DROP_OFFSET_X = 230
+/** Дополнительный отступ невидимой области нажатия от контура. */
+export const CONTROL_HIT_PADDING = 16
+/** Число точек для окружностей, лежащих на гранях корпуса. */
+export const CONTROL_OUTLINE_STEPS = 24
 
 /** Шрифт текстов сцены: своих ассетов у игры нет, берётся системный гротеск. */
 export const HUD_FONT_FAMILY = 'Arial, Helvetica, sans-serif'
-/** Кегль счётчика игрушек в дизайн-единицах. */
-export const COUNTER_FONT_SIZE = 44
-
 /** Отступ элементов сцены от края видимой области. */
-export const SCREEN_MARGIN = 32
-/** Отступ куба от верха игровой области. */
-export const BOX_TOP_MARGIN = 64
+export const SCREEN_MARGIN = CELL_SIZE
+/** Максимальный масштаб корпуса: кратен половине и сохраняет целую экранную сетку 6 px. */
+export const MACHINE_MAX_SCALE = 1.5
+
+/** Размер окна выдачи на передней грани тумбы. */
+export const PRIZE_HATCH_SIZE = CELL_SIZE * 2
+/** Отступ дверцы от контура окна. */
+export const PRIZE_DOOR_INSET = 8
+
+/** Этапы выдачи приза после выхода игрушки из внутреннего лотка. */
+export const PRIZE_PAUSE_MS = 300
+export const PRIZE_DOOR_MS = 250
+export const PRIZE_OPEN_HOLD_MS = 600
+export const PRIZE_TAKE_MS = 450
+
+/** Время временных сообщений на табло. */
+export const WELCOME_MS = 1500
+export const RESET_MS = 1000
+
+/** Физические коды клавиш игрового управления. */
+export const KEYBOARD_ARROW_CODES = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'] as const
+export const KEYBOARD_DROP_CODES = ['Enter', 'Space'] as const

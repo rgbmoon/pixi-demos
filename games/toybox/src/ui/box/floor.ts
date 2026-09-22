@@ -18,7 +18,7 @@ export class Floor extends Container {
   private createOutline(): Graphics {
     const points = getFaceOutline(0).map((point) => worldToScreen(point))
 
-    return new Graphics().poly(points).stroke({ width: LINE_THICKNESS, color: PALETTE.primary, pixelLine: true })
+    return new Graphics().poly(points).stroke({ width: LINE_THICKNESS, color: PALETTE.primary })
   }
 
   /** Линии сетки: по линии на каждую границу ячейки вдоль обеих осей. */
@@ -33,7 +33,7 @@ export class Floor extends Container {
       grid.moveTo(alongY[0].x, alongY[0].y).lineTo(alongY[1].x, alongY[1].y)
     }
 
-    return grid.stroke({ width: LINE_THICKNESS, color: PALETTE.primary, alpha: GRID_ALPHA, pixelLine: true })
+    return grid.stroke({ width: LINE_THICKNESS, color: PALETTE.primary, alpha: GRID_ALPHA })
   }
 
   private createTray(): Graphics {

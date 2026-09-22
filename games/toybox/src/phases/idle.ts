@@ -45,5 +45,6 @@ export class IdlePhase implements Phase<PhaseName> {
 
     this.heap.restore(undefined, Math.random)
     this.toyboxStore.applyCollected(0)
+    this.emitter.emit('heap:reset')
   }
 }

@@ -2,10 +2,12 @@ import { inject, injectable } from 'inversify'
 
 import { LIFT_FUMBLE_CHANCE, LIFT_SLIP_MAX_SHARE, LIFT_SLIP_MIN_SHARE, PHASE_PAUSE_MS } from '#src/constants'
 import type { ClawController } from '#src/controllers/box/claw'
+import type { PrizeOutputController } from '#src/controllers/box/prize-output'
 import type { HeapStore } from '#src/stores/heap'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
-import { type ClawSlip, PhaseName } from '#src/types'
+import { type ClawSlip, PhaseName, type ToyAppearance } from '#src/types'
+import { isAbortError, notifyFatal } from '@pixi-demos/core/errors/utils'
 import type { Phase } from '@pixi-demos/core/fsm/types'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
@@ -24,17 +26,20 @@ export class AscendingPhase implements Phase<PhaseName> {
   private readonly claw: ClawController
   private readonly heap: HeapStore
   private readonly toyboxStore: ToyboxStore
+  private readonly prizeOutput: PrizeOutputController
 
   constructor(
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
     @inject(TOYBOX_TOKENS.ClawController) claw: ClawController,
     @inject(TOYBOX_TOKENS.HeapStore) heap: HeapStore,
-    @inject(TOYBOX_TOKENS.ToyboxStore) toyboxStore: ToyboxStore
+    @inject(TOYBOX_TOKENS.ToyboxStore) toyboxStore: ToyboxStore,
+    @inject(TOYBOX_TOKENS.PrizeOutputController) prizeOutput: PrizeOutputController
   ) {
     this.ticker = ticker
     this.claw = claw
     this.heap = heap
     this.toyboxStore = toyboxStore
+    this.prizeOutput = prizeOutput
   }
 
   async enter(signal: AbortSignal): Promise<typeof PhaseName.delivering> {
@@ -54,8 +59,25 @@ export class AscendingPhase implements Phase<PhaseName> {
     return {
       share,
       onDrop: (id) => {
-        this.heap.release(id, cell, () => this.toyboxStore.recordCollection())
+        this.heap.release(id, cell, (appearance) => this.collect(appearance))
       },
+    }
+  }
+
+  private collect(appearance: ToyAppearance): void {
+    const collected = this.toyboxStore.recordCollection()
+
+    this.toyboxStore.beginPrize()
+    void this.present(appearance, collected)
+  }
+
+  private async present(appearance: ToyAppearance, collected: number): Promise<void> {
+    try {
+      await this.prizeOutput.present(appearance, collected)
+    } catch (error) {
+      if (!isAbortError(error)) notifyFatal(error, 'Prize presentation failed')
+    } finally {
+      this.toyboxStore.finishPrize()
     }
   }
 }

@@ -24,7 +24,7 @@ export class TrayWalls extends Container {
         new Graphics()
           .poly(points)
           .fill({ color: PALETTE.background })
-          .stroke({ width: LINE_THICKNESS, color: PALETTE.accent, pixelLine: true })
+          .stroke({ width: LINE_THICKNESS, color: PALETTE.accent })
       )
     }
   }

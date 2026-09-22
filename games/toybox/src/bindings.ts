@@ -1,6 +1,6 @@
 import type { Container } from 'inversify'
 
-import { bindFsm } from '@pixi-demos/core/bindings'
+import { bindFsm, bindKeyboardInput } from '@pixi-demos/core/bindings'
 import { GameEmitter } from '@pixi-demos/core/events/game-emitter'
 import { traceEvent } from '@pixi-demos/core/events/utils'
 import { IdbStorage } from '@pixi-demos/core/idb-storage'
@@ -10,6 +10,8 @@ import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 
 import {
   CANVAS_FILL_MAX_WIDTH,
+  DESIGN_HEIGHT,
+  DESIGN_WIDTH,
   GAME_ASPECT_RATIO,
   HEAP_DB_NAME,
   HEAP_SNAPSHOT_KEY,
@@ -18,6 +20,7 @@ import {
 } from './constants'
 import { ClawController } from './controllers/box/claw'
 import { ContentsController } from './controllers/box/contents'
+import { PrizeOutputController } from './controllers/box/prize-output'
 import { PersistenceController } from './controllers/persistence'
 import type { GameEvents } from './events'
 import { AscendingPhase } from './phases/ascending'
@@ -61,7 +64,14 @@ export const bindFlow = (container: Container): void => {
 const bindScene = (container: Container): void => {
   container
     .bind(ENGINE_TOKENS.CanvasConfig)
-    .toDynamicValue(() => ({ aspectRatio: GAME_ASPECT_RATIO, fillMaxWidth: CANVAS_FILL_MAX_WIDTH }))
+    .toDynamicValue(() => ({
+      aspectRatio: GAME_ASPECT_RATIO,
+      fillMaxWidth: CANVAS_FILL_MAX_WIDTH,
+      designSize: { width: DESIGN_WIDTH, height: DESIGN_HEIGHT },
+      pixelated: true,
+      antialias: false,
+      roundPixels: true,
+    }))
 
   container
     .bind(ENGINE_TOKENS.Scene)
@@ -90,11 +100,19 @@ const bindScene = (container: Container): void => {
     .onDeactivation((persistence) => {
       if (!persistence.destroyed) persistence.destroy({ children: true })
     })
+
+  container
+    .bind(TOYBOX_TOKENS.PrizeOutputController)
+    .to(PrizeOutputController)
+    .onDeactivation((output) => {
+      if (!output.destroyed) output.destroy({ children: true })
+    })
 }
 
 /** Манифест toybox: состав графа читается по доменным функциям. */
 export const bindToybox = (container: Container): void => {
   bindFsm(container)
+  bindKeyboardInput(container)
   bindEngine(container)
   bindFlow(container)
   bindScene(container)

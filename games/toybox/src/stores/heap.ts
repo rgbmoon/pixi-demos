@@ -7,7 +7,7 @@ import {
   HOLE_MAX_WAVES,
   MAX_LAYERS,
   TRAY_CENTER,
-  TRAY_FALL_MS,
+  TRAY_EXIT_Z,
   TRAY_SLIDE_DELAY_MS,
   TOY_LANDING_IMPULSE,
   TOY_PRESS_DEPTH,
@@ -22,6 +22,7 @@ import {
   type Placement,
   type ShapeKey,
   type ToyBody,
+  type ToyAppearance,
   type ToyId,
   ToyState,
   type VolumeCell,
@@ -81,7 +82,7 @@ export class HeapStore {
   private readonly bodies = new Map<ToyId, ToyBody>()
   private readonly moving = new Set<ToyBody>()
   private readonly springs = new Set<ToyBody>()
-  private readonly onCollected = new Map<ToyId, () => void>()
+  private readonly onCollected = new Map<ToyId, (appearance: ToyAppearance) => void>()
   private dirty = false
   private waves = 0
   private nextId = 0
@@ -175,6 +176,13 @@ export class HeapStore {
     return this.bodies.values()
   }
 
+  /** Внешний вид игрушки для отдельной презентации в окне выдачи. */
+  getAppearance(id: ToyId): ToyAppearance | undefined {
+    const body = this.bodies.get(id)
+
+    return body ? { shape: body.shape, color: body.color } : undefined
+  }
+
   /** Снимок для хранилища: только расположение и фигуры, без непрерывного состояния. */
   takeSnapshot(collected: number): HeapSnapshot {
     const committed = [...this.bodies.values()].filter(
@@ -216,7 +224,7 @@ export class HeapStore {
   /**
    * Возвращает игрушку в кучу или запускает её уход в лоток после посадки у стенки.
    */
-  release(id: ToyId, cell: CellAddress, onCollected: () => void): void {
+  release(id: ToyId, cell: CellAddress, onCollected: (appearance: ToyAppearance) => void): void {
     const body = this.bodies.get(id)
 
     if (!body) return
@@ -250,17 +258,19 @@ export class HeapStore {
     this.dirty = true
   }
 
-  /** Отпускает доставленную игрушку над лотком. */
-  dropIntoTray(id: ToyId): void {
+  /** Отпускает доставленную игрушку над лотком и возвращает рассчитанное время падения. */
+  dropIntoTray(id: ToyId, onCollected?: (appearance: ToyAppearance) => void): number {
     const body = this.bodies.get(id)
 
-    if (!body) return
+    if (!body) return 0
 
     if (this.carried === body) this.carried = undefined
 
     if (this.carryPoint) body.point = { ...this.carryPoint }
 
-    this.startTrayFall(body)
+    if (onCollected) this.onCollected.set(body.id, onCollected)
+
+    return this.startTrayFall(body)
   }
 
   /** Принимает точку клешни: игрушку в ней ведёт клешня, а не кадровый шаг кучи. */
@@ -418,11 +428,17 @@ export class HeapStore {
     this.startMotion(body, state, getBodyCenter(body.shape, facing, anchor, layer), turned)
   }
 
-  private startTrayFall(body: ToyBody): void {
+  private startTrayFall(body: ToyBody): number {
     this.vacate(body)
     this.clearSpring(body)
     this.dirty = true
-    this.startMotion(body, ToyState.fallingIntoTray, { x: body.point.x, y: body.point.y, z: 0 }, false, TRAY_FALL_MS)
+
+    return this.startMotion(
+      body,
+      ToyState.fallingIntoTray,
+      { x: body.point.x, y: body.point.y, z: TRAY_EXIT_Z },
+      false
+    )
   }
 
   private startTraySlide(body: ToyBody): void {
@@ -436,7 +452,7 @@ export class HeapStore {
    * Начинает движение к `target`. Длительность учитывает вертикальный и горизонтальный пути.
    * Доворот использует ту же длительность.
    */
-  private startMotion(body: ToyBody, state: ToyState, target: WorldPoint, turned: boolean, durationMs?: number): void {
+  private startMotion(body: ToyBody, state: ToyState, target: WorldPoint, turned: boolean, durationMs?: number): number {
     body.state = state
     body.from = { ...body.point }
     body.target = target
@@ -447,10 +463,12 @@ export class HeapStore {
     if (isReducedMotion()) {
       this.arrive(body)
 
-      return
+      return body.durationMs
     }
 
     this.moving.add(body)
+
+    return body.durationMs
   }
 
   /**
@@ -512,9 +530,11 @@ export class HeapStore {
     }
 
     if (body.state === ToyState.fallingIntoTray) {
+      const appearance = { shape: body.shape, color: body.color }
+
       this.springs.delete(body)
       this.bodies.delete(body.id)
-      this.onCollected.get(body.id)?.()
+      this.onCollected.get(body.id)?.(appearance)
       this.onCollected.delete(body.id)
 
       return

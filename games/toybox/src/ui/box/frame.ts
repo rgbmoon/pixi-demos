@@ -14,6 +14,6 @@ export class Frame extends Graphics {
 
     const points = getFaceOutline(CUBE_HEIGHT).map((point) => worldToScreen(point))
 
-    this.poly(points).stroke({ width: LINE_THICKNESS, color: PALETTE.primary, pixelLine: true })
+    this.poly(points).stroke({ width: LINE_THICKNESS, color: PALETTE.primary })
   }
 }

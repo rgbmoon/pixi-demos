@@ -20,3 +20,25 @@ export type GameModule = {
   bind(container: Container): void
   start(container: Container, element: HTMLElement, signal: AbortSignal): Promise<void>
 }
+
+/** Изменение состояния физической клавиши. */
+export type KeyboardChange = {
+  readonly code: KeyboardEvent['code']
+  readonly pressed: boolean
+  readonly repeat: boolean
+}
+
+/** Настройки подписки на выбранные физические клавиши. */
+export type KeyboardSubscriptionOptions = {
+  /** Запрещает стандартное действие браузера только для клавиш этой подписки. */
+  readonly preventDefault?: boolean
+}
+
+export type KeyboardListener = (change: KeyboardChange) => void
+
+/** Внутренняя запись подписчика клавиатуры. */
+export type KeyboardSubscription = {
+  readonly codes: ReadonlySet<KeyboardEvent['code']>
+  readonly listener: KeyboardListener
+  readonly preventDefault: boolean
+}

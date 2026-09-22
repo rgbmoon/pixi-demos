@@ -7,6 +7,7 @@ import {
   SWAY_DRAG,
   SWAY_MAX_OFFSET,
   SWAY_PERIOD_MS,
+  TOY_FALL_MS,
 } from '#src/constants'
 import type { GroundPoint, SpringOptions, SpringState, WorldPoint } from '#src/types'
 import { advanceSpring, advanceVelocity, getMotionDurationScale, getMotionMs } from '#src/utils/motion'
@@ -212,6 +213,11 @@ describe('getMotionMs', () => {
   it('растёт с высотой спуска и с путём по полу', () => {
     expect(getMotionMs(1, AT(4, 4, 4), AT(4, 4, 0))).toBeGreaterThan(getMotionMs(1, AT(4, 4, 2), AT(4, 4, 0)))
     expect(getMotionMs(1, AT(0, 0, 0), AT(7, 7, 0))).toBeGreaterThan(getMotionMs(1, AT(0, 0, 0), AT(1, 0, 0)))
+  })
+
+  it('использует базовую скорость 90 мс на ячейку свободного падения', () => {
+    expect(TOY_FALL_MS).toBe(90)
+    expect(getMotionMs(1, AT(4, 4, 3), AT(4, 4, 0))).toBe(3 * TOY_FALL_MS)
   })
 
   it('роняет тяжёлое быстрее лёгкого, но лишь немного', () => {

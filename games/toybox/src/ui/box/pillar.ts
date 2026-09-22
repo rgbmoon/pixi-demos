@@ -21,6 +21,6 @@ export class Pillar extends Graphics {
 
     this.moveTo(bottom.x, bottom.y)
       .lineTo(top.x, top.y)
-      .stroke({ width: LINE_THICKNESS, color: PALETTE.primary, pixelLine: true })
+      .stroke({ width: LINE_THICKNESS, color: PALETTE.primary })
   }
 }

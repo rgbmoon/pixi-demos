@@ -1,8 +1,9 @@
-import { Circle, Container, Graphics } from 'pixi.js'
+import { Container, Graphics, Polygon } from 'pixi.js'
 
 import {
   BUTTON_FILL_ALPHA,
   BUTTON_THICKNESS,
+  CONTROL_HIT_PADDING,
   DISABLED_ALPHA,
   ICON_RATIO,
   RESET_ARC_END,
@@ -11,13 +12,16 @@ import {
   RESET_HEAD_RATIO,
 } from '#src/constants'
 import type { ButtonOptions } from '#src/types'
+import {
+  CABINET_FRONT_PLANE,
+  getProjectedPlaneArc,
+  getProjectedPlaneCircle,
+  projectPlaneOffset,
+} from '#src/utils/machine-geometry'
 import { PALETTE } from '@pixi-demos/core/palette'
 
-/**
- * Кнопка сброса кучи: круглая подложка с круговой стрелкой, меньше основной кнопки опускания.
- */
+/** Кнопка сброса, установленная на передней вертикальной грани тумбы. */
 export class ResetButton extends Container {
-  /** Сторона кнопки в дизайн-единицах: по ней сцена ставит её в угол экрана. */
   readonly sizeUnits = RESET_BUTTON_SIZE_UNITS
 
   constructor(options: ButtonOptions) {
@@ -25,7 +29,7 @@ export class ResetButton extends Container {
 
     const radius = RESET_BUTTON_SIZE_UNITS / 2
     const backing = new Graphics()
-      .circle(0, 0, radius)
+      .poly(getProjectedPlaneCircle(CABINET_FRONT_PLANE, radius))
       .fill({ color: PALETTE.primary, alpha: BUTTON_FILL_ALPHA })
       .stroke({ width: BUTTON_THICKNESS, color: PALETTE.primary })
 
@@ -33,13 +37,10 @@ export class ResetButton extends Container {
 
     this.eventMode = 'static'
     this.cursor = 'pointer'
-    this.hitArea = new Circle(0, 0, radius)
-
-    // Слой доступности PIXI кладёт поверх канваса настоящий <button> с этим именем
+    this.hitArea = new Polygon(getProjectedPlaneCircle(CABINET_FRONT_PLANE, radius + CONTROL_HIT_PADDING))
     this.accessible = true
     this.accessibleType = 'button'
     this.accessibleHint = options.label
-    // На тач-устройствах слой не снимается, и его DOM-кнопка перехватила бы pointerdown у канваса
     this.accessiblePointerEvents = 'none'
 
     this.on('pointertap', options.onTap)
@@ -50,19 +51,27 @@ export class ResetButton extends Container {
     this.eventMode = enabled ? 'static' : 'none'
     this.cursor = enabled ? 'pointer' : 'default'
     this.alpha = enabled ? 1 : DISABLED_ALPHA
-    // Недоступность кнопки должна быть видна и снаружи канваса
     this.accessible = enabled
   }
 
   private static createIcon(): Graphics {
     const radius = (RESET_BUTTON_SIZE_UNITS * ICON_RATIO) / 2
     const head = radius * RESET_HEAD_RATIO
+    const arc = getProjectedPlaneArc(CABINET_FRONT_PLANE, radius, RESET_ARC_START, RESET_ARC_END)
+    const icon = new Graphics().moveTo(arc[0].x, arc[0].y)
+
+    for (const point of arc.slice(1)) icon.lineTo(point.x, point.y)
+
+    icon.stroke({ width: BUTTON_THICKNESS, color: PALETTE.white })
+
     const tip = { x: Math.cos(RESET_ARC_START) * radius, y: Math.sin(RESET_ARC_START) * radius }
 
-    return new Graphics()
-      .arc(0, 0, radius, RESET_ARC_START, RESET_ARC_END)
-      .stroke({ width: BUTTON_THICKNESS, color: PALETTE.white })
-      .poly([tip.x + head, tip.y, tip.x - head, tip.y - head, tip.x - head, tip.y + head])
+    return icon
+      .poly([
+        projectPlaneOffset(CABINET_FRONT_PLANE, tip.x + head, tip.y, true),
+        projectPlaneOffset(CABINET_FRONT_PLANE, tip.x - head, tip.y - head, true),
+        projectPlaneOffset(CABINET_FRONT_PLANE, tip.x - head, tip.y + head, true),
+      ])
       .fill({ color: PALETTE.white })
   }
 }
