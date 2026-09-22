@@ -12,7 +12,15 @@ import {
   TRAY_WALL_LAYERS,
 } from '#src/constants'
 import { HeapStore } from '#src/stores/heap'
-import { type CellAddress, type HeapSnapshot, type ToyBody, type ToyId, ToyState, type VolumeCell } from '#src/types'
+import {
+  type CellAddress,
+  type HeapSnapshot,
+  type Occupancy,
+  type ToyBody,
+  type ToyId,
+  ToyState,
+  type VolumeCell,
+} from '#src/types'
 import { getBottomCells, getPlacementCells, getWeight, isBoxCell } from '#src/utils/heap'
 import { isTrayCell } from '#src/utils/projection'
 import { createRandom } from '@pixi-demos/core/random'
@@ -44,8 +52,8 @@ const getCells = (heap: HeapStore): VolumeCell[] =>
 
 const toKey = ({ col, row, layer }: VolumeCell): string => `${col}:${row}:${layer}`
 
-const createOccupancy = (heap: HeapStore) => {
-  const taken = new Set(getCells(heap).map(toKey))
+const createOccupancy = (cells: readonly VolumeCell[]): Occupancy => {
+  const taken = new Set(cells.map(toKey))
 
   return (cell: VolumeCell) => taken.has(toKey(cell))
 }
@@ -57,8 +65,7 @@ const createOccupancy = (heap: HeapStore) => {
  * нижних клеток) выполняется не всегда: длинная форма, из-под которой увели все опоры кроме одного
  * столбика, опуститься не может и остаётся заклиненной.
  */
-const isGrounded = (heap: HeapStore, body: Readonly<ToyBody>): boolean => {
-  const isOccupied = createOccupancy(heap)
+const isGrounded = (body: Readonly<ToyBody>, isOccupied: Occupancy): boolean => {
   const cells = getPlacementCells(body.shape, body.facing, body.anchor, body.layer)
 
   return getBottomCells(cells).some(({ col, row, layer }) => layer === 0 || isOccupied({ col, row, layer: layer - 1 }))
@@ -66,27 +73,22 @@ const isGrounded = (heap: HeapStore, body: Readonly<ToyBody>): boolean => {
 
 /** Проверяет всё, что обязано быть верно про кучу в покое. */
 const expectSoundHeap = (heap: HeapStore): void => {
+  const bodies = [...heap.getBodies()].filter((body) => !OUT_OF_GRID.has(body.state))
   const cells = getCells(heap)
   const keys = cells.map(toKey)
+  const isOccupied = createOccupancy(cells)
 
   // Ни одна клетка не занята дважды, и занятых ровно столько, сколько весят все игрушки
   expect(new Set(keys).size).toBe(keys.length)
-  expect(cells).toHaveLength(
-    [...heap.getBodies()]
-      .filter((body) => !OUT_OF_GRID.has(body.state))
-      .reduce((sum, body) => sum + getWeight(body.shape), 0)
-  )
+  expect(cells).toHaveLength(bodies.reduce((sum, body) => sum + getWeight(body.shape), 0))
+  expect(cells.every(isBoxCell)).toBe(true)
+  expect(cells.every((cell) => !isTrayCell(cell))).toBe(true)
 
-  for (const cell of cells) {
-    expect(isBoxCell(cell)).toBe(true)
-    expect(isTrayCell(cell)).toBe(false)
-  }
+  const ungrounded = bodies
+    .filter((body) => body.state === ToyState.resting && !isGrounded(body, isOccupied))
+    .map((body) => body.id)
 
-  for (const body of heap.getBodies()) {
-    if (body.state !== ToyState.resting) continue
-
-    expect(isGrounded(heap, body)).toBe(true)
-  }
+  expect(ungrounded).toEqual([])
 }
 
 /** Куча из снимка: тесты, которым нужна известная раскладка, строят её руками. */

@@ -30,6 +30,13 @@ import {
 
 type Polygon = ScreenPoint[]
 
+type Bounds = {
+  left: number
+  right: number
+  top: number
+  bottom: number
+}
+
 type RenderPlacement = {
   shape: ShapeKey
   facing: Facing
@@ -39,11 +46,23 @@ type RenderPlacement = {
   cellDepths: number[]
   depth: number
   fragments: Polygon[]
+  fragmentBounds: Bounds[]
+  bounds: Bounds
   occupied: Set<string>
 }
 
 const EPSILON = 1e-4
 const SHAPE_KEYS = Object.keys(SHAPES) as ShapeKey[]
+
+const getBounds = (points: readonly ScreenPoint[]): Bounds => ({
+  left: Math.min(...points.map(({ x }) => x)),
+  right: Math.max(...points.map(({ x }) => x)),
+  top: Math.min(...points.map(({ y }) => y)),
+  bottom: Math.max(...points.map(({ y }) => y)),
+})
+
+const overlapsBounds = (left: Bounds, right: Bounds): boolean =>
+  left.right > right.left && right.right > left.left && left.bottom > right.top && right.bottom > left.top
 
 const getArea = (polygon: readonly ScreenPoint[]): number => {
   let area = 0
@@ -137,6 +156,10 @@ const createPlacement = (shape: ShapeKey, facing: Facing, anchor: CellAddress, l
 
   geometry.set(key, local)
 
+  const fragments = local.map((polygon) =>
+    polygon.map((point) => ({ x: offset.x + point.x * scale, y: offset.y + point.y * scale }))
+  )
+
   return {
     shape,
     facing,
@@ -147,9 +170,9 @@ const createPlacement = (shape: ShapeKey, facing: Facing, anchor: CellAddress, l
       getDepthOrder({ ...getCellCenter(cell), z: cell.layer + TOY_LAYER_CENTER })
     ),
     depth: getBodyDepth(shape, facing, anchor, layer),
-    fragments: local.map((polygon) =>
-      polygon.map((point) => ({ x: offset.x + point.x * scale, y: offset.y + point.y * scale }))
-    ),
+    fragments,
+    fragmentBounds: fragments.map(getBounds),
+    bounds: getBounds(fragments.flat()),
     occupied: new Set(cells.map(({ col, row, layer: cellLayer }) => `${col}:${row}:${cellLayer}`)),
   }
 }
@@ -168,8 +191,12 @@ const getPairRelation = (left: RenderPlacement, right: RenderPlacement) => {
   let crossing = false
   let tie = false
 
+  if (!overlapsBounds(left.bounds, right.bounds)) return { crossing, relation, overlaps, tie }
+
   for (let leftIndex = 0; leftIndex < left.fragments.length; leftIndex++) {
     for (let rightIndex = 0; rightIndex < right.fragments.length; rightIndex++) {
+      if (!overlapsBounds(left.fragmentBounds[leftIndex], right.fragmentBounds[rightIndex])) continue
+
       const overlap = intersect(left.fragments[leftIndex], right.fragments[rightIndex])
 
       if (overlap.length < 3 || Math.abs(getArea(overlap)) <= EPSILON) continue
@@ -284,7 +311,7 @@ describe('порядок отрисовки игрушек', () => {
         const left = placements[leftIndex]
         const right = placements[rightIndex]
 
-        if (overlapsVolume(left, right)) continue
+        if (!overlapsBounds(left.bounds, right.bounds) || overlapsVolume(left, right)) continue
 
         const pair = getPairRelation(left, right)
 
