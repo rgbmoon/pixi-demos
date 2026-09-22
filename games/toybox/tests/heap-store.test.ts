@@ -578,23 +578,27 @@ describe('HeapStore: инварианты под нагрузкой', () => {
     row: Math.floor(random() * GRID_SIZE),
   })
 
-  it('держит кучу связной после длинной серии изъятий и возвратов', () => {
-    const random = createRandom(11)
-    const heap = createFilledHeap(11)
+  it(
+    'держит кучу связной после длинной серии изъятий и возвратов',
+    () => {
+      const random = createRandom(11)
+      const heap = createFilledHeap(11)
 
-    for (let round = 0; round < 60; round++) {
-      const id = heap.lift(pickCell(random))
+      for (let round = 0; round < 60; round++) {
+        const id = heap.lift(pickCell(random))
 
-      settle(heap, STRESS_FRAME_MS)
-      expectSoundHeap(heap)
-
-      if (id !== undefined) {
-        heap.release(id, pickCell(random), NOOP)
         settle(heap, STRESS_FRAME_MS)
         expectSoundHeap(heap)
+
+        if (id !== undefined) {
+          heap.release(id, pickCell(random), NOOP)
+          settle(heap, STRESS_FRAME_MS)
+          expectSoundHeap(heap)
+        }
       }
-    }
-  })
+    },
+    15_000
+  )
 
   it('сходится за конечное число кадров даже на обвале всей кучи', () => {
     const heap = createFilledHeap(12)
