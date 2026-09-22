@@ -30,13 +30,14 @@ const OUT_OF_GRID = new Set<ToyState>([ToyState.carried, ToyState.slidingToTray,
 const NOOP = (): void => undefined
 
 const FRAME_MS = 1000 / 60
+const STRESS_FRAME_MS = 100
 /** Предохранитель: куча, которая не встала за столько кадров, считается зациклившейся. */
 const MAX_FRAMES = 10_000
 
 /** Крутит кадры, пока куча не придёт в покой; отвечает, сколько кадров на это ушло. */
-const settle = (heap: HeapStore): number => {
+const settle = (heap: HeapStore, deltaMs = FRAME_MS): number => {
   for (let frame = 1; frame <= MAX_FRAMES; frame++) {
-    heap.advance(FRAME_MS)
+    heap.advance(deltaMs)
 
     if (heap.settled) return frame
   }
@@ -584,12 +585,12 @@ describe('HeapStore: инварианты под нагрузкой', () => {
     for (let round = 0; round < 60; round++) {
       const id = heap.lift(pickCell(random))
 
-      settle(heap)
+      settle(heap, STRESS_FRAME_MS)
       expectSoundHeap(heap)
 
       if (id !== undefined) {
         heap.release(id, pickCell(random), NOOP)
-        settle(heap)
+        settle(heap, STRESS_FRAME_MS)
         expectSoundHeap(heap)
       }
     }
