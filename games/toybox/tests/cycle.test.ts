@@ -7,12 +7,14 @@ import {
   GRAB_HOLD_MS,
   LIFT_FUMBLE_CHANCE,
   PHASE_PAUSE_MS,
-  TRAY_FALL_MS,
   TRAY_CENTER,
+  TRAY_EXIT_Z,
   TRAY_HOLD_MS,
   TRAY_RELEASE_MS,
 } from '#src/constants'
 import { PhaseName } from '#src/types'
+import { getWeight } from '#src/utils/heap'
+import { getMotionMs } from '#src/utils/motion'
 import { isTrayCell } from '#src/utils/projection'
 
 import { countToys, type Cycle, emptyHeap, getGrabRolls, getHomeCell, startCycle } from './setup/cycle'
@@ -67,6 +69,10 @@ describe('цикл клешни', () => {
 
     const steps = approach(cycle)
     const before = countToys(cycle)
+    const expected = cycle.heap.getTopBody(getHomeCell())
+    const fallMs = expected
+      ? getMotionMs(getWeight(expected.shape), expected.point, { ...expected.point, z: TRAY_EXIT_Z })
+      : 0
 
     cycle.world.rolls = [getGrabRolls(cycle).hit, SLIP_MISS, FUMBLE_MISS]
 
@@ -81,11 +87,19 @@ describe('цикл клешни', () => {
       `carryTo:${TRAY_CENTER.x},${TRAY_CENTER.y}`,
       `wait:${TRAY_RELEASE_MS}`,
       'release',
-      `wait:${TRAY_FALL_MS}`,
+      `wait:${fallMs}`,
       ...RETURN,
     ])
     expect(cycle.store.collected).toBe(1)
     expect(countToys(cycle)).toBe(before - 1)
+    expect(cycle.prizes).toEqual([
+      {
+        shape: expected?.shape,
+        color: expected?.color,
+        collected: 1,
+        domainCollected: 1,
+      },
+    ])
   })
 
   it('на промахе всё равно доезжает до лотка и счётчик не трогает', async () => {

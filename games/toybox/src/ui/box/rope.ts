@@ -27,6 +27,6 @@ export class Rope extends Container {
       .clear()
       .moveTo(top.x, top.y)
       .lineTo(bottom.x, bottom.y)
-      .stroke({ width: LINE_THICKNESS, color: PALETTE.cyan, pixelLine: true })
+      .stroke({ width: LINE_THICKNESS, color: PALETTE.cyan })
   }
 }

@@ -24,7 +24,7 @@ export class Cart extends Container {
     ].map((corner) => worldToScreen(corner))
 
     this.addChild(
-      new Graphics().poly(corners).stroke({ width: CART_THICKNESS, color: PALETTE.cyan, pixelLine: true })
+      new Graphics().poly(corners).stroke({ width: CART_THICKNESS, color: PALETTE.cyan })
     )
   }
 

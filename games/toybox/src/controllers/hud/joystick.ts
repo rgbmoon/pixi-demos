@@ -19,7 +19,7 @@ export class JoystickController extends LiveContainer {
     this.addChild(this.joystick)
 
     this.watch(
-      () => toyboxStore.isIdle,
+      () => toyboxStore.canDrop,
       (enabled) => this.joystick.setEnabled(enabled),
       { fireImmediately: true }
     )

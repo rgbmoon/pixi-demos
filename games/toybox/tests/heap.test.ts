@@ -9,6 +9,7 @@ import {
   HEAP_SNAPSHOT_VERSION,
   HOLE_FILL_MAX_CHANCE,
   MAX_LAYERS,
+  PIXEL_SCALE,
   SLIDE_MIN_DROP,
   SHAPES,
   SLIDE_MAX_CHANCE,
@@ -142,7 +143,7 @@ describe('getDepthOrder', () => {
   it('разводит точки, которые заслоняют друг друга на экране', () => {
     // Обе точки лежат на одном луче взгляда и проецируются в одно место: заслоняет ближняя
     const near = { x: 0, y: 0, z: 1 }
-    const far = { x: 8, y: 1, z: 0 }
+    const far = { x: 128 / 17, y: 16 / 17, z: 0 }
 
     expect(worldToScreen(near)).toEqual(worldToScreen(far))
     expect(getDepthOrder(near)).toBeGreaterThan(getDepthOrder(far))
@@ -491,9 +492,11 @@ describe('getShapeOutline', () => {
     }
   })
 
-  it('обводит одноклеточную форму окружностью её радиуса', () => {
+  it('обводит одноклеточную форму ступенчатой окружностью на пиксельной сетке', () => {
     for (const point of getShapeOutline('single', 0)) {
-      expect(Math.hypot(point.x, point.y)).toBeCloseTo(TOY_RADIUS, 6)
+      expect(Math.abs(point.x % PIXEL_SCALE)).toBe(0)
+      expect(Math.abs(point.y % PIXEL_SCALE)).toBe(0)
+      expect(Math.abs(Math.hypot(point.x, point.y) - TOY_RADIUS)).toBeLessThan(PIXEL_SCALE)
     }
   })
 

@@ -6,6 +6,8 @@
  */
 export type GameEvents = {
   'game:booted': void
+  'heap:reset': void
+  'prize:taken': { readonly collected: number }
   'ui:dropRequested': void
   'ui:resetRequested': void
 }

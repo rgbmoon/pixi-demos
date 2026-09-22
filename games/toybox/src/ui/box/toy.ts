@@ -17,7 +17,7 @@ const TURN_MIDPOINT = 0.5
 export class Toy extends Container {
   private readonly shapes: ToyShapes
   private readonly body: Graphics
-  private readonly shape: ShapeKey
+  private shape: ShapeKey
   private facing: Facing
   private highlighted = false
   private depthScale = 1
@@ -34,6 +34,26 @@ export class Toy extends Container {
     this.body.tint = color
 
     this.addChild(this.body)
+  }
+
+  /** Переиспользует экземпляр для другой формы и цвета. */
+  setAppearance(shape: ShapeKey, facing: Facing, color: number): void {
+    this.shape = shape
+    this.facing = facing
+    this.body.tint = color
+    this.refresh()
+  }
+
+  /** Ставит отдельный масштаб для презентации вне координат мира. */
+  setPresentationScale(scale: number): void {
+    this.depthScale = scale
+    this.turnWidth = 1
+    this.applyScale()
+  }
+
+  /** Ограничивает игрушку геометрией стеклянного бокса или снимает ограничение. */
+  setClippingMask(mask: Container | null): void {
+    this.mask = mask
   }
 
   /** Ставит середину игрушки в точку мира, приподнятую отскоком; с глубиной она мельче. */

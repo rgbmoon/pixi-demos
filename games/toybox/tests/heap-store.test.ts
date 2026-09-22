@@ -6,7 +6,7 @@ import {
   HEAP_SNAPSHOT_VERSION,
   MAX_LAYERS,
   TRAY_CENTER,
-  TRAY_FALL_MS,
+  TRAY_EXIT_Z,
   TRAY_ORIGIN,
   TRAY_SLIDE_DELAY_MS,
   TRAY_WALL_LAYERS,
@@ -22,6 +22,7 @@ import {
   type VolumeCell,
 } from '#src/types'
 import { getBottomCells, getPlacementCells, getWeight, isBoxCell } from '#src/utils/heap'
+import { getMotionMs } from '#src/utils/motion'
 import { isTrayCell } from '#src/utils/projection'
 import { createRandom } from '@pixi-demos/core/random'
 import type { Random } from '@pixi-demos/core/types'
@@ -348,9 +349,11 @@ describe('HeapStore: цикл клешни', () => {
       expect(body.state).toBe(ToyState.fallingIntoTray)
       expect(body.point.x).toBe(TRAY_CENTER.x)
       expect(body.point.y).toBe(TRAY_CENTER.y)
-      expect(body.target).toEqual({ ...TRAY_CENTER, z: 0 })
+      expect(body.target).toEqual({ ...TRAY_CENTER, z: TRAY_EXIT_Z })
 
-      heap.advance(TRAY_FALL_MS - 1)
+      const fallMs = body.durationMs
+
+      heap.advance(fallMs - 1)
       expect(onCollected).not.toHaveBeenCalled()
 
       heap.advance(1)
@@ -649,6 +652,39 @@ describe('HeapStore: снимок', () => {
 
     expect(snapshot.bodies).toHaveLength([...heap.getBodies()].length - 1)
     expect(snapshot.collected).toBe(1)
+  })
+
+  it('ведёт игрушку ниже пола и передаёт её форму с цветом только после выхода', () => {
+    const heap = createFilledHeap(15)
+    const id = heap.lift({ col: 4, row: 4 }) as number
+    const onCollected = vi.fn()
+
+    settle(heap)
+    const appearance = heap.getAppearance(id)
+    const beforeFall = [...heap.getBodies()].find((candidate) => candidate.id === id) as ToyBody
+    const expectedDuration = getMotionMs(getWeight(beforeFall.shape), beforeFall.point, {
+      ...beforeFall.point,
+      z: TRAY_EXIT_Z,
+    })
+    const fallMs = heap.dropIntoTray(id, onCollected)
+
+    const falling = [...heap.getBodies()].find((candidate) => candidate.id === id) as ToyBody
+
+    expect(falling.target.z).toBe(TRAY_EXIT_Z)
+    expect(fallMs).toBe(expectedDuration)
+    expect(falling.durationMs).toBe(expectedDuration)
+
+    heap.advance(fallMs * 0.99)
+
+    expect(falling.point.z).toBeLessThan(0)
+    expect([...heap.getBodies()]).toContain(falling)
+    expect(onCollected).not.toHaveBeenCalled()
+
+    heap.advance(fallMs * 0.01)
+
+    expect([...heap.getBodies()]).not.toContain(falling)
+    expect(onCollected).toHaveBeenCalledOnce()
+    expect(onCollected).toHaveBeenCalledWith(appearance)
   })
 
   it('сохраняет посадку у стенки и считает только начавшееся движение в лоток', () => {

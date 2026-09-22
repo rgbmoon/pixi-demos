@@ -1,21 +1,27 @@
 import { Circle, Container, type FederatedPointerEvent, Graphics } from 'pixi.js'
 
 import {
+  CELL_SIZE,
   DISABLED_ALPHA,
   JOYSTICK_FILL_ALPHA,
+  JOYSTICK_HIT_RADIUS,
   JOYSTICK_KNOB_RADIUS,
   JOYSTICK_RADIUS,
+  JOYSTICK_STEM_THICKNESS,
   JOYSTICK_THICKNESS,
 } from '#src/constants'
 import type { JoystickOptions, ScreenPoint } from '#src/types'
+import {
+  CONTROL_PANEL_PLANE,
+  getProjectedPlaneCircle,
+  projectPlaneOffset,
+  screenToPlaneOffset,
+} from '#src/utils/machine-geometry'
+import { worldToScreen } from '#src/utils/projection'
 import { PALETTE } from '@pixi-demos/core/palette'
 
-/**
- * Джойстик: подложка с ручкой, которую тянут указателем. Жест ведётся `globalpointermove`, поэтому
- * палец может уходить за подложку; отклонение отдаётся наружу вектором длиной от 0 до 1.
- */
+/** Джойстик, основание и ход ручки которого лежат в мировой плоскости панели управления. */
 export class Joystick extends Container {
-  /** Радиус подложки в дизайн-единицах: по нему сцена считает габариты блока управления. */
   readonly radiusUnits = JOYSTICK_RADIUS
 
   private readonly knob = new Graphics()
@@ -28,18 +34,27 @@ export class Joystick extends Container {
     this.onMove = options.onMove
 
     const base = new Graphics()
-      .circle(0, 0, JOYSTICK_RADIUS)
+      .poly(getProjectedPlaneCircle(CONTROL_PANEL_PLANE, JOYSTICK_RADIUS))
       .fill({ color: PALETTE.primary, alpha: JOYSTICK_FILL_ALPHA })
       .stroke({ width: JOYSTICK_THICKNESS, color: PALETTE.primary })
+    const top = worldToScreen({ x: 0, y: 0, z: JOYSTICK_KNOB_RADIUS / CELL_SIZE })
+    const head = getProjectedPlaneCircle(CONTROL_PANEL_PLANE, JOYSTICK_KNOB_RADIUS).map(({ x, y }) => ({
+      x: x + top.x,
+      y: y + top.y,
+    }))
 
-    this.knob.circle(0, 0, JOYSTICK_KNOB_RADIUS).fill({ color: PALETTE.primary })
+    this.knob
+      .moveTo(0, 0)
+      .lineTo(top.x, top.y)
+      .stroke({ width: JOYSTICK_STEM_THICKNESS, color: PALETTE.primary })
+      .poly(head)
+      .fill(PALETTE.primary)
 
     this.addChild(base, this.knob)
 
     this.eventMode = 'static'
     this.cursor = 'pointer'
-    this.hitArea = new Circle(0, 0, JOYSTICK_RADIUS)
-    // На тач-устройствах слой доступности не снимается, и его DOM-узел перехватил бы жест у канваса
+    this.hitArea = new Circle(0, 0, JOYSTICK_HIT_RADIUS)
     this.accessiblePointerEvents = 'none'
 
     this.on('pointerdown', this.handleDown)
@@ -48,7 +63,7 @@ export class Joystick extends Container {
     this.on('pointerupoutside', this.handleUp)
   }
 
-  /** Включает или гасит джойстик; выключенный отпускает ручку, чтобы жест не повис. */
+  /** Включает или гасит джойстик; выключенный отпускает ручку. */
   setEnabled(enabled: boolean): void {
     if (!enabled) this.release()
 
@@ -68,7 +83,6 @@ export class Joystick extends Container {
 
   private handleDown = (event: FederatedPointerEvent): void => {
     this.isDragging = true
-
     this.apply(event)
   }
 
@@ -80,10 +94,11 @@ export class Joystick extends Container {
     this.release()
   }
 
-  /** Считает отклонение от центра подложки: направление жеста и его доля от радиуса. */
+  /** Ограничивает жест окружностью в плоскости панели и возвращает его экранное направление. */
   private apply(event: FederatedPointerEvent): void {
     const local = event.getLocalPosition(this)
-    const distance = Math.hypot(local.x, local.y)
+    const plane = screenToPlaneOffset(CONTROL_PANEL_PLANE, local)
+    const distance = Math.hypot(plane.x, plane.y)
 
     if (distance === 0) {
       this.knob.position.set(0, 0)
@@ -93,9 +108,11 @@ export class Joystick extends Container {
     }
 
     const strength = Math.min(distance, JOYSTICK_RADIUS) / JOYSTICK_RADIUS
-    const vector = { x: (local.x / distance) * strength, y: (local.y / distance) * strength }
+    const scale = (strength * JOYSTICK_RADIUS) / distance
+    const offset = projectPlaneOffset(CONTROL_PANEL_PLANE, plane.x * scale, plane.y * scale)
+    const screenDistance = Math.hypot(offset.x, offset.y)
 
-    this.knob.position.set(vector.x * JOYSTICK_RADIUS, vector.y * JOYSTICK_RADIUS)
-    this.onMove(vector)
+    this.knob.position.set(offset.x, offset.y)
+    this.onMove({ x: (offset.x / screenDistance) * strength, y: (offset.y / screenDistance) * strength })
   }
 }

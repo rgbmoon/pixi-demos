@@ -30,6 +30,29 @@ export type ScreenPoint = {
   y: number
 }
 
+/** Два мировых направления плоскости для её локальных осей вправо и вниз. */
+export type WorldPlane = {
+  readonly horizontal: WorldPoint
+  readonly vertical: WorldPoint
+}
+
+/** Измеренные экранные границы геометрии автомата. */
+export type ScreenBounds = {
+  readonly left: number
+  readonly right: number
+  readonly top: number
+  readonly bottom: number
+  readonly width: number
+  readonly height: number
+}
+
+/** Масштаб и начало координат корпуса внутри видимой области макета. */
+export type MachineLayout = {
+  readonly scale: number
+  readonly x: number
+  readonly y: number
+}
+
 /** Адрес ячейки сетки: колонка по оси `x`, ряд по оси `y`. */
 export type CellAddress = {
   col: number
@@ -60,6 +83,20 @@ export type ClawSlip = {
 export type ToyId = number
 
 export type ShapeKey = 'single' | 'bar2' | 'square4' | 'cube8'
+
+/** Внешний вид выданной игрушки без её положения в куче. */
+export type ToyAppearance = {
+  readonly shape: ShapeKey
+  readonly color: number
+}
+
+/** Элемент последовательной очереди визуальной выдачи. */
+export type PrizePresentationRequest = {
+  readonly appearance: ToyAppearance
+  readonly collected: number
+  readonly resolve: () => void
+  readonly reject: (reason: unknown) => void
+}
 
 /** Клетка формы относительно её якоря, в базовой ориентации. */
 export type ShapeCell = {
@@ -170,6 +207,11 @@ export type WorldTweenOptions = {
   readonly durationMs: number
   readonly ease: (progress: number) => number
   readonly apply: (point: WorldPoint) => void
+}
+
+export type ProgressTweenOptions = {
+  readonly durationMs: number
+  readonly apply: (progress: number) => void
 }
 
 export type ButtonOptions = {

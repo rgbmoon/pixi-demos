@@ -330,8 +330,8 @@ describe('порядок отрисовки игрушек', () => {
     }
 
     expect(placements).toHaveLength(971)
-    expect(contourPairs).toBe(45_678)
-    expect(fragmentOverlaps).toBe(177_364)
+    expect(contourPairs).toBe(58_235)
+    expect(fragmentOverlaps).toBe(209_260)
     expect(failures).toEqual([])
   })
 
@@ -370,7 +370,7 @@ describe('порядок отрисовки игрушек', () => {
       if (placementOverlaps) overlappingPlacements += 1
     }
 
-    expect(overlappingPlacements).toBe(118)
+    expect(overlappingPlacements).toBe(120)
     expect(failures).toEqual([])
   })
 

@@ -5,6 +5,7 @@ import type { IdbStorage } from '@pixi-demos/core/idb-storage'
 
 import type { ClawController } from './controllers/box/claw'
 import type { ContentsController } from './controllers/box/contents'
+import type { PrizeOutputController } from './controllers/box/prize-output'
 import type { PersistenceController } from './controllers/persistence'
 import type { GameEvents } from './events'
 import type { HeapStore } from './stores/heap'
@@ -19,4 +20,5 @@ export const TOYBOX_TOKENS = {
   ClawController: Symbol('ClawController') as ServiceIdentifier<ClawController>,
   ContentsController: Symbol('ContentsController') as ServiceIdentifier<ContentsController>,
   PersistenceController: Symbol('PersistenceController') as ServiceIdentifier<PersistenceController>,
+  PrizeOutputController: Symbol('PrizeOutputController') as ServiceIdentifier<PrizeOutputController>,
 } as const

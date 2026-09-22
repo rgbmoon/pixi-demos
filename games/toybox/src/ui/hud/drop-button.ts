@@ -1,15 +1,23 @@
-import { Circle, Container, Graphics } from 'pixi.js'
+import { Container, Graphics, Polygon } from 'pixi.js'
 
-import { BUTTON_FILL_ALPHA, BUTTON_SIZE_UNITS, BUTTON_THICKNESS, DISABLED_ALPHA, ICON_RATIO } from '#src/constants'
+import {
+  BUTTON_FILL_ALPHA,
+  BUTTON_SIZE_UNITS,
+  BUTTON_THICKNESS,
+  CONTROL_HIT_PADDING,
+  DISABLED_ALPHA,
+  ICON_RATIO,
+} from '#src/constants'
 import type { ButtonOptions } from '#src/types'
+import {
+  CONTROL_PANEL_PLANE,
+  getProjectedPlaneCircle,
+  projectPlaneOffset,
+} from '#src/utils/machine-geometry'
 import { PALETTE } from '@pixi-demos/core/palette'
 
-/**
- * Кнопка опускания клешни: круглая подложка с двойным шевроном вниз. Своего арта у игры пока нет,
- * поэтому всё рисуется `Graphics`; центр кнопки — её начало координат.
- */
+/** Кнопка опускания клешни, спроецированная в плоскость панели управления. */
 export class DropButton extends Container {
-  /** Сторона кнопки в дизайн-единицах: по ней сцена считает габариты блока управления. */
   readonly sizeUnits = BUTTON_SIZE_UNITS
 
   constructor(options: ButtonOptions) {
@@ -17,7 +25,7 @@ export class DropButton extends Container {
 
     const radius = BUTTON_SIZE_UNITS / 2
     const backing = new Graphics()
-      .circle(0, 0, radius)
+      .poly(getProjectedPlaneCircle(CONTROL_PANEL_PLANE, radius))
       .fill({ color: PALETTE.primary, alpha: BUTTON_FILL_ALPHA })
       .stroke({ width: BUTTON_THICKNESS, color: PALETTE.primary })
 
@@ -25,24 +33,20 @@ export class DropButton extends Container {
 
     this.eventMode = 'static'
     this.cursor = 'pointer'
-    this.hitArea = new Circle(0, 0, radius)
-
-    // Слой доступности PIXI кладёт поверх канваса настоящий <button> с этим именем
+    this.hitArea = new Polygon(getProjectedPlaneCircle(CONTROL_PANEL_PLANE, radius + CONTROL_HIT_PADDING))
     this.accessible = true
     this.accessibleType = 'button'
     this.accessibleHint = options.label
-    // На тач-устройствах слой не снимается, и его DOM-кнопка перехватила бы pointerdown у канваса
     this.accessiblePointerEvents = 'none'
 
     this.on('pointertap', options.onTap)
   }
 
-  /** Включает или гасит кнопку: снимает интерактивность и притеняет подложку. */
+  /** Включает или гасит кнопку. */
   setEnabled(enabled: boolean): void {
     this.eventMode = enabled ? 'static' : 'none'
     this.cursor = enabled ? 'pointer' : 'default'
     this.alpha = enabled ? 1 : DISABLED_ALPHA
-    // Недоступность кнопки должна быть видна и снаружи канваса
     this.accessible = enabled
   }
 
@@ -51,7 +55,11 @@ export class DropButton extends Container {
     const icon = new Graphics()
 
     for (const offset of [-size * 0.7, size * 0.3]) {
-      icon.poly([0, offset + size * 0.7, -size * 0.8, offset - size * 0.2, size * 0.8, offset - size * 0.2])
+      icon.poly([
+        projectPlaneOffset(CONTROL_PANEL_PLANE, 0, offset + size * 0.7, true),
+        projectPlaneOffset(CONTROL_PANEL_PLANE, -size * 0.8, offset - size * 0.2, true),
+        projectPlaneOffset(CONTROL_PANEL_PLANE, size * 0.8, offset - size * 0.2, true),
+      ])
     }
 
     return icon.fill({ color: PALETTE.white })
