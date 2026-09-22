@@ -15,6 +15,8 @@ import type { ClawController } from '#src/controllers/box/claw'
 import type { ContentsController } from '#src/controllers/box/contents'
 import { ControlsController } from '#src/controllers/hud/controls'
 import { CounterController } from '#src/controllers/hud/counter'
+import { ResetButtonController } from '#src/controllers/hud/reset-button'
+import type { PersistenceController } from '#src/controllers/persistence'
 import type { GameEvents } from '#src/events'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
@@ -31,10 +33,12 @@ export class GameScene extends Container {
   private readonly box: BoxController
   private readonly controls: ControlsController
   private readonly counter: CounterController
+  private readonly resetButton: ResetButtonController
 
   constructor(
     @inject(TOYBOX_TOKENS.ClawController) claw: ClawController,
     @inject(TOYBOX_TOKENS.ContentsController) contents: ContentsController,
+    @inject(TOYBOX_TOKENS.PersistenceController) persistence: PersistenceController,
     @inject(TOYBOX_TOKENS.ToyboxStore) toyboxStore: ToyboxStore,
     @inject(TOYBOX_TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>
   ) {
@@ -43,9 +47,10 @@ export class GameScene extends Container {
     this.box = new BoxController(contents)
     this.controls = new ControlsController(claw, toyboxStore, emitter)
     this.counter = new CounterController(toyboxStore)
+    this.resetButton = new ResetButtonController(toyboxStore, emitter)
 
-    this.content.addChild(this.box, this.controls, this.counter)
-    this.addChild(this.content)
+    this.content.addChild(this.box, this.controls, this.counter, this.resetButton)
+    this.addChild(this.content, persistence)
   }
 
   layout(screenWidth: number, screenHeight: number): void {
@@ -70,6 +75,13 @@ export class GameScene extends Container {
 
     this.controls.position.set(centerX, controlsCenterY)
     this.counter.position.set(viewLeft + SCREEN_MARGIN, viewTop + SCREEN_MARGIN)
+
+    const resetRadius = this.resetButton.sizeUnits / 2
+
+    this.resetButton.position.set(
+      viewLeft + viewWidth - SCREEN_MARGIN - resetRadius,
+      viewTop + SCREEN_MARGIN + resetRadius
+    )
 
     const counterBottom = viewTop + SCREEN_MARGIN + this.counter.heightUnits
     const playAreaTop = Math.max(viewTop + BOX_TOP_MARGIN, counterBottom + SCREEN_MARGIN)

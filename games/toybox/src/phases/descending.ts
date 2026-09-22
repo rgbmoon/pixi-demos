@@ -2,7 +2,7 @@ import { inject, injectable } from 'inversify'
 
 import { PHASE_PAUSE_MS } from '#src/constants'
 import type { ClawController } from '#src/controllers/box/claw'
-import type { ContentsController } from '#src/controllers/box/contents'
+import type { HeapStore } from '#src/stores/heap'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import { PhaseName } from '#src/types'
 import type { Phase } from '@pixi-demos/core/fsm/types'
@@ -16,20 +16,20 @@ export class DescendingPhase implements Phase<PhaseName> {
 
   private readonly ticker: GameTicker
   private readonly claw: ClawController
-  private readonly contents: ContentsController
+  private readonly heap: HeapStore
 
   constructor(
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
     @inject(TOYBOX_TOKENS.ClawController) claw: ClawController,
-    @inject(TOYBOX_TOKENS.ContentsController) contents: ContentsController
+    @inject(TOYBOX_TOKENS.HeapStore) heap: HeapStore
   ) {
     this.ticker = ticker
     this.claw = claw
-    this.contents = contents
+    this.heap = heap
   }
 
   async enter(signal: AbortSignal): Promise<typeof PhaseName.grabbing> {
-    await this.claw.descend(this.contents.getStackHeight(this.claw.getCell()), signal)
+    await this.claw.descend(this.heap.getSurfaceHeight(this.claw.getCell()), signal)
     await this.ticker.waitTicks(PHASE_PAUSE_MS, signal)
 
     return PhaseName.grabbing

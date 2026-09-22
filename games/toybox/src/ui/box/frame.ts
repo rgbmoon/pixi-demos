@@ -1,7 +1,7 @@
 import { Graphics } from 'pixi.js'
 
 import { CUBE_HEIGHT, LINE_THICKNESS } from '#src/constants'
-import { getFaceOutline, worldToScreen } from '#src/utils'
+import { getFaceOutline, worldToScreen } from '#src/utils/projection'
 import { PALETTE } from '@pixi-demos/core/palette'
 
 /**

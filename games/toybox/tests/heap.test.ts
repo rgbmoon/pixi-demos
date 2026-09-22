@@ -3,41 +3,47 @@ import { describe, expect, it } from 'vitest'
 
 import {
   CUBE_HEIGHT,
-  DOME_CENTER_LAYERS,
-  DOME_EDGE_LAYERS,
+  GRAB_MAX_CHANCE,
+  GRAB_MIN_CHANCE,
   GRID_SIZE,
+  HEAP_SNAPSHOT_VERSION,
+  HOLE_FILL_MAX_CHANCE,
   MAX_LAYERS,
-  SETTLE_GAP,
+  SLIDE_MIN_DROP,
+  SHAPES,
+  SLIDE_MAX_CHANCE,
+  TOY_RADIUS,
   TOY_ROOT_COLOR,
   TRAY_CENTER,
   TRAY_ORIGIN,
   TRAY_SIZE,
   TRAY_WALL_LAYERS,
 } from '#src/constants'
-import type { CellAddress } from '#src/types'
+import type { CellAddress, Facing, Hole, ScreenPoint, ShapeKey, VolumeCell } from '#src/types'
+import { shiftColor } from '#src/utils/color'
 import {
-  getCellCenter,
-  getDepthOrder,
-  getDomeHeight,
-  getNeighbours,
-  getPathCells,
-  getPathShare,
-  getSettleSlides,
-  pickFumbleCell,
-  getTrayWallOutlines,
-  isTrayCell,
-  resolveDrop,
-  shiftColor,
-  toCell,
-  worldToScreen,
-} from '#src/utils'
+  canPlace,
+  findLanding,
+  findHoles,
+  getBodyCenter,
+  getBodyDepth,
+  getGrabChance,
+  getHoleFillChance,
+  getImpact,
+  getPlacementCells,
+  getShapeCells,
+  getShapeCenter,
+  getShapeOutline,
+  getSlideChance,
+  getWeight,
+  isBoxCell,
+  isHeapSnapshot,
+  isSupported,
+  planDomeProfile,
+  rotateFacing,
+} from '#src/utils/heap'
+import { getCellCenter, getDepthOrder, getNeighbours, getPathCells, getPathShare, getTrayWallOutlines, isTrayCell, pickFumbleCell, toCell, worldToScreen } from '#src/utils/projection'
 import { createRandom } from '@pixi-demos/core/random'
-
-/** Поле занятых слоёв: одна высота во всех ячейках, лоток всегда пуст. */
-const createHeights = (height: number): number[][] =>
-  Array.from({ length: GRID_SIZE }, (_, col) =>
-    Array.from({ length: GRID_SIZE }, (_, row) => (isTrayCell({ col, row }) ? 0 : height))
-  )
 
 /** Сколько падений разыгрывать там, где проверяется доля исходов, а не одно конкретное. */
 const ROLLS = 200
@@ -62,26 +68,44 @@ describe('getCellCenter', () => {
   })
 })
 
-describe('getDomeHeight', () => {
-  it('складывает кучу куполом: по краям ниже, в центре выше', () => {
-    expect(getDomeHeight({ col: 0, row: 0 })).toBe(DOME_EDGE_LAYERS)
-    expect(getDomeHeight({ col: GRID_SIZE - 1, row: GRID_SIZE - 1 })).toBe(DOME_EDGE_LAYERS)
-    expect(getDomeHeight({ col: GRID_SIZE / 2, row: GRID_SIZE / 2 })).toBe(DOME_CENTER_LAYERS)
-  })
+describe('planDomeProfile', () => {
+  const profiles = [1, 2, 3, 4, 5].map((seed) => planDomeProfile(createRandom(seed)))
 
-  it('не выходит за предел слоёв и не оставляет провалов к центру', () => {
-    for (let col = 0; col < GRID_SIZE; col++) {
-      for (let row = 0; row < GRID_SIZE; row++) {
-        const height = getDomeHeight({ col, row })
+  it('держит высоты в пределах куба и оставляет лоток пустым', () => {
+    for (const profile of profiles) {
+      for (let col = 0; col < GRID_SIZE; col++) {
+        for (let row = 0; row < GRID_SIZE; row++) {
+          expect(profile[col][row]).toBeGreaterThanOrEqual(0)
+          expect(profile[col][row]).toBeLessThanOrEqual(MAX_LAYERS)
 
-        expect(height).toBeLessThanOrEqual(MAX_LAYERS)
-        expect(height).toBeGreaterThanOrEqual(isTrayCell({ col, row }) ? 0 : DOME_EDGE_LAYERS)
+          if (isTrayCell({ col, row })) expect(profile[col][row]).toBe(0)
+        }
       }
     }
   })
 
-  it('оставляет лоток пустым', () => {
-    expect(getDomeHeight(TRAY_ORIGIN)).toBe(0)
+  it('кладёт по краям поля ниже, чем под пиком', () => {
+    for (const profile of profiles) {
+      const heights = profile.flatMap((rows: number[], col: number) =>
+        rows.map((height: number, row: number) => ({
+          height,
+          edge: col === 0 || row === 0 || col === GRID_SIZE - 1 || row === GRID_SIZE - 1,
+        }))
+      )
+      const average = (edge: boolean): number => {
+        const picked = heights.filter((cell) => cell.edge === edge && cell.height > 0)
+
+        return picked.reduce((sum, cell) => sum + cell.height, 0) / picked.length
+      }
+
+      expect(average(true)).toBeLessThan(average(false))
+    }
+  })
+
+  it('каждый раз складывает кучу по-своему', () => {
+    const shapes = new Set(profiles.map((profile) => profile.map((rows) => rows.join('')).join('|')))
+
+    expect(shapes.size).toBe(profiles.length)
   })
 })
 
@@ -323,142 +347,394 @@ describe('getTrayWallOutlines', () => {
   })
 })
 
-describe('resolveDrop', () => {
-  it('оставляет игрушку в ячейке, где есть место', () => {
-    const result = resolveDrop(createHeights(2), { col: 4, row: 4 }, createRandom(1))
+/** Занятость по списку клеток: предикат, который принимают чистые функции размещения. */
+const createOccupancy = (cells: readonly VolumeCell[]) => {
+  const taken = new Set(cells.map(({ col, row, layer }) => `${col}:${row}:${layer}`))
 
-    expect(result.path).toEqual([{ col: 4, row: 4 }])
-    expect(result.layer).toBe(2)
-    expect(result.collected).toBe(false)
-  })
+  return ({ col, row, layer }: VolumeCell) => taken.has(`${col}:${row}:${layer}`)
+}
 
-  it('засчитывает игрушку, упавшую прямо в лоток', () => {
-    const result = resolveDrop(createHeights(2), TRAY_ORIGIN, createRandom(1))
+const FACINGS: Facing[] = [0, 1, 2, 3]
 
-    expect(result.collected).toBe(true)
-  })
+const SHAPE_KEYS = Object.keys(SHAPES) as ShapeKey[]
 
-  it('выбивает игрушку из полной ячейки в соседнюю', () => {
-    const heights = createHeights(0)
+const toKeys = (cells: readonly { dx: number; dy: number; dz: number }[]): string[] =>
+  cells.map(({ dx, dy, dz }) => `${dx}:${dy}:${dz}`).sort()
 
-    heights[4][4] = MAX_LAYERS
-
-    const result = resolveDrop(heights, { col: 4, row: 4 }, createRandom(7))
-
-    expect(result.collected).toBe(false)
-    expect(result.layer).toBe(0)
-    expect(result.path.length).toBeGreaterThan(1)
-    expect(getNeighbours({ col: 4, row: 4 })).toContainEqual(result.path[1])
-  })
-
-  it('никогда не сажает игрушку выше предела слоёв', () => {
-    const heights = createHeights(MAX_LAYERS)
-
-    // Поле полно везде, кроме дальнего угла: игрушка обязана найти именно его
-    heights[GRID_SIZE - 1][0] = 1
-
-    const result = resolveDrop(heights, { col: 0, row: 0 }, createRandom(3))
-
-    expect(result.collected || result.layer < MAX_LAYERS).toBe(true)
-  })
-
-  it('останавливает цепочку отскоков даже на полном поле', () => {
-    const result = resolveDrop(createHeights(MAX_LAYERS), { col: 4, row: 4 }, createRandom(11))
-
-    expect(result.path.length).toBeGreaterThan(0)
-    expect(result.path.every((cell) => isInsideField(cell) || isTrayCell(cell))).toBe(true)
-  })
-
-  it('роняет игрушку в лоток только с высоты выше его стенок', () => {
-    const random = createRandom(4)
-    const neighbour = { col: TRAY_ORIGIN.col, row: TRAY_ORIGIN.row - 1 }
-
-    // Ячейка рядом с лотком заполнена доверху: с её верхнего слоя игрушка иногда сваливается в лоток
-    const full = createHeights(0)
-
-    full[neighbour.col][neighbour.row] = MAX_LAYERS
-
-    const spills = Array.from({ length: ROLLS }, () => resolveDrop(full, neighbour, random))
-
-    expect(spills.some(({ collected }) => collected)).toBe(true)
-    expect(spills.every(({ collected, path }) => !collected || isTrayCell(path[path.length - 1]))).toBe(true)
-
-    // В той же ячейке есть место: игрушка садится в неё и лотка не касается
-    const settled = Array.from({ length: ROLLS }, () => resolveDrop(createHeights(1), neighbour, random))
-
-    expect(settled.every(({ collected }) => !collected)).toBe(true)
-    expect(settled.every(({ path }) => path.length === 1)).toBe(true)
-  })
-
-  it('уводит игрушку в лоток реже, чем возвращает в соседнюю ячейку бокса', () => {
-    const random = createRandom(8)
-    const neighbour = { col: TRAY_ORIGIN.col, row: TRAY_ORIGIN.row - 1 }
-    const heights = createHeights(0)
-
-    heights[neighbour.col][neighbour.row] = MAX_LAYERS
-
-    const results = Array.from({ length: ROLLS }, () => resolveDrop(heights, neighbour, random))
-    const toTray = results.filter(({ collected }) => collected).length
-    const toBox = results.length - toTray
-
-    // У лотка понижающий вес, а соседних ячеек бокса ещё и больше одной
-    expect(toTray).toBeGreaterThan(0)
-    expect(toTray).toBeLessThan(toBox)
+describe('getWeight', () => {
+  it('считает весом число клеток формы', () => {
+    expect(getWeight('single')).toBe(1)
+    expect(getWeight('bar2')).toBe(2)
+    expect(getWeight('square4')).toBe(4)
+    expect(getWeight('cube8')).toBe(8)
   })
 })
 
-describe('getSettleSlides', () => {
-  /** Поле с одной высокой ячейкой посреди пустого поля. */
-  const createPeak = (height: number, at: CellAddress): number[][] => {
-    const heights = createHeights(0)
+describe('getShapeCells', () => {
+  it('возвращает исходный набор после четырёх поворотов', () => {
+    for (const shape of SHAPE_KEYS) {
+      let facing: Facing = 0
 
-    heights[at.col][at.row] = height
+      for (let step = 0; step < 4; step++) {
+        facing = rotateFacing(facing, 1)
+      }
 
-    return heights
-  }
-
-  it('оставляет ровную кучу нетронутой', () => {
-    expect(getSettleSlides(createHeights(MAX_LAYERS), createRandom(2))).toEqual([])
-  })
-
-  it('не трогает перепад, не превышающий предела', () => {
-    expect(getSettleSlides(createPeak(SETTLE_GAP, { col: 4, row: 4 }), createRandom(2))).toEqual([])
-  })
-
-  it('сваливает верхнюю игрушку с перепада больше предела', () => {
-    const peak = { col: 4, row: 4 }
-    const runs = Array.from({ length: ROLLS }, () => getSettleSlides(createPeak(SETTLE_GAP + 1, peak), createRandom(1)))
-
-    expect(runs.some((slides) => slides.length > 0)).toBe(true)
-
-    for (const slides of runs.flat()) {
-      expect(slides.from).toEqual(peak)
-      expect(getNeighbours(peak)).toContainEqual(slides.to)
+      expect(facing).toBe(0)
+      expect(toKeys(getShapeCells(shape, facing))).toEqual(toKeys(getShapeCells(shape, 0)))
     }
   })
 
-  it('не уводит с ячейки больше игрушек, чем в ней есть', () => {
-    const peak = { col: 4, row: 4 }
-    const random = createRandom(6)
+  it('не теряет и не добавляет клетки при повороте', () => {
+    for (const shape of SHAPE_KEYS) {
+      for (const facing of FACINGS) {
+        const cells = getShapeCells(shape, facing)
 
-    for (let run = 0; run < ROLLS; run++) {
-      const slides = getSettleSlides(createPeak(MAX_LAYERS, peak), random)
-      const taken = slides.filter(({ from }) => from.col === peak.col && from.row === peak.row).length
-
-      expect(taken).toBeLessThanOrEqual(MAX_LAYERS)
-    }
-  })
-
-  it('не сыплет игрушки в лоток и не берёт их из него', () => {
-    const heights = createPeak(MAX_LAYERS, { col: TRAY_ORIGIN.col + TRAY_SIZE, row: TRAY_ORIGIN.row })
-    const random = createRandom(12)
-
-    for (let run = 0; run < ROLLS; run++) {
-      for (const { from, to } of getSettleSlides(heights, random)) {
-        expect(isTrayCell(from)).toBe(false)
-        expect(isTrayCell(to)).toBe(false)
+        expect(cells).toHaveLength(getWeight(shape))
+        expect(new Set(toKeys(cells)).size).toBe(cells.length)
       }
     }
+  })
+
+  it('прижимает повёрнутую форму к нулевому якорю', () => {
+    for (const shape of SHAPE_KEYS) {
+      for (const facing of FACINGS) {
+        const cells = getShapeCells(shape, facing)
+
+        expect(Math.min(...cells.map(({ dx }) => dx))).toBe(0)
+        expect(Math.min(...cells.map(({ dy }) => dy))).toBe(0)
+      }
+    }
+  })
+
+  it('не меняет занятость симметричных форм', () => {
+    for (const shape of ['single', 'square4', 'cube8'] as ShapeKey[]) {
+      for (const facing of FACINGS) {
+        expect(toKeys(getShapeCells(shape, facing))).toEqual(toKeys(getShapeCells(shape, 0)))
+      }
+    }
+  })
+
+  it('разворачивает полосу поперёк при нечётном повороте', () => {
+    expect(toKeys(getShapeCells('bar2', 1))).toEqual(
+      toKeys([
+        { dx: 0, dy: 0, dz: 0 },
+        { dx: 0, dy: 1, dz: 0 },
+      ])
+    )
+  })
+
+  it('не держит в каталоге форм длиннее двух клеток', () => {
+    for (const shape of SHAPE_KEYS) {
+      for (const facing of FACINGS) {
+        const cells = getShapeCells(shape, facing)
+
+        for (const axis of ['dx', 'dy', 'dz'] as const) {
+          const values = cells.map((cell) => cell[axis])
+
+          expect(Math.max(...values) - Math.min(...values)).toBeLessThanOrEqual(1)
+        }
+      }
+    }
+  })
+})
+
+describe('findLanding', () => {
+  it('учитывает высоту многоуровневой формы при старте падения', () => {
+    expect(findLanding('cube8', 0, { col: 3, row: 3 }, MAX_LAYERS - 1, () => false)).toBe(0)
+  })
+})
+
+describe('getShapeOutline', () => {
+  /** Лежит ли точка внутри выпуклого контура: со всех его рёбер она видна с одной стороны. */
+  const isInside = (outline: readonly ScreenPoint[], point: ScreenPoint): boolean => {
+    const sides = outline.map((corner, index) => {
+      const next = outline[(index + 1) % outline.length]
+
+      return (next.x - corner.x) * (point.y - corner.y) - (next.y - corner.y) * (point.x - corner.x)
+    })
+
+    return sides.every((side) => side >= 0) || sides.every((side) => side <= 0)
+  }
+
+  /** Экранные центры клеток формы: контур обязан накрывать их все. */
+  const getCellOrigins = (shape: ShapeKey, facing: Facing): ScreenPoint[] => {
+    const center = getShapeCenter(shape, facing)
+
+    return getShapeCells(shape, facing).map(({ dx, dy, dz }) =>
+      worldToScreen({ x: dx - center.dx, y: dy - center.dy, z: dz - center.dz })
+    )
+  }
+
+  it('накрывает центры всех клеток формы', () => {
+    for (const shape of SHAPE_KEYS) {
+      for (const facing of FACINGS) {
+        const outline = getShapeOutline(shape, facing)
+
+        for (const origin of getCellOrigins(shape, facing)) {
+          expect(isInside(outline, origin)).toBe(true)
+        }
+      }
+    }
+  })
+
+  it('остаётся выпуклым', () => {
+    for (const shape of SHAPE_KEYS) {
+      for (const facing of FACINGS) {
+        const outline = getShapeOutline(shape, facing)
+
+        expect(outline.length).toBeGreaterThan(2)
+
+        for (const point of outline) {
+          expect(isInside(outline, point)).toBe(true)
+        }
+      }
+    }
+  })
+
+  it('обводит одноклеточную форму окружностью её радиуса', () => {
+    for (const point of getShapeOutline('single', 0)) {
+      expect(Math.hypot(point.x, point.y)).toBeCloseTo(TOY_RADIUS, 6)
+    }
+  })
+
+  it('смыкает составную форму в одну фигуру', () => {
+    // Вдоль дальней оси клетки разнесены шире диаметра игрушки: до общего контура форма из двух
+    // клеток распадалась на два шара со щелью между ними
+    for (const facing of FACINGS) {
+      const outline = getShapeOutline('bar2', facing)
+      const [first, second] = getCellOrigins('bar2', facing)
+
+      expect(isInside(outline, { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 })).toBe(true)
+    }
+  })
+})
+
+describe('findHoles', () => {
+  /** Рельеф из карты высот: лоток всегда пуст. */
+  const createSurface = (height: number, dips: { cell: CellAddress; height: number }[] = []) => {
+    const map = Array.from({ length: GRID_SIZE }, (_, col) =>
+      Array.from({ length: GRID_SIZE }, (_, row) => (isTrayCell({ col, row }) ? 0 : height))
+    )
+
+    for (const dip of dips) {
+      map[dip.cell.col][dip.cell.row] = dip.height
+    }
+
+    return ({ col, row }: CellAddress) => map[col][row]
+  }
+
+  it('не находит дыр на ровном рельефе', () => {
+    expect(findHoles(createSurface(3))).toEqual([])
+  })
+
+  it('не считает дырой неровность в один слой', () => {
+    expect(findHoles(createSurface(3, [{ cell: { col: 4, row: 4 }, height: 2 }]))).toEqual([])
+  })
+
+  it('находит кратер целиком и считает глубину от его края', () => {
+    const crater = [
+      { cell: { col: 3, row: 3 }, height: 1 },
+      { cell: { col: 4, row: 3 }, height: 1 },
+      { cell: { col: 3, row: 4 }, height: 1 },
+      { cell: { col: 4, row: 4 }, height: 1 },
+    ]
+    const holes = findHoles(createSurface(3, crater))
+
+    expect(holes).toHaveLength(1)
+    expect(holes[0].cells).toHaveLength(4)
+    expect(holes[0].floor).toBe(1)
+    expect(holes[0].depth).toBe(2)
+  })
+
+  it('не берёт лоток ни в дыру, ни в её край', () => {
+    const holes = findHoles(createSurface(3, [{ cell: { col: 2, row: GRID_SIZE - 1 }, height: 0 }]))
+
+    for (const hole of holes) {
+      for (const cell of hole.cells) {
+        expect(isTrayCell(cell)).toBe(false)
+      }
+    }
+  })
+})
+
+describe('getHoleFillChance', () => {
+  const hole = (area: number, depth: number, floor: number): Hole => ({
+    cells: Array.from({ length: area }, (_, index) => ({ col: index, row: 0 })),
+    depth,
+    floor,
+  })
+
+  it('не трогает мелкую вмятину у вершины кучи', () => {
+    expect(getHoleFillChance(1, hole(1, 2, MAX_LAYERS - 1))).toBe(0)
+  })
+
+  it('оставляет ненулевую вероятность засыпки дыры до пола', () => {
+    expect(getHoleFillChance(1, hole(1, 2, 0))).toBeGreaterThan(0)
+    expect(getHoleFillChance(8, hole(1, 2, 0))).toBeGreaterThan(0)
+  })
+
+  it('растёт с площадью основания и с глубиной', () => {
+    expect(getHoleFillChance(1, hole(4, 2, 1))).toBeGreaterThan(getHoleFillChance(1, hole(2, 2, 1)))
+    expect(getHoleFillChance(1, hole(2, 3, 1))).toBeGreaterThan(getHoleFillChance(1, hole(2, 2, 1)))
+  })
+
+  it('слабеет с весом игрушки и по мере подъёма дна', () => {
+    expect(getHoleFillChance(8, hole(4, 2, 1))).toBeLessThan(getHoleFillChance(1, hole(4, 2, 1)))
+    expect(getHoleFillChance(1, hole(4, 2, 2))).toBeLessThan(getHoleFillChance(1, hole(4, 2, 1)))
+  })
+
+  it('не превышает заданный предел', () => {
+    expect(getHoleFillChance(1, hole(GRID_SIZE * GRID_SIZE, MAX_LAYERS, 0))).toBeLessThanOrEqual(
+      HOLE_FILL_MAX_CHANCE
+    )
+  })
+})
+
+describe('isBoxCell', () => {
+  it('не пускает игрушку за край поля, выше предела слоёв и в лоток', () => {
+    expect(isBoxCell({ col: 4, row: 4, layer: 0 })).toBe(true)
+    expect(isBoxCell({ col: -1, row: 4, layer: 0 })).toBe(false)
+    expect(isBoxCell({ col: GRID_SIZE, row: 4, layer: 0 })).toBe(false)
+    expect(isBoxCell({ col: 4, row: 4, layer: MAX_LAYERS })).toBe(false)
+    expect(isBoxCell({ ...TRAY_ORIGIN, layer: 0 })).toBe(false)
+  })
+})
+
+describe('canPlace', () => {
+  it('не ставит игрушку в занятые клетки и за пределы куба', () => {
+    const cells = getPlacementCells('bar2', 0, { col: 4, row: 4 }, 0)
+
+    expect(canPlace(cells, createOccupancy([]))).toBe(true)
+    expect(canPlace(cells, createOccupancy([{ col: 5, row: 4, layer: 0 }]))).toBe(false)
+    expect(canPlace(getPlacementCells('bar2', 0, { col: GRID_SIZE - 1, row: 4 }, 0), createOccupancy([]))).toBe(false)
+  })
+})
+
+describe('isSupported', () => {
+  it('держит игрушку на полу', () => {
+    expect(isSupported(getPlacementCells('cube8', 0, { col: 4, row: 4 }, 0), createOccupancy([]))).toBe(true)
+  })
+
+  it('позволяет полосе нависать ровно наполовину', () => {
+    const cells = getPlacementCells('bar2', 0, { col: 4, row: 4 }, 1)
+
+    expect(isSupported(cells, createOccupancy([{ col: 4, row: 4, layer: 0 }]))).toBe(true)
+    expect(isSupported(cells, createOccupancy([]))).toBe(false)
+  })
+
+  it('роняет квадрат, стоящий на одной клетке из четырёх', () => {
+    const cells = getPlacementCells('square4', 0, { col: 4, row: 4 }, 1)
+
+    expect(isSupported(cells, createOccupancy([{ col: 4, row: 4, layer: 0 }]))).toBe(false)
+    expect(
+      isSupported(
+        cells,
+        createOccupancy([
+          { col: 4, row: 4, layer: 0 },
+          { col: 5, row: 4, layer: 0 },
+        ])
+      )
+    ).toBe(true)
+  })
+
+  it('смотрит только на нижние клетки: верхний слой кубика опоры не требует', () => {
+    const cells = getPlacementCells('cube8', 0, { col: 4, row: 4 }, 1)
+    const below = getPlacementCells('square4', 0, { col: 4, row: 4 }, 0)
+
+    expect(isSupported(cells, createOccupancy(below))).toBe(true)
+  })
+})
+
+describe('getBodyCenter', () => {
+  it('ставит середину одноклеточной игрушки в центр её клетки', () => {
+    expect(getBodyCenter('single', 0, { col: 2, row: 5 }, 1)).toEqual({ x: 2.5, y: 5.5, z: 1.5 })
+  })
+
+  it('ставит середину квадрата на стык его клеток', () => {
+    expect(getBodyCenter('square4', 0, { col: 2, row: 5 }, 0)).toEqual({ x: 3, y: 6, z: 0.5 })
+  })
+
+  it('поднимает середину кубика на границу его слоёв', () => {
+    expect(getBodyCenter('cube8', 0, { col: 2, row: 5 }, 0).z).toBe(1)
+  })
+})
+
+describe('getBodyDepth', () => {
+  it('берёт ключ ближней к игроку клетки', () => {
+    const anchor = { col: 2, row: 3 }
+    const depth = getBodyDepth('bar2', 0, anchor, 0)
+
+    expect(depth).toBe(getDepthOrder({ ...getCellCenter(anchor), z: 0.5 }))
+  })
+
+  it('ставит крупную игрушку перед той, что лежит за её ближним краем', () => {
+    const bar = getBodyDepth('bar2', 0, { col: 2, row: 3 }, 0)
+    const behind = getBodyDepth('single', 0, { col: 3, row: 3 }, 0)
+
+    expect(bar).toBeGreaterThan(behind)
+  })
+})
+
+describe('getGrabChance', () => {
+  it('снижает шанс и от веса, и от нагрузки сверху', () => {
+    expect(getGrabChance(1, 0)).toBeGreaterThan(getGrabChance(8, 0))
+    expect(getGrabChance(1, 0)).toBeGreaterThan(getGrabChance(1, 4))
+  })
+
+  it('держится в своих пределах при любом весе и нагрузке сверху', () => {
+    for (const weight of [1, 2, 3, 4, 8]) {
+      for (const load of [0, 1, 8, 64]) {
+        const chance = getGrabChance(weight, load)
+
+        expect(chance).toBeGreaterThanOrEqual(GRAB_MIN_CHANCE)
+        expect(chance).toBeLessThanOrEqual(GRAB_MAX_CHANCE)
+      }
+    }
+  })
+})
+
+describe('getSlideChance', () => {
+  it('не трогает перепад в пределах порога', () => {
+    expect(getSlideChance(1, SLIDE_MIN_DROP)).toBe(0)
+    expect(getSlideChance(1, 0)).toBe(0)
+  })
+
+  it('растёт с перепадом и падает с весом', () => {
+    expect(getSlideChance(1, SLIDE_MIN_DROP + 2)).toBeGreaterThan(getSlideChance(1, SLIDE_MIN_DROP + 1))
+    expect(getSlideChance(1, SLIDE_MIN_DROP + 1)).toBeGreaterThan(getSlideChance(8, SLIDE_MIN_DROP + 1))
+  })
+
+  it('не выходит за потолок вероятности', () => {
+    expect(getSlideChance(1, MAX_LAYERS * 4)).toBeLessThanOrEqual(SLIDE_MAX_CHANCE)
+  })
+})
+
+describe('getImpact', () => {
+  it('бьёт тем сильнее, чем тяжелее игрушка и чем ближе сосед', () => {
+    expect(getImpact(8, 1)).toBeGreaterThan(getImpact(1, 1))
+    expect(getImpact(8, 1)).toBeGreaterThan(getImpact(8, 3))
+  })
+})
+
+describe('isHeapSnapshot', () => {
+  const snapshot = {
+    version: HEAP_SNAPSHOT_VERSION,
+    collected: 3,
+    bodies: [{ shape: 'cube8', facing: 2, anchor: { col: 3, row: 4 }, layer: 0, color: 0xffa24b }],
+  }
+
+  it('принимает снимок своей версии', () => {
+    expect(isHeapSnapshot(snapshot)).toBe(true)
+    expect(isHeapSnapshot({ ...snapshot, bodies: [] })).toBe(true)
+  })
+
+  it('отбрасывает чужую версию, мусор и незнакомую форму', () => {
+    expect(isHeapSnapshot({ ...snapshot, version: HEAP_SNAPSHOT_VERSION + 1 })).toBe(false)
+    expect(isHeapSnapshot(undefined)).toBe(false)
+    expect(isHeapSnapshot('heap')).toBe(false)
+    expect(isHeapSnapshot({ ...snapshot, bodies: [{ ...snapshot.bodies[0], shape: 'pyramid' }] })).toBe(false)
+    expect(isHeapSnapshot({ ...snapshot, bodies: [{ ...snapshot.bodies[0], shape: 'ell3' }] })).toBe(false)
+    expect(isHeapSnapshot({ ...snapshot, bodies: [{ ...snapshot.bodies[0], anchor: { col: 3 } }] })).toBe(false)
   })
 })
 

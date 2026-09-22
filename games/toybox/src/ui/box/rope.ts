@@ -2,7 +2,7 @@ import { Container, Graphics } from 'pixi.js'
 
 import { LINE_THICKNESS } from '#src/constants'
 import type { WorldPoint } from '#src/types'
-import { worldToScreen } from '#src/utils'
+import { worldToScreen } from '#src/utils/projection'
 import { PALETTE } from '@pixi-demos/core/palette'
 
 /**

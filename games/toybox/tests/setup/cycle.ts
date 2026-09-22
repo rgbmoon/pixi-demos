@@ -3,15 +3,15 @@ import { when } from 'mobx'
 import { vi } from 'vitest'
 
 import { bindFlow } from '#src/bindings'
-import { FIELD_CENTER } from '#src/constants'
+import { FIELD_CENTER, HEAP_SNAPSHOT_VERSION } from '#src/constants'
 import type { ClawController } from '#src/controllers/box/claw'
-import type { ContentsController } from '#src/controllers/box/contents'
 import type { GameEvents } from '#src/events'
+import type { HeapStore } from '#src/stores/heap'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
-import { type ClawDrop, type ClawSlip, type GroundPoint, PhaseName } from '#src/types'
-import type { Toy } from '#src/ui/box/toy'
-import { toCell } from '#src/utils'
+import { type ClawDrop, type ClawSlip, type GroundPoint, PhaseName, type ToyId } from '#src/types'
+import { getGrabChance, getWeight } from '#src/utils/heap'
+import { toCell } from '#src/utils/projection'
 import { bindFsm } from '@pixi-demos/core/bindings'
 import type { GameEmitter } from '@pixi-demos/core/events/game-emitter'
 import type { Fsm } from '@pixi-demos/core/fsm/fsm'
@@ -22,12 +22,8 @@ import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 /** Порядок движений и выдержек в том виде, в котором их запросили фазы. */
 export type ClawLog = string[]
 
-/** Что дублёры отвечают фазам: поле под клешнёй, исход падения и очередь бросков. */
+/** Что дублёры отвечают фазам: очередь бросков, которой тест задаёт исходы. */
 export type CycleWorld = {
-  /** Сколько слоёв занято в ячейке, куда садится клешня. */
-  stackHeight: number
-  /** Уходит ли упавшая по дороге игрушка в лоток. */
-  dropCollected: boolean
   /** Значения `Math.random` по очереди: пустая очередь отдаёт 0.5. */
   rolls: number[]
 }
@@ -36,6 +32,7 @@ export type Cycle = {
   container: Container
   fsm: Fsm
   store: ToyboxStore
+  heap: HeapStore
   emitter: GameEmitter<GameEvents>
   log: ClawLog
   world: CycleWorld
@@ -47,32 +44,30 @@ export type Cycle = {
   started?: Promise<void>
 }
 
-/** Игрушка глазами цикла: фазы её не читают, а только передают из рук в руки. */
-const createToyStub = (): Toy => ({}) as Toy
-
 /**
  * Дублёр клешни: движения завершаются сразу, но остаются видимыми в журнале.
  * Положение он ведёт по-настоящему — по нему фазы считают ячейку под клешнёй.
  */
 const createClawStub = (log: ClawLog): ClawController => {
   let position: GroundPoint = FIELD_CENTER
-  let carried: Toy | undefined
+  let carried: ToyId | undefined
 
   const stub = {
     getPosition: () => position,
     getCell: () => toCell(position),
+    getCarryPoint: () => undefined,
     descend: async (toZ: number) => {
       log.push(`descend:${toZ}`)
     },
     ascend: async (slip: ClawSlip | undefined) => {
       log.push(slip ? 'ascend slip' : 'ascend')
 
-      if (!slip || !carried) return
+      if (!slip || carried === undefined) return
 
-      const toy = carried
+      const id = carried
 
       carried = undefined
-      slip.onDrop(toy)
+      slip.onDrop(id)
     },
     moveTo: async (target: GroundPoint) => {
       position = target
@@ -82,55 +77,30 @@ const createClawStub = (log: ClawLog): ClawController => {
       position = target
       log.push(`carryTo:${target.x},${target.y}${drop ? ` drop:${drop.cell.col},${drop.cell.row}` : ''}`)
 
-      if (!drop || !carried) return
+      if (!drop || carried === undefined) return
 
-      const toy = carried
+      const id = carried
 
       carried = undefined
-      drop.onDrop(toy)
+      drop.onDrop(id)
     },
     isHolding: () => carried !== undefined,
-    hold: (toy: Toy) => {
-      carried = toy
+    hold: (id: ToyId) => {
+      carried = id
       log.push('hold')
     },
     release: () => {
-      const toy = carried
+      const id = carried
 
       carried = undefined
 
-      if (toy) log.push('release')
+      if (id !== undefined) log.push('release')
 
-      return toy
+      return id
     },
   }
 
   return stub as unknown as ClawController
-}
-
-/** Дублёр содержимого куба: стопок не держит, отвечает по `world` и пишет запросы фаз в журнал. */
-const createContentsStub = (log: ClawLog, world: CycleWorld): ContentsController => {
-  const stub = {
-    getStackHeight: () => world.stackHeight,
-    take: ({ col, row }: { col: number; row: number }) => {
-      log.push(`take:${col},${row}`)
-
-      return world.stackHeight > 0 ? createToyStub() : undefined
-    },
-    drop: (_toy: Toy, { col, row }: { col: number; row: number }) => {
-      log.push(`drop:${col},${row}`)
-
-      return world.dropCollected
-    },
-    settle: () => {
-      log.push('settle')
-    },
-    collect: async () => {
-      log.push('collect')
-    },
-  }
-
-  return stub as unknown as ContentsController
 }
 
 /** Дублёр тикера: игровые выдержки проходят мгновенно, но остаются видимыми в журнале. */
@@ -145,9 +115,10 @@ const createTickerStub = (log: ClawLog): GameTicker => {
 }
 
 /**
- * Собирает цикл без единого PIXI-объекта: настоящие автомат, фазы и стор.
- * Подменены клешня, содержимое куба, тикер и `Math.random`. Автомат не запускается — это делает
- * `startCycle`.
+ * Собирает цикл без единого PIXI-объекта: настоящие автомат, фазы, стор и модель кучи.
+ * Подменены клешня, тикер и `Math.random`. Кадровый шаг кучи никто не крутит — фазы меняют
+ * решётку сразу, а движение разыгрывалось бы только на тикере.
+ * Автомат не запускается — это делает `startCycle`.
  */
 export const createCycle = (): Cycle => {
   const container = new Container({ defaultScope: 'Singleton' })
@@ -157,10 +128,9 @@ export const createCycle = (): Cycle => {
   bindFlow(container)
 
   const log: ClawLog = []
-  const world: CycleWorld = { stackHeight: 3, dropCollected: false, rolls: [] }
+  const world: CycleWorld = { rolls: [] }
 
   container.bind(TOYBOX_TOKENS.ClawController).toConstantValue(createClawStub(log))
-  container.bind(TOYBOX_TOKENS.ContentsController).toConstantValue(createContentsStub(log, world))
   container.bind(ENGINE_TOKENS.GameTicker).toConstantValue(createTickerStub(log))
 
   // Исход захвата и потери задаёт сам тест очередью бросков
@@ -168,12 +138,14 @@ export const createCycle = (): Cycle => {
 
   const fsm = container.get(CORE_TOKENS.Fsm)
   const store = container.get(TOYBOX_TOKENS.ToyboxStore)
+  const heap = container.get(TOYBOX_TOKENS.HeapStore)
   const emitter = container.get(TOYBOX_TOKENS.GameEmitter)
 
   return {
     container,
     fsm,
     store,
+    heap,
     emitter,
     log,
     world,
@@ -200,3 +172,28 @@ export const startCycle = async (): Promise<Cycle> => {
 
   return { ...cycle, started }
 }
+
+/** Ячейка, над которой стоит клешня в покое. */
+export const getHomeCell = () => toCell(FIELD_CENTER)
+
+/**
+ * Броски, на которых захват игрушки под клешнёй удаётся и проваливается. Шанс теперь зависит от
+ * формы и нагрузки сверху, поэтому тест берёт его у самой кучи, а не у константы.
+ */
+export const getGrabRolls = (cycle: Cycle): { hit: number; miss: number } => {
+  const body = cycle.heap.getTopBody(getHomeCell())
+
+  if (!body) return { hit: 0, miss: 1 }
+
+  const chance = getGrabChance(getWeight(body.shape), cycle.heap.getLoad(body.id))
+
+  return { hit: chance / 2, miss: (1 + chance) / 2 }
+}
+
+/** Опустошает куб: так проверяется цикл над пустой ячейкой. */
+export const emptyHeap = (cycle: Cycle): void => {
+  cycle.heap.restore({ version: HEAP_SNAPSHOT_VERSION, collected: 0, bodies: [] }, Math.random)
+}
+
+/** Сколько игрушек лежит в куче: та, что уходит в лоток, в ней уже не числится. */
+export const countToys = (cycle: Cycle): number => cycle.heap.takeSnapshot(0).bodies.length

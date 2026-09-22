@@ -1,6 +1,6 @@
 import { PALETTE } from '@pixi-demos/core/palette'
 
-import { type CellAddress, type GroundPoint, PhaseName, type ScreenPoint } from './types'
+import { type CellAddress, type GroundPoint, PhaseName, type ScreenPoint, type Shape, type ShapeKey } from './types'
 
 /** Ширина макета сцены. */
 export const DESIGN_WIDTH = 941
@@ -81,7 +81,7 @@ export const SPRING_MIN_VELOCITY = 0.01
 export const SWAY_PERIOD_MS = 360
 /** Затухание колебаний клешни в долях критического: ниже единицы клешня качается, а не просто отстаёт. */
 export const SWAY_DAMPING = 0.3
-/** Отклонение клешни на единицу скорости каретки, ячеек на ячейку в секунду: так клешня тянется за ходом. */
+/** Отклонение клешни на единицу скорости каретки, ячеек на ячейку в секунду. */
 export const SWAY_DRAG = 0.07
 /** Предельное отклонение клешни от каретки, ячеек. */
 export const SWAY_MAX_OFFSET = 0.4
@@ -96,40 +96,135 @@ export const PHASE_PAUSE_MS = 200
 
 /** Максимум слоёв игрушек в ячейке: куб делится по высоте так же, как пол — по осям. */
 export const MAX_LAYERS = 4
+/** Наименьшая высота стопки на старте: каждая ячейка поля получает хотя бы один слой. */
+export const DOME_MIN_LAYERS = 1
 /** Высота стопки у края поля на старте, в слоях. */
 export const DOME_EDGE_LAYERS = 2
-/** Высота стопки в центре поля на старте, в слоях. */
+/** Высота стопки под пиком купола на старте, в слоях. */
 export const DOME_CENTER_LAYERS = 4
+/** Насколько пик купола смещается от центра поля, в ячейках в обе стороны. */
+export const DOME_PEAK_JITTER = 1.8
+/** Разброс высоты отдельной ячейки вокруг профиля, в слоях в обе стороны. */
+export const DOME_HEIGHT_JITTER = 0.9
+/**
+ * Пределы крутизны склона купола. Ниже единицы вершина выходит плоской — на таких площадках
+ * находят себе место формы 2×2; выше единицы куча получается островерхой.
+ */
+export const DOME_FALLOFF_MIN = 0.6
+export const DOME_FALLOFF_MAX = 1.8
 /** Высота стенок лотка в слоях: ниже предельной стопки, поэтому игрушка через них переваливается. */
 export const TRAY_WALL_LAYERS = 2
 
-/** Доля удачных захватов. */
-export const GRAB_CHANCE = 0.82
 /** Доля доставок, в которых клешня роняет игрушку по дороге к лотку. */
-export const FUMBLE_CHANCE = 0.35
+export const FUMBLE_CHANCE = 0.24
 /** Доля подъёмов, в которых игрушка выскальзывает из клешни по дороге вверх. */
-export const LIFT_FUMBLE_CHANCE = 0.2
+export const LIFT_FUMBLE_CHANCE = 0.13
 /** Доля подъёма, раньше которой игрушка не выскальзывает: сразу от стопки срыв не читается. */
 export const LIFT_SLIP_MIN_SHARE = 0.15
 /** Доля подъёма, позже которой игрушка не выскальзывает: у верхней грани клешня уже уходит в сторону. */
 export const LIFT_SLIP_MAX_SHARE = 0.85
 /** Шаг выборки пути в долях ячейки: мельче ячейки, поэтому пройденные ею не теряются. */
 export const PATH_STEP = 0.25
-/** Перепад между соседними стопками, выше которого верхняя игрушка сползает в низкую, в слоях. */
-export const SETTLE_GAP = 3
-/** Доля осыпаний, которые случаются при достаточном перепаде. */
-export const SETTLE_CHANCE = 0.5
-/** Вес лотка при выборе соседа для отскока: ячейка бокса идёт с весом 1. */
-export const TRAY_BOUNCE_WEIGHT = 0.35
-/** Предел отскоков подряд: дальше место ищется обходом поля, а не броском. */
-export const MAX_BOUNCES = 6
+/** Минимальный перепад, при котором игрушка может сползти на соседнюю стопку, в слоях. */
+export const SLIDE_MIN_DROP = 3
+/** Перепад под краем, начиная с которого провал считается дырой, а не неровностью, в слоях. */
+export const HOLE_MIN_DROP = 2
+/** Минимальное произведение площади и глубины, при котором начинается засыпка дыры. */
+export const HOLE_MIN_PRESSURE = 2
+/** Коэффициент вероятности засыпки дыры. */
+export const HOLE_FILL_GAIN = 0.55
+/** Максимальная вероятность засыпки дыры за один проход. */
+export const HOLE_FILL_MAX_CHANCE = 0.95
+/** Максимальное число проходов засыпки без перемещения игрушек. */
+export const HOLE_MAX_WAVES = 30
+/** Вероятность соскальзывания в лоток после посадки у его стенки. */
+export const TRAY_SLIDE_CHANCE = 0.35
+/** Пауза между посадкой у стенки и движением к центру лотка, мс. */
+export const TRAY_SLIDE_DELAY_MS = 300
 
-/** Длительность падения игрушки на один слой, мс. */
+/**
+ * Каталог форм: клетки в базовой ориентации и частота, с которой форма попадается при наполнении.
+ * Размер формы не превышает две клетки по любой оси.
+ */
+export const SHAPES: Record<ShapeKey, Shape> = {
+  single: { cells: [{ dx: 0, dy: 0, dz: 0 }], fillWeight: 2 },
+  bar2: {
+    cells: [
+      { dx: 0, dy: 0, dz: 0 },
+      { dx: 1, dy: 0, dz: 0 },
+    ],
+    fillWeight: 7,
+  },
+  square4: {
+    cells: [
+      { dx: 0, dy: 0, dz: 0 },
+      { dx: 1, dy: 0, dz: 0 },
+      { dx: 0, dy: 1, dz: 0 },
+      { dx: 1, dy: 1, dz: 0 },
+    ],
+    fillWeight: 6,
+  },
+  cube8: {
+    cells: [
+      { dx: 0, dy: 0, dz: 0 },
+      { dx: 1, dy: 0, dz: 0 },
+      { dx: 0, dy: 1, dz: 0 },
+      { dx: 1, dy: 1, dz: 0 },
+      { dx: 0, dy: 0, dz: 1 },
+      { dx: 1, dy: 0, dz: 1 },
+      { dx: 0, dy: 1, dz: 1 },
+      { dx: 1, dy: 1, dz: 1 },
+    ],
+    fillWeight: 3,
+  },
+}
+
+/**
+ * Какой доле нижних клеток игрушки нужна опора, чтобы та держалась. Полная опора дала бы кучу
+ * без нависаний, нулевая — игрушки в воздухе.
+ */
+export const SUPPORT_SHARE = 0.5
+
+/** Сколько игрушка проходит один слой по высоте, мс. */
 export const TOY_FALL_MS = 180
-/** Длительность отскока игрушки в соседнюю ячейку, мс. */
-export const TOY_BOUNCE_MS = 160
-/** Длительность ухода игрушки в лоток, мс. */
-export const TOY_COLLECT_MS = 320
+/** Сколько игрушка проходит одну ячейку по полу, мс. */
+export const TOY_TRAVEL_MS = 140
+/** Нижний предел длительности хода: ход без спуска и почти без пути всё равно виден. */
+export const TOY_MIN_MOTION_MS = 120
+/** Насколько единица веса сверх первой уменьшает длительность движения. */
+export const MOTION_WEIGHT_GAIN = 0.02
+/** Минимальный множитель длительности движения тяжёлой игрушки. */
+export const MOTION_MIN_DURATION_SCALE = 0.86
+
+/** Доля успешных захватов свободной игрушки весом в одну клетку. */
+export const GRAB_BASE_CHANCE = 0.9
+/** Насколько единица веса снижает шанс захвата. */
+export const GRAB_WEIGHT_PENALTY = 0.072
+/** Насколько единица нагрузки сверху снижает шанс захвата. */
+export const GRAB_LOAD_PENALTY = 0.11
+/** Пределы шанса захвата: самую тяжёлую игрушку всё же можно взять, самую лёгкую — упустить. */
+export const GRAB_MIN_CHANCE = 0.15
+export const GRAB_MAX_CHANCE = 0.92
+
+/** Коэффициент вероятности сползания на единицу перепада сверх порога. */
+export const SLIDE_BASE = 1.2
+/** Добавка к весу в знаменателе: без неё лёгкая игрушка сползала бы почти всегда. */
+export const SLIDE_WEIGHT_BIAS = 2
+/** Потолок вероятности сползания за один разбор. */
+export const SLIDE_MAX_CHANCE = 0.6
+
+/** Толчок соседям на единицу веса севшей игрушки, слоёв в секунду. */
+export const IMPACT_BASE = 0.35
+
+/** Версия снимка кучи: не сошлась — снимок игнорируется и куча складывается заново. */
+export const HEAP_SNAPSHOT_VERSION = 2
+/** Адрес снимка кучи в IndexedDB. */
+export const HEAP_DB_NAME = 'toybox'
+export const HEAP_STORE_NAME = 'heap'
+export const HEAP_SNAPSHOT_KEY = 'current'
+
+/** Длительность вертикального падения на дно лотка, мс. */
+export const TRAY_FALL_MS = 320
 /** Насколько игрушка висит ниже клешни, в слоях. */
 export const CARRY_OFFSET = 0.5
 /** Насколько центр игрушки поднят над полом её слоя. */
@@ -147,6 +242,8 @@ export const TOY_LANDING_IMPULSE = 2.4
 /** Масштаб предметов у дальнего края поля: с глубиной они видны мельче. */
 export const DEPTH_SCALE_MIN = 0.92
 
+/** Число точек окружности клетки при построении контура игрушки. */
+export const TOY_OUTLINE_STEPS = 20
 /** Радиус игрушки в дизайн-единицах. */
 export const TOY_RADIUS = 26
 /** Толщина бордера игрушки. */
@@ -194,6 +291,15 @@ export const BUTTON_SIZE_UNITS = 130
 export const BUTTON_THICKNESS = 3
 /** Прозрачность заливки кнопки. */
 export const BUTTON_FILL_ALPHA = 0.2
+/** Сторона кнопки сброса в дизайн-единицах: меньше кнопки опускания. */
+export const RESET_BUTTON_SIZE_UNITS = 84
+/** Начало и конец дуги круговой стрелки на кнопке сброса, радианы. */
+export const RESET_ARC_START = -Math.PI * 0.35
+export const RESET_ARC_END = Math.PI * 1.15
+/** Размер наконечника стрелки в долях радиуса дуги. */
+export const RESET_HEAD_RATIO = 0.42
+/** Имя кнопки сброса в слое доступности. */
+export const RESET_BUTTON_LABEL = 'Reset the heap'
 /** Прозрачность погашенного элемента управления. */
 export const DISABLED_ALPHA = 0.4
 /** Доля подложки, которую занимает иконка. */

@@ -1,79 +1,90 @@
-import { Container, Graphics, GraphicsContext } from 'pixi.js'
+import { Container, Graphics } from 'pixi.js'
 
-import { TOY_FILL_ALPHA, TOY_HIGHLIGHT_THICKNESS, TOY_RADIUS, TOY_THICKNESS } from '#src/constants'
-import type { WorldPoint } from '#src/types'
-import { getDepthOrder, getDepthScale, worldToScreen } from '#src/utils'
-import { PALETTE } from '@pixi-demos/core/palette'
+import type { Facing, ShapeKey, WorldPoint } from '#src/types'
+import type { ToyShapes } from '#src/ui/box/toy-shapes'
+import { getDepthScale, worldToScreen } from '#src/utils/projection'
 
-/** Общая геометрия игрушек: обычная и подсвеченная. Владелец создаёт пару и уничтожает с собой. */
-export type ToyContexts = {
-  plain: GraphicsContext
-  highlighted: GraphicsContext
-}
+/** Доля доворота, на которой силуэт сменяется с прежнего на новый. */
+const TURN_MIDPOINT = 0.5
 
 /**
- * Игрушка в куче: кружок с бордером и полупрозрачной заливкой. Геометрия приходит общими
- * контекстами — в куче их сотни; цвет задаётся tint поверх белой заливки.
+ * Игрушка в куче: силуэт формы с цветом через `tint`. Экземпляры используют общие кэшированные
+ * контексты геометрии.
+ *
+ * Методы не меняют PIXI-объекты при повторе прежних значений. Запись `zIndex` иначе запускала бы
+ * сортировку слоя каждый кадр.
  */
 export class Toy extends Container {
-  /** Собирает пару общих контекстов: у подсвеченной игрушки толще бордер. */
-  static createContexts(): ToyContexts {
-    const build = (thickness: number) =>
-      new GraphicsContext()
-        .circle(0, 0, TOY_RADIUS)
-        .fill({ color: PALETTE.white, alpha: TOY_FILL_ALPHA })
-        .stroke({ width: thickness, color: PALETTE.white })
-
-    return { plain: build(TOY_THICKNESS), highlighted: build(TOY_HIGHLIGHT_THICKNESS) }
-  }
-
-  private readonly contexts: ToyContexts
+  private readonly shapes: ToyShapes
   private readonly body: Graphics
-  private point: WorldPoint = { x: 0, y: 0, z: 0 }
-  private bounce = 0
+  private readonly shape: ShapeKey
+  private facing: Facing
+  private highlighted = false
+  private depthScale = 1
+  private turnWidth = 1
+  private depth = Number.NaN
 
-  constructor(contexts: ToyContexts, color: number) {
+  constructor(shapes: ToyShapes, shape: ShapeKey, facing: Facing, color: number) {
     super()
 
-    this.contexts = contexts
-    this.body = new Graphics(contexts.plain)
+    this.shapes = shapes
+    this.shape = shape
+    this.facing = facing
+    this.body = new Graphics(shapes.get(shape, facing, false))
     this.body.tint = color
 
     this.addChild(this.body)
   }
 
-  /** Точка мира, в которой игрушка стоит сейчас. */
-  getWorld(): WorldPoint {
-    return this.point
-  }
+  /** Ставит середину игрушки в точку мира, приподнятую отскоком; с глубиной она мельче. */
+  setWorld(point: WorldPoint, bounce: number): void {
+    const screen = worldToScreen({ x: point.x, y: point.y, z: point.z + bounce })
 
-  /** Ставит игрушку в точку мира; с глубиной она мельче. Порядок наложения обновляется вместе с ней. */
-  setWorld(point: WorldPoint): void {
-    this.point = point
-
-    this.place()
+    this.position.set(screen.x, screen.y)
+    this.depthScale = getDepthScale(point.x)
+    this.applyScale()
   }
 
   /**
-   * Смещение по высоте поверх точки мира: прожатие под весом клешни и отскок при посадке.
-   * Порядок наложения на него не отзывается — иначе сортировка дёргалась бы на каждом отскоке.
+   * Ключ наложения. Отскок на него не влияет — иначе слой пересортировывался бы на каждом
+   * колебании пружины.
    */
-  setBounce(offset: number): void {
-    this.bounce = offset
+  setDepth(depth: number): void {
+    if (depth === this.depth) return
 
-    this.place()
+    this.depth = depth
+    this.zIndex = depth
+  }
+
+  /**
+   * Доворот на четверть оборота: `turn` — его доля, единица означает, что доворота нет.
+   * Ширина ведётся `|cos(turn · π)|` и потому равна единице и в начале, и в конце; силуэт сменяется
+   * на середине, когда ширина проходит через ноль. Получается переворот, а не вращение — в изометрии
+   * четверть оборота меняет силуэт, и повернуть картинку было бы неверно.
+   */
+  setTurn(facing: Facing, turn: number): void {
+    if (turn >= TURN_MIDPOINT && facing !== this.facing) {
+      this.facing = facing
+      this.refresh()
+    }
+
+    this.turnWidth = Math.abs(Math.cos(turn * Math.PI))
+    this.applyScale()
   }
 
   /** Помечает игрушку как цель клешни. */
   setHighlighted(highlighted: boolean): void {
-    this.body.context = highlighted ? this.contexts.highlighted : this.contexts.plain
+    if (highlighted === this.highlighted) return
+
+    this.highlighted = highlighted
+    this.refresh()
   }
 
-  private place(): void {
-    const screen = worldToScreen({ ...this.point, z: this.point.z + this.bounce })
+  private refresh(): void {
+    this.body.context = this.shapes.get(this.shape, this.facing, this.highlighted)
+  }
 
-    this.position.set(screen.x, screen.y)
-    this.scale.set(getDepthScale(this.point.x))
-    this.zIndex = getDepthOrder(this.point)
+  private applyScale(): void {
+    this.scale.set(this.depthScale * this.turnWidth, this.depthScale)
   }
 }

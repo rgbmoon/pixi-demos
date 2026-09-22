@@ -1,7 +1,7 @@
 import { Container, Graphics } from 'pixi.js'
 
 import { LINE_THICKNESS, TRAY_ORIGIN, TRAY_SIZE } from '#src/constants'
-import { getDepthOrder, getTrayWallOutlines, worldToScreen } from '#src/utils'
+import { getDepthOrder, getTrayWallOutlines, worldToScreen } from '#src/utils/projection'
 import { PALETTE } from '@pixi-demos/core/palette'
 
 /**

@@ -19,23 +19,28 @@ import {
 } from '#src/constants'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
-import type { CellAddress, ClawDrop, ClawSlip, GroundPoint, ScreenPoint, SpringState, WorldPoint } from '#src/types'
+import type {
+  CellAddress,
+  ClawDrop,
+  ClawSlip,
+  GroundPoint,
+  ScreenPoint,
+  SpringState,
+  ToyId,
+  WorldPoint,
+} from '#src/types'
 import { Cart } from '#src/ui/box/cart'
 import { Claw } from '#src/ui/box/claw'
 import { Rope } from '#src/ui/box/rope'
-import type { Toy } from '#src/ui/box/toy'
+import { advanceSpring, advanceVelocity, isReducedMotion, tweenWorld } from '#src/utils/motion'
 import {
-  advanceSpring,
-  advanceVelocity,
   clampToField,
   getCellCenter,
   getDepthOrder,
   getPathShare,
-  isReducedMotion,
   toCell,
   toGroundDirection,
-  tweenWorld,
-} from '#src/utils'
+} from '#src/utils/projection'
 import { easeTrapezoid, easeTrapezoidInverse } from '@pixi-demos/core/easing'
 import { createAbortError } from '@pixi-demos/core/errors/utils'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
@@ -67,7 +72,7 @@ export class ClawController extends LiveContainer {
   /** Положение каретки в прошлом кадре: по нему считается её скорость, а по скорости — отклонение. */
   private previous: GroundPoint = { ...FIELD_CENTER }
   private motion?: AbortController
-  private carried?: Toy
+  private carried?: ToyId
 
   constructor(
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
@@ -106,23 +111,31 @@ export class ClawController extends LiveContainer {
     return this.carried !== undefined
   }
 
-  /** Берёт игрушку в клешню: дальше она ездит вместе с ней и рисуется под ней. */
-  hold(toy: Toy): void {
-    this.carried = toy
+  /**
+   * Точка, в которой висит игрушка в клешне.
+   */
+  getCarryPoint(): WorldPoint | undefined {
+    if (this.carried === undefined) return undefined
 
-    this.addChildAt(toy, this.getChildIndex(this.claw))
-    this.render()
+    return {
+      x: this.point.x + this.swing.x.value,
+      y: this.point.y + this.swing.y.value,
+      z: this.point.z - CARRY_OFFSET,
+    }
+  }
+
+  /** Берёт игрушку в клешню: дальше её точку задаёт клешня. */
+  hold(id: ToyId): void {
+    this.carried = id
   }
 
   /** Разжимает клешню и отдаёт игрушку владельцу; с пустой клешни ничего не снимается. */
-  release(): Toy | undefined {
-    const toy = this.carried
+  release(): ToyId | undefined {
+    const id = this.carried
 
     this.carried = undefined
 
-    if (toy) this.removeChild(toy)
-
-    return toy
+    return id
   }
 
   /** Принимает отклонение джойстика в экранных осях: его длина задаёт долю предельной скорости. */
@@ -176,12 +189,12 @@ export class ClawController extends LiveContainer {
   }
 
   /** Разжимает клешню через `delayMs` после старта хода и сразу отдаёт игрушку владельцу. */
-  private async dropOnTheWay(onDrop: (toy: Toy) => void, delayMs: number, signal?: AbortSignal): Promise<void> {
+  private async dropOnTheWay(onDrop: (id: ToyId) => void, delayMs: number, signal?: AbortSignal): Promise<void> {
     await this.ticker.waitTicks(delayMs, signal)
 
-    const toy = this.release()
+    const id = this.release()
 
-    if (toy) onDrop(toy)
+    if (id !== undefined) onDrop(id)
   }
 
   /** Время до ячейки `dropAt` от начала хода в `target`: привод разгоняется, и доля пути не равна доле времени. */
@@ -286,7 +299,6 @@ export class ClawController extends LiveContainer {
     this.cart.setWorld(mount)
     this.rope.setSpan(mount, visible)
     this.claw.setWorld(visible)
-    this.carried?.setWorld({ ...visible, z: visible.z - CARRY_OFFSET })
   }
 
   /** Публикует в стор ячейку под клешнёй, когда та сменилась. */
