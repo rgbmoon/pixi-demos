@@ -2,7 +2,7 @@ import { Container, Graphics } from 'pixi.js'
 
 import { CART_SIZE, CART_THICKNESS } from '#src/constants'
 import type { WorldPoint } from '#src/types'
-import { getDepthScale, worldToScreen } from '#src/utils'
+import { getDepthScale, worldToScreen } from '#src/utils/projection'
 import { PALETTE } from '@pixi-demos/core/palette'
 
 /** Половина стороны каретки в ячейках: от неё считаются углы её квадрата. */

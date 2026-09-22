@@ -2,7 +2,7 @@ import { Container, Graphics } from 'pixi.js'
 
 import { CLAW_RADIUS } from '#src/constants'
 import type { WorldPoint } from '#src/types'
-import { getDepthScale, worldToScreen } from '#src/utils'
+import { getDepthScale, worldToScreen } from '#src/utils/projection'
 import { PALETTE } from '@pixi-demos/core/palette'
 
 /** Клешня: точка в объёме куба. Под ассетами станет покадровой анимацией, геометрия не изменится. */

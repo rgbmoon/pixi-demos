@@ -2,7 +2,7 @@ import { Graphics } from 'pixi.js'
 
 import { CUBE_HEIGHT, LINE_THICKNESS, MAX_LAYERS } from '#src/constants'
 import type { GroundPoint } from '#src/types'
-import { getDepthOrder, worldToScreen } from '#src/utils'
+import { getDepthOrder, worldToScreen } from '#src/utils/projection'
 import { PALETTE } from '@pixi-demos/core/palette'
 
 /**

@@ -6,8 +6,20 @@ configure({ enforceActions: 'always' })
 
 // Хуки общие для всех тестов, а браузерное окружение есть не у каждого — отсюда проверка на window
 if (typeof window !== 'undefined') {
-  // Композиция игры тянет PIXI, а он щупает канвас на импорте; контекста в jsdom нет и не нужно
+  // PIXI запрашивает контекст канваса при импорте; модельные тесты не используют этот контекст
   HTMLCanvasElement.prototype.getContext = (() => null) as typeof HTMLCanvasElement.prototype.getContext
+
+  // jsdom не реализует matchMedia, а её читает isReducedMotion: без заглушки движение не проверить
+  window.matchMedia ??= ((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  })) as typeof window.matchMedia
 }
 
 beforeAll(() => {

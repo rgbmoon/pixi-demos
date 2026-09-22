@@ -4,9 +4,7 @@ import { action, computed, makeObservable, observable } from 'mobx'
 import { INITIAL_PHASE } from '#src/constants'
 import { type CellAddress, PhaseName } from '#src/types'
 
-/**
- * Состояние игры
- */
+/** Состояние фазы, управления и количества доставленных игрушек. */
 @injectable()
 export class ToyboxStore {
   constructor() {
@@ -31,6 +29,11 @@ export class ToyboxStore {
     return this.isIdle
   }
 
+  /** Доступен ли сброс кучи: новая игра начинается только из покоя. */
+  @computed get canReset(): boolean {
+    return this.isIdle
+  }
+
   /**
    * Ячейка, которую игрок выбирает сейчас: по ней сцена подсвечивает игрушку.
    * Подсветка идёт только в покое, пока игрок ищет игрушку джойстиком.
@@ -43,8 +46,13 @@ export class ToyboxStore {
     this.phase = phase
   }
 
-  @action collect() {
+  @action recordCollection() {
     this.collected += 1
+  }
+
+  /** Поднимает счётчик из снимка: его зовёт стартовая фаза после восстановления кучи. */
+  @action applyCollected(collected: number) {
+    this.collected = collected
   }
 
   @action setClawCell(cell: CellAddress) {

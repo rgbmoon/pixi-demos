@@ -1,8 +1,8 @@
 import { inject, injectable } from 'inversify'
 
-import { TRAY_HOLD_MS, TRAY_RELEASE_MS } from '#src/constants'
+import { TRAY_FALL_MS, TRAY_HOLD_MS, TRAY_RELEASE_MS } from '#src/constants'
 import type { ClawController } from '#src/controllers/box/claw'
-import type { ContentsController } from '#src/controllers/box/contents'
+import type { HeapStore } from '#src/stores/heap'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import { PhaseName } from '#src/types'
@@ -20,18 +20,18 @@ export class ReleasingPhase implements Phase<PhaseName> {
 
   private readonly ticker: GameTicker
   private readonly claw: ClawController
-  private readonly contents: ContentsController
+  private readonly heap: HeapStore
   private readonly toyboxStore: ToyboxStore
 
   constructor(
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
     @inject(TOYBOX_TOKENS.ClawController) claw: ClawController,
-    @inject(TOYBOX_TOKENS.ContentsController) contents: ContentsController,
+    @inject(TOYBOX_TOKENS.HeapStore) heap: HeapStore,
     @inject(TOYBOX_TOKENS.ToyboxStore) toyboxStore: ToyboxStore
   ) {
     this.ticker = ticker
     this.claw = claw
-    this.contents = contents
+    this.heap = heap
     this.toyboxStore = toyboxStore
   }
 
@@ -42,15 +42,16 @@ export class ReleasingPhase implements Phase<PhaseName> {
       return PhaseName.returning
     }
 
-    // Клешня доводит игрушку над лотком и только потом разжимается
     await this.ticker.waitTicks(TRAY_RELEASE_MS, signal)
 
-    const toy = this.claw.release()
+    const id = this.claw.release()
 
-    if (!toy) return PhaseName.returning
+    if (id === undefined) return PhaseName.returning
 
-    await this.contents.collect(toy, signal)
-    this.toyboxStore.collect()
+    this.heap.dropIntoTray(id)
+
+    await this.ticker.waitTicks(TRAY_FALL_MS, signal)
+    this.toyboxStore.recordCollection()
 
     return PhaseName.returning
   }

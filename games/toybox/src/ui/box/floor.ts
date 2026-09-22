@@ -1,7 +1,7 @@
 import { Container, Graphics } from 'pixi.js'
 
 import { GRID_ALPHA, GRID_SIZE, LINE_THICKNESS, TRAY_ALPHA } from '#src/constants'
-import { getFaceOutline, getTrayOutline, worldToScreen } from '#src/utils'
+import { getFaceOutline, getTrayOutline, worldToScreen } from '#src/utils/projection'
 import { PALETTE } from '@pixi-demos/core/palette'
 
 /**

@@ -3,13 +3,22 @@ import type { Container } from 'inversify'
 import { bindFsm } from '@pixi-demos/core/bindings'
 import { GameEmitter } from '@pixi-demos/core/events/game-emitter'
 import { traceEvent } from '@pixi-demos/core/events/utils'
+import { IdbStorage } from '@pixi-demos/core/idb-storage'
 import { CORE_TOKENS } from '@pixi-demos/core/tokens'
 import { bindEngine } from '@pixi-demos/engine/bindings'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 
-import { CANVAS_FILL_MAX_WIDTH, GAME_ASPECT_RATIO, INITIAL_PHASE } from './constants'
+import {
+  CANVAS_FILL_MAX_WIDTH,
+  GAME_ASPECT_RATIO,
+  HEAP_DB_NAME,
+  HEAP_SNAPSHOT_KEY,
+  HEAP_STORE_NAME,
+  INITIAL_PHASE,
+} from './constants'
 import { ClawController } from './controllers/box/claw'
 import { ContentsController } from './controllers/box/contents'
+import { PersistenceController } from './controllers/persistence'
 import type { GameEvents } from './events'
 import { AscendingPhase } from './phases/ascending'
 import { BootingPhase } from './phases/booting'
@@ -20,12 +29,19 @@ import { IdlePhase } from './phases/idle'
 import { ReleasingPhase } from './phases/releasing'
 import { ReturningPhase } from './phases/returning'
 import { GameScene } from './scenes/game'
+import { HeapStore } from './stores/heap'
 import { ToyboxStore } from './stores/toybox'
 import { TOYBOX_TOKENS } from './tokens'
-import { PhaseName } from './types'
+import { type HeapSnapshot, PhaseName } from './types'
 
 export const bindFlow = (container: Container): void => {
   container.bind(TOYBOX_TOKENS.ToyboxStore).to(ToyboxStore)
+  container.bind(TOYBOX_TOKENS.HeapStore).to(HeapStore)
+  container
+    .bind(TOYBOX_TOKENS.HeapStorage)
+    .toDynamicValue(
+      () => new IdbStorage<HeapSnapshot>({ dbName: HEAP_DB_NAME, storeName: HEAP_STORE_NAME, key: HEAP_SNAPSHOT_KEY })
+    )
   container.bind(CORE_TOKENS.PhaseSink).toDynamicValue(({ get }) => get(TOYBOX_TOKENS.ToyboxStore))
   container.bind(TOYBOX_TOKENS.GameEmitter).toDynamicValue(() => new GameEmitter<GameEvents>(traceEvent))
   container
@@ -66,6 +82,13 @@ const bindScene = (container: Container): void => {
     .to(ContentsController)
     .onDeactivation((contents) => {
       if (!contents.destroyed) contents.destroy({ children: true })
+    })
+
+  container
+    .bind(TOYBOX_TOKENS.PersistenceController)
+    .to(PersistenceController)
+    .onDeactivation((persistence) => {
+      if (!persistence.destroyed) persistence.destroy({ children: true })
     })
 }
 

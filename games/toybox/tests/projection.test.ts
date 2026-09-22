@@ -20,7 +20,7 @@ import {
   screenToGround,
   toGroundDirection,
   worldToScreen,
-} from '#src/utils'
+} from '#src/utils/projection'
 
 describe('worldToScreen', () => {
   it('держит начало координат в ближнем углу пола', () => {

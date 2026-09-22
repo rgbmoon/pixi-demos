@@ -3,6 +3,13 @@ import type { Container } from 'inversify'
 /** Источник случайности: `Math.random` в проде, сидируемый генератор в моках и тестах. */
 export type Random = () => number
 
+/** Адрес значения в IndexedDB: база, стор внутри неё и ключ. */
+export type IdbStorageOptions = {
+  readonly dbName: string
+  readonly storeName: string
+  readonly key: string
+}
+
 /**
  * Контракт игрового модуля: единственное, что страница знает о самой игре.
  * `bind` наполняет её контейнер, `start` поднимает игру внутри элемента и резолвится,

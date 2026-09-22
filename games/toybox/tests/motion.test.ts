@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
-import { CLAW_MAX_SPEED, SWAY_DAMPING, SWAY_DRAG, SWAY_MAX_OFFSET, SWAY_PERIOD_MS } from '#src/constants'
-import type { GroundPoint, SpringOptions, SpringState } from '#src/types'
-import { advanceSpring, advanceVelocity } from '#src/utils'
+import {
+  CLAW_MAX_SPEED,
+  MOTION_MIN_DURATION_SCALE,
+  SWAY_DAMPING,
+  SWAY_DRAG,
+  SWAY_MAX_OFFSET,
+  SWAY_PERIOD_MS,
+} from '#src/constants'
+import type { GroundPoint, SpringOptions, SpringState, WorldPoint } from '#src/types'
+import { advanceSpring, advanceVelocity, getMotionDurationScale, getMotionMs } from '#src/utils/motion'
 
 /** Шаг кадра при 60 fps. */
 const FRAME_MS = 1000 / 60
@@ -186,5 +193,45 @@ describe('качание клешни', () => {
     const swing = advanceSway({ value: 0, velocity: 0 }, 100 * CLAW_MAX_SPEED)
 
     expect(Math.abs(swing.value)).toBeLessThanOrEqual(SWAY_MAX_OFFSET)
+  })
+})
+
+describe('getMotionMs', () => {
+  const AT = (x: number, y: number, z: number): WorldPoint => ({ x, y, z })
+
+  it('отмеряет ход даже там, где спуска нет вовсе', () => {
+    // Игрушку отпустили вровень с её местом: остаётся только переехать по полу
+    expect(getMotionMs(1, AT(4, 4, 2), AT(4, 4, 2))).toBeGreaterThan(0)
+    expect(getMotionMs(1, AT(4, 4, 2), AT(6, 4, 2))).toBeGreaterThan(0)
+  })
+
+  it('отмеряет ход снизу вверх так же, как спуск', () => {
+    expect(getMotionMs(1, AT(4, 4, 1), AT(4, 4, 3))).toBe(getMotionMs(1, AT(4, 4, 3), AT(4, 4, 1)))
+  })
+
+  it('растёт с высотой спуска и с путём по полу', () => {
+    expect(getMotionMs(1, AT(4, 4, 4), AT(4, 4, 0))).toBeGreaterThan(getMotionMs(1, AT(4, 4, 2), AT(4, 4, 0)))
+    expect(getMotionMs(1, AT(0, 0, 0), AT(7, 7, 0))).toBeGreaterThan(getMotionMs(1, AT(0, 0, 0), AT(1, 0, 0)))
+  })
+
+  it('роняет тяжёлое быстрее лёгкого, но лишь немного', () => {
+    const light = getMotionMs(1, AT(4, 4, 4), AT(4, 4, 0))
+    const heavy = getMotionMs(8, AT(4, 4, 4), AT(4, 4, 0))
+
+    expect(heavy).toBeLessThan(light)
+    expect(light / heavy).toBeLessThanOrEqual(1 / MOTION_MIN_DURATION_SCALE)
+  })
+})
+
+describe('getMotionDurationScale', () => {
+  it('держится между полом и единицей при любом весе', () => {
+    for (const weight of [1, 2, 3, 4, 8, 64]) {
+      expect(getMotionDurationScale(weight)).toBeLessThanOrEqual(1)
+      expect(getMotionDurationScale(weight)).toBeGreaterThanOrEqual(MOTION_MIN_DURATION_SCALE)
+    }
+  })
+
+  it('не ускоряет одноклеточную игрушку вовсе', () => {
+    expect(getMotionDurationScale(1)).toBe(1)
   })
 })

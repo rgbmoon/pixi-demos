@@ -2,7 +2,7 @@ import { inject, injectable } from 'inversify'
 
 import { LIFT_FUMBLE_CHANCE, LIFT_SLIP_MAX_SHARE, LIFT_SLIP_MIN_SHARE, PHASE_PAUSE_MS } from '#src/constants'
 import type { ClawController } from '#src/controllers/box/claw'
-import type { ContentsController } from '#src/controllers/box/contents'
+import type { HeapStore } from '#src/stores/heap'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import { type ClawSlip, PhaseName } from '#src/types'
@@ -13,6 +13,8 @@ import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 /**
  * Фаза подъёма: клешня возвращается к верхней грани с тем, что смогла захватить. С вероятностью
  * `LIFT_FUMBLE_CHANCE` игрушка выскальзывает по дороге вверх и падает обратно в кучу.
+ *
+ * TODO Возможно надо отрефакторить и чтобы падением управляла фаза во всех случаях - Обвал после изъятия обрабатывает кадровый шаг модели.
  */
 @injectable()
 export class AscendingPhase implements Phase<PhaseName> {
@@ -20,28 +22,23 @@ export class AscendingPhase implements Phase<PhaseName> {
 
   private readonly ticker: GameTicker
   private readonly claw: ClawController
-  private readonly contents: ContentsController
+  private readonly heap: HeapStore
   private readonly toyboxStore: ToyboxStore
 
   constructor(
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
     @inject(TOYBOX_TOKENS.ClawController) claw: ClawController,
-    @inject(TOYBOX_TOKENS.ContentsController) contents: ContentsController,
+    @inject(TOYBOX_TOKENS.HeapStore) heap: HeapStore,
     @inject(TOYBOX_TOKENS.ToyboxStore) toyboxStore: ToyboxStore
   ) {
     this.ticker = ticker
     this.claw = claw
-    this.contents = contents
+    this.heap = heap
     this.toyboxStore = toyboxStore
   }
 
   async enter(signal: AbortSignal): Promise<typeof PhaseName.delivering> {
-    const lifted = this.claw.isHolding()
-
     await this.claw.ascend(this.rollSlip(), signal)
-
-    if (lifted) this.contents.settle()
-
     await this.ticker.waitTicks(PHASE_PAUSE_MS, signal)
 
     return PhaseName.delivering
@@ -56,8 +53,8 @@ export class AscendingPhase implements Phase<PhaseName> {
 
     return {
       share,
-      onDrop: (toy) => {
-        if (this.contents.drop(toy, cell)) this.toyboxStore.collect()
+      onDrop: (id) => {
+        this.heap.release(id, cell, () => this.toyboxStore.recordCollection())
       },
     }
   }
