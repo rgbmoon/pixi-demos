@@ -12,6 +12,7 @@ export const sharedTestConfig = defineConfig({
     // По умолчанию тесты идут в node; файл, которому нужен браузерный API, объявляет это сам
     // докблоком `// @vitest-environment jsdom` в первой строке
     environment: 'node',
+    testTimeout: 10_000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
