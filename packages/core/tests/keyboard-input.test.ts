@@ -84,3 +84,37 @@ describe('KeyboardInput', () => {
     keyboard = undefined
   })
 })
+
+it('отпускает зажатую клавишу даже при defaultPrevented и смене фокуса', () => {
+  const keyboard = new KeyboardInput(window)
+  const listener = vi.fn()
+  keyboard.listen(['ArrowLeft'], listener)
+  window.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowLeft' }))
+  const input = document.createElement('input')
+  document.body.appendChild(input)
+  const up = new KeyboardEvent('keyup', { code: 'ArrowLeft', bubbles: true, cancelable: true })
+  up.preventDefault()
+  input.dispatchEvent(up)
+
+  expect(keyboard.isPressed('ArrowLeft')).toBe(false)
+  expect(listener).toHaveBeenLastCalledWith({ code: 'ArrowLeft', pressed: false, repeat: false })
+  keyboard.dispose()
+  input.remove()
+})
+
+it('не забирает ввод у вложенного элемента кнопки', () => {
+  const keyboard = new KeyboardInput(window)
+  const button = document.createElement('button')
+  const span = document.createElement('span')
+  button.appendChild(span)
+  document.body.appendChild(button)
+  const listener = vi.fn()
+  keyboard.listen(['Space'], listener, { preventDefault: true })
+  const down = new KeyboardEvent('keydown', { code: 'Space', bubbles: true, cancelable: true })
+  span.dispatchEvent(down)
+
+  expect(listener).not.toHaveBeenCalled()
+  expect(down.defaultPrevented).toBe(false)
+  keyboard.dispose()
+  button.remove()
+})

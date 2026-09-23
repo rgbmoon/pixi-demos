@@ -22,7 +22,6 @@ import { PALETTE } from '@pixi-demos/core/palette'
 
 /** Кнопка сброса, установленная на передней вертикальной грани тумбы. */
 export class ResetButton extends Container {
-  readonly sizeUnits = RESET_BUTTON_SIZE_UNITS
 
   constructor(options: ButtonOptions) {
     super()
@@ -68,9 +67,9 @@ export class ResetButton extends Container {
 
     return icon
       .poly([
-        projectPlaneOffset(CABINET_FRONT_PLANE, tip.x + head, tip.y, true),
-        projectPlaneOffset(CABINET_FRONT_PLANE, tip.x - head, tip.y - head, true),
-        projectPlaneOffset(CABINET_FRONT_PLANE, tip.x - head, tip.y + head, true),
+        projectPlaneOffset(CABINET_FRONT_PLANE, tip.x + head, tip.y),
+        projectPlaneOffset(CABINET_FRONT_PLANE, tip.x - head, tip.y - head),
+        projectPlaneOffset(CABINET_FRONT_PLANE, tip.x - head, tip.y + head),
       ])
       .fill({ color: PALETTE.white })
   }

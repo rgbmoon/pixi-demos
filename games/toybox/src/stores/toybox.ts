@@ -2,7 +2,8 @@ import { injectable } from 'inversify'
 import { action, computed, makeObservable, observable } from 'mobx'
 
 import { INITIAL_PHASE } from '#src/constants'
-import { type CellAddress, PhaseName } from '#src/types'
+import { type CellAddress, type GroundPoint, type HeapSnapshot, PhaseName, type ScreenPoint } from '#src/types'
+import { toGroundDirection } from '#src/utils/projection'
 
 /** Состояние фазы, управления и количества доставленных игрушек. */
 @injectable()
@@ -21,21 +22,38 @@ export class ToyboxStore {
   /** Сколько игрушек попало в лоток за сессию. */
   @observable collected = 0
 
-  // TODO у нас не может быть больше одной выдчи за раз. Эта логика лишняя
-  /** Число подтверждённых выдач, для которых дверца ещё не закрылась. */
-  @observable pendingPrizes = 0
+  /** Последний завершённый цикл, единственный источник для сохранения. */
+  @observable.ref checkpoint: HeapSnapshot | undefined = undefined
+
+  @observable.ref private keyboard: ScreenPoint = { x: 0, y: 0 }
+  @observable.ref private joystick: ScreenPoint = { x: 0, y: 0 }
+
+  /** Ненулевая команда клавиатуры имеет приоритет над джойстиком. */
+  @computed get direction(): GroundPoint {
+    if (!this.canDrop) return { x: 0, y: 0 }
+
+    return toGroundDirection(this.keyboard.x || this.keyboard.y ? this.keyboard : this.joystick)
+  }
+
+  @action setKeyboardDirection(vector: ScreenPoint): void {
+    this.keyboard = vector
+  }
+
+  @action setJoystickDirection(vector: ScreenPoint): void {
+    this.joystick = vector
+  }
 
   /** Ячейка под клешнёй. Единственный писатель — контроллер клешни. */
   @observable.ref clawCell: CellAddress | undefined = undefined
 
   /** Доступно ли опускание клешни: цикл идёт целиком, прервать его нечем. */
   @computed get canDrop(): boolean {
-    return this.isIdle && this.pendingPrizes === 0
+    return this.isIdle
   }
 
   /** Доступен ли сброс кучи: новая игра начинается только из покоя. */
   @computed get canReset(): boolean {
-    return this.isIdle && this.pendingPrizes === 0
+    return this.isIdle
   }
 
   /**
@@ -50,18 +68,14 @@ export class ToyboxStore {
     this.phase = phase
   }
 
-  @action recordCollection(): number {
+  /** Засчитывает игрушку, дошедшую до дна лотка. */
+  @action recordCollection(): void {
     this.collected += 1
-
-    return this.collected
   }
 
-  @action beginPrize(): void {
-    this.pendingPrizes += 1
-  }
-
-  @action finishPrize(): void {
-    this.pendingPrizes = Math.max(0, this.pendingPrizes - 1)
+  /** Публикует согласованные размещение и счёт после завершения цикла. */
+  @action publishCheckpoint(snapshot: HeapSnapshot): void {
+    this.checkpoint = snapshot
   }
 
   /** Поднимает счётчик из снимка: его зовёт стартовая фаза после восстановления кучи. */

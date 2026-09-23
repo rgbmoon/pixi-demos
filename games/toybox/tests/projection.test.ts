@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import {
   AXIS_X,
   AXIS_Y,
-  DEPTH_SCALE_MIN,
   JOYSTICK_DEADZONE,
   FIELD_CENTER,
   GRID_SIZE,
@@ -12,15 +11,8 @@ import {
   TRAY_SIZE,
   UNIT_HEIGHT,
 } from '#src/constants'
-import {
-  clampToField,
-  getDepthScale,
-  getFaceOutline,
-  getTrayOutline,
-  screenToGround,
-  toGroundDirection,
-  worldToScreen,
-} from '#src/utils/projection'
+import { clampToField, getFaceOutline, getTrayOutline } from '#src/utils/grid'
+import { screenToGround, toGroundDirection, worldToScreen } from '#src/utils/projection'
 
 describe('worldToScreen', () => {
   it('держит начало координат в ближнем углу пола', () => {
@@ -126,19 +118,6 @@ describe('toGroundDirection', () => {
   })
 })
 
-describe('getDepthScale', () => {
-  it('мельчит предмет по мере ухода в глубину', () => {
-    expect(getDepthScale(0)).toBeCloseTo(1)
-    expect(getDepthScale(GRID_SIZE)).toBeCloseTo(DEPTH_SCALE_MIN)
-    expect(getDepthScale(GRID_SIZE / 2)).toBeLessThan(getDepthScale(0))
-    expect(getDepthScale(GRID_SIZE / 2)).toBeGreaterThan(getDepthScale(GRID_SIZE))
-  })
-
-  it('не выходит за пределы поля', () => {
-    expect(getDepthScale(-5)).toBeCloseTo(1)
-    expect(getDepthScale(GRID_SIZE * 3)).toBeCloseTo(DEPTH_SCALE_MIN)
-  })
-})
 
 describe('clampToField', () => {
   it('оставляет точку внутри поля нетронутой', () => {

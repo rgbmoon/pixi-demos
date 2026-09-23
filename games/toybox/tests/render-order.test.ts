@@ -9,24 +9,13 @@ import {
   TOY_LAYER_CENTER,
   TRAY_ORIGIN,
   TRAY_SIZE,
-  UNIT_HEIGHT,
+  UNIT_HEIGHT, FACINGS
 } from '#src/constants'
 import type { CellAddress, Facing, ScreenPoint, ShapeKey, VolumeCell } from '#src/types'
-import {
-  FACINGS,
-  getBodyCenter,
-  getBodyDepth,
-  getPlacementCells,
-  getShapeCenter,
-  getShapeOutline,
-} from '#src/utils/heap'
-import {
-  getCellCenter,
-  getDepthOrder,
-  getDepthScale,
-  getTrayWallOutlines,
-  worldToScreen,
-} from '#src/utils/projection'
+import { getShapeOutline, getShapeDepthOffset  } from '#src/ui/box/utils'
+import { getCellCenter, getTrayWallOutlines } from '#src/utils/grid'
+import { getDepthOrder, worldToScreen } from '#src/utils/projection'
+import { getBodyCenter, getPlacementCells, getShapeCenter } from '#src/utils/shapes'
 
 type Polygon = ScreenPoint[]
 
@@ -150,7 +139,7 @@ const createPlacement = (shape: ShapeKey, facing: Facing, anchor: CellAddress, l
   const cells = getPlacementCells(shape, facing, anchor, layer)
   const center = getBodyCenter(shape, facing, anchor, layer)
   const offset = worldToScreen(center)
-  const scale = getDepthScale(center.x)
+  const scale = 1
   const key = `${shape}:${facing}`
   const local = geometry.get(key) ?? getLocalFragments(shape, facing)
 
@@ -169,7 +158,7 @@ const createPlacement = (shape: ShapeKey, facing: Facing, anchor: CellAddress, l
     cellDepths: cells.map((cell) =>
       getDepthOrder({ ...getCellCenter(cell), z: cell.layer + TOY_LAYER_CENTER })
     ),
-    depth: getBodyDepth(shape, facing, anchor, layer),
+    depth: (getDepthOrder(getBodyCenter(shape, facing, anchor, layer)) + getShapeDepthOffset(shape, facing)),
     fragments,
     fragmentBounds: fragments.map(getBounds),
     bounds: getBounds(fragments.flat()),
@@ -330,8 +319,8 @@ describe('порядок отрисовки игрушек', () => {
     }
 
     expect(placements).toHaveLength(971)
-    expect(contourPairs).toBe(58_235)
-    expect(fragmentOverlaps).toBe(209_260)
+    expect(contourPairs).toBe(68_096)
+    expect(fragmentOverlaps).toBe(231_496)
     expect(failures).toEqual([])
   })
 
@@ -370,7 +359,7 @@ describe('порядок отрисовки игрушек', () => {
       if (placementOverlaps) overlappingPlacements += 1
     }
 
-    expect(overlappingPlacements).toBe(120)
+    expect(overlappingPlacements).toBe(123)
     expect(failures).toEqual([])
   })
 

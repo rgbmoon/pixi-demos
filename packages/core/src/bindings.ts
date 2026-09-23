@@ -20,6 +20,5 @@ export const bindKeyboardInput = (container: Container): void => {
   container
     .bind(CORE_TOKENS.KeyboardInput)
     .toDynamicValue(() => new KeyboardInput(window))
-    .inSingletonScope()
     .onDeactivation((keyboard) => keyboard.dispose())
 }

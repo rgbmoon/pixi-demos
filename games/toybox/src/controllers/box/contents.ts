@@ -1,17 +1,17 @@
 import { inject, injectable } from 'inversify'
 import type { DestroyOptions, Ticker } from 'pixi.js'
 
+import { CONTENTS_PRIORITY, REDUCED_MOTION_QUERY } from '#src/constants'
 import type { ClawController } from '#src/controllers/box/claw'
 import type { HeapStore } from '#src/stores/heap'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
-import { type CellAddress, PhaseName, type ToyBody, type ToyId, ToyState } from '#src/types'
-import { GlassMask } from '#src/ui/box/glass-mask'
+import type { CellAddress, ToyBody, ToyId } from '#src/types'
 import { Pillar } from '#src/ui/box/pillar'
 import { Toy } from '#src/ui/box/toy'
 import { ToyShapes } from '#src/ui/box/toy-shapes'
 import { TrayWalls } from '#src/ui/box/tray-walls'
-import { getFaceOutline } from '#src/utils/projection'
+import { getFaceOutline } from '#src/utils/grid'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 import { LiveContainer } from '@pixi-demos/engine/live-container'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
@@ -29,9 +29,8 @@ export class ContentsController extends LiveContainer {
   private readonly claw: ClawController
   private readonly shapes = new ToyShapes()
   private readonly toys = new Map<ToyId, Toy>()
-  // TODO маска на каждый ToyId это странно. Уверен там можно обойтись одной
-  private readonly glassMasks = new Map<ToyId, GlassMask>()
   private readonly seen = new Set<ToyId>()
+  private readonly reducedMotion = window.matchMedia(REDUCED_MOTION_QUERY)
   private target?: CellAddress
 
   constructor(
@@ -57,26 +56,23 @@ export class ContentsController extends LiveContainer {
       { fireImmediately: true }
     )
 
-    // Фаза захвата начинается после касания и заканчивается перед подъёмом клешни
-    this.watch(
-      () => toyboxStore.phase === PhaseName.grabbing,
-      (grabbing) => heap.setPressed(grabbing ? claw.getCell() : undefined)
-    )
-
-    this.ticker.add(this.step)
+    this.ticker.add(this.step, undefined, CONTENTS_PRIORITY)
   }
 
   override destroy(options?: DestroyOptions): void {
+    if (this.destroyed) return
+
     this.ticker.remove(this.step)
     this.toys.clear()
-    this.glassMasks.clear()
-    this.shapes.destroy()
 
     super.destroy(options)
+    // Общие контексты геометрии уничтожаются после игрушек, которые на них ссылаются
+    this.shapes.destroy()
   }
 
   private step = (ticker: Ticker): void => {
-    this.heap.setCarryPoint(this.claw.getCarryPoint())
+    this.heap.setReducedMotion(this.reducedMotion.matches)
+    this.heap.setGripPoint(this.claw.getGripPoint())
     this.heap.advance(ticker.deltaMS)
     this.sync()
   }
@@ -91,18 +87,16 @@ export class ContentsController extends LiveContainer {
 
       this.seen.add(body.id)
 
-      toy.setTurn(body.facing, body.turn)
-      toy.setWorld(body.point, body.bounce.value)
-      toy.setDepth(body.depth)
+      toy.setFacing(body.pose.facing)
+      toy.setWorld(body.pose.point, body.bounce.value)
       toy.setHighlighted(body.id === highlighted)
-      toy.setClippingMask(body.state === ToyState.fallingIntoTray ? this.getGlassMask(body.id) : null)
     }
 
     if (this.seen.size !== this.toys.size) this.removeGone()
   }
 
   private addToy(body: Readonly<ToyBody>): Toy {
-    const toy = new Toy(this.shapes, body.shape, body.facing, body.color)
+    const toy = new Toy(this.shapes, body.shape, body.pose.facing, body.color)
 
     this.toys.set(body.id, toy)
     this.addChild(toy)
@@ -110,32 +104,12 @@ export class ContentsController extends LiveContainer {
     return toy
   }
 
-  private getGlassMask(id: ToyId): GlassMask {
-    const known = this.glassMasks.get(id)
-
-    if (known) return known
-
-    const mask = new GlassMask()
-
-    this.glassMasks.set(id, mask)
-    this.addChild(mask)
-
-    return mask
-  }
-
   private removeGone(): void {
     for (const [id, toy] of this.toys) {
       if (this.seen.has(id)) continue
 
       this.toys.delete(id)
-      toy.destroy()
-
-      const mask = this.glassMasks.get(id)
-
-      if (mask) {
-        this.glassMasks.delete(id)
-        mask.destroy()
-      }
+      toy.destroy({ children: true })
     }
   }
 }

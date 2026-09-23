@@ -7,12 +7,7 @@ import {
   MARQUEE_TEXT_CENTER,
   TRAY_ALPHA,
 } from '#src/constants'
-import {
-  CABINET_FRONT_PLANE,
-  getMarqueeOutlines,
-  projectPlaneOffset,
-  projectWorldOutline,
-} from '#src/utils/machine-geometry'
+import { CABINET_FRONT_PLANE, getMarqueeOutlines, projectPlaneOffset } from '#src/utils/machine-geometry'
 import { worldToScreen } from '#src/utils/projection'
 import { PALETTE } from '@pixi-demos/core/palette'
 
@@ -27,7 +22,7 @@ export class Marquee extends Container {
 
     for (const face of getMarqueeOutlines()) {
       outline
-        .poly(projectWorldOutline(face))
+        .poly(face.map((point) => worldToScreen(point)))
         .fill({ color: PALETTE.accent, alpha: TRAY_ALPHA })
         .stroke({ color: PALETTE.primary, width: LINE_THICKNESS })
     }
@@ -62,10 +57,12 @@ export class Marquee extends Container {
     this.addChild(outline, this.message)
   }
 
+  /** Выводит текст на переднюю грань табло. */
   setMessage(message: string): void {
     this.message.text = message
   }
 
+  /** Текст, выведенный на табло. */
   getMessage(): string {
     return this.message.text
   }

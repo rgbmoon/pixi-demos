@@ -2,10 +2,9 @@ import { Container, Graphics } from 'pixi.js'
 
 import type { Facing, ShapeKey, WorldPoint } from '#src/types'
 import type { ToyShapes } from '#src/ui/box/toy-shapes'
-import { getDepthScale, worldToScreen } from '#src/utils/projection'
+import { getDepthOrder, worldToScreen } from '#src/utils/projection'
 
-/** Доля доворота, на которой силуэт сменяется с прежнего на новый. */
-const TURN_MIDPOINT = 0.5
+import { getShapeDepthOffset } from './utils'
 
 /**
  * Игрушка в куче: силуэт формы с цветом через `tint`. Экземпляры используют общие кэшированные
@@ -20,8 +19,7 @@ export class Toy extends Container {
   private shape: ShapeKey
   private facing: Facing
   private highlighted = false
-  private depthScale = 1
-  private turnWidth = 1
+  private depthOffset = 0
   private depth = Number.NaN
 
   constructor(shapes: ToyShapes, shape: ShapeKey, facing: Facing, color: number) {
@@ -34,6 +32,7 @@ export class Toy extends Container {
     this.body.tint = color
 
     this.addChild(this.body)
+    this.updateDepthOffset()
   }
 
   /** Переиспользует экземпляр для другой формы и цвета. */
@@ -42,54 +41,34 @@ export class Toy extends Container {
     this.facing = facing
     this.body.tint = color
     this.refresh()
+    this.updateDepthOffset()
   }
 
-  /** Ставит отдельный масштаб для презентации вне координат мира. */
+  /** Масштаб отдельной презентации в окне выдачи. */
   setPresentationScale(scale: number): void {
-    this.depthScale = scale
-    this.turnWidth = 1
-    this.applyScale()
+    this.scale.set(scale)
   }
 
-  /** Ограничивает игрушку геометрией стеклянного бокса или снимает ограничение. */
-  setClippingMask(mask: Container | null): void {
-    this.mask = mask
-  }
-
-  /** Ставит середину игрушки в точку мира, приподнятую отскоком; с глубиной она мельче. */
+  /** Ставит центр в мировую точку и сортирует по ближайшей клетке текущего силуэта. */
   setWorld(point: WorldPoint, bounce: number): void {
-    const screen = worldToScreen({ x: point.x, y: point.y, z: point.z + bounce })
+    const visible = { x: point.x, y: point.y, z: point.z + bounce }
+    const screen = worldToScreen(visible)
+    const depth = getDepthOrder(visible) + this.depthOffset
 
     this.position.set(screen.x, screen.y)
-    this.depthScale = getDepthScale(point.x)
-    this.applyScale()
-  }
-
-  /**
-   * Ключ наложения. Отскок на него не влияет — иначе слой пересортировывался бы на каждом
-   * колебании пружины.
-   */
-  setDepth(depth: number): void {
-    if (depth === this.depth) return
-
-    this.depth = depth
-    this.zIndex = depth
-  }
-
-  /**
-   * Доворот на четверть оборота: `turn` — его доля, единица означает, что доворота нет.
-   * Ширина ведётся `|cos(turn · π)|` и потому равна единице и в начале, и в конце; силуэт сменяется
-   * на середине, когда ширина проходит через ноль. Получается переворот, а не вращение — в изометрии
-   * четверть оборота меняет силуэт, и повернуть картинку было бы неверно.
-   */
-  setTurn(facing: Facing, turn: number): void {
-    if (turn >= TURN_MIDPOINT && facing !== this.facing) {
-      this.facing = facing
-      this.refresh()
+    if (depth !== this.depth) {
+      this.depth = depth
+      this.zIndex = depth
     }
+  }
 
-    this.turnWidth = Math.abs(Math.cos(turn * Math.PI))
-    this.applyScale()
+  /** Меняет ориентацию силуэта при посадке. */
+  setFacing(facing: Facing): void {
+    if (facing === this.facing) return
+
+    this.facing = facing
+    this.refresh()
+    this.updateDepthOffset()
   }
 
   /** Помечает игрушку как цель клешни. */
@@ -104,7 +83,7 @@ export class Toy extends Container {
     this.body.context = this.shapes.get(this.shape, this.facing, this.highlighted)
   }
 
-  private applyScale(): void {
-    this.scale.set(this.depthScale * this.turnWidth, this.depthScale)
+  private updateDepthOffset(): void {
+    this.depthOffset = getShapeDepthOffset(this.shape, this.facing)
   }
 }

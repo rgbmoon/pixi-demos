@@ -2,19 +2,17 @@ import type { ToyboxStore } from '#src/stores/toybox'
 import { Joystick } from '#src/ui/hud/joystick'
 import { LiveContainer } from '@pixi-demos/engine/live-container'
 
-import type { ClawController } from '../box/claw'
-
 /**
- * Джойстик хода клешни: отклонение ручки уходит прямо в контроллер клешни.
- * Вне покоя джойстик гаснет и отпускает ручку — выключенный узел уже не услышит отпускание сам.
+ * Джойстик хода клешни: после мёртвой зоны задаёт движение с постоянной целевой скоростью.
+ * При блокировке управления контроллер возвращает ручку в центр и обнуляет команду.
  */
 export class JoystickController extends LiveContainer {
   private readonly joystick: Joystick
 
-  constructor(claw: ClawController, toyboxStore: ToyboxStore) {
+  constructor(toyboxStore: ToyboxStore) {
     super()
 
-    this.joystick = new Joystick({ onMove: (vector) => claw.setDirection(vector) })
+    this.joystick = new Joystick({ onMove: (vector) => toyboxStore.setJoystickDirection(vector) })
 
     this.addChild(this.joystick)
 
@@ -23,10 +21,5 @@ export class JoystickController extends LiveContainer {
       (enabled) => this.joystick.setEnabled(enabled),
       { fireImmediately: true }
     )
-  }
-
-  /** Радиус подложки в дизайн-единицах: по нему сцена считает габариты блока управления. */
-  get radiusUnits(): number {
-    return this.joystick.radiusUnits
   }
 }

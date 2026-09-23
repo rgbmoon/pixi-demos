@@ -3,7 +3,7 @@ import { when } from 'mobx'
 import { vi } from 'vitest'
 
 import { bindFlow } from '#src/bindings'
-import { FIELD_CENTER, HEAP_SNAPSHOT_VERSION } from '#src/constants'
+import { FIELD_CENTER, HEAP_SNAPSHOT_VERSION, CLAW_REST_HEIGHT, CUBE_HEIGHT } from '#src/constants'
 import type { ClawController } from '#src/controllers/box/claw'
 import type { PrizeOutputController } from '#src/controllers/box/prize-output'
 import type { GameEvents } from '#src/events'
@@ -12,14 +12,14 @@ import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import {
   type ClawDrop,
-  type ClawSlip,
   type GroundPoint,
   PhaseName,
   type ToyAppearance,
-  type ToyId,
+  type WorldPoint,
 } from '#src/types'
-import { getGrabChance, getWeight } from '#src/utils/heap'
-import { toCell } from '#src/utils/projection'
+import { toCell } from '#src/utils/grid'
+import { getGrabChance } from '#src/utils/heap'
+import { getWeight } from '#src/utils/shapes'
 import { bindFsm } from '@pixi-demos/core/bindings'
 import type { GameEmitter } from '@pixi-demos/core/events/game-emitter'
 import type { Fsm } from '@pixi-demos/core/fsm/fsm'
@@ -59,65 +59,59 @@ export type Cycle = {
  */
 const createClawStub = (log: ClawLog): ClawController => {
   let position: GroundPoint = FIELD_CENTER
-  let carried: ToyId | undefined
+  let z = CLAW_REST_HEIGHT
 
   const stub = {
-    getPosition: () => position,
     getCell: () => toCell(position),
-    getCarryPoint: () => undefined,
+    getCartPoint: () => ({ ...position, z: CUBE_HEIGHT }),
+    getGripPoint: () => ({ ...position, z }),
     descend: async (toZ: number) => {
+      z = toZ
       log.push(`descend:${toZ}`)
     },
-    ascend: async (slip: ClawSlip | undefined) => {
+    grab: async (onProgress: (progress: number, grip: WorldPoint) => void) => {
+      onProgress(1, { ...position, z })
+      log.push('grab')
+    },
+    ascend: async (slip: ClawDrop | undefined) => {
       log.push(slip ? 'ascend slip' : 'ascend')
-
-      if (!slip || carried === undefined) return
-
-      const id = carried
-
-      carried = undefined
-      slip.onDrop(id)
+      if (slip) slip.onDrop({ ...position, z: z + (CLAW_REST_HEIGHT - z) * slip.share })
+      z = CLAW_REST_HEIGHT
     },
     moveTo: async (target: GroundPoint) => {
       position = target
       log.push(`moveTo:${target.x},${target.y}`)
     },
     carryTo: async (target: GroundPoint, drop: ClawDrop | undefined) => {
+      const at = drop ? {
+        x: position.x + (target.x - position.x) * drop.share,
+        y: position.y + (target.y - position.y) * drop.share,
+        z,
+      } : undefined
+      const cell = at && toCell(at)
+
+      log.push(`carryTo:${target.x},${target.y}${cell ? ` drop:${cell.col},${cell.row}` : ''}`)
+      if (drop && at) drop.onDrop(at)
       position = target
-      log.push(`carryTo:${target.x},${target.y}${drop ? ` drop:${drop.cell.col},${drop.cell.row}` : ''}`)
-
-      if (!drop || carried === undefined) return
-
-      const id = carried
-
-      carried = undefined
-      drop.onDrop(id)
-    },
-    isHolding: () => carried !== undefined,
-    hold: (id: ToyId) => {
-      carried = id
-      log.push('hold')
-    },
-    release: () => {
-      const id = carried
-
-      carried = undefined
-
-      if (id !== undefined) log.push('release')
-
-      return id
     },
   }
 
   return stub as unknown as ClawController
 }
 
-/** Дублёр тикера: игровые выдержки проходят мгновенно, но остаются видимыми в журнале. */
+/**
+ * Дублёр тикера: игровые выдержки проходят мгновенно, но остаются видимыми в журнале. Ожидание условия
+ * продвигает настоящую модель кучи кадрами по 100 мс, пока условие не выполнится.
+ */
 const createTickerStub = (log: ClawLog, getHeap: () => HeapStore): GameTicker => {
   const stub = {
     waitTicks: async (durationMs: number) => {
       log.push(`wait:${durationMs}`)
       getHeap().advance(durationMs)
+    },
+    waitUntil: async (ready: () => boolean) => {
+      for (let frame = 0; frame < 10_000 && !ready(); frame++) getHeap().advance(100)
+      if (!ready()) throw new Error('Condition was not reached')
     },
   }
 
@@ -126,8 +120,8 @@ const createTickerStub = (log: ClawLog, getHeap: () => HeapStore): GameTicker =>
 
 /**
  * Собирает цикл без единого PIXI-объекта: настоящие автомат, фазы, стор и модель кучи.
- * Подменены клешня, тикер и `Math.random`. Кадровый шаг кучи никто не крутит — фазы меняют
- * решётку сразу, а движение разыгрывалось бы только на тикере.
+ * Дублёры клешни, тикера и окна выдачи завершают операции сразу.
+ * Ожидание условия в дублёре тикера продвигает настоящую модель до результата.
  * Автомат не запускается — это делает `startCycle`.
  */
 export const createCycle = (): Cycle => {
@@ -146,9 +140,15 @@ export const createCycle = (): Cycle => {
     .bind(ENGINE_TOKENS.GameTicker)
     .toConstantValue(createTickerStub(log, () => container.get(TOYBOX_TOKENS.HeapStore)))
   container.bind(TOYBOX_TOKENS.PrizeOutputController).toConstantValue({
-    present: async (appearance: ToyAppearance, collected: number) => {
-      prizes.push({ ...appearance, collected, domainCollected: container.get(TOYBOX_TOKENS.ToyboxStore).collected })
+    show: (appearance: ToyAppearance) => {
+      const { collected } = container.get(TOYBOX_TOKENS.ToyboxStore)
+
+      prizes.push({ ...appearance, collected, domainCollected: collected })
     },
+    open: async () => { log.push('prize:open') },
+    take: async () => { log.push('prize:take') },
+    close: async () => { log.push('prize:close') },
+    hide: () => {},
   } as unknown as PrizeOutputController)
 
   // Исход захвата и потери задаёт сам тест очередью бросков

@@ -18,7 +18,6 @@ import { PALETTE } from '@pixi-demos/core/palette'
 
 /** Кнопка опускания клешни, спроецированная в плоскость панели управления. */
 export class DropButton extends Container {
-  readonly sizeUnits = BUTTON_SIZE_UNITS
 
   constructor(options: ButtonOptions) {
     super()
@@ -56,9 +55,9 @@ export class DropButton extends Container {
 
     for (const offset of [-size * 0.7, size * 0.3]) {
       icon.poly([
-        projectPlaneOffset(CONTROL_PANEL_PLANE, 0, offset + size * 0.7, true),
-        projectPlaneOffset(CONTROL_PANEL_PLANE, -size * 0.8, offset - size * 0.2, true),
-        projectPlaneOffset(CONTROL_PANEL_PLANE, size * 0.8, offset - size * 0.2, true),
+        projectPlaneOffset(CONTROL_PANEL_PLANE, 0, offset + size * 0.7),
+        projectPlaneOffset(CONTROL_PANEL_PLANE, -size * 0.8, offset - size * 0.2),
+        projectPlaneOffset(CONTROL_PANEL_PLANE, size * 0.8, offset - size * 0.2),
       ])
     }
 

@@ -9,8 +9,8 @@ import type { GameEmitter } from '@pixi-demos/core/events/game-emitter'
 import type { Phase } from '@pixi-demos/core/fsm/types'
 
 /**
- * Фаза покоя. Здесь же принимается сброс кучи: он не меняет фазу, поэтому это подписка на время
- * фазы, а не ожидание её конца.
+ * Фаза покоя. Здесь же принимается сброс кучи: он не меняет фазу, поэтому его принимает подписка
+ * на время фазы.
  */
 @injectable()
 export class IdlePhase implements Phase<PhaseName> {
@@ -31,10 +31,15 @@ export class IdlePhase implements Phase<PhaseName> {
   }
 
   async enter(signal: AbortSignal): Promise<typeof PhaseName.descending> {
-    this.emitter.on('ui:resetRequested', () => this.reset(), { signal })
+    const unsubscribe = this.emitter.on('ui:resetRequested', () => this.reset(), { signal })
 
-    // Доступность проверяет фаза: запрос в обход кнопки не запустит цикл посреди другого цикла
-    await this.emitter.waitFor('ui:dropRequested', { signal, filter: () => this.toyboxStore.canDrop })
+    try {
+      await this.emitter.waitFor('ui:dropRequested', { signal, filter: () => this.toyboxStore.canDrop })
+    } finally {
+      unsubscribe()
+    }
+
+    this.heap.beginCycle()
 
     return PhaseName.descending
   }
@@ -45,6 +50,7 @@ export class IdlePhase implements Phase<PhaseName> {
 
     this.heap.restore(undefined, Math.random)
     this.toyboxStore.applyCollected(0)
+    this.toyboxStore.publishCheckpoint(this.heap.takeSnapshot(0))
     this.emitter.emit('heap:reset')
   }
 }

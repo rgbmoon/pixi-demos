@@ -60,12 +60,6 @@ export class GameRoot {
 
     const { width, height } = getCanvasSize(container.clientWidth, container.clientHeight, this.canvasConfig)
 
-    if (this.canvasConfig.designSize) {
-      this.setCanvasDisplaySize(width, height)
-
-      return
-    }
-
     if (width <= 0 || height <= 0 || (width === this.app.screen.width && height === this.app.screen.height)) {
       return
     }
@@ -96,19 +90,17 @@ export class GameRoot {
     this.pending = app
 
     // Стартовый размер; последующие изменения отслеживает ResizeObserver контейнера
-    const displaySize = getCanvasSize(container.clientWidth, container.clientHeight, this.canvasConfig)
-    const renderSize = this.canvasConfig.designSize ?? displaySize
+    const { width, height } = getCanvasSize(container.clientWidth, container.clientHeight, this.canvasConfig)
 
     try {
       // autoStart: false — свой тикер приложение не запускает
       await app.init({
         autoStart: false,
         background: PALETTE.background,
-        width: renderSize.width,
-        height: renderSize.height,
+        width,
+        height,
         resolution: Math.min(window.devicePixelRatio || 1, MAX_RESOLUTION),
         autoDensity: true,
-        antialias: this.canvasConfig.antialias,
         roundPixels: this.canvasConfig.roundPixels,
       })
     } catch (error) {
@@ -131,7 +123,6 @@ export class GameRoot {
     this.ticker.start()
 
     container.appendChild(app.canvas)
-    this.setCanvasDisplaySize(displaySize.width, displaySize.height, app)
     app.canvas.addEventListener('webglcontextlost', this.handleContextLost)
     app.renderer.accessibility.setAccessibilityEnabled(true)
 
@@ -148,21 +139,6 @@ export class GameRoot {
     this.resizeObserver.observe(container)
 
     void this.fsm.start()
-  }
-
-  // TODO проверить что эта правка не аффектит вторую игру и что она вообще необходима и не может быть написана на уровне самой игры, если она требуется только одной игре
-  /** Меняет только CSS-размер: логическая система координат фиксированного макета остаётся неизменной. */
-  private setCanvasDisplaySize(width: number, height: number, app = this.app): void {
-    if (!app || !this.canvasConfig.designSize || width <= 0 || height <= 0) {
-      return
-    }
-
-    app.canvas.style.width = `${width}px`
-    app.canvas.style.height = `${height}px`
-
-    if (this.canvasConfig.pixelated) {
-      app.canvas.style.imageRendering = 'pixelated'
-    }
   }
 
   /**

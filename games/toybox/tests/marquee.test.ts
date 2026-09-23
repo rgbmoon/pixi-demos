@@ -43,7 +43,8 @@ describe('MarqueeController', () => {
 
     expect(marquee.getMessage()).toBe('TOYS 0')
 
-    emitter.emit('prize:taken', { collected: 1 })
+    store.recordCollection()
+    emitter.emit('prize:taken')
 
     expect(marquee.getMessage()).toBe('TOYS 1')
 

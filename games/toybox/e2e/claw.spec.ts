@@ -1,14 +1,18 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
 
-import { CUBE_HEIGHT, DESIGN_HEIGHT, DESIGN_WIDTH, FIELD_CENTER, JOYSTICK_CENTER } from '#src/constants'
+import { CUBE_HEIGHT, FIELD_CENTER, JOYSTICK_CENTER } from '#src/constants'
 import { getMachineLayout } from '#src/utils/layout'
 import { worldToScreen } from '#src/utils/projection'
 
 /** Сколько ждать бутстрапа игры: на CI канвас рисует программный SwiftShader. */
 const BOOT_TIMEOUT_MS = 30_000
 
-/** Сколько ждать полного цикла клешни: опускание, подъём, путь к лотку и возврат. */
-const CYCLE_TIMEOUT_MS = 15_000
+/**
+ * Сколько ждать полного цикла клешни: опускание, подъём, путь к лотку, выдача приза и возврат.
+ * Цикл длится до 9 с игрового времени; ниже 10 FPS тикер режет кадр до 100 мс, и на CI игровое
+ * время отстаёт от реального в 2–3 раза.
+ */
+const CYCLE_TIMEOUT_MS = 45_000
 
 /**
  * Открывает страницу игры и ждёт, пока она примет опускание; возвращает кнопку Drop.
@@ -29,6 +33,9 @@ const openGame = async (page: Page): Promise<Locator> => {
 }
 
 test.describe('цикл клешни', () => {
+  // Бутстрап и цикл клешни вместе не помещаются в общие 60 с
+  test.describe.configure({ timeout: 120_000 })
+
   test('двигает клешню перетаскиванием джойстика мышью', async ({ page }) => {
     await openGame(page)
     await page.waitForTimeout(2_000)
@@ -38,15 +45,13 @@ test.describe('цикл клешни', () => {
 
     expect(box).not.toBeNull()
 
-    const layout = getMachineLayout(0, 0, DESIGN_WIDTH, DESIGN_HEIGHT)
+    const layout = getMachineLayout(box?.width ?? 0, box?.height ?? 0)
     const joystick = worldToScreen(JOYSTICK_CENTER)
-    const designX = layout.x + joystick.x * layout.scale
-    const designY = layout.y + joystick.y * layout.scale
-    const pointerX = (box?.x ?? 0) + (designX / DESIGN_WIDTH) * (box?.width ?? 0)
-    const pointerY = (box?.y ?? 0) + (designY / DESIGN_HEIGHT) * (box?.height ?? 0)
+    const pointerX = (box?.x ?? 0) + layout.x + joystick.x * layout.scale
+    const pointerY = (box?.y ?? 0) + layout.y + joystick.y * layout.scale
     const cart = worldToScreen({ ...FIELD_CENTER, z: CUBE_HEIGHT })
-    const cartX = (box?.x ?? 0) + ((layout.x + cart.x * layout.scale) / DESIGN_WIDTH) * (box?.width ?? 0)
-    const cartY = (box?.y ?? 0) + ((layout.y + cart.y * layout.scale) / DESIGN_HEIGHT) * (box?.height ?? 0)
+    const cartX = (box?.x ?? 0) + layout.x + cart.x * layout.scale
+    const cartY = (box?.y ?? 0) + layout.y + cart.y * layout.scale
     const cartArea = { x: cartX - 80, y: cartY - 40, width: 160, height: 200 }
     const before = await page.screenshot({ clip: cartArea })
 

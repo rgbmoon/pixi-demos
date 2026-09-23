@@ -44,7 +44,7 @@ export class KeyboardInput {
   private isInteractiveTarget(target: EventTarget | null): boolean {
     return (
       target instanceof Element &&
-      target.matches('button, input, textarea, select, option, a[href], [contenteditable]:not([contenteditable="false"])')
+      target.closest('button, input, textarea, select, option, a[href], [contenteditable]:not([contenteditable="false"])') !== null
     )
   }
 
@@ -80,7 +80,7 @@ export class KeyboardInput {
   }
 
   private handleKeyUp = (event: KeyboardEvent): void => {
-    if (event.defaultPrevented || (this.isInteractiveTarget(event.target) && !this.pressed.has(event.code))) {
+    if (!this.pressed.has(event.code)) {
       return
     }
 

@@ -5,7 +5,7 @@ import type { HeapStore } from '#src/stores/heap'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import { type HeapSnapshot, PhaseName } from '#src/types'
-import { isHeapSnapshot } from '#src/utils/heap'
+import { isHeapSnapshot } from '#src/utils/snapshot'
 import type { GameEmitter } from '@pixi-demos/core/events/game-emitter'
 import type { Phase } from '@pixi-demos/core/fsm/types'
 import type { IdbStorage } from '@pixi-demos/core/idb-storage'
@@ -35,12 +35,15 @@ export class BootingPhase implements Phase<PhaseName> {
     this.storage = storage
   }
 
-  async enter(): Promise<typeof PhaseName.idle> {
+  async enter(signal: AbortSignal): Promise<typeof PhaseName.idle> {
     const stored = await this.storage.read()
+    signal.throwIfAborted()
+
     const snapshot = isHeapSnapshot(stored) ? stored : undefined
 
     this.heap.restore(snapshot, Math.random)
     this.toyboxStore.applyCollected(snapshot?.collected ?? 0)
+    this.toyboxStore.publishCheckpoint(this.heap.takeSnapshot(this.toyboxStore.collected))
     this.emitter.emit('game:booted')
 
     return PhaseName.idle

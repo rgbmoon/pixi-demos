@@ -24,9 +24,4 @@ export class DropButtonController extends LiveContainer {
       { fireImmediately: true }
     )
   }
-
-  /** Сторона кнопки в дизайн-единицах: по ней сцена считает габариты блока управления. */
-  get sizeUnits(): number {
-    return this.button.sizeUnits
-  }
 }
