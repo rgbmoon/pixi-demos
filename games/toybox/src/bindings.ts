@@ -29,6 +29,7 @@ import { DeliveringPhase } from './phases/delivering'
 import { DescendingPhase } from './phases/descending'
 import { GrabbingPhase } from './phases/grabbing'
 import { IdlePhase } from './phases/idle'
+import { PresentingPhase } from './phases/presenting'
 import { ReleasingPhase } from './phases/releasing'
 import { ReturningPhase } from './phases/returning'
 import { GameScene } from './scenes/game'
@@ -58,6 +59,7 @@ export const bindFlow = (container: Container): void => {
   container.bind(CORE_TOKENS.Phase).to(AscendingPhase)
   container.bind(CORE_TOKENS.Phase).to(DeliveringPhase)
   container.bind(CORE_TOKENS.Phase).to(ReleasingPhase)
+  container.bind(CORE_TOKENS.Phase).to(PresentingPhase)
   container.bind(CORE_TOKENS.Phase).to(ReturningPhase)
 }
 

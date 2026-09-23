@@ -22,7 +22,6 @@ import { PALETTE } from '@pixi-demos/core/palette'
 
 /** Джойстик, основание и ход ручки которого лежат в мировой плоскости панели управления. */
 export class Joystick extends Container {
-  readonly radiusUnits = JOYSTICK_RADIUS
 
   private readonly knob = new Graphics()
   private readonly onMove: (vector: ScreenPoint) => void

@@ -2,6 +2,7 @@ import { PALETTE } from '@pixi-demos/core/palette'
 
 import {
   type CellAddress,
+  type Facing,
   type GroundPoint,
   PhaseName,
   type ScreenPoint,
@@ -94,7 +95,7 @@ export const TRAY_CENTER: GroundPoint = { x: TRAY_ORIGIN.col + TRAY_SIZE / 2, y:
 /** Точка, над которой клешня стоит в покое. */
 export const FIELD_CENTER: GroundPoint = { x: GRID_SIZE / 2, y: GRID_SIZE / 2 }
 
-/** Предельная скорость клешни при полном отклонении джойстика, ячеек в секунду. */
+/** Предельная скорость клешни при включённом движении, ячеек в секунду. */
 export const CLAW_MAX_SPEED = 3.6
 /** Предел разгона клешни, ячеек в секунду за секунду: мотор выходит на скорость почти сразу. */
 export const CLAW_ACCELERATION = 60
@@ -137,8 +138,8 @@ export const SWAY_MAX_OFFSET = 0.4
 export const TRAY_HOLD_MS = 1000
 /** Сколько клешня держит игрушку над лотком, прежде чем разжаться. */
 export const TRAY_RELEASE_MS = 400
-/** Сколько клешня сжимается на дне, прежде чем станет известен исход захвата, мс. */
-export const GRAB_HOLD_MS = 400
+/** Длительность захвата и центрирования игрушки в прототипе, мс. */
+export const CLAW_GRAB_MS = 200
 /** Пауза в хвосте фазы цикла клешни: движения не склеиваются встык. */
 export const PHASE_PAUSE_MS = 200
 
@@ -171,10 +172,6 @@ export const LIFT_FUMBLE_CHANCE = 0.13
 export const LIFT_SLIP_MIN_SHARE = 0.15
 /** Доля подъёма, позже которой игрушка не выскальзывает: у верхней грани клешня уже уходит в сторону. */
 export const LIFT_SLIP_MAX_SHARE = 0.85
-/** Шаг выборки пути в долях ячейки: мельче ячейки, поэтому пройденные ею не теряются. */
-export const PATH_STEP = 0.25
-/** Минимальный перепад, при котором игрушка может сползти на соседнюю стопку, в слоях. */
-export const SLIDE_MIN_DROP = 3
 /** Перепад под краем, начиная с которого провал считается дырой, а не неровностью, в слоях. */
 export const HOLE_MIN_DROP = 2
 /** Минимальное произведение площади и глубины, при котором начинается засыпка дыры. */
@@ -254,12 +251,8 @@ export const GRAB_LOAD_PENALTY = 0.11
 export const GRAB_MIN_CHANCE = 0.15
 export const GRAB_MAX_CHANCE = 0.92
 
-/** Коэффициент вероятности сползания на единицу перепада сверх порога. */
-export const SLIDE_BASE = 1.2
 /** Добавка к весу в знаменателе: без неё лёгкая игрушка сползала бы почти всегда. */
-export const SLIDE_WEIGHT_BIAS = 2
-/** Потолок вероятности сползания за один разбор. */
-export const SLIDE_MAX_CHANCE = 0.6
+export const HOLE_WEIGHT_BIAS = 2
 
 /** Толчок соседям на единицу веса севшей игрушки, слоёв в секунду. */
 export const IMPACT_BASE = 0.35
@@ -271,10 +264,8 @@ export const HEAP_DB_NAME = 'toybox'
 export const HEAP_STORE_NAME = 'heap'
 export const HEAP_SNAPSHOT_KEY = 'current'
 
-/** Конечная высота игрушки в шахте: ниже пола куба на одну ячейку. */
-export const TRAY_EXIT_Z = -1
-/** Насколько игрушка висит ниже клешни, в слоях. */
-export const CARRY_OFFSET = 0.5
+/** Конечная высота игрушки в шахте: полностью перекрыта корпусом с учётом контура и обводки. */
+export const TRAY_EXIT_Z = -1.5
 /** Насколько центр игрушки поднят над полом её слоя. */
 export const TOY_LAYER_CENTER = 0.5
 
@@ -286,9 +277,6 @@ export const TOY_SPRING_PERIOD_MS = 240
 export const TOY_SPRING_DAMPING = 0.35
 /** Просадка садящейся игрушки при падении с полной высоты куба, слоёв в секунду. */
 export const TOY_LANDING_IMPULSE = 2.4
-
-/** Масштаб предметов у дальнего края поля: с глубиной они видны мельче. */
-export const DEPTH_SCALE_MIN = 0.92
 
 /** Число точек окружности клетки при построении контура игрушки. */
 export const TOY_OUTLINE_STEPS = 16
@@ -386,3 +374,12 @@ export const RESET_MS = 1000
 /** Физические коды клавиш игрового управления. */
 export const KEYBOARD_ARROW_CODES = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'] as const
 export const KEYBOARD_DROP_CODES = ['Enter', 'Space'] as const
+
+/** Ориентации и ключи каталога для перебора планировщиками. */
+export const FACINGS: readonly Facing[] = [0, 1, 2, 3]
+export const SHAPE_KEYS = Object.keys(SHAPES) as ShapeKey[]
+/** Нижняя длительность движения исключает деление на ноль. */
+export const MIN_TRAVEL_MS = 1
+/** Движение выполняется раньше качания, модели кучи и синхронизации видов. */
+export const CLAW_PRIORITY = 10
+export const CONTENTS_PRIORITY = 0

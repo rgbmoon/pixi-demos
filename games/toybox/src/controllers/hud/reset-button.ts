@@ -25,9 +25,4 @@ export class ResetButtonController extends LiveContainer {
       { fireImmediately: true }
     )
   }
-
-  /** Сторона кнопки в дизайн-единицах: по ней сцена ставит её в угол экрана. */
-  get sizeUnits(): number {
-    return this.button.sizeUnits
-  }
 }

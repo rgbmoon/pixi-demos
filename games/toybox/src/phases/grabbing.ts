@@ -1,11 +1,12 @@
 import { inject, injectable } from 'inversify'
 
-import { GRAB_HOLD_MS, PHASE_PAUSE_MS } from '#src/constants'
+import { PHASE_PAUSE_MS } from '#src/constants'
 import type { ClawController } from '#src/controllers/box/claw'
 import type { HeapStore } from '#src/stores/heap'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import { type CellAddress, PhaseName } from '#src/types'
-import { getGrabChance, getWeight } from '#src/utils/heap'
+import { getGrabChance } from '#src/utils/heap'
+import { getWeight } from '#src/utils/shapes'
 import type { Phase } from '@pixi-demos/core/fsm/types'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
@@ -33,16 +34,13 @@ export class GrabbingPhase implements Phase<PhaseName> {
   }
 
   async enter(signal: AbortSignal): Promise<typeof PhaseName.ascending> {
-    await this.ticker.waitTicks(GRAB_HOLD_MS, signal)
-
     const cell = this.claw.getCell()
 
     if (Math.random() < this.getChance(cell)) {
-      const id = this.heap.lift(cell)
-
-      if (id !== undefined) this.claw.hold(id)
+      this.heap.lift(cell, this.claw.getGripPoint())
     }
 
+    await this.claw.grab((progress, grip) => this.heap.setGrabProgress(progress, grip), signal)
     await this.ticker.waitTicks(PHASE_PAUSE_MS, signal)
 
     return PhaseName.ascending

@@ -2,76 +2,50 @@ import { inject, injectable } from 'inversify'
 
 import { TRAY_HOLD_MS, TRAY_RELEASE_MS } from '#src/constants'
 import type { ClawController } from '#src/controllers/box/claw'
-import type { PrizeOutputController } from '#src/controllers/box/prize-output'
+import type { ContentsController } from '#src/controllers/box/contents'
 import type { HeapStore } from '#src/stores/heap'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
-import { PhaseName, type ToyAppearance } from '#src/types'
+import { PhaseName } from '#src/types'
 import type { Phase } from '@pixi-demos/core/fsm/types'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 
-/**
- * Фаза сброса: клешня выдерживает паузу над лотком и разжимается. Донесённая игрушка уходит в лоток
- * и в счётчик, пустая клешня просто стоит.
- */
+/** Отпускает доставленную игрушку и подтверждает результат прямого падения или прежнего срыва. */
 @injectable()
 export class ReleasingPhase implements Phase<PhaseName> {
   readonly name = PhaseName.releasing
 
   private readonly ticker: GameTicker
   private readonly claw: ClawController
+  private readonly contents: ContentsController
   private readonly heap: HeapStore
   private readonly toyboxStore: ToyboxStore
-  private readonly prizeOutput: PrizeOutputController
 
   constructor(
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
     @inject(TOYBOX_TOKENS.ClawController) claw: ClawController,
+    @inject(TOYBOX_TOKENS.ContentsController) contents: ContentsController,
     @inject(TOYBOX_TOKENS.HeapStore) heap: HeapStore,
-    @inject(TOYBOX_TOKENS.ToyboxStore) toyboxStore: ToyboxStore,
-    @inject(TOYBOX_TOKENS.PrizeOutputController) prizeOutput: PrizeOutputController
+    @inject(TOYBOX_TOKENS.ToyboxStore) toyboxStore: ToyboxStore
   ) {
     this.ticker = ticker
     this.claw = claw
+    this.contents = contents
     this.heap = heap
     this.toyboxStore = toyboxStore
-    this.prizeOutput = prizeOutput
   }
 
-  async enter(signal: AbortSignal): Promise<typeof PhaseName.returning> {
-    if (!this.claw.isHolding()) {
-      await this.ticker.waitTicks(TRAY_HOLD_MS, signal)
+  async enter(signal: AbortSignal): Promise<typeof PhaseName.presenting | typeof PhaseName.returning> {
+    await this.ticker.waitTicks(this.heap.isHolding ? TRAY_RELEASE_MS : TRAY_HOLD_MS, signal)
+    if (this.heap.isHolding) this.heap.dropIntoTray(this.claw.getGripPoint())
 
-      return PhaseName.returning
-    }
+    const outcome = await this.contents.waitForRelease(signal)
 
-    await this.ticker.waitTicks(TRAY_RELEASE_MS, signal)
+    if (outcome.status !== 'collected') return PhaseName.returning
 
-    const id = this.claw.release()
+    this.toyboxStore.recordCollection(outcome.appearance)
 
-    if (id === undefined) return PhaseName.returning
-
-    let collected: number | undefined
-    let appearance: ToyAppearance | undefined
-
-    this.toyboxStore.beginPrize()
-
-    try {
-      const fallMs = this.heap.dropIntoTray(id, (value) => {
-        appearance = value
-        collected = this.toyboxStore.recordCollection()
-      })
-
-      await this.ticker.waitTicks(fallMs, signal)
-
-      if (!appearance || collected === undefined) throw new Error('Prize did not leave the internal tray')
-
-      await this.prizeOutput.present(appearance, collected)
-    } finally {
-      this.toyboxStore.finishPrize()
-    }
-
-    return PhaseName.returning
+    return PhaseName.presenting
   }
 }

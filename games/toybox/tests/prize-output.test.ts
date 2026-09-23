@@ -1,94 +1,64 @@
 // @vitest-environment jsdom
-import type { Ticker } from 'pixi.js'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import {
-  PRIZE_DOOR_MS,
-  PRIZE_OPEN_HOLD_MS,
-  PRIZE_PAUSE_MS,
-  PRIZE_TAKE_MS,
-} from '#src/constants'
+import { PRIZE_DOOR_MS, PRIZE_OPEN_HOLD_MS, PRIZE_PAUSE_MS, PRIZE_TAKE_MS } from '#src/constants'
 import { PrizeOutputController } from '#src/controllers/box/prize-output'
 import type { GameEvents } from '#src/events'
+import { PresentingPhase } from '#src/phases/presenting'
+import { ToyboxStore } from '#src/stores/toybox'
+import { PhaseName } from '#src/types'
 import { GameEmitter } from '@pixi-demos/core/events/game-emitter'
-import type { GameTicker } from '@pixi-demos/engine/game-ticker'
+import { GameTicker } from '@pixi-demos/engine/game-ticker'
 
-describe('PrizeOutputController', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
+describe('выдача одного приза', () => {
+  it('фаза соблюдает порядок операций и объявляет получение до закрытия дверцы', async () => {
+    const ticker = new GameTicker()
+    const output = new PrizeOutputController(ticker)
+    const store = new ToyboxStore()
+    const emitter = new GameEmitter<GameEvents>()
+    const taken = vi.fn()
+    const {signal} = new AbortController()
+    const phase = new PresentingPhase(ticker, output, store, emitter)
+    const log: string[] = []
+
+    for (const method of ['show', 'open', 'take', 'close', 'hide'] as const) {
+      const original = output[method].bind(output)
+
+      vi.spyOn(output, method).mockImplementation((...args: never[]) => {
+        log.push(method)
+        return (original as (...values: never[]) => void)(...args)
+      })
+    }
+    emitter.on('prize:taken', (value) => { log.push('taken'); taken(value) })
+    store.recordCollection({ shape: 'bar2', color: 0xff0000 })
+    const pending = phase.enter(signal)
+    let time = 0
+
+    ticker.update(time)
+    for (let frame = 0; frame < (PRIZE_PAUSE_MS + PRIZE_DOOR_MS * 2 + PRIZE_OPEN_HOLD_MS + PRIZE_TAKE_MS) / 10 + 20; frame++) {
+      time += 10
+      ticker.update(time)
+      await Promise.resolve()
+      await Promise.resolve()
+    }
+
+    expect(await pending).toBe(PhaseName.returning)
+    expect(log).toEqual(['show', 'open', 'take', 'taken', 'close', 'hide'])
+    expect(taken).toHaveBeenCalledExactlyOnceWith({ collected: 1 })
+    expect(store.prize).toBeUndefined()
+    output.destroy({ children: true })
+    ticker.destroy()
   })
 
-  it('проигрывает точный порядок выдачи и не смешивает элементы очереди', async () => {
-    vi.spyOn(window, 'matchMedia').mockReturnValue({ matches: false } as MediaQueryList)
+  it('отменяет анимацию при уничтожении контроллера', async () => {
+    const ticker = new GameTicker()
+    const output = new PrizeOutputController(ticker)
+    const pending = output.open(new AbortController().signal)
+    const result = expect(pending).rejects.toMatchObject({ name: 'AbortError' })
 
-    const log: string[] = []
-    const waits: Array<() => void> = []
-    let frame: ((ticker: Ticker) => void) | undefined
-    const ticker = {
-      waitTicks: (durationMs: number) =>
-        new Promise<void>((resolve) => {
-          log.push(`wait:${durationMs}`)
-          waits.push(resolve)
-        }),
-      add: (callback: (value: Ticker) => void) => {
-        frame = callback
-        log.push('tween')
-      },
-      remove: (callback: (value: Ticker) => void) => {
-        if (frame === callback) frame = undefined
-      },
-    } as unknown as GameTicker
-    const emitter = new GameEmitter<GameEvents>()
-    const controller = new PrizeOutputController(ticker, emitter)
-    const flush = async () => {
-      await Promise.resolve()
-      await Promise.resolve()
-    }
-    const advance = async (durationMs: number) => {
-      const active = frame
-
-      expect(active).toBeDefined()
-      active?.({ deltaMS: durationMs } as Ticker)
-      await flush()
-    }
-
-    emitter.on('prize:taken', ({ collected }) => log.push(`taken:${collected}`))
-
-    const first = controller.present({ shape: 'single', color: 0xff0000 }, 1)
-    const second = controller.present({ shape: 'bar2', color: 0x00ff00 }, 2)
-
-    expect(log).toEqual([`wait:${PRIZE_PAUSE_MS}`])
-
-    waits.shift()?.()
-    await flush()
-    await advance(PRIZE_DOOR_MS)
-
-    expect(log).toEqual([`wait:${PRIZE_PAUSE_MS}`, 'tween', `wait:${PRIZE_OPEN_HOLD_MS}`])
-
-    waits.shift()?.()
-    await flush()
-    await advance(PRIZE_TAKE_MS)
-
-    expect(log.at(-2)).toBe('taken:1')
-    expect(log.at(-1)).toBe('tween')
-
-    await advance(PRIZE_DOOR_MS)
-    await first
-    await flush()
-
-    expect(log.at(-1)).toBe(`wait:${PRIZE_PAUSE_MS}`)
-
-    waits.shift()?.()
-    await flush()
-    await advance(PRIZE_DOOR_MS)
-    waits.shift()?.()
-    await flush()
-    await advance(PRIZE_TAKE_MS)
-    await advance(PRIZE_DOOR_MS)
-    await second
-
-    expect(log.filter((item) => item.startsWith('taken:'))).toEqual(['taken:1', 'taken:2'])
-
-    controller.destroy({ children: true })
+    output.destroy({ children: true })
+    output.destroy({ children: true })
+    await result
+    ticker.destroy()
   })
 })

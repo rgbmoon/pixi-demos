@@ -1,5 +1,4 @@
 import type { Container } from 'inversify'
-import { TextureSource } from 'pixi.js'
 
 import type { GameModule } from '@pixi-demos/core/types'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
@@ -7,10 +6,8 @@ import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 import { bindToybox } from './bindings'
 import { TOYBOX_TOKENS } from './tokens'
 
-/** Ассетов пока нет; для будущих пиксельных текстур заранее фиксируется ближайший сосед. */
-const preload = async (): Promise<void> => {
-  TextureSource.defaultOptions.scaleMode = 'nearest'
-}
+/** У игры пока нет растровых ассетов для загрузки. */
+const preload = async (): Promise<void> => {}
 
 /**
  * Поднимает игру внутри элемента: граф собран, остаётся показать канвас и дождаться готовности —

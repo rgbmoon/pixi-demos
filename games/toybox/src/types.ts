@@ -6,6 +6,7 @@ export const PhaseName = {
   ascending: 'ascending',
   delivering: 'delivering',
   releasing: 'releasing',
+  presenting: 'presenting',
   returning: 'returning',
 } as const
 
@@ -64,16 +65,17 @@ export type VolumeCell = CellAddress & {
   layer: number
 }
 
-/** Потеря игрушки по дороге: над какой ячейкой клешня разжимается и кому отдаёт игрушку. */
+/** Действие на заданной доле перемещения после обновления точки захвата. */
 export type ClawDrop = {
-  cell: CellAddress
-  onDrop: (id: ToyId) => void
+  share: number
+  onDrop: (grip: WorldPoint) => void
 }
 
-/** Потеря игрушки на подъёме: на какой доле хода клешня разжимается и кому отдаёт игрушку. */
-export type ClawSlip = {
-  share: number
-  onDrop: (id: ToyId) => void
+/** Ячейка маршрута и интервал её пересечения, в долях пути. */
+export type PathCell = {
+  cell: CellAddress
+  enter: number
+  exit: number
 }
 
 /**
@@ -90,13 +92,18 @@ export type ToyAppearance = {
   readonly color: number
 }
 
-/** Элемент последовательной очереди визуальной выдачи. */
-export type PrizePresentationRequest = {
+/** Единственный приз текущего цикла. */
+export type Prize = {
   readonly appearance: ToyAppearance
   readonly collected: number
-  readonly resolve: () => void
-  readonly reject: (reason: unknown) => void
 }
+
+/** Результат отпускания текущего цикла; сохраняется до его завершения. */
+export type ReleaseOutcome =
+  | { status: 'none' }
+  | { status: 'pending'; id: ToyId }
+  | { status: 'returned' }
+  | { status: 'collected'; appearance: ToyAppearance }
 
 /** Клетка формы относительно её якоря, в базовой ориентации. */
 export type ShapeCell = {
@@ -153,13 +160,11 @@ export type ToyBody = {
   readonly id: ToyId
   readonly shape: ShapeKey
   readonly color: number
-  /** Место в куче: якорная клетка формы и слой её основания. */
-  anchor: CellAddress
-  layer: number
-  facing: Facing
+  /** Зарезервированное размещение в решётке; у удерживаемой игрушки — прежнее место. */
+  placement: Placement
+  /** Текущая отображаемая поза в мировых координатах. */
+  pose: { point: WorldPoint; facing: Facing }
   state: ToyState
-  /** Текущее положение игрушки в координатах мира. */
-  point: WorldPoint
   /** Точка, с которой начался текущий ход: от неё и ведётся интерполяция. */
   from: WorldPoint
   /** Цель текущего движения. */
@@ -169,10 +174,6 @@ export type ToyBody = {
   durationMs: number
   /** Просадка под клешнёй и отскок после посадки, поверх точки. */
   bounce: SpringState
-  /** Доля доворота на 90°: растёт вместе с ходом, единица означает, что доворота нет. */
-  turn: number
-  /** Ключ наложения: считается по ближней к игроку занятой клетке. */
-  depth: number
 }
 
 /** Снимок кучи для хранилища: только решётка, без непрерывного состояния. */
@@ -201,12 +202,21 @@ export type SpringOptions = {
   damping: number
 }
 
-export type WorldTweenOptions = {
+/** Настройки движения и синхронизации анимации захвата. */
+export type ClawMotionOptions = {
+  readonly settleSwing?: boolean
+  drop?: ClawDrop
+  readonly onProgress?: (progress: number, grip: WorldPoint) => void
+}
+
+/** Одно отменяемое движение клешни, выполняемое её кадровым шагом. */
+export type ClawMotion = ClawMotionOptions & {
   readonly from: WorldPoint
   readonly to: WorldPoint
   readonly durationMs: number
-  readonly ease: (progress: number) => number
-  readonly apply: (point: WorldPoint) => void
+  elapsed: number
+  readonly complete: () => void
+  readonly cancel: (reason: unknown) => void
 }
 
 export type ProgressTweenOptions = {
@@ -220,6 +230,6 @@ export type ButtonOptions = {
 }
 
 export type JoystickOptions = {
-  /** Отклонение ручки в экранных осях, длина от 0 до 1; нули означают отпущенный джойстик. */
+  /** Экранное направление с длиной 0–1 для проверки мёртвой зоны; целевая скорость от длины не зависит. */
   onMove: (vector: ScreenPoint) => void
 }

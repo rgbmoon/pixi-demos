@@ -22,7 +22,6 @@ import { PALETTE } from '@pixi-demos/core/palette'
 
 /** Кнопка сброса, установленная на передней вертикальной грани тумбы. */
 export class ResetButton extends Container {
-  readonly sizeUnits = RESET_BUTTON_SIZE_UNITS
 
   constructor(options: ButtonOptions) {
     super()

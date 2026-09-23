@@ -10,9 +10,7 @@ import {
   HOLE_FILL_MAX_CHANCE,
   MAX_LAYERS,
   PIXEL_SCALE,
-  SLIDE_MIN_DROP,
   SHAPES,
-  SLIDE_MAX_CHANCE,
   TOY_RADIUS,
   TOY_ROOT_COLOR,
   TRAY_CENTER,
@@ -21,29 +19,12 @@ import {
   TRAY_WALL_LAYERS,
 } from '#src/constants'
 import type { CellAddress, Facing, Hole, ScreenPoint, ShapeKey, VolumeCell } from '#src/types'
+import { getShapeOutline, getShapeDepthOffset  } from '#src/ui/box/utils'
 import { shiftColor } from '#src/utils/color'
-import {
-  canPlace,
-  findLanding,
-  findHoles,
-  getBodyCenter,
-  getBodyDepth,
-  getGrabChance,
-  getHoleFillChance,
-  getImpact,
-  getPlacementCells,
-  getShapeCells,
-  getShapeCenter,
-  getShapeOutline,
-  getSlideChance,
-  getWeight,
-  isBoxCell,
-  isHeapSnapshot,
-  isSupported,
-  planDomeProfile,
-  rotateFacing,
-} from '#src/utils/heap'
-import { getCellCenter, getDepthOrder, getNeighbours, getPathCells, getPathShare, getTrayWallOutlines, isTrayCell, pickFumbleCell, toCell, worldToScreen } from '#src/utils/projection'
+import { canPlace, findLanding, findHoles, getGrabChance, getHoleFillChance, getImpact, isBoxCell, isSupported, planDomeProfile } from '#src/utils/heap'
+import { getCellCenter, getDepthOrder, getNeighbours, getPathCells, getTrayWallOutlines, isTrayCell, pickFumbleCell, toCell, worldToScreen } from '#src/utils/projection'
+import { getBodyCenter, getPlacementCells, getShapeCells, getShapeCenter, getWeight, rotateFacing } from '#src/utils/shapes'
+import { isHeapSnapshot } from '#src/utils/snapshot'
 import { createRandom } from '@pixi-demos/core/random'
 
 /** Сколько падений разыгрывать там, где проверяется доля исходов, а не одно конкретное. */
@@ -254,34 +235,6 @@ describe('getPathCells', () => {
   })
 })
 
-describe('getPathShare', () => {
-  it('отдаёт долю пути до точки на нём', () => {
-    expect(getPathShare({ x: 0, y: 0 }, { x: 4, y: 0 }, { x: 1, y: 0 })).toBeCloseTo(0.25)
-    expect(getPathShare({ x: 4, y: 4 }, { x: 1, y: 7 }, { x: 2.5, y: 5.5 })).toBeCloseTo(0.5)
-  })
-
-  it('сносит точку в стороне от пути на ближайшее к ней место', () => {
-    // Центр ячейки редко лежит ровно на пути: берётся доля, где путь к нему ближе всего
-    expect(getPathShare({ x: 0, y: 0 }, { x: 4, y: 0 }, { x: 2, y: 3 })).toBeCloseTo(0.5)
-  })
-
-  it('держится в пределах пути и не делит на ноль', () => {
-    expect(getPathShare({ x: 0, y: 0 }, { x: 4, y: 0 }, { x: -9, y: 0 })).toBe(0)
-    expect(getPathShare({ x: 0, y: 0 }, { x: 4, y: 0 }, { x: 9, y: 0 })).toBe(1)
-    expect(getPathShare({ x: 2, y: 2 }, { x: 2, y: 2 }, { x: 5, y: 5 })).toBe(0)
-  })
-
-  it('растёт вдоль пути вместе с ячейками, которые тот проходит', () => {
-    const from = { x: 4, y: 4 }
-    const shares = getPathCells(from, TRAY_CENTER).map((cell) =>
-      getPathShare(from, TRAY_CENTER, getCellCenter(cell))
-    )
-
-    for (let index = 1; index < shares.length; index++) {
-      expect(shares[index]).toBeGreaterThan(shares[index - 1])
-    }
-  })
-})
 
 describe('pickFumbleCell', () => {
   const FROM = { x: 4, y: 4 }
@@ -291,11 +244,11 @@ describe('pickFumbleCell', () => {
     const path = getPathCells(FROM, TRAY_CENTER)
 
     for (let run = 0; run < ROLLS; run++) {
-      const cell = pickFumbleCell(FROM, TRAY_CENTER, random)
+      const cell = pickFumbleCell(FROM, TRAY_CENTER, random)?.cell
 
       expect(cell).toBeDefined()
       expect(path).toContainEqual(cell)
-      expect(cell).not.toEqual(path[0])
+      expect(cell).not.toEqual(toCell(FROM))
       expect(isTrayCell(cell as CellAddress)).toBe(false)
     }
   })
@@ -304,14 +257,13 @@ describe('pickFumbleCell', () => {
     const random = createRandom(3)
     const picked = new Set(
       Array.from({ length: ROLLS }, () => {
-        const { col, row } = pickFumbleCell(FROM, TRAY_CENTER, random) as CellAddress
+        const { col, row } = pickFumbleCell(FROM, TRAY_CENTER, random)?.cell as CellAddress
 
         return `${col}:${row}`
       })
     )
     const expected = getPathCells(FROM, TRAY_CENTER)
-      .slice(1)
-      .filter((cell) => !isTrayCell(cell))
+      .filter((cell) => (cell.col !== toCell(FROM).col || cell.row !== toCell(FROM).row) && !isTrayCell(cell))
 
     expect(picked.size).toBe(expected.length)
   })
@@ -665,14 +617,14 @@ describe('getBodyCenter', () => {
 describe('getBodyDepth', () => {
   it('берёт ключ ближней к игроку клетки', () => {
     const anchor = { col: 2, row: 3 }
-    const depth = getBodyDepth('bar2', 0, anchor, 0)
+    const depth = (getDepthOrder(getBodyCenter('bar2', 0, anchor, 0)) + getShapeDepthOffset('bar2', 0))
 
     expect(depth).toBe(getDepthOrder({ ...getCellCenter(anchor), z: 0.5 }))
   })
 
   it('ставит крупную игрушку перед той, что лежит за её ближним краем', () => {
-    const bar = getBodyDepth('bar2', 0, { col: 2, row: 3 }, 0)
-    const behind = getBodyDepth('single', 0, { col: 3, row: 3 }, 0)
+    const bar = (getDepthOrder(getBodyCenter('bar2', 0, { col: 2, row: 3 }, 0)) + getShapeDepthOffset('bar2', 0))
+    const behind = (getDepthOrder(getBodyCenter('single', 0, { col: 3, row: 3 }, 0)) + getShapeDepthOffset('single', 0))
 
     expect(bar).toBeGreaterThan(behind)
   })
@@ -696,21 +648,6 @@ describe('getGrabChance', () => {
   })
 })
 
-describe('getSlideChance', () => {
-  it('не трогает перепад в пределах порога', () => {
-    expect(getSlideChance(1, SLIDE_MIN_DROP)).toBe(0)
-    expect(getSlideChance(1, 0)).toBe(0)
-  })
-
-  it('растёт с перепадом и падает с весом', () => {
-    expect(getSlideChance(1, SLIDE_MIN_DROP + 2)).toBeGreaterThan(getSlideChance(1, SLIDE_MIN_DROP + 1))
-    expect(getSlideChance(1, SLIDE_MIN_DROP + 1)).toBeGreaterThan(getSlideChance(8, SLIDE_MIN_DROP + 1))
-  })
-
-  it('не выходит за потолок вероятности', () => {
-    expect(getSlideChance(1, MAX_LAYERS * 4)).toBeLessThanOrEqual(SLIDE_MAX_CHANCE)
-  })
-})
 
 describe('getImpact', () => {
   it('бьёт тем сильнее, чем тяжелее игрушка и чем ближе сосед', () => {

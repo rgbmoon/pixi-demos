@@ -25,8 +25,6 @@ import type { ScreenBounds, ScreenPoint, WorldPlane, WorldPoint } from '#src/typ
 
 import { worldToScreen } from './projection'
 
-// TODO у нас уже есть правила projection. Я не уверен что весь этот код не лишний для формирования геометрии машины
-
 /** Плоскость наклонной панели управления. */
 export const CONTROL_PANEL_PLANE: WorldPlane = {
   horizontal: CONTROL_PANEL_HORIZONTAL,
@@ -173,16 +171,6 @@ export const getMarqueeOutlines = (): WorldPoint[][] => [
     { x: GRID_SIZE, y: GRID_SIZE, z: MARQUEE_TOP_Z },
     { x: 0, y: GRID_SIZE, z: MARQUEE_TOP_Z },
   ],
-]
-
-/** Силуэт стеклянного объёма, которым ограничивается падающая в шахту игрушка. */
-export const getGlassMaskOutline = (): WorldPoint[] => [
-  { x: 0, y: 0, z: 0 },
-  { x: GRID_SIZE, y: 0, z: 0 },
-  { x: GRID_SIZE, y: 0, z: CUBE_HEIGHT },
-  { x: GRID_SIZE, y: GRID_SIZE, z: CUBE_HEIGHT },
-  { x: 0, y: GRID_SIZE, z: CUBE_HEIGHT },
-  { x: 0, y: GRID_SIZE, z: 0 },
 ]
 
 /** Контур окна выдачи относительно его центра на передней грани. */

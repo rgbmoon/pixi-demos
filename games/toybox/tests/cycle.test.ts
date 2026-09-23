@@ -4,17 +4,15 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   FIELD_CENTER,
   FUMBLE_CHANCE,
-  GRAB_HOLD_MS,
   LIFT_FUMBLE_CHANCE,
   PHASE_PAUSE_MS,
   TRAY_CENTER,
-  TRAY_EXIT_Z,
+  PRIZE_PAUSE_MS,
+  PRIZE_OPEN_HOLD_MS,
   TRAY_HOLD_MS,
   TRAY_RELEASE_MS,
 } from '#src/constants'
 import { PhaseName } from '#src/types'
-import { getWeight } from '#src/utils/heap'
-import { getMotionMs } from '#src/utils/motion'
 import { isTrayCell } from '#src/utils/projection'
 
 import { countToys, type Cycle, emptyHeap, getGrabRolls, getHomeCell, startCycle } from './setup/cycle'
@@ -37,7 +35,7 @@ const RETURN = [`moveTo:${FIELD_CENTER.x},${FIELD_CENTER.y}`]
 const approach = (cycle: Cycle): string[] => [
   `descend:${cycle.heap.getSurfaceHeight(getHomeCell())}`,
   PAUSE,
-  `wait:${GRAB_HOLD_MS}`,
+  'grab',
 ]
 
 const runCycle = async (cycle: Cycle): Promise<void> => {
@@ -70,9 +68,6 @@ describe('цикл клешни', () => {
     const steps = approach(cycle)
     const before = countToys(cycle)
     const expected = cycle.heap.getTopBody(getHomeCell())
-    const fallMs = expected
-      ? getMotionMs(getWeight(expected.shape), expected.point, { ...expected.point, z: TRAY_EXIT_Z })
-      : 0
 
     cycle.world.rolls = [getGrabRolls(cycle).hit, SLIP_MISS, FUMBLE_MISS]
 
@@ -80,14 +75,16 @@ describe('цикл клешни', () => {
 
     expect(cycle.log).toEqual([
       ...steps,
-      'hold',
       PAUSE,
       'ascend',
       PAUSE,
       `carryTo:${TRAY_CENTER.x},${TRAY_CENTER.y}`,
       `wait:${TRAY_RELEASE_MS}`,
-      'release',
-      `wait:${fallMs}`,
+      `wait:${PRIZE_PAUSE_MS}`,
+      'prize:open',
+      `wait:${PRIZE_OPEN_HOLD_MS}`,
+      'prize:take',
+      'prize:close',
       ...RETURN,
     ])
     expect(cycle.store.collected).toBe(1)
@@ -136,7 +133,7 @@ describe('цикл клешни', () => {
     expect(cycle.log).toEqual([
       'descend:0',
       PAUSE,
-      `wait:${GRAB_HOLD_MS}`,
+      'grab',
       PAUSE,
       'ascend',
       PAUSE,
@@ -160,7 +157,6 @@ describe('цикл клешни', () => {
     // Игрушка выскальзывает прямо на ходу вверх и возвращается в кучу
     expect(cycle.log).toEqual([
       ...steps,
-      'hold',
       PAUSE,
       'ascend slip',
       PAUSE,
@@ -186,7 +182,6 @@ describe('цикл клешни', () => {
     // Ход к лотку один: клешня разжимается прямо в нём
     expect(cycle.log).toEqual([
       ...steps,
-      'hold',
       PAUSE,
       'ascend',
       PAUSE,
@@ -256,7 +251,7 @@ describe('цикл клешни', () => {
     // Второй цикл принят; засчитано ровно столько, сколько клешня донесла — взять она может не всегда,
     // потому что первая игрушка могла оказаться в ячейке единственной
     expect(cycle.log.filter((entry) => entry.startsWith('descend'))).toHaveLength(2)
-    expect(cycle.store.collected).toBe(cycle.log.filter((entry) => entry === 'hold').length)
+    expect(cycle.store.collected).toBe(cycle.prizes.length)
   })
 
   it('не оставляет подписок после остановки автомата', async () => {

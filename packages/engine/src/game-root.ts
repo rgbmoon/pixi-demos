@@ -150,7 +150,6 @@ export class GameRoot {
     void this.fsm.start()
   }
 
-  // TODO проверить что эта правка не аффектит вторую игру и что она вообще необходима и не может быть написана на уровне самой игры, если она требуется только одной игре
   /** Меняет только CSS-размер: логическая система координат фиксированного макета остаётся неизменной. */
   private setCanvasDisplaySize(width: number, height: number, app = this.app): void {
     if (!app || !this.canvasConfig.designSize || width <= 0 || height <= 0) {

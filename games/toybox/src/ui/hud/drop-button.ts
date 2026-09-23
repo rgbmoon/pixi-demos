@@ -18,7 +18,6 @@ import { PALETTE } from '@pixi-demos/core/palette'
 
 /** Кнопка опускания клешни, спроецированная в плоскость панели управления. */
 export class DropButton extends Container {
-  readonly sizeUnits = BUTTON_SIZE_UNITS
 
   constructor(options: ButtonOptions) {
     super()

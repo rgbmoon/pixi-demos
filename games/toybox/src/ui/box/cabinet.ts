@@ -12,7 +12,7 @@ export class Cabinet extends Container {
     const outline = new Graphics()
 
     for (const face of getCabinetOutlines()) {
-      outline.poly(projectWorldOutline(face)).stroke({ color: PALETTE.primary, width: LINE_THICKNESS })
+      outline.poly(projectWorldOutline(face)).fill(PALETTE.background).stroke({ color: PALETTE.primary, width: LINE_THICKNESS })
     }
 
     this.addChild(outline)

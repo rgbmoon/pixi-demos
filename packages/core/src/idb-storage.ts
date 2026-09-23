@@ -1,8 +1,6 @@
+import { IDB_SCHEMA_VERSION } from './constants'
 import { traceError } from './errors/utils'
 import type { IdbStorageOptions } from './types'
-
-/** Версия схемы базы: растёт, когда меняется состав её сторов. */
-const DB_VERSION = 1
 
 /**
  * Хранилище одного значения в IndexedDB. Адрес приходит опциями, схему значения знает вызывающий:
@@ -35,14 +33,21 @@ export class IdbStorage<T> {
     }
   }
 
-  /** Пишет значение поверх прежнего. */
+  /** Пишет значение поверх прежнего и ждёт завершения транзакции. */
   async write(value: T): Promise<void> {
     const database = await this.open()
 
     if (!database) return
 
     try {
-      await this.toPromise(this.getStore(database, 'readwrite').put(value, this.options.key))
+      const transaction = database.transaction(this.options.storeName, 'readwrite')
+
+      await new Promise<void>((resolve, reject) => {
+        transaction.oncomplete = () => resolve()
+        transaction.onabort = () => reject(transaction.error ?? new Error('IndexedDB transaction aborted'))
+        transaction.onerror = () => reject(transaction.error ?? new Error('IndexedDB transaction failed'))
+        transaction.objectStore(this.options.storeName).put(value, this.options.key)
+      })
     } catch (error) {
       traceError?.(error, `Failed to write "${this.options.key}" to IndexedDB`)
     }
@@ -64,7 +69,7 @@ export class IdbStorage<T> {
     if (!indexedDB) return undefined
 
     try {
-      const request = indexedDB.open(this.options.dbName, DB_VERSION)
+      const request = indexedDB.open(this.options.dbName, IDB_SCHEMA_VERSION)
 
       request.onupgradeneeded = () => {
         if (!request.result.objectStoreNames.contains(this.options.storeName)) {

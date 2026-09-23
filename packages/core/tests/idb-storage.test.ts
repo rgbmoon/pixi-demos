@@ -37,3 +37,31 @@ describe('IdbStorage', () => {
     expect(open).toHaveBeenCalledTimes(1)
   })
 })
+
+it.each(['complete', 'abort'] as const)('завершает запись по событию транзакции %s', async (event) => {
+  const request = { onsuccess: undefined as (() => void) | undefined, result: undefined as unknown }
+  const put = vi.fn()
+  const transaction = {
+    objectStore: () => ({ put }),
+    oncomplete: undefined as (() => void) | undefined,
+    onabort: undefined as (() => void) | undefined,
+    error: new DOMException('Transaction aborted', 'AbortError'),
+  }
+  request.result = { transaction: () => transaction }
+  vi.stubGlobal('indexedDB', { open: () => request })
+  const storage = new IdbStorage<number>(OPTIONS)
+  let finished = false
+  const write = async () => { await storage.write(1); finished = true }
+  const pending = write()
+  request.onsuccess?.()
+  await Promise.resolve()
+  await Promise.resolve()
+  await Promise.resolve()
+
+  expect(put).toHaveBeenCalledWith(1, OPTIONS.key)
+  expect(finished).toBe(false)
+  if (event === 'complete') transaction.oncomplete?.()
+  else transaction.onabort?.()
+  await pending
+  expect(finished).toBe(true)
+})

@@ -1,11 +1,6 @@
-import { Container, Graphics, Matrix } from 'pixi.js'
+import { Container, Graphics } from 'pixi.js'
 
-import {
-  CELL_SIZE,
-  LINE_THICKNESS,
-  PRIZE_DOOR_INSET,
-  PRIZE_HATCH_SIZE,
-} from '#src/constants'
+import { LINE_THICKNESS, PRIZE_DOOR_INSET, PRIZE_HATCH_SIZE } from '#src/constants'
 import type { ToyAppearance } from '#src/types'
 import {
   CABINET_FRONT_PLANE,
@@ -22,7 +17,6 @@ import { ToyShapes } from './toy-shapes'
 export class PrizeOutput extends Container {
   private readonly shapes = new ToyShapes()
   private readonly prize = new Toy(this.shapes, 'single', 0, 0xffffff)
-  private readonly prizePlane = new Container()
   private readonly prizeMask = new Graphics()
   private readonly door = new Graphics()
 
@@ -33,22 +27,10 @@ export class PrizeOutput extends Container {
     const doorSize = PRIZE_HATCH_SIZE - PRIZE_DOOR_INSET * 2
     const mask = new Graphics().poly(hatch).fill(PALETTE.white)
     const border = new Graphics().poly(hatch).stroke({ color: PALETTE.primary, width: LINE_THICKNESS })
-    const horizontal = projectPlaneOffset(CABINET_FRONT_PLANE, CELL_SIZE, 0)
-    const vertical = projectPlaneOffset(CABINET_FRONT_PLANE, 0, CELL_SIZE)
-
-    this.prizePlane.setFromMatrix(
-      new Matrix(
-        horizontal.x / CELL_SIZE,
-        horizontal.y / CELL_SIZE,
-        vertical.x / CELL_SIZE,
-        vertical.y / CELL_SIZE
-      )
-    )
     mask.includeInBuild = false
     mask.measurable = false
     this.prizeMask.includeInBuild = false
     this.prizeMask.measurable = false
-    this.prizePlane.addChild(this.prize, this.prizeMask)
 
     this.door
       .poly(getProjectedPlaneRectangle(CABINET_FRONT_PLANE, doorSize, doorSize))
@@ -57,7 +39,7 @@ export class PrizeOutput extends Container {
     this.prize.mask = this.prizeMask
     this.door.mask = mask
 
-    this.addChild(mask, this.prizePlane, this.door, border)
+    this.addChild(mask, this.prize, this.prizeMask, this.door, border)
   }
 
   /** Создаёт вид выигранной игрушки до открытия и полностью прячет его маской закрытой дверцы. */
@@ -72,11 +54,17 @@ export class PrizeOutput extends Container {
   setDoorProgress(progress: number): void {
     const offset = projectPlaneOffset(CABINET_FRONT_PLANE, 0, -PRIZE_HATCH_SIZE * progress)
     const visibleHeight = PRIZE_HATCH_SIZE * progress
+    const shift = projectPlaneOffset(CABINET_FRONT_PLANE, 0, (PRIZE_HATCH_SIZE - visibleHeight) / 2)
 
     this.door.position.set(offset.x, offset.y)
     this.prizeMask
       .clear()
-      .rect(-PRIZE_HATCH_SIZE / 2, PRIZE_HATCH_SIZE / 2 - visibleHeight, PRIZE_HATCH_SIZE, visibleHeight)
+      .poly(
+        getProjectedPlaneRectangle(CABINET_FRONT_PLANE, PRIZE_HATCH_SIZE, visibleHeight).map((point) => ({
+          x: point.x + shift.x,
+          y: point.y + shift.y,
+        }))
+      )
       .fill(PALETTE.white)
   }
 
@@ -92,6 +80,8 @@ export class PrizeOutput extends Container {
   }
 
   override destroy(options?: Parameters<Container['destroy']>[0]): void {
+    if (this.destroyed) return
+
     this.shapes.destroy()
     super.destroy(options)
   }

@@ -2,8 +2,9 @@ import { GraphicsContext } from 'pixi.js'
 
 import { TOY_FILL_ALPHA, TOY_HIGHLIGHT_THICKNESS, TOY_THICKNESS } from '#src/constants'
 import type { Facing, ShapeKey } from '#src/types'
-import { getShapeOutline } from '#src/utils/heap'
 import { PALETTE } from '@pixi-demos/core/palette'
+
+import { getShapeOutline } from './utils'
 
 /**
  * Общая геометрия игрушек: по контексту на форму, её ориентацию и состояние подсветки.

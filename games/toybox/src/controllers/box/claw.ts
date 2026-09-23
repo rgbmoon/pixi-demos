@@ -2,9 +2,11 @@ import { inject, injectable } from 'inversify'
 import type { DestroyOptions, Ticker } from 'pixi.js'
 
 import {
-  CARRY_OFFSET,
+  CLAW_PRIORITY,
+  MIN_TRAVEL_MS,
   CART_SIZE,
   CLAW_DROP_MS,
+  CLAW_GRAB_MS,
   CLAW_LIFT_MS,
   CLAW_MAX_SPEED,
   CLAW_RAMP_SHARE,
@@ -19,44 +21,21 @@ import {
 } from '#src/constants'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
-import type {
-  CellAddress,
-  ClawDrop,
-  ClawSlip,
-  GroundPoint,
-  ScreenPoint,
-  SpringState,
-  ToyId,
-  WorldPoint,
-} from '#src/types'
+import type { CellAddress, ClawDrop, ClawMotion, ClawMotionOptions, GroundPoint, SpringState, WorldPoint } from '#src/types'
 import { Cart } from '#src/ui/box/cart'
 import { Claw } from '#src/ui/box/claw'
 import { Rope } from '#src/ui/box/rope'
-import { advanceSpring, advanceVelocity, isReducedMotion, tweenWorld } from '#src/utils/motion'
-import {
-  clampToField,
-  getCellCenter,
-  getDepthOrder,
-  getPathShare,
-  toCell,
-  toGroundDirection,
-} from '#src/utils/projection'
+import { isReducedMotion } from '#src/utils/animation'
+import { lerp } from '#src/utils/math'
+import { advanceSpring, advanceVelocity } from '#src/utils/motion'
+import { clampToField, getDepthOrder, toCell } from '#src/utils/projection'
 import { easeTrapezoid, easeTrapezoidInverse } from '@pixi-demos/core/easing'
 import { createAbortError } from '@pixi-demos/core/errors/utils'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 import { LiveContainer } from '@pixi-demos/engine/live-container'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 
-/** Минимальная длительность перемещения: нужна чтобы не допустить деление на ноль при расчете */
-const MIN_TRAVEL_MS = 1
-
-/** Пружина в покое: клешня висит под кареткой. */
-const REST: SpringState = { value: 0, velocity: 0 }
-
-/**
- * Каретка с клешнёй: держит своё положение в кубе и ведёт его на игровом тикере. Точка контроллера —
- * каретка, от неё считаются ход и ячейка под клешнёй; сама клешня висит под ней на тросе и качается.
- */
+/** Обновляет кинематику каретки и клешни перед шагом модели кучи на игровом тикере. */
 @injectable()
 export class ClawController extends LiveContainer {
   private readonly ticker: GameTicker
@@ -64,15 +43,14 @@ export class ClawController extends LiveContainer {
   private readonly cart = new Cart()
   private readonly rope = new Rope()
   private readonly claw = new Claw()
-  private point: WorldPoint = { ...FIELD_CENTER, z: CLAW_REST_HEIGHT }
+  private cartPosition: GroundPoint = FIELD_CENTER
+  private clawHeight = CLAW_REST_HEIGHT
   private velocity: GroundPoint = { x: 0, y: 0 }
-  private direction: GroundPoint = { x: 0, y: 0 }
   /** Отклонение клешни от каретки по осям поля: маятник на тросе, по пружине на ось. */
-  private swing: { x: SpringState; y: SpringState } = { x: REST, y: REST }
-  /** Положение каретки в прошлом кадре: по нему считается её скорость, а по скорости — отклонение. */
-  private previous: GroundPoint = { ...FIELD_CENTER }
-  private motion?: AbortController
-  private carried?: ToyId
+  private swing: { x: SpringState; y: SpringState } = { x: { value: 0, velocity: 0 }, y: { value: 0, velocity: 0 } }
+  /** Предыдущее положение каретки для расчёта скорости, вызывающей качание клешни. */
+  private previous: GroundPoint = FIELD_CENTER
+  private motion?: ClawMotion
 
   constructor(
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
@@ -84,190 +62,150 @@ export class ClawController extends LiveContainer {
     this.toyboxStore = toyboxStore
 
     this.addChild(this.rope, this.cart, this.claw)
-    this.apply(this.point)
+    this.render()
+    this.publishCell()
 
-    this.ticker.add(this.step)
+    this.ticker.add(this.step, undefined, CLAW_PRIORITY)
   }
 
   override destroy(options?: DestroyOptions): void {
+    if (this.destroyed) return
+
     this.ticker.remove(this.step)
-    this.motion?.abort(createAbortError('Claw destroyed'))
+    this.motion?.cancel(createAbortError('Claw destroyed'))
 
     super.destroy(options)
   }
 
-  /** Точка поля под клешнёй. */
-  getPosition(): GroundPoint {
-    return { x: this.point.x, y: this.point.y }
-  }
-
-  /** Ячейка поля под клешнёй. */
+  /** Ячейка поля под кареткой. */
   getCell(): CellAddress {
-    return toCell(this.point)
+    return toCell(this.cartPosition)
   }
 
-  /** Несёт ли клешня игрушку. */
-  isHolding(): boolean {
-    return this.carried !== undefined
+  /** Мировая точка каретки на потолке; качание клешни её не изменяет. */
+  getCartPoint(): WorldPoint {
+    return { ...this.cartPosition, z: CUBE_HEIGHT }
   }
 
-  /**
-   * Точка, в которой висит игрушка в клешне.
-   */
-  getCarryPoint(): WorldPoint | undefined {
-    if (this.carried === undefined) return undefined
-
+  /** Актуальная мировая точка захвата, включая отклонение троса. */
+  getGripPoint(): WorldPoint {
     return {
-      x: this.point.x + this.swing.x.value,
-      y: this.point.y + this.swing.y.value,
-      z: this.point.z - CARRY_OFFSET,
+      x: this.cartPosition.x + this.swing.x.value,
+      y: this.cartPosition.y + this.swing.y.value,
+      z: this.clawHeight,
     }
   }
 
-  /** Берёт игрушку в клешню: дальше её точку задаёт клешня. */
-  hold(id: ToyId): void {
-    this.carried = id
-  }
-
-  /** Разжимает клешню и отдаёт игрушку владельцу; с пустой клешни ничего не снимается. */
-  release(): ToyId | undefined {
-    const id = this.carried
-
-    this.carried = undefined
-
-    return id
-  }
-
-  /** Принимает отклонение джойстика в экранных осях: его длина задаёт долю предельной скорости. */
-  setDirection(vector: ScreenPoint): void {
-    this.direction = toGroundDirection(vector)
-  }
-
-  /** Ведёт клешню к точке поля, сохраняя высоту. */
+  /** Ведёт каретку к точке поля, сохраняя высоту клешни. */
   async moveTo(target: GroundPoint, signal?: AbortSignal): Promise<void> {
-    await this.tween({ ...target, z: this.point.z }, this.getTravelMs(target), signal)
+    await this.tween({ ...target, z: this.clawHeight }, this.getTravelMs(target), signal)
   }
 
-  /**
-   * Ведёт клешню к точке поля одним ходом. Если задан `drop`, над его ячейкой клешня разжимается
-   * и сразу отдаёт игрушку в `onDrop`, не прерывая ход.
-   */
+  /** Доставляет каретку к цели и ждёт затухания клешни перед отпусканием игрушки. */
   async carryTo(target: GroundPoint, drop: ClawDrop | undefined, signal?: AbortSignal): Promise<void> {
-    if (!drop) {
-      await this.moveTo(target, signal)
+    await this.tween({ ...target, z: this.clawHeight }, this.getTravelMs(target), signal, { drop, settleSwing: true })
+  }
 
-      return
-    }
-
-    const delayMs = this.getDropDelay(target, drop.cell)
-
-    await Promise.all([this.moveTo(target, signal), this.dropOnTheWay(drop.onDrop, delayMs, signal)])
+  /** Проигрывает захват на месте; сообщает прогресс 0–1 и точку захвата перед обновлением кучи. */
+  async grab(onProgress: (progress: number, grip: WorldPoint) => void, signal: AbortSignal): Promise<void> {
+    await this.tween({ ...this.cartPosition, z: this.clawHeight }, CLAW_GRAB_MS, signal, { onProgress })
   }
 
   /** Опускает клешню до высоты `toZ` */
   async descend(toZ: number, signal?: AbortSignal): Promise<void> {
-    await this.tween({ ...this.point, z: toZ }, this.getLiftDuration(toZ, CLAW_DROP_MS), signal)
+    await this.tween({ ...this.cartPosition, z: toZ }, this.getLiftDuration(toZ, CLAW_DROP_MS), signal)
   }
 
-  /**
-   * Поднимает клешню к каретке, на длину троса в покое. Если задан `slip`, на доле подъёма `share`
-   * клешня разжимается и сразу отдаёт игрушку в `onDrop`, не прерывая ход.
-   */
-  async ascend(slip?: ClawSlip, signal?: AbortSignal): Promise<void> {
-    const to = { ...this.point, z: CLAW_REST_HEIGHT }
-    const durationMs = this.getLiftDuration(CLAW_REST_HEIGHT, CLAW_LIFT_MS)
-
-    if (!slip) {
-      await this.tween(to, durationMs, signal)
-
-      return
-    }
-
-    const delayMs = durationMs * easeTrapezoidInverse(slip.share, CLAW_RAMP_SHARE)
-
-    await Promise.all([this.tween(to, durationMs, signal), this.dropOnTheWay(slip.onDrop, delayMs, signal)])
-  }
-
-  /** Разжимает клешню через `delayMs` после старта хода и сразу отдаёт игрушку владельцу. */
-  private async dropOnTheWay(onDrop: (id: ToyId) => void, delayMs: number, signal?: AbortSignal): Promise<void> {
-    await this.ticker.waitTicks(delayMs, signal)
-
-    const id = this.release()
-
-    if (id !== undefined) onDrop(id)
-  }
-
-  /** Время до ячейки `dropAt` от начала хода в `target`: привод разгоняется, и доля пути не равна доле времени. */
-  private getDropDelay(target: GroundPoint, dropAt: CellAddress): number {
-    const share = getPathShare(this.getPosition(), target, getCellCenter(dropAt))
-
-    return this.getTravelMs(target) * easeTrapezoidInverse(share, CLAW_RAMP_SHARE)
+  /** Поднимает клешню к каретке; заданное действие выполняется на доле пути `share`. */
+  async ascend(drop?: ClawDrop, signal?: AbortSignal): Promise<void> {
+    await this.tween(
+      { ...this.cartPosition, z: CLAW_REST_HEIGHT },
+      this.getLiftDuration(CLAW_REST_HEIGHT, CLAW_LIFT_MS),
+      signal,
+      { drop }
+    )
   }
 
   /** Сколько клешне идти до точки поля. */
   private getTravelMs(target: GroundPoint): number {
-    const distance = Math.hypot(target.x - this.point.x, target.y - this.point.y)
+    const distance = Math.hypot(target.x - this.cartPosition.x, target.y - this.cartPosition.y)
 
     return Math.max((distance / CLAW_TRAVEL_SPEED) * 1000, MIN_TRAVEL_MS)
   }
 
   /** Время хода по высоте: `fullMs` отмеряны на полную высоту куба. */
   private getLiftDuration(toZ: number, fullMs: number): number {
-    return Math.max((fullMs * Math.abs(toZ - this.point.z)) / CUBE_HEIGHT, MIN_TRAVEL_MS)
+    return Math.max((fullMs * Math.abs(toZ - this.clawHeight)) / CUBE_HEIGHT, MIN_TRAVEL_MS)
   }
 
   /** Кадровый шаг: ход каретки по джойстику и качание клешни, которое идёт при любом её движении. */
   private step = (ticker: Ticker): void => {
-    this.drive(ticker.deltaMS)
-    this.advanceSwing(ticker.deltaMS)
+    const previous = this.cartPosition
+    const { clawHeight } = this
+    const swingX = this.swing.x.value
+    const swingY = this.swing.y.value
+
+    if (this.motion) {
+      this.advanceMotion(isReducedMotion() ? this.motion.durationMs : ticker.deltaMS)
+    } else {
+      this.drive(ticker.deltaMS)
+      this.advanceSwing(ticker.deltaMS)
+    }
+    if (
+      previous.x !== this.cartPosition.x ||
+      previous.y !== this.cartPosition.y ||
+      clawHeight !== this.clawHeight ||
+      swingX !== this.swing.x.value ||
+      swingY !== this.swing.y.value
+    ) {
+      this.render()
+      this.publishCell()
+    }
   }
 
   /** Кадровый ход каретки по джойстику. Пока идёт движение фазы, ввод игрока не применяется. */
   private drive(deltaMs: number): void {
-    if (this.motion) return
-
-    const target = { x: this.direction.x * CLAW_MAX_SPEED, y: this.direction.y * CLAW_MAX_SPEED }
+    const { direction } = this.toyboxStore
+    const target = { x: direction.x * CLAW_MAX_SPEED, y: direction.y * CLAW_MAX_SPEED }
 
     this.velocity = advanceVelocity(this.velocity, target, deltaMs)
 
     if (this.velocity.x === 0 && this.velocity.y === 0) return
 
     const seconds = deltaMs / 1000
-    const next = { x: this.point.x + this.velocity.x * seconds, y: this.point.y + this.velocity.y * seconds }
+    const next = { x: this.cartPosition.x + this.velocity.x * seconds, y: this.cartPosition.y + this.velocity.y * seconds }
     const moved = clampToField(next, CART_SIZE / 2)
 
     // У стенки скорость гасится: иначе клешня копит её и отходит от стенки рывком
     if (moved.x !== next.x) this.velocity.x = 0
     if (moved.y !== next.y) this.velocity.y = 0
 
-    this.apply({ ...moved, z: this.point.z })
+    this.cartPosition = moved
   }
 
   /**
-   * Кадровый шаг маятника: пока каретка идёт ровно, клешня стоит отклонённой против хода, а на
-   * разгоне и остановке догоняет новую цель качанием. Скорость каретки берётся её смещением за кадр,
-   * поэтому маятник одинаково работает и на джойстике, и на ходах автомата.
+   * Обновляет отклонение клешни по скорости каретки. Пружина меняет только точку захвата.
    */
   private advanceSwing(deltaMs: number): void {
     if (deltaMs <= 0) return
 
     const seconds = deltaMs / 1000
     const velocity = {
-      x: (this.point.x - this.previous.x) / seconds,
-      y: (this.point.y - this.previous.y) / seconds,
+      x: (this.cartPosition.x - this.previous.x) / seconds,
+      y: (this.cartPosition.y - this.previous.y) / seconds,
     }
 
-    this.previous = { x: this.point.x, y: this.point.y }
+    this.previous = { ...this.cartPosition }
 
-    if (isReducedMotion()) return
+    if (isReducedMotion()) {
+      this.swing = { x: { value: 0, velocity: 0 }, y: { value: 0, velocity: 0 } }
+      return
+    }
 
     const x = this.advanceAxis(this.swing.x, velocity.x, deltaMs)
     const y = this.advanceAxis(this.swing.y, velocity.y, deltaMs)
-    const moved = x.value !== this.swing.x.value || y.value !== this.swing.y.value
 
     this.swing = { x, y }
-
-    if (moved) this.render()
   }
 
   /** Шаг одной оси маятника: цель тем дальше против хода, чем быстрее идёт каретка. */
@@ -278,23 +216,18 @@ export class ClawController extends LiveContainer {
     return advanceSpring(state, { target, periodMs: SWAY_PERIOD_MS, damping: SWAY_DAMPING }, deltaMs)
   }
 
-  private apply(point: WorldPoint): void {
-    this.point = point
-
-    this.render()
-    this.publishCell()
-  }
-
   /**
    * Переносит положение на экран: каретка стоит над своей точкой верхней грани, клешня висит под ней
    * с отклонением маятника, трос их соединяет. Наложение узла считается по видимой точке клешни,
    * а ячейка под клешнёй — по каретке, поэтому подсветка цели от качания не дрожит.
    */
   private render(): void {
-    const visible = { x: this.point.x + this.swing.x.value, y: this.point.y + this.swing.y.value, z: this.point.z }
-    const mount = { x: this.point.x, y: this.point.y, z: CUBE_HEIGHT }
+    const visible = this.getGripPoint()
+    const mount = this.getCartPoint()
 
-    this.zIndex = getDepthOrder(visible)
+    const depth = getDepthOrder(visible)
+
+    if (this.zIndex !== depth) this.zIndex = depth
 
     this.cart.setWorld(mount)
     this.rope.setSpan(mount, visible)
@@ -312,41 +245,100 @@ export class ClawController extends LiveContainer {
   }
 
   /**
-   * Ведёт положение клешни к точке за `durationMs` на игровом тикере: привод коротко разгоняется,
-   * идёт ровно и так же тормозит. Промис реджектится по отмене — внешнего `signal` или следующего
-   * движения, которое прерывает текущее.
+   * Ведёт каретку и высоту клешни к цели за `durationMs`; при `settleSwing` также ждёт затухания.
+   * Отмена и замена движения отклоняют промис и снимают обработчик сигнала.
    */
-  private async tween(to: WorldPoint, durationMs: number, signal?: AbortSignal): Promise<void> {
-    this.motion?.abort(createAbortError('Claw motion replaced'))
-
-    // Ход по джойстику обрывается: дальше клешню ведёт автомат
+  private tween(
+    to: WorldPoint,
+    durationMs: number,
+    signal?: AbortSignal,
+    options: ClawMotionOptions = {}
+  ): Promise<void> {
+    this.motion?.cancel(createAbortError('Claw motion replaced'))
     this.velocity = { x: 0, y: 0 }
-    this.direction = { x: 0, y: 0 }
 
-    const motion = new AbortController()
+    return new Promise<void>((resolve, reject) => {
+      if (signal?.aborted) {
+        reject(signal.reason as Error)
+        return
+      }
 
-    this.motion = motion
-
-    if (signal?.aborted) {
-      motion.abort(signal.reason)
-    } else {
-      signal?.addEventListener('abort', () => motion.abort(signal.reason), { once: true })
-    }
-
-    try {
-      await tweenWorld(
-        this.ticker,
-        {
-          from: this.point,
-          to,
-          durationMs,
-          ease: (progress) => easeTrapezoid(progress, CLAW_RAMP_SHARE),
-          apply: (point) => this.apply(point),
+      const abort = () => motion.cancel(signal?.reason)
+      const cleanup = () => {
+        signal?.removeEventListener('abort', abort)
+        if (this.motion === motion) this.motion = undefined
+      }
+      const motion: ClawMotion = {
+        ...options,
+        from: { ...this.cartPosition, z: this.clawHeight },
+        to,
+        durationMs,
+        elapsed: 0,
+        complete: () => {
+          cleanup()
+          resolve()
         },
-        motion.signal
-      )
-    } finally {
-      if (this.motion === motion) this.motion = undefined
+        cancel: (reason) => {
+          cleanup()
+          reject(reason)
+        },
+      }
+
+      this.previous = { x: motion.from.x, y: motion.from.y }
+      this.motion = motion
+      signal?.addEventListener('abort', abort, { once: true })
+      if (isReducedMotion()) {
+        this.advanceMotion(durationMs)
+        this.render()
+        this.publishCell()
+      }
+    })
+  }
+
+  /** Разделяет кадровый шаг в момент срыва, поэтому действие получает точную позу маршрута. */
+  private advanceMotion(deltaMs: number): void {
+    const { motion } = this
+
+    if (!motion) return
+
+    if (motion.elapsed === motion.durationMs) {
+      this.advanceSwing(deltaMs)
+      if (this.isSwingSettled()) motion.complete()
+      return
     }
+
+    const until = Math.min(motion.elapsed + deltaMs, motion.durationMs)
+    const dropAt = motion.drop && motion.durationMs * easeTrapezoidInverse(motion.drop.share, CLAW_RAMP_SHARE)
+
+    if (motion.drop && dropAt !== undefined && dropAt <= until) {
+      const { drop } = motion
+
+      motion.drop = undefined
+      this.applyMotion(motion, dropAt)
+      drop.onDrop(this.getGripPoint())
+    }
+
+    this.applyMotion(motion, until)
+    if (until === motion.durationMs && (!motion.settleSwing || this.isSwingSettled())) motion.complete()
+  }
+
+  private applyMotion(motion: ClawMotion, elapsed: number): void {
+    const deltaMs = elapsed - motion.elapsed
+    const share = easeTrapezoid(elapsed / motion.durationMs, CLAW_RAMP_SHARE)
+    this.cartPosition = {
+      x: lerp(motion.from.x, motion.to.x, share),
+      y: lerp(motion.from.y, motion.to.y, share),
+    }
+    this.clawHeight = lerp(motion.from.z, motion.to.z, share)
+
+    motion.elapsed = elapsed
+    this.advanceSwing(deltaMs)
+    motion.onProgress?.(share, this.getGripPoint())
+  }
+
+  private isSwingSettled(): boolean {
+    return (
+      this.swing.x.value === 0 && this.swing.x.velocity === 0 && this.swing.y.value === 0 && this.swing.y.velocity === 0
+    )
   }
 }

@@ -6,8 +6,8 @@ import { worldToScreen } from '#src/utils/projection'
 import { PALETTE } from '@pixi-demos/core/palette'
 
 /**
- * Трос: отрезок от каретки до клешни. Почти вертикален — качание отклоняет его нижний конец
- * на пару пикселей. Отрезок перерисовывается каждый кадр: поворот спрайта ломал бы пиксельную сетку.
+ * Трос между мировыми точками каретки и клешни. Контроллер обновляет отрезок
+ * при изменении положения или отклонения клешни.
  */
 export class Rope extends Container {
   private readonly line = new Graphics()

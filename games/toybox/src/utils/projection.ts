@@ -1,16 +1,14 @@
 import {
   AXIS_X,
   AXIS_Y,
-  DEPTH_SCALE_MIN,
   GRID_SIZE,
   JOYSTICK_DEADZONE,
-  PATH_STEP,
   TRAY_ORIGIN,
   TRAY_SIZE,
   TRAY_WALL_LAYERS,
   UNIT_HEIGHT,
 } from '#src/constants'
-import type { CellAddress, GroundPoint, ScreenPoint, WorldPoint } from '#src/types'
+import type { CellAddress, GroundPoint, PathCell, ScreenPoint, WorldPoint } from '#src/types'
 import type { Random } from '@pixi-demos/core/types'
 
 import { clamp } from './math'
@@ -36,9 +34,7 @@ export const screenToGround = ({ x, y }: ScreenPoint): GroundPoint => ({
   y: (AXIS_X.x * y - AXIS_X.y * x) / AXES_DETERMINANT,
 })
 
-/**
- * Переводит отклонение джойстика в направление хода по полю
- */
+/** После мёртвой зоны возвращает единичное направление по полю, внутри неё — нулевой вектор. */
 export const toGroundDirection = (vector: ScreenPoint): GroundPoint => {
   const tilt = Math.hypot(vector.x, vector.y)
 
@@ -61,9 +57,6 @@ const VIEW_Z = (AXIS_X.y * VIEW_X + AXIS_Y.y) / UNIT_HEIGHT
 
 /** Порядок наложения точки: её смещение против луча взгляда. Чем больше, тем ближе к игроку. */
 export const getDepthOrder = ({ x, y, z }: WorldPoint): number => -(x * VIEW_X + y + z * VIEW_Z)
-
-/** Масштаб предмета на глубине `x`: у дальнего края поля он мельче, чем у ближнего. */
-export const getDepthScale = (x: number): number => 1 - (1 - DEPTH_SCALE_MIN) * clamp(x / GRID_SIZE, 0, 1)
 
 /**
  * Удерживает точку в пределах поля.
@@ -142,42 +135,55 @@ export const getNeighbours = ({ col, row }: CellAddress): CellAddress[] =>
     { col, row: row - 1 },
   ].filter(({ col: c, row: r }) => c >= 0 && c < GRID_SIZE && r >= 0 && r < GRID_SIZE)
 
-/** Доля пути от `from` до `to`, на которой путь проходит ближе всего к точке `at`. */
-export const getPathShare = (from: GroundPoint, to: GroundPoint, at: GroundPoint): number => {
-  const pathX = to.x - from.x
-  const pathY = to.y - from.y
-  const length = pathX * pathX + pathY * pathY
+/** Интервалы пересечения ячеек. Касание угла без участка пути отдельной ячейкой не считается. */
+export const getPathIntervals = (from: GroundPoint, to: GroundPoint): PathCell[] => {
+  const shares = new Set([0, 1])
 
-  if (length === 0) return 0
+  for (const axis of ['x', 'y'] as const) {
+    const distance = to[axis] - from[axis]
 
-  return clamp(((at.x - from.x) * pathX + (at.y - from.y) * pathY) / length, 0, 1)
-}
+    if (distance === 0) continue
 
-/** Ячейки, над которыми проходит путь между точками поля: в порядке хода и без повторов подряд. */
-export const getPathCells = (from: GroundPoint, to: GroundPoint): CellAddress[] => {
-  const distance = Math.hypot(to.x - from.x, to.y - from.y)
-  const steps = Math.max(Math.ceil(distance / PATH_STEP), 1)
-  const cells: CellAddress[] = []
+    const first = Math.floor(Math.min(from[axis], to[axis])) + 1
+    const last = Math.max(from[axis], to[axis])
 
-  for (let step = 0; step <= steps; step++) {
-    const share = step / steps
-    const cell = toCell({ x: from.x + (to.x - from.x) * share, y: from.y + (to.y - from.y) * share })
-    const last = cells[cells.length - 1]
-
-    if (!last || last.col !== cell.col || last.row !== cell.row) cells.push(cell)
+    for (let boundary = first; boundary < last; boundary++) {
+      shares.add((boundary - from[axis]) / distance)
+    }
   }
 
-  return cells
+  const sorted = [...shares].sort((a, b) => a - b)
+  const intervals: PathCell[] = []
+
+  for (let index = 1; index < sorted.length; index++) {
+    const enter = sorted[index - 1]
+    const exit = sorted[index]
+    const share = (enter + exit) / 2
+    const cell = toCell({ x: from.x + (to.x - from.x) * share, y: from.y + (to.y - from.y) * share })
+    const last = intervals[intervals.length - 1]
+
+    if (last && last.cell.col === cell.col && last.cell.row === cell.row) last.exit = exit
+    else intervals.push({ cell, enter, exit })
+  }
+
+  return intervals
 }
 
-/**
- * Выбирает ячейку, над которой клешня выронит игрушку по дороге из `from` в `to`.
- * Кандидаты — ячейки пути кроме стартовой и кроме лотка; `undefined` означает, что ронять негде.
- */
-export const pickFumbleCell = (from: GroundPoint, to: GroundPoint, random: Random): CellAddress | undefined => {
-  const candidates = getPathCells(from, to)
-    .slice(1)
-    .filter((cell) => !isTrayCell(cell))
+/** Ячейки маршрута, включая его начальную и конечную точки, без повторов подряд. */
+export const getPathCells = (from: GroundPoint, to: GroundPoint): CellAddress[] => {
+  const cells = [toCell(from), ...getPathIntervals(from, to).map(({ cell }) => cell), toCell(to)]
+
+  return cells.filter(
+    (cell, index) => index === 0 || cell.col !== cells[index - 1].col || cell.row !== cells[index - 1].row
+  )
+}
+
+/** Выбирает участок маршрута вне стартовой ячейки и лотка. */
+export const pickFumbleCell = (from: GroundPoint, to: GroundPoint, random: Random): PathCell | undefined => {
+  const start = toCell(from)
+  const candidates = getPathIntervals(from, to).filter(
+    ({ cell }) => (cell.col !== start.col || cell.row !== start.row) && !isTrayCell(cell)
+  )
 
   return candidates.length > 0 ? candidates[Math.floor(random() * candidates.length)] : undefined
 }

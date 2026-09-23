@@ -31,10 +31,15 @@ export class IdlePhase implements Phase<PhaseName> {
   }
 
   async enter(signal: AbortSignal): Promise<typeof PhaseName.descending> {
-    this.emitter.on('ui:resetRequested', () => this.reset(), { signal })
+    const unsubscribe = this.emitter.on('ui:resetRequested', () => this.reset(), { signal })
 
-    // Доступность проверяет фаза: запрос в обход кнопки не запустит цикл посреди другого цикла
-    await this.emitter.waitFor('ui:dropRequested', { signal, filter: () => this.toyboxStore.canDrop })
+    try {
+      await this.emitter.waitFor('ui:dropRequested', { signal, filter: () => this.toyboxStore.canDrop })
+    } finally {
+      unsubscribe()
+    }
+
+    this.heap.beginCycle()
 
     return PhaseName.descending
   }
@@ -45,6 +50,7 @@ export class IdlePhase implements Phase<PhaseName> {
 
     this.heap.restore(undefined, Math.random)
     this.toyboxStore.applyCollected(0)
+    this.toyboxStore.publishCheckpoint(this.heap.takeSnapshot(0))
     this.emitter.emit('heap:reset')
   }
 }

@@ -12,63 +12,54 @@ import {
   GRAB_MIN_CHANCE,
   GRAB_WEIGHT_PENALTY,
   GRID_SIZE,
+  FACINGS,
+  SHAPE_KEYS,
   HOLE_FILL_GAIN,
   HOLE_FILL_MAX_CHANCE,
   HOLE_MIN_DROP,
   HOLE_MIN_PRESSURE,
-  HEAP_SNAPSHOT_VERSION,
   IMPACT_BASE,
   MAX_LAYERS,
-  SLIDE_MIN_DROP,
   SHAPES,
-  SLIDE_BASE,
-  SLIDE_MAX_CHANCE,
-  SLIDE_WEIGHT_BIAS,
+  HOLE_WEIGHT_BIAS,
   SUPPORT_SHARE,
-  TOY_LAYER_CENTER,
   TOY_MIN_MOTION_MS,
-  PIXEL_SCALE,
-  TOY_OUTLINE_STEPS,
-  TOY_RADIUS,
   TRAY_SLIDE_CHANCE,
   TRAY_WALL_LAYERS,
 } from '#src/constants'
 import type {
   CellAddress,
   Facing,
-  HeapSnapshot,
+  GroundPoint,
   Hole,
   Occupancy,
   Placement,
-  ScreenPoint,
-  ShapeCell,
   ShapeKey,
   Surface,
   ToyBody,
   ToyId,
   VolumeCell,
-  WorldPoint,
 } from '#src/types'
 import { ToyState } from '#src/types'
 import type { Random } from '@pixi-demos/core/types'
 
 import { clamp, lerp } from './math'
-import { getCellCenter, getDepthOrder, getNeighbours, isTrayCell, worldToScreen } from './projection'
-
-/** Все ориентации формы, в порядке поворота. */
-export const FACINGS: Facing[] = [0, 1, 2, 3]
-
-/** Ключи каталога форм. */
-const SHAPE_KEYS = Object.keys(SHAPES) as ShapeKey[]
+import { getNeighbours, isTrayCell, toCell } from './projection'
+import {
+  getShapeCells,
+  getShapeCenter,
+  getPlacementCells,
+  getBottomCells,
+  rotateFacing,
+  getBodyCenter,
+  getWeight,
+} from './shapes'
 
 /** Создаёт пустую трёхмерную решётку занятости. */
 export const createOccupancy = (): (ToyId | undefined)[][][] =>
   Array.from({ length: GRID_SIZE }, () =>
     Array.from({ length: GRID_SIZE }, () => Array.from({ length: MAX_LAYERS }, () => undefined))
   )
-
-/** Возвращает число клеток формы. */
-export const getWeight = (shape: ShapeKey): number => SHAPES[shape].cells.length
 
 /**
  * Вероятность захвата с учётом веса игрушки и нагрузки сверху.
@@ -80,72 +71,9 @@ export const getGrabChance = (weight: number, load: number): number =>
     GRAB_MAX_CHANCE
   )
 
-/**
- * Вероятность сползания по перепаду высот и весу игрушки.
- */
-export const getSlideChance = (weight: number, gap: number): number => {
-  const excess = gap - SLIDE_MIN_DROP
-
-  if (excess <= 0) return 0
-
-  return clamp((SLIDE_BASE * excess) / (weight + SLIDE_WEIGHT_BIAS), 0, SLIDE_MAX_CHANCE)
-}
-
 /** Толчок, который севшая игрушка передаёт соседу: слабеет с расстоянием между ними. */
 export const getImpact = (weight: number, distance: number): number =>
   (IMPACT_BASE * weight) / (1 + Math.max(distance, 0))
-
-/** Поворот ориентации на `steps` четвертей оборота. */
-export const rotateFacing = (facing: Facing, steps: number): Facing => ((((facing + steps) % 4) + 4) % 4) as Facing
-
-/** Четверть оборота клетки формы вокруг вертикальной оси: `(dx, dy)` переходит в `(-dy, dx)`. */
-const turnCell = ({ dx, dy, dz }: ShapeCell, facing: Facing): ShapeCell => {
-  if (facing === 1) return { dx: -dy, dy: dx, dz }
-  if (facing === 2) return { dx: -dx, dy: -dy, dz }
-  if (facing === 3) return { dx: dy, dy: -dx, dz }
-
-  return { dx, dy, dz }
-}
-
-/**
- * Клетки формы в ориентации `facing`, приведённые к нулевому якорю: после поворота смещения
- * сдвигаются так, что минимальные `dx` и `dy` снова равны нулю. Поэтому четыре поворота подряд
- * возвращают исходный набор.
- */
-export const getShapeCells = (shape: ShapeKey, facing: Facing): ShapeCell[] => {
-  const turned = SHAPES[shape].cells.map((cell) => turnCell(cell, facing))
-  const minX = Math.min(...turned.map(({ dx }) => dx))
-  const minY = Math.min(...turned.map(({ dy }) => dy))
-
-  return turned.map(({ dx, dy, dz }) => ({ dx: dx - minX, dy: dy - minY, dz }))
-}
-
-/** Возвращает клетки формы для заданных якоря, ориентации и слоя. */
-export const getPlacementCells = (
-  shape: ShapeKey,
-  facing: Facing,
-  anchor: CellAddress,
-  layer: number
-): VolumeCell[] =>
-  getShapeCells(shape, facing).map(({ dx, dy, dz }) => ({
-    col: anchor.col + dx,
-    row: anchor.row + dy,
-    layer: layer + dz,
-  }))
-
-/** Возвращает самую нижнюю клетку каждого столбца формы. */
-export const getBottomCells = (cells: readonly VolumeCell[]): VolumeCell[] => {
-  const lowest = new Map<string, VolumeCell>()
-
-  for (const cell of cells) {
-    const key = `${cell.col}:${cell.row}`
-    const current = lowest.get(key)
-
-    if (!current || cell.layer < current.layer) lowest.set(key, cell)
-  }
-
-  return [...lowest.values()]
-}
 
 /** Лежит ли клетка в объёме куба: внутри поля, в пределах слоёв и вне лотка. */
 export const isBoxCell = ({ col, row, layer }: VolumeCell): boolean =>
@@ -209,31 +137,37 @@ export const findLanding = (
 }
 
 /**
- * Рассчитывает место посадки после отпускания над ячейкой. Сначала проверяет ориентацию после
- * доворота на четверть, затем остальные ориентации и соседние ячейки. `undefined` означает, что
- * свободного места в кубе нет.
+ * Ищет посадку возле центра отпущенной игрушки в мировых координатах, учитывая смещения формы.
+ * Сначала проверяет четверть оборота и остальные ориентации, затем соседние ячейки.
  */
 export const planLanding = (
   shape: ShapeKey,
   facing: Facing,
-  cell: CellAddress,
+  point: GroundPoint,
   isOccupied: Occupancy
 ): Placement | undefined => {
   const preferred = rotateFacing(facing, 1)
   const facings = [preferred, ...FACINGS.filter((other) => other !== preferred)]
+  const cell = toCell(point)
   const visited = new Set([`${cell.col}:${cell.row}`])
   const queue: CellAddress[] = [cell]
 
   while (queue.length > 0) {
-    const anchor = queue.shift() as CellAddress
+    const current = queue.shift() as CellAddress
 
     for (const candidate of facings) {
+      const { dx, dy } = getShapeCenter(shape, candidate)
+      // Округление ближайшего якоря: round(центр − смещение − 0.5) = floor(центр − смещение).
+      const anchor = toCell({
+        x: point.x - dx + (current.col - cell.col),
+        y: point.y - dy + (current.row - cell.row),
+      })
       const layer = findLanding(shape, candidate, anchor, MAX_LAYERS - 1, isOccupied)
 
       if (layer !== undefined) return { anchor, facing: candidate, layer }
     }
 
-    for (const next of getNeighbours(anchor)) {
+    for (const next of getNeighbours(current)) {
       const key = `${next.col}:${next.row}`
 
       if (visited.has(key) || isTrayCell(next)) continue
@@ -353,47 +287,7 @@ export const getHoleFillChance = (weight: number, { cells, depth, floor }: Hole)
 
   if (pressure <= 0) return 0
 
-  return clamp((HOLE_FILL_GAIN * pressure) / (weight + SLIDE_WEIGHT_BIAS), 0, HOLE_FILL_MAX_CHANCE)
-}
-
-/**
- * Перепад до самой низкой соседней стопки без учёта клеток самой игрушки.
- */
-export const getSlideDrop = (
-  cells: readonly VolumeCell[],
-  layer: number,
-  getSurfaceHeight: (cell: CellAddress) => number
-): number => {
-  const own = new Set(cells.map(({ col, row }) => `${col}:${row}`))
-  let lowest = MAX_LAYERS
-
-  for (const { col, row } of cells) {
-    for (const next of getNeighbours({ col, row })) {
-      if (isTrayCell(next) || own.has(`${next.col}:${next.row}`)) continue
-
-      lowest = Math.min(lowest, getSurfaceHeight(next))
-    }
-  }
-
-  return layer - lowest
-}
-
-/** Середина формы в её смещениях: по ней игрушка ставится на экране, а не по якорю. */
-export const getShapeCenter = (shape: ShapeKey, facing: Facing): ShapeCell => {
-  const cells = getShapeCells(shape, facing)
-  const sum = cells.reduce(
-    (total, { dx, dy, dz }) => ({ dx: total.dx + dx, dy: total.dy + dy, dz: total.dz + dz }),
-    { dx: 0, dy: 0, dz: 0 }
-  )
-
-  return { dx: sum.dx / cells.length, dy: sum.dy / cells.length, dz: sum.dz / cells.length }
-}
-
-/** Точка мира, в которой стоит середина игрушки. */
-export const getBodyCenter = (shape: ShapeKey, facing: Facing, anchor: CellAddress, layer: number): WorldPoint => {
-  const { dx, dy, dz } = getShapeCenter(shape, facing)
-
-  return { ...getCellCenter({ col: anchor.col + dx, row: anchor.row + dy }), z: layer + dz + TOY_LAYER_CENTER }
+  return clamp((HOLE_FILL_GAIN * pressure) / (weight + HOLE_WEIGHT_BIAS), 0, HOLE_FILL_MAX_CHANCE)
 }
 
 /**
@@ -447,18 +341,14 @@ export const createBody = (id: ToyId, shape: ShapeKey, { anchor, facing, layer }
     id,
     shape,
     color,
-    anchor,
-    layer,
-    facing,
+    placement: { anchor: { ...anchor }, layer, facing },
+    pose: { point, facing },
     state: ToyState.resting,
-    point,
     from: { ...point },
     target: { ...point },
     elapsed: 0,
     durationMs: TOY_MIN_MOTION_MS,
     bounce: { value: 0, velocity: 0 },
-    turn: 1,
-    depth: getBodyDepth(shape, facing, anchor, layer),
   }
 }
 
@@ -480,69 +370,6 @@ export const shouldSlideIntoTray = (cells: readonly VolumeCell[], random: Random
 
   return random() < TRAY_SLIDE_CHANCE
 }
-
-/** Ориентация тройки точек: положительная означает поворот против часовой стрелки экрана. */
-const getTurnSide = (origin: ScreenPoint, first: ScreenPoint, second: ScreenPoint): number =>
-  (first.x - origin.x) * (second.y - origin.y) - (first.y - origin.y) * (second.x - origin.x)
-
-/** Выпуклая оболочка набора точек, обходом Эндрю. */
-const getConvexHull = (points: readonly ScreenPoint[]): ScreenPoint[] => {
-  const sorted = [...points].sort((left, right) => left.x - right.x || left.y - right.y)
-
-  if (sorted.length < 3) return sorted
-
-  const build = (source: readonly ScreenPoint[]): ScreenPoint[] => {
-    const chain: ScreenPoint[] = []
-
-    for (const point of source) {
-      while (chain.length >= 2 && getTurnSide(chain[chain.length - 2], chain[chain.length - 1], point) <= 0) {
-        chain.pop()
-      }
-
-      chain.push(point)
-    }
-
-    return chain
-  }
-
-  const lower = build(sorted)
-  const upper = build([...sorted].reverse())
-
-  return [...lower.slice(0, -1), ...upper.slice(0, -1)]
-}
-
-/**
- * Контур игрушки на экране: выпуклая оболочка центров её клеток, раздутая на радиус игрушки.
- * Выпуклая оболочка окружностей вокруг центров клеток образует единый силуэт составной формы.
- */
-export const getShapeOutline = (shape: ShapeKey, facing: Facing): ScreenPoint[] => {
-  const center = getShapeCenter(shape, facing)
-  const samples = getShapeCells(shape, facing).flatMap(({ dx, dy, dz }) => {
-    const origin = worldToScreen({ x: dx - center.dx, y: dy - center.dy, z: dz - center.dz })
-
-    return Array.from({ length: TOY_OUTLINE_STEPS }, (_, step) => {
-      const angle = (2 * Math.PI * step) / TOY_OUTLINE_STEPS
-
-      return {
-        x: Math.round((origin.x + Math.cos(angle) * TOY_RADIUS) / PIXEL_SCALE) * PIXEL_SCALE,
-        y: Math.round((origin.y + Math.sin(angle) * TOY_RADIUS) / PIXEL_SCALE) * PIXEL_SCALE,
-      }
-    })
-  })
-
-  return getConvexHull(samples)
-}
-
-/**
- * Ключ наложения игрушки: максимальный порядок среди занятых клеток. Ключ по центру формы нарушает
- * порядок там, где её ближайшая клетка перекрывает соседний предмет.
- */
-export const getBodyDepth = (shape: ShapeKey, facing: Facing, anchor: CellAddress, layer: number): number =>
-  Math.max(
-    ...getPlacementCells(shape, facing, anchor, layer).map((cell) =>
-      getDepthOrder({ ...getCellCenter(cell), z: cell.layer + TOY_LAYER_CENTER })
-    )
-  )
 
 /**
  * Профиль купола: высота стопки в каждой ячейке, `profile[col][row]`. Куча сложена куполом — под
@@ -573,35 +400,3 @@ export const planDomeProfile = (random: Random): number[][] => {
     })
   )
 }
-
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
-
-const isSnapshotBody = (value: unknown): boolean => {
-  if (!isRecord(value)) return false
-
-  const { shape, facing, anchor, layer, color } = value
-
-  return (
-    typeof shape === 'string' &&
-    shape in SHAPES &&
-    typeof facing === 'number' &&
-    facing >= 0 &&
-    facing < 4 &&
-    isRecord(anchor) &&
-    typeof anchor.col === 'number' &&
-    typeof anchor.row === 'number' &&
-    typeof layer === 'number' &&
-    typeof color === 'number'
-  )
-}
-
-/**
- * Проверяет снимок кучи, прочитанный из хранилища: версию схемы и форму каждой записи.
- * Несовместимый снимок игнорируется, после чего создаётся новая куча.
- */
-export const isHeapSnapshot = (value: unknown): value is HeapSnapshot =>
-  isRecord(value) &&
-  value.version === HEAP_SNAPSHOT_VERSION &&
-  typeof value.collected === 'number' &&
-  Array.isArray(value.bodies) &&
-  value.bodies.every(isSnapshotBody)

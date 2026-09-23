@@ -2,12 +2,9 @@ import { inject, injectable } from 'inversify'
 
 import { LIFT_FUMBLE_CHANCE, LIFT_SLIP_MAX_SHARE, LIFT_SLIP_MIN_SHARE, PHASE_PAUSE_MS } from '#src/constants'
 import type { ClawController } from '#src/controllers/box/claw'
-import type { PrizeOutputController } from '#src/controllers/box/prize-output'
 import type { HeapStore } from '#src/stores/heap'
-import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
-import { type ClawSlip, PhaseName, type ToyAppearance } from '#src/types'
-import { isAbortError, notifyFatal } from '@pixi-demos/core/errors/utils'
+import { type ClawDrop, PhaseName } from '#src/types'
 import type { Phase } from '@pixi-demos/core/fsm/types'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
@@ -15,8 +12,6 @@ import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 /**
  * Фаза подъёма: клешня возвращается к верхней грани с тем, что смогла захватить. С вероятностью
  * `LIFT_FUMBLE_CHANCE` игрушка выскальзывает по дороге вверх и падает обратно в кучу.
- *
- * TODO Возможно надо отрефакторить и чтобы падением управляла фаза во всех случаях - Обвал после изъятия обрабатывает кадровый шаг модели.
  */
 @injectable()
 export class AscendingPhase implements Phase<PhaseName> {
@@ -25,21 +20,15 @@ export class AscendingPhase implements Phase<PhaseName> {
   private readonly ticker: GameTicker
   private readonly claw: ClawController
   private readonly heap: HeapStore
-  private readonly toyboxStore: ToyboxStore
-  private readonly prizeOutput: PrizeOutputController
 
   constructor(
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
     @inject(TOYBOX_TOKENS.ClawController) claw: ClawController,
-    @inject(TOYBOX_TOKENS.HeapStore) heap: HeapStore,
-    @inject(TOYBOX_TOKENS.ToyboxStore) toyboxStore: ToyboxStore,
-    @inject(TOYBOX_TOKENS.PrizeOutputController) prizeOutput: PrizeOutputController
+    @inject(TOYBOX_TOKENS.HeapStore) heap: HeapStore
   ) {
     this.ticker = ticker
     this.claw = claw
     this.heap = heap
-    this.toyboxStore = toyboxStore
-    this.prizeOutput = prizeOutput
   }
 
   async enter(signal: AbortSignal): Promise<typeof PhaseName.delivering> {
@@ -50,34 +39,16 @@ export class AscendingPhase implements Phase<PhaseName> {
   }
 
   /** Бросок на срыв: вторым броском выбирается доля подъёма, на которой клешня разжимается. */
-  private rollSlip(): ClawSlip | undefined {
-    if (!this.claw.isHolding() || Math.random() >= LIFT_FUMBLE_CHANCE) return undefined
+  private rollSlip(): ClawDrop | undefined {
+    if (!this.heap.isHolding || Math.random() >= LIFT_FUMBLE_CHANCE) return undefined
 
-    const cell = this.claw.getCell()
     const share = LIFT_SLIP_MIN_SHARE + Math.random() * (LIFT_SLIP_MAX_SHARE - LIFT_SLIP_MIN_SHARE)
 
     return {
       share,
-      onDrop: (id) => {
-        this.heap.release(id, cell, (appearance) => this.collect(appearance))
+      onDrop: (grip) => {
+        this.heap.release(grip)
       },
-    }
-  }
-
-  private collect(appearance: ToyAppearance): void {
-    const collected = this.toyboxStore.recordCollection()
-
-    this.toyboxStore.beginPrize()
-    void this.present(appearance, collected)
-  }
-
-  private async present(appearance: ToyAppearance, collected: number): Promise<void> {
-    try {
-      await this.prizeOutput.present(appearance, collected)
-    } catch (error) {
-      if (!isAbortError(error)) notifyFatal(error, 'Prize presentation failed')
-    } finally {
-      this.toyboxStore.finishPrize()
     }
   }
 }
