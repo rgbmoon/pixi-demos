@@ -1,10 +1,11 @@
 import type { Ticker } from 'pixi.js'
 
+import { REDUCED_MOTION_QUERY } from '#src/constants'
 import type { ProgressTweenOptions } from '#src/types'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 
 /** Просит ли система уменьшить движение: по нему декоративные анимации не проигрываются. */
-export const isReducedMotion = (): boolean => window.matchMedia('(prefers-reduced-motion: reduce)').matches
+export const isReducedMotion = (): boolean => window.matchMedia(REDUCED_MOTION_QUERY).matches
 
 /** Ведёт нормализованный прогресс на игровом тикере; при уменьшенном движении сразу отдаёт единицу. */
 export const tweenProgress = (

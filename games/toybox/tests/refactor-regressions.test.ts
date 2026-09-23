@@ -13,14 +13,14 @@ import { type HeapSnapshot, PhaseName, ToyState } from '#src/types'
 import { Toy } from '#src/ui/box/toy'
 import { ToyShapes } from '#src/ui/box/toy-shapes'
 import { getShapeOutline } from '#src/ui/box/utils'
-import { getCabinetOutlines, projectWorldOutline } from '#src/utils/machine-geometry'
-import { getDepthOrder, getPathIntervals, isTrayCell, worldToScreen } from '#src/utils/projection'
+import { getPathIntervals, isTrayCell } from '#src/utils/grid'
+import { getCabinetOutlines } from '#src/utils/machine-geometry'
+import { getDepthOrder, worldToScreen } from '#src/utils/projection'
 import { getPlacementCells, getShapeCells, getShapeCenter } from '#src/utils/shapes'
 import { isHeapSnapshot } from '#src/utils/snapshot'
 import { GameEmitter } from '@pixi-demos/core/events/game-emitter'
 import type { IdbStorage } from '@pixi-demos/core/idb-storage'
 import { GameTicker } from '@pixi-demos/engine/game-ticker'
-import { getCanvasSize } from '@pixi-demos/engine/utils'
 
 const snapshot = (bodies: HeapSnapshot['bodies']): HeapSnapshot => ({ version: HEAP_SNAPSHOT_VERSION, collected: 0, bodies })
 const single = { shape: 'single', facing: 0, anchor: { col: 3, row: 3 }, layer: 0, color: 0xff8800 } as const
@@ -76,7 +76,8 @@ describe('регрессии модели и геометрии', () => {
     const id = heap.lift({ col: 4, row: 3 }, grip)
 
     expect(id).toBeDefined()
-    expect(heap.release(grip)).toBe(false)
+    // Срыв бывает выше прежнего места игрушки: посадка ищется сверху плотно заполненной кучи
+    expect(heap.release({ ...grip, z: 6 })).toBe(false)
     expect(heap.isHolding).toBe(true)
     expect(heap.releaseOutcome.status).toBe('none')
     expect([...heap.getBodies()].find((body) => body.id === id)?.state).toBe(ToyState.carried)
@@ -129,7 +130,7 @@ describe('регрессии модели и геометрии', () => {
   })
 
   it('скрывает конечный контур каждой формы корпусом с обводкой и запасом', () => {
-    const faces = getCabinetOutlines().map(projectWorldOutline)
+    const faces = getCabinetOutlines().map((face) => face.map((point) => worldToScreen(point)))
     const origin = worldToScreen({ ...TRAY_CENTER, z: TRAY_EXIT_Z })
     const inside = (x: number, y: number) => faces.some((face) => {
       let hit = false
@@ -165,16 +166,6 @@ describe('регрессии модели и геометрии', () => {
     expect(isHeapSnapshot(snapshot([{ ...single, shape: 'toString' } as never]))).toBe(false)
     expect(isHeapSnapshot(snapshot([{ ...single, facing: 0.5 } as never]))).toBe(false)
     expect(isHeapSnapshot(snapshot([single, single]))).toBe(false)
-  })
-
-  it('вписывает фиксированный канвас одним масштабом, сохраняя обычную мобильную ветку', () => {
-    for (const [width, height] of [[390, 780], [768, 960], [1280, 936], [844, 326]]) {
-      const size = getCanvasSize(width, height, { aspectRatio: 9 / 16, fillMaxWidth: 640, designSize: { width: 1152, height: 2048 } })
-      expect(size.width / 1152).toBeCloseTo(size.height / 2048, 14)
-      expect(size.width).toBeLessThanOrEqual(width)
-      expect(size.height).toBeLessThanOrEqual(height)
-    }
-    expect(getCanvasSize(390, 780, { aspectRatio: 9 / 16, fillMaxWidth: 640 })).toEqual({ width: 390, height: 780 })
   })
 })
 

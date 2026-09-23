@@ -14,11 +14,7 @@ export class KeyboardController extends LiveContainer {
   private readonly keyboard: KeyboardInput
   private readonly toyboxStore: ToyboxStore
 
-  constructor(
-    keyboard: KeyboardInput,
-    toyboxStore: ToyboxStore,
-    emitter: GameEmitter<GameEvents>
-  ) {
+  constructor(keyboard: KeyboardInput, toyboxStore: ToyboxStore, emitter: GameEmitter<GameEvents>) {
     super()
 
     this.keyboard = keyboard
@@ -28,12 +24,6 @@ export class KeyboardController extends LiveContainer {
       [...KEYBOARD_ARROW_CODES, ...KEYBOARD_DROP_CODES],
       (change) => this.handle(change, emitter),
       { preventDefault: true }
-    )
-
-    this.watch(
-      () => toyboxStore.canDrop,
-      () => this.applyDirection(),
-      { fireImmediately: true }
     )
   }
 
@@ -47,13 +37,8 @@ export class KeyboardController extends LiveContainer {
     this.applyDirection()
   }
 
+  /** Передаёт в стор направление зажатых стрелок; вне покоя стор возвращает нулевую команду сам. */
   private applyDirection(): void {
-    if (!this.toyboxStore.canDrop) {
-      this.toyboxStore.setKeyboardDirection({ x: 0, y: 0 })
-
-      return
-    }
-
     const x = Number(this.keyboard.isPressed('ArrowRight')) - Number(this.keyboard.isPressed('ArrowLeft'))
     const y = Number(this.keyboard.isPressed('ArrowDown')) - Number(this.keyboard.isPressed('ArrowUp'))
     const length = Math.hypot(x, y)
@@ -65,7 +50,6 @@ export class KeyboardController extends LiveContainer {
     if (this.destroyed) return
 
     this.stopListening()
-    this.toyboxStore.setKeyboardDirection({ x: 0, y: 0 })
     super.destroy(options)
   }
 }

@@ -30,6 +30,7 @@ import {
   type WorldPoint,
 } from '#src/types'
 import { shiftColor } from '#src/utils/color'
+import { getColumnKey, isTrayCell, toCell } from '#src/utils/grid'
 import {
   canPlace,
   createBody,
@@ -50,7 +51,6 @@ import {
 } from '#src/utils/heap'
 import { lerp } from '#src/utils/math'
 import { advanceSpring, getMotionMs } from '#src/utils/motion'
-import { isTrayCell, toCell } from '#src/utils/projection'
 import { getBodyCenter, getPlacementCells, getWeight } from '#src/utils/shapes'
 import { isHeapSnapshot } from '#src/utils/snapshot'
 import { easeInQuad } from '@pixi-demos/core/easing'
@@ -124,7 +124,7 @@ export class HeapStore {
 
   /**
    * Верх занятости ячейки: на эту высоту садится клешня.
-   * Поле-стрелка, а не метод: ссылку на него забирают чистые функции для планирования движения.
+   * Объявлен полем-стрелкой: ссылку на него получают чистые функции планирования.
    */
   getSurfaceHeight = ({ col, row }: CellAddress): number => {
     const column = this.cells[col][row]
@@ -220,7 +220,6 @@ export class HeapStore {
     this.grabProgress = 0
     this.dirty = true
     this.setSettled(false)
-    this.setReleaseOutcome({ status: 'none' })
 
     return body.id
   }
@@ -546,7 +545,7 @@ export class HeapStore {
     body.pose.facing = body.placement.facing
     body.state = ToyState.resting
     if (this.releaseOutcome.status === 'pending' && this.releaseOutcome.id === body.id) {
-      this.setReleaseOutcome({ status: 'returned' })
+      this.setReleaseOutcome({ status: 'none' })
     }
     this.land(body, fallHeight)
   }
@@ -568,7 +567,7 @@ export class HeapStore {
     this.push(body, TOY_LANDING_IMPULSE * share)
 
     for (const neighbour of this.getNeighbourBodies(body)) {
-      this.push(neighbour, getImpact(getWeight(body.shape), 1) * share)
+      this.push(neighbour, getImpact(getWeight(body.shape)) * share)
     }
   }
 
@@ -648,9 +647,14 @@ export class HeapStore {
     return true
   }
 
-  /** Осыпание: вероятность сползания с края растёт с глубиной провала и уменьшается с весом. */
+  /**
+   * Осыпание: игрушка у края дыры сползает в неё с вероятностью, которая растёт с глубиной провала и
+   * уменьшается с весом. Пока хотя бы у одной покоящейся игрушки шанс больше нуля, проход повторяется
+   * в следующих кадрах, но не больше `HOLE_MAX_WAVES` раз подряд без соскальзывания.
+   */
   private slide(): void {
-    const holes = findHoles(this.getSurfaceHeight)
+    let holes = findHoles(this.getSurfaceHeight)
+    let hasCandidates = false
     let slid = false
 
     for (const body of [...this.bodies.values()]) {
@@ -658,28 +662,25 @@ export class HeapStore {
 
       const chance = this.getSlideChanceOf(body, holes)
 
-      if (chance <= 0 || this.random() >= chance) continue
+      if (chance <= 0) continue
+
+      hasCandidates = true
+
+      if (this.random() >= chance) continue
 
       const target = this.planSlide(body)
 
       if (!target) continue
 
-      this.moveTo(body, target, ToyState.sliding)
+      this.moveTo(body, target, ToyState.falling)
       slid = true
+      // Место соскальзывания занимается сразу, поэтому следующим игрушкам нужен новый список дыр
+      holes = findHoles(this.getSurfaceHeight)
     }
 
-    this.keepFilling(holes, slid)
-  }
-
-  /**
-   * Повторяет засыпку дыры до перемещения игрушки или достижения предела проходов.
-   */
-  private keepFilling(holes: readonly Hole[], slid: boolean): void {
     if (slid) this.waves = 0
 
-    const alive = holes.some((hole) => getHoleFillChance(1, hole) > 0)
-
-    if (!alive || this.waves >= HOLE_MAX_WAVES) {
+    if (!hasCandidates || this.waves >= HOLE_MAX_WAVES) {
       this.waves = 0
 
       return
@@ -701,17 +702,18 @@ export class HeapStore {
 
   /** Самая глубокая дыра, к краю которой примыкает игрушка. */
   private findBorderedHole(body: ToyBody, holes: readonly Hole[]): Hole | undefined {
-    const own = new Set(this.getBodyCells(body).map(({ col, row }) => `${col}:${row}`))
+    const cells = this.getBodyCells(body)
+    const own = new Set(cells.map((cell) => getColumnKey(cell)))
     const touching = new Set(
-      getTouchingCells(this.getBodyCells(body))
-        .map(({ col, row }) => `${col}:${row}`)
+      getTouchingCells(cells)
+        .map((cell) => getColumnKey(cell))
         .filter((key) => !own.has(key))
     )
 
     let deepest: Hole | undefined
 
     for (const hole of holes) {
-      if (!hole.cells.some(({ col, row }) => touching.has(`${col}:${row}`))) continue
+      if (!hole.cells.some((cell) => touching.has(getColumnKey(cell)))) continue
       if (hole.floor >= body.placement.layer) continue
       if (deepest && hole.depth <= deepest.depth) continue
 

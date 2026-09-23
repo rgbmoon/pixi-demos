@@ -2,15 +2,7 @@ import { injectable } from 'inversify'
 import { action, computed, makeObservable, observable } from 'mobx'
 
 import { INITIAL_PHASE } from '#src/constants'
-import {
-  type CellAddress,
-  type GroundPoint,
-  type HeapSnapshot,
-  PhaseName,
-  type Prize,
-  type ScreenPoint,
-  type ToyAppearance,
-} from '#src/types'
+import { type CellAddress, type GroundPoint, type HeapSnapshot, PhaseName, type ScreenPoint } from '#src/types'
 import { toGroundDirection } from '#src/utils/projection'
 
 /** Состояние фазы, управления и количества доставленных игрушек. */
@@ -32,9 +24,6 @@ export class ToyboxStore {
 
   /** Последний завершённый цикл, единственный источник для сохранения. */
   @observable.ref checkpoint: HeapSnapshot | undefined = undefined
-
-  /** Единственная выдача текущего цикла. */
-  prize?: Prize
 
   @observable.ref private keyboard: ScreenPoint = { x: 0, y: 0 }
   @observable.ref private joystick: ScreenPoint = { x: 0, y: 0 }
@@ -79,17 +68,9 @@ export class ToyboxStore {
     this.phase = phase
   }
 
-  /** Подтверждает единственный приз после завершения падения. */
-  @action recordCollection(appearance: ToyAppearance): void {
-    if (this.prize) throw new Error('Prize already recorded')
-
+  /** Засчитывает игрушку, дошедшую до дна лотка. */
+  @action recordCollection(): void {
     this.collected += 1
-    this.prize = { appearance, collected: this.collected }
-  }
-
-  /** Завершает визуальную выдачу. */
-  finishPrize(): void {
-    this.prize = undefined
   }
 
   /** Публикует согласованные размещение и счёт после завершения цикла. */

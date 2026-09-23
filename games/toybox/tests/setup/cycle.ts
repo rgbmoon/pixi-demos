@@ -5,7 +5,6 @@ import { vi } from 'vitest'
 import { bindFlow } from '#src/bindings'
 import { FIELD_CENTER, HEAP_SNAPSHOT_VERSION, CLAW_REST_HEIGHT, CUBE_HEIGHT } from '#src/constants'
 import type { ClawController } from '#src/controllers/box/claw'
-import type { ContentsController } from '#src/controllers/box/contents'
 import type { PrizeOutputController } from '#src/controllers/box/prize-output'
 import type { GameEvents } from '#src/events'
 import type { HeapStore } from '#src/stores/heap'
@@ -18,8 +17,8 @@ import {
   type ToyAppearance,
   type WorldPoint,
 } from '#src/types'
+import { toCell } from '#src/utils/grid'
 import { getGrabChance } from '#src/utils/heap'
-import { toCell } from '#src/utils/projection'
 import { getWeight } from '#src/utils/shapes'
 import { bindFsm } from '@pixi-demos/core/bindings'
 import type { GameEmitter } from '@pixi-demos/core/events/game-emitter'
@@ -100,12 +99,19 @@ const createClawStub = (log: ClawLog): ClawController => {
   return stub as unknown as ClawController
 }
 
-/** Дублёр тикера: игровые выдержки проходят мгновенно, но остаются видимыми в журнале. */
+/**
+ * Дублёр тикера: игровые выдержки проходят мгновенно, но остаются видимыми в журнале. Ожидание условия
+ * продвигает настоящую модель кучи кадрами по 100 мс, пока условие не выполнится.
+ */
 const createTickerStub = (log: ClawLog, getHeap: () => HeapStore): GameTicker => {
   const stub = {
     waitTicks: async (durationMs: number) => {
       log.push(`wait:${durationMs}`)
       getHeap().advance(durationMs)
+    },
+    waitUntil: async (ready: () => boolean) => {
+      for (let frame = 0; frame < 10_000 && !ready(); frame++) getHeap().advance(100)
+      if (!ready()) throw new Error('Condition was not reached')
     },
   }
 
@@ -114,8 +120,8 @@ const createTickerStub = (log: ClawLog, getHeap: () => HeapStore): GameTicker =>
 
 /**
  * Собирает цикл без единого PIXI-объекта: настоящие автомат, фазы, стор и модель кучи.
- * Дублёры клешни, тикера и контроллеров завершают операции сразу.
- * Ожидания контроллера содержимого продвигают настоящую модель до результата.
+ * Дублёры клешни, тикера и окна выдачи завершают операции сразу.
+ * Ожидание условия в дублёре тикера продвигает настоящую модель до результата.
  * Автомат не запускается — это делает `startCycle`.
  */
 export const createCycle = (): Cycle => {
@@ -133,22 +139,6 @@ export const createCycle = (): Cycle => {
   container
     .bind(ENGINE_TOKENS.GameTicker)
     .toConstantValue(createTickerStub(log, () => container.get(TOYBOX_TOKENS.HeapStore)))
-  container.bind(TOYBOX_TOKENS.ContentsController).toConstantValue({
-    waitForRelease: async () => {
-      const heap = container.get(TOYBOX_TOKENS.HeapStore)
-
-      for (let frame = 0; frame < 10_000 && heap.releaseOutcome.status === 'pending'; frame++) heap.advance(100)
-      if (heap.releaseOutcome.status === 'pending') throw new Error('Release did not finish')
-
-      return heap.releaseOutcome
-    },
-    waitForSettled: async () => {
-      const heap = container.get(TOYBOX_TOKENS.HeapStore)
-
-      for (let frame = 0; frame < 10_000 && !heap.settled; frame++) heap.advance(100)
-      if (!heap.settled) throw new Error('Heap did not settle')
-    },
-  } as unknown as ContentsController)
   container.bind(TOYBOX_TOKENS.PrizeOutputController).toConstantValue({
     show: (appearance: ToyAppearance) => {
       const { collected } = container.get(TOYBOX_TOKENS.ToyboxStore)

@@ -1,4 +1,4 @@
-import { PIXEL_SCALE, TOY_OUTLINE_STEPS, TOY_RADIUS } from '#src/constants'
+import { TOY_OUTLINE_STEPS, TOY_RADIUS } from '#src/constants'
 import type { Facing, ScreenPoint, ShapeKey } from '#src/types'
 import { getDepthOrder, worldToScreen } from '#src/utils/projection'
 import { getShapeCells, getShapeCenter } from '#src/utils/shapes'
@@ -45,10 +45,7 @@ export const getShapeOutline = (shape: ShapeKey, facing: Facing): ScreenPoint[] 
     return Array.from({ length: TOY_OUTLINE_STEPS }, (_, step) => {
       const angle = (2 * Math.PI * step) / TOY_OUTLINE_STEPS
 
-      return {
-        x: Math.round((origin.x + Math.cos(angle) * TOY_RADIUS) / PIXEL_SCALE) * PIXEL_SCALE,
-        y: Math.round((origin.y + Math.sin(angle) * TOY_RADIUS) / PIXEL_SCALE) * PIXEL_SCALE,
-      }
+      return { x: origin.x + Math.cos(angle) * TOY_RADIUS, y: origin.y + Math.sin(angle) * TOY_RADIUS }
     })
   })
 

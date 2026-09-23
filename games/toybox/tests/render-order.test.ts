@@ -13,12 +13,8 @@ import {
 } from '#src/constants'
 import type { CellAddress, Facing, ScreenPoint, ShapeKey, VolumeCell } from '#src/types'
 import { getShapeOutline, getShapeDepthOffset  } from '#src/ui/box/utils'
-import {
-  getCellCenter,
-  getDepthOrder,
-  getTrayWallOutlines,
-  worldToScreen,
-} from '#src/utils/projection'
+import { getCellCenter, getTrayWallOutlines } from '#src/utils/grid'
+import { getDepthOrder, worldToScreen } from '#src/utils/projection'
 import { getBodyCenter, getPlacementCells, getShapeCenter } from '#src/utils/shapes'
 
 type Polygon = ScreenPoint[]
@@ -323,8 +319,8 @@ describe('порядок отрисовки игрушек', () => {
     }
 
     expect(placements).toHaveLength(971)
-    expect(contourPairs).toBe(65_887)
-    expect(fragmentOverlaps).toBe(226_508)
+    expect(contourPairs).toBe(68_096)
+    expect(fragmentOverlaps).toBe(231_496)
     expect(failures).toEqual([])
   })
 
@@ -363,7 +359,7 @@ describe('порядок отрисовки игрушек', () => {
       if (placementOverlaps) overlappingPlacements += 1
     }
 
-    expect(overlappingPlacements).toBe(120)
+    expect(overlappingPlacements).toBe(123)
     expect(failures).toEqual([])
   })
 

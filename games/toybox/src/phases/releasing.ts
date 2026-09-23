@@ -2,7 +2,6 @@ import { inject, injectable } from 'inversify'
 
 import { TRAY_HOLD_MS, TRAY_RELEASE_MS } from '#src/constants'
 import type { ClawController } from '#src/controllers/box/claw'
-import type { ContentsController } from '#src/controllers/box/contents'
 import type { HeapStore } from '#src/stores/heap'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
@@ -18,20 +17,17 @@ export class ReleasingPhase implements Phase<PhaseName> {
 
   private readonly ticker: GameTicker
   private readonly claw: ClawController
-  private readonly contents: ContentsController
   private readonly heap: HeapStore
   private readonly toyboxStore: ToyboxStore
 
   constructor(
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
     @inject(TOYBOX_TOKENS.ClawController) claw: ClawController,
-    @inject(TOYBOX_TOKENS.ContentsController) contents: ContentsController,
     @inject(TOYBOX_TOKENS.HeapStore) heap: HeapStore,
     @inject(TOYBOX_TOKENS.ToyboxStore) toyboxStore: ToyboxStore
   ) {
     this.ticker = ticker
     this.claw = claw
-    this.contents = contents
     this.heap = heap
     this.toyboxStore = toyboxStore
   }
@@ -40,11 +36,12 @@ export class ReleasingPhase implements Phase<PhaseName> {
     await this.ticker.waitTicks(this.heap.isHolding ? TRAY_RELEASE_MS : TRAY_HOLD_MS, signal)
     if (this.heap.isHolding) this.heap.dropIntoTray(this.claw.getGripPoint())
 
-    const outcome = await this.contents.waitForRelease(signal)
+    // Исход отпускания определяет кадровый шаг модели: игрушка либо садится в кучу, либо доходит до дна лотка
+    await this.ticker.waitUntil(() => this.heap.releaseOutcome.status !== 'pending', signal)
 
-    if (outcome.status !== 'collected') return PhaseName.returning
+    if (this.heap.releaseOutcome.status !== 'collected') return PhaseName.returning
 
-    this.toyboxStore.recordCollection(outcome.appearance)
+    this.toyboxStore.recordCollection()
 
     return PhaseName.presenting
   }

@@ -1,5 +1,5 @@
 import { injectable } from 'inversify'
-import { Ticker } from 'pixi.js'
+import { Ticker, UPDATE_PRIORITY } from 'pixi.js'
 
 import { FATAL_MESSAGE } from '@pixi-demos/core/errors/constants'
 import { notifyFatal } from '@pixi-demos/core/errors/utils'
@@ -63,6 +63,45 @@ export class GameTicker extends Ticker {
       signal?.addEventListener('abort', handleAbort, { once: true })
 
       this.add(step)
+    })
+  }
+
+  /**
+   * Игровое ожидание условия: промис резолвится в первом кадре, где `ready()` истинно. Проверка идёт с
+   * приоритетом `LOW`, после кадровых шагов модели. Истинное условие резолвит промис сразу. Отменяется через `signal`.
+   */
+  waitUntil(ready: () => boolean, signal?: AbortSignal): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      if (signal?.aborted) {
+        reject(signal.reason as Error)
+
+        return
+      }
+
+      if (ready()) {
+        resolve()
+
+        return
+      }
+
+      const settle = (finish: () => void) => {
+        this.remove(step)
+        signal?.removeEventListener('abort', handleAbort)
+
+        finish()
+      }
+
+      const step = () => {
+        if (ready()) {
+          settle(resolve)
+        }
+      }
+
+      const handleAbort = () => settle(() => reject(signal?.reason as Error))
+
+      signal?.addEventListener('abort', handleAbort, { once: true })
+
+      this.add(step, undefined, UPDATE_PRIORITY.LOW)
     })
   }
 }

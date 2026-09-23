@@ -4,7 +4,7 @@ import { RESET_MS, WELCOME_MS } from '#src/constants'
 import type { GameEvents } from '#src/events'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { Marquee } from '#src/ui/box/marquee'
-import { isAbortError, notifyError } from '@pixi-demos/core/errors/utils'
+import { createAbortError, isAbortError, notifyError } from '@pixi-demos/core/errors/utils'
 import type { GameEmitter } from '@pixi-demos/core/events/game-emitter'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 import { LiveContainer } from '@pixi-demos/engine/live-container'
@@ -24,18 +24,27 @@ export class MarqueeController extends LiveContainer {
     this.toyboxStore = toyboxStore
 
     this.addChild(this.view)
-    this.listen(emitter, 'game:booted', () => this.startMessage('WELCOME', WELCOME_MS))
-    this.listen(emitter, 'heap:reset', () => this.startMessage('RESET', RESET_MS))
-    this.listen(emitter, 'prize:taken', ({ collected }) => {
+    this.listen(emitter, 'game:booted', () => void this.showTemporary('WELCOME', WELCOME_MS))
+    this.listen(emitter, 'heap:reset', () => void this.showTemporary('RESET', RESET_MS))
+    this.listen(emitter, 'prize:taken', () => {
       this.revision += 1
-      this.view.setMessage(`TOYS ${collected}`)
+      this.showCount()
     })
   }
 
-  private startMessage(message: string, durationMs: number): void {
-    void this.showTemporary(message, durationMs)
+  /** Текст, который табло показывает сейчас. */
+  getMessage(): string {
+    return this.view.getMessage()
   }
 
+  override destroy(options?: DestroyOptions): void {
+    if (this.destroyed) return
+
+    this.life.abort(createAbortError('Marquee destroyed'))
+    super.destroy(options)
+  }
+
+  /** Показывает сообщение на `durationMs`; более позднее сообщение или получение приза отменяют возврат к счёту. */
   private async showTemporary(message: string, durationMs: number): Promise<void> {
     this.revision += 1
 
@@ -46,18 +55,13 @@ export class MarqueeController extends LiveContainer {
     try {
       await this.ticker.waitTicks(durationMs, this.life.signal)
 
-      if (revision === this.revision) this.view.setMessage(`TOYS ${this.toyboxStore.collected}`)
+      if (revision === this.revision) this.showCount()
     } catch (error) {
       if (!isAbortError(error)) notifyError(error)
     }
   }
 
-  getMessage(): string {
-    return this.view.getMessage()
-  }
-
-  override destroy(options?: DestroyOptions): void {
-    this.life.abort(new DOMException('Marquee destroyed', 'AbortError'))
-    super.destroy(options)
+  private showCount(): void {
+    this.view.setMessage(`TOYS ${this.toyboxStore.collected}`)
   }
 }

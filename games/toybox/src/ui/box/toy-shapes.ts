@@ -27,6 +27,7 @@ export class ToyShapes {
     return context
   }
 
+  /** Уничтожает все созданные контексты. */
   destroy(): void {
     for (const context of this.contexts.values()) {
       context.destroy()

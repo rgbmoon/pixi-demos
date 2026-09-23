@@ -35,13 +35,14 @@ export class GrabbingPhase implements Phase<PhaseName> {
 
   async enter(signal: AbortSignal): Promise<typeof PhaseName.ascending> {
     const cell = this.claw.getCell()
+    const lifted = Math.random() < this.getChance(cell) && this.heap.lift(cell, this.claw.getGripPoint()) !== undefined
 
-    if (Math.random() < this.getChance(cell)) {
-      this.heap.lift(cell, this.claw.getGripPoint())
-    }
+    // При промахе клешня прожимает верхнюю игрушку ячейки до конца фазы
+    if (!lifted) this.heap.setPressed(cell)
 
     await this.claw.grab((progress, grip) => this.heap.setGrabProgress(progress, grip), signal)
     await this.ticker.waitTicks(PHASE_PAUSE_MS, signal)
+    this.heap.setPressed(undefined)
 
     return PhaseName.ascending
   }

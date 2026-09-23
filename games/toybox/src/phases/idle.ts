@@ -9,8 +9,8 @@ import type { GameEmitter } from '@pixi-demos/core/events/game-emitter'
 import type { Phase } from '@pixi-demos/core/fsm/types'
 
 /**
- * Фаза покоя. Здесь же принимается сброс кучи: он не меняет фазу, поэтому это подписка на время
- * фазы, а не ожидание её конца.
+ * Фаза покоя. Здесь же принимается сброс кучи: он не меняет фазу, поэтому его принимает подписка
+ * на время фазы.
  */
 @injectable()
 export class IdlePhase implements Phase<PhaseName> {

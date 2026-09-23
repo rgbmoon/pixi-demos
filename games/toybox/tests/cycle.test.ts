@@ -13,7 +13,7 @@ import {
   TRAY_RELEASE_MS,
 } from '#src/constants'
 import { PhaseName } from '#src/types'
-import { isTrayCell } from '#src/utils/projection'
+import { isTrayCell } from '#src/utils/grid'
 
 import { countToys, type Cycle, emptyHeap, getGrabRolls, getHomeCell, startCycle } from './setup/cycle'
 

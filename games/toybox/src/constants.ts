@@ -11,17 +11,6 @@ import {
   type WorldPoint,
 } from './types'
 
-/** Ширина макета сцены и рабочего холста пиксель-арта до увеличения. */
-export const DESIGN_WIDTH = 1152
-export const ART_WIDTH = 288
-/** Высота макета сцены и рабочего холста пиксель-арта до увеличения. */
-export const DESIGN_HEIGHT = 2048
-export const ART_HEIGHT = 512
-/** Целочисленное увеличение будущих растровых ассетов. */
-export const PIXEL_SCALE = 4
-/** Пропорции игрового поля: выше CANVAS_FILL_MAX_WIDTH канвас повторяет их. */
-export const GAME_ASPECT_RATIO = DESIGN_WIDTH / DESIGN_HEIGHT
-
 /** Ширина контейнера, до которой канвас занимает его целиком. */
 export const CANVAS_FILL_MAX_WIDTH = 640
 
@@ -30,9 +19,8 @@ export const INITIAL_PHASE: PhaseName = PhaseName.booting
 
 /** Сторона сетки в ячейках. */
 export const GRID_SIZE = 8
-/** Базовая сторона ячейки в дизайн-пикселях; в исходном арте это 16 пикселей. */
+/** Сторона ячейки в единицах сцены; в исходном арте это 16 пикселей. */
 export const CELL_SIZE = 64
-export const ART_CELL_SIZE = CELL_SIZE / PIXEL_SCALE
 
 /** Экранный шаг на ячейку вдоль оси x: она уходит вглубь сцены, наклон 1:1. */
 export const AXIS_X: ScreenPoint = { x: 8, y: -8 }
@@ -43,25 +31,12 @@ export const UNIT_HEIGHT = CELL_SIZE
 /** Высота стеклянного бокса в ячейках. */
 export const CUBE_HEIGHT = 8
 
-/** Ширина пола в дизайн-единицах. */
-export const FLOOR_WIDTH = GRID_SIZE * (Math.abs(AXIS_X.x) + Math.abs(AXIS_Y.x))
-/** Высота пола в дизайн-единицах. */
-export const FLOOR_HEIGHT = GRID_SIZE * (Math.abs(AXIS_X.y) + Math.abs(AXIS_Y.y))
-/** Полная высота куба на экране: пол плюс вертикальные рёбра. */
-export const BOX_HEIGHT = FLOOR_HEIGHT + CUBE_HEIGHT * UNIT_HEIGHT
-/** Высота верхнего табло равна стороне ячейки. */
-export const MARQUEE_HEIGHT = CELL_SIZE
-/** Полная высота автомата остаётся неизменной при перераспределении высоты бокса и тумбы. */
-export const MACHINE_HEIGHT = 1264
-/** Тумба занимает остаток общей высоты после табло и стеклянного бокса. */
-export const CABINET_HEIGHT = MACHINE_HEIGHT - MARQUEE_HEIGHT - BOX_HEIGHT
-
 /** Передний край панели выступает к игроку на три ячейки. */
 export const CABINET_FRONT_X = -3
 /** Верх передней грани тумбы на одну ячейку ниже пола бокса. */
 export const CABINET_TOP_Z = -1
-/** Нижняя плоскость тумбы сохраняет общую экранную высоту автомата после изменения бокса. */
-export const CABINET_BOTTOM_Z = (CABINET_FRONT_X * AXIS_X.y - CABINET_HEIGHT) / UNIT_HEIGHT
+/** Нижняя грань тумбы: при ней высота автомата на экране равна 1264 единицам сцены. */
+export const CABINET_BOTTOM_Z = -8.875
 /** Верх табло на одну ячейку выше стеклянного бокса. */
 export const MARQUEE_TOP_Z = CUBE_HEIGHT + 1
 
@@ -172,7 +147,7 @@ export const LIFT_FUMBLE_CHANCE = 0.13
 export const LIFT_SLIP_MIN_SHARE = 0.15
 /** Доля подъёма, позже которой игрушка не выскальзывает: у верхней грани клешня уже уходит в сторону. */
 export const LIFT_SLIP_MAX_SHARE = 0.85
-/** Перепад под краем, начиная с которого провал считается дырой, а не неровностью, в слоях. */
+/** Перепад под краем, начиная с которого провал считается дырой, в слоях: меньший перепад — неровность. */
 export const HOLE_MIN_DROP = 2
 /** Минимальное произведение площади и глубины, при котором начинается засыпка дыры. */
 export const HOLE_MIN_PRESSURE = 2
@@ -255,7 +230,7 @@ export const GRAB_MAX_CHANCE = 0.92
 export const HOLE_WEIGHT_BIAS = 2
 
 /** Толчок соседям на единицу веса севшей игрушки, слоёв в секунду. */
-export const IMPACT_BASE = 0.35
+export const IMPACT_BASE = 0.175
 
 /** Версия снимка кучи: не сошлась — снимок игнорируется и куча складывается заново. */
 export const HEAP_SNAPSHOT_VERSION = 2
@@ -280,7 +255,7 @@ export const TOY_LANDING_IMPULSE = 2.4
 
 /** Число точек окружности клетки при построении контура игрушки. */
 export const TOY_OUTLINE_STEPS = 16
-/** Радиус игрушки в дизайн-единицах. */
+/** Радиус игрушки в единицах сцены. */
 export const TOY_RADIUS = 28
 /** Толщина бордера игрушки. */
 export const TOY_THICKNESS = 4
@@ -295,7 +270,7 @@ export const TOY_HUE_SPREAD = 45
 /** Разброс светлоты игрушки вокруг корневого цвета, доли в обе стороны. */
 export const TOY_LIGHTNESS_SPREAD = 0.14
 
-/** Радиус точки клешни в дизайн-единицах. */
+/** Радиус точки клешни в единицах сцены. */
 export const CLAW_RADIUS = 16
 /** Сторона каретки в ячейках: каретка занимает клетку и этой стороной упирается в край поля. */
 export const CART_SIZE = 1
@@ -325,13 +300,13 @@ export const JOYSTICK_STEM_THICKNESS = 16
 /** Радиус крупной невидимой области захвата джойстика. */
 export const JOYSTICK_HIT_RADIUS = 96
 
-/** Сторона подложки кнопки в дизайн-единицах. */
+/** Сторона подложки кнопки в единицах сцены. */
 export const BUTTON_SIZE_UNITS = 96
 /** Толщина обводки кнопки. */
 export const BUTTON_THICKNESS = 4
 /** Прозрачность заливки кнопки. */
 export const BUTTON_FILL_ALPHA = 0.2
-/** Сторона кнопки сброса в дизайн-единицах: меньше кнопки опускания. */
+/** Сторона кнопки сброса в единицах сцены: меньше кнопки опускания. */
 export const RESET_BUTTON_SIZE_UNITS = 88
 /** Начало и конец дуги круговой стрелки на кнопке сброса, радианы. */
 export const RESET_ARC_START = -Math.PI * 0.35
@@ -351,15 +326,17 @@ export const CONTROL_OUTLINE_STEPS = 24
 
 /** Шрифт текстов сцены: своих ассетов у игры нет, берётся системный гротеск. */
 export const HUD_FONT_FAMILY = 'Arial, Helvetica, sans-serif'
-/** Отступ элементов сцены от края видимой области. */
-export const SCREEN_MARGIN = CELL_SIZE
-/** Максимальный масштаб корпуса: кратен половине и сохраняет целую экранную сетку 6 px. */
-export const MACHINE_MAX_SCALE = 1.5
+/** Отступ корпуса от края канваса в единицах сцены: одна ячейка. */
+export const MACHINE_MARGIN = CELL_SIZE
 
 /** Размер окна выдачи на передней грани тумбы. */
 export const PRIZE_HATCH_SIZE = CELL_SIZE * 2
 /** Отступ дверцы от контура окна. */
 export const PRIZE_DOOR_INSET = 8
+/** Масштаб игрушки в окне выдачи. */
+export const PRIZE_SCALE = 0.8
+/** Прирост масштаба игрушки к концу получения. */
+export const PRIZE_TAKE_GROWTH = 0.12
 
 /** Этапы выдачи приза после выхода игрушки из внутреннего лотка. */
 export const PRIZE_PAUSE_MS = 300
@@ -371,6 +348,9 @@ export const PRIZE_TAKE_MS = 450
 export const WELCOME_MS = 1500
 export const RESET_MS = 1000
 
+/** Медиа-запрос системной настройки уменьшенного движения. */
+export const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)'
+
 /** Физические коды клавиш игрового управления. */
 export const KEYBOARD_ARROW_CODES = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'] as const
 export const KEYBOARD_DROP_CODES = ['Enter', 'Space'] as const
@@ -380,6 +360,6 @@ export const FACINGS: readonly Facing[] = [0, 1, 2, 3]
 export const SHAPE_KEYS = Object.keys(SHAPES) as ShapeKey[]
 /** Нижняя длительность движения исключает деление на ноль. */
 export const MIN_TRAVEL_MS = 1
-/** Движение выполняется раньше качания, модели кучи и синхронизации видов. */
+/** Кадровый шаг клешни выполняется раньше шага модели кучи и синхронизации View-компонентов. */
 export const CLAW_PRIORITY = 10
 export const CONTENTS_PRIORITY = 0

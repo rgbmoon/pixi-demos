@@ -23,6 +23,7 @@ import {
   SHAPES,
   HOLE_WEIGHT_BIAS,
   SUPPORT_SHARE,
+  TOY_LAYER_CENTER,
   TOY_MIN_MOTION_MS,
   TRAY_SLIDE_CHANCE,
   TRAY_WALL_LAYERS,
@@ -30,7 +31,6 @@ import {
 import type {
   CellAddress,
   Facing,
-  GroundPoint,
   Hole,
   Occupancy,
   Placement,
@@ -39,12 +39,13 @@ import type {
   ToyBody,
   ToyId,
   VolumeCell,
+  WorldPoint,
 } from '#src/types'
 import { ToyState } from '#src/types'
 import type { Random } from '@pixi-demos/core/types'
 
+import { getColumnKey, getNeighbours, isTrayCell, toCell } from './grid'
 import { clamp, lerp } from './math'
-import { getNeighbours, isTrayCell, toCell } from './projection'
 import {
   getShapeCells,
   getShapeCenter,
@@ -71,9 +72,8 @@ export const getGrabChance = (weight: number, load: number): number =>
     GRAB_MAX_CHANCE
   )
 
-/** Толчок, который севшая игрушка передаёт соседу: слабеет с расстоянием между ними. */
-export const getImpact = (weight: number, distance: number): number =>
-  (IMPACT_BASE * weight) / (1 + Math.max(distance, 0))
+/** Толчок, который севшая игрушка передаёт соседу: растёт с её весом. */
+export const getImpact = (weight: number): number => IMPACT_BASE * weight
 
 /** Лежит ли клетка в объёме куба: внутри поля, в пределах слоёв и вне лотка. */
 export const isBoxCell = ({ col, row, layer }: VolumeCell): boolean =>
@@ -109,7 +109,7 @@ export const isFullySupported = (cells: readonly VolumeCell[], isOccupied: Occup
 
 /**
  * Слой, на котором форма остановится, падая в колонку якоря с высоты `from`.
- * Спуск прекращается на первой опоре и упирается в занятую клетку: сквозь кучу игрушка не идёт.
+ * Спуск останавливается на первом слое с опорой или над первой занятой клеткой.
  * `undefined` означает, что форма не встаёт даже на высоте, с которой падает.
  */
 export const findLanding = (
@@ -138,18 +138,21 @@ export const findLanding = (
 
 /**
  * Ищет посадку возле центра отпущенной игрушки в мировых координатах, учитывая смещения формы.
- * Сначала проверяет четверть оборота и остальные ориентации, затем соседние ячейки.
+ * Поиск идёт со слоя, ближайшего к нижней грани игрушки, и ниже: выше своей позы игрушка поднимается
+ * не больше чем на полслоя. Сначала проверяет четверть оборота и остальные ориентации, затем соседние ячейки.
  */
 export const planLanding = (
   shape: ShapeKey,
   facing: Facing,
-  point: GroundPoint,
+  point: WorldPoint,
   isOccupied: Occupancy
 ): Placement | undefined => {
   const preferred = rotateFacing(facing, 1)
   const facings = [preferred, ...FACINGS.filter((other) => other !== preferred)]
+  // Поворот вокруг вертикальной оси высоту середины формы не меняет, поэтому слой общий для всех ориентаций
+  const from = clamp(Math.round(point.z - TOY_LAYER_CENTER - getShapeCenter(shape, facing).dz), 0, MAX_LAYERS - 1)
   const cell = toCell(point)
-  const visited = new Set([`${cell.col}:${cell.row}`])
+  const visited = new Set([getColumnKey(cell)])
   const queue: CellAddress[] = [cell]
 
   while (queue.length > 0) {
@@ -162,13 +165,13 @@ export const planLanding = (
         x: point.x - dx + (current.col - cell.col),
         y: point.y - dy + (current.row - cell.row),
       })
-      const layer = findLanding(shape, candidate, anchor, MAX_LAYERS - 1, isOccupied)
+      const layer = findLanding(shape, candidate, anchor, from, isOccupied)
 
       if (layer !== undefined) return { anchor, facing: candidate, layer }
     }
 
     for (const next of getNeighbours(current)) {
-      const key = `${next.col}:${next.row}`
+      const key = getColumnKey(next)
 
       if (visited.has(key) || isTrayCell(next)) continue
 
@@ -182,8 +185,8 @@ export const planLanding = (
 
 /**
  * Куда игрушка может сползти: соседняя ячейка, где она встанет ниже нынешнего слоя.
- * Из всех вариантов берётся самый низкий. Собственные клетки игрушки к этому моменту уже свободны —
- * иначе она мешала бы сама себе.
+ * Из всех вариантов берётся самый низкий. Клетки самой игрушки вызывающий освобождает заранее:
+ * занятыми они закрыли бы ей часть мест.
  */
 export const findSlide = (
   shape: ShapeKey,
@@ -191,13 +194,13 @@ export const findSlide = (
   layer: number,
   isOccupied: Occupancy
 ): Placement | undefined => {
-  // Кандидаты берутся от всех клеток игрушки, а не только от якоря: у формы из двух клеток якорь
-  // стоит в одном углу, и по соседям одного угла половина направлений была бы не видна
-  const anchors = new Map<string, CellAddress>()
+  // Кандидаты берутся от всех клеток игрушки: у формы из двух клеток якорь стоит в одном углу,
+  // и соседи одного угла покрывают только половину направлений
+  const anchors = new Map<number, CellAddress>()
 
-  for (const { col, row } of cells) {
-    for (const next of getNeighbours({ col, row })) {
-      if (!isTrayCell(next)) anchors.set(`${next.col}:${next.row}`, next)
+  for (const cell of cells) {
+    for (const next of getNeighbours(cell)) {
+      if (!isTrayCell(next)) anchors.set(getColumnKey(next), next)
     }
   }
 
@@ -221,10 +224,22 @@ export const findSlide = (
  * Дыры в куче: провалы, у которых край поднят над основанием хотя бы на `HOLE_MIN_DROP` слоёв.
  *
  * Поиск начинается с просевшего столбца и включает соседние столбцы не выше основания. Так кратер
- * от снятого кубика включает края у стенки, где локальный перепад меньше. Неровности меньше порога
+ * от снятого кубика включает края у стенки, где локальный перепад меньше. Семена перебираются от низких
+ * столбцов к высоким, поэтому основанием дыры становится её самый низкий столбец. Неровности меньше порога
  * не считаются провалами.
  */
 export const findHoles = (getSurfaceHeight: Surface): Hole[] => {
+  const heights = Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, key) =>
+    getSurfaceHeight({ col: Math.floor(key / GRID_SIZE), row: key % GRID_SIZE })
+  )
+  const getHeight = (cell: CellAddress): number => heights[getColumnKey(cell)]
+  const getRim = (cell: CellAddress): number =>
+    Math.max(
+      0,
+      ...getNeighbours(cell)
+        .filter((next) => !isTrayCell(next))
+        .map(getHeight)
+    )
   const columns: CellAddress[] = []
 
   for (let col = 0; col < GRID_SIZE; col++) {
@@ -233,27 +248,21 @@ export const findHoles = (getSurfaceHeight: Surface): Hole[] => {
     }
   }
 
-  const getRim = (cell: CellAddress): number =>
-    Math.max(
-      0,
-      ...getNeighbours(cell)
-        .filter((next) => !isTrayCell(next))
-        .map(getSurfaceHeight)
-    )
+  columns.sort((first, second) => getHeight(first) - getHeight(second))
 
-  const key = ({ col, row }: CellAddress): string => `${col}:${row}`
-  const visited = new Set<string>()
+  const visited = new Set<number>()
   const holes: Hole[] = []
 
   for (const seed of columns) {
-    if (visited.has(key(seed)) || getRim(seed) - getSurfaceHeight(seed) < HOLE_MIN_DROP) continue
+    const floor = getHeight(seed)
 
-    const floor = getSurfaceHeight(seed)
+    if (visited.has(getColumnKey(seed)) || getRim(seed) - floor < HOLE_MIN_DROP) continue
+
     const cells: CellAddress[] = []
     const queue: CellAddress[] = [seed]
     let rim = 0
 
-    visited.add(key(seed))
+    visited.add(getColumnKey(seed))
 
     while (queue.length > 0) {
       const cell = queue.shift() as CellAddress
@@ -262,11 +271,11 @@ export const findHoles = (getSurfaceHeight: Surface): Hole[] => {
       rim = Math.max(rim, getRim(cell))
 
       for (const next of getNeighbours(cell)) {
-        if (visited.has(key(next)) || isTrayCell(next)) continue
+        if (visited.has(getColumnKey(next)) || isTrayCell(next)) continue
         // Столбец выше основания относится к краю провала
-        if (getSurfaceHeight(next) > floor) continue
+        if (getHeight(next) > floor) continue
 
-        visited.add(key(next))
+        visited.add(getColumnKey(next))
         queue.push(next)
       }
     }

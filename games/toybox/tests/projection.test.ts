@@ -11,14 +11,8 @@ import {
   TRAY_SIZE,
   UNIT_HEIGHT,
 } from '#src/constants'
-import {
-  clampToField,
-  getFaceOutline,
-  getTrayOutline,
-  screenToGround,
-  toGroundDirection,
-  worldToScreen,
-} from '#src/utils/projection'
+import { clampToField, getFaceOutline, getTrayOutline } from '#src/utils/grid'
+import { screenToGround, toGroundDirection, worldToScreen } from '#src/utils/projection'
 
 describe('worldToScreen', () => {
   it('держит начало координат в ближнем углу пола', () => {

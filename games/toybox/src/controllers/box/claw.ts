@@ -14,6 +14,7 @@ import {
   CLAW_TRAVEL_SPEED,
   CUBE_HEIGHT,
   FIELD_CENTER,
+  REDUCED_MOTION_QUERY,
   SWAY_DAMPING,
   SWAY_DRAG,
   SWAY_MAX_OFFSET,
@@ -25,10 +26,10 @@ import type { CellAddress, ClawDrop, ClawMotion, ClawMotionOptions, GroundPoint,
 import { Cart } from '#src/ui/box/cart'
 import { Claw } from '#src/ui/box/claw'
 import { Rope } from '#src/ui/box/rope'
-import { isReducedMotion } from '#src/utils/animation'
+import { clampToField, toCell } from '#src/utils/grid'
 import { lerp } from '#src/utils/math'
 import { advanceSpring, advanceVelocity } from '#src/utils/motion'
-import { clampToField, getDepthOrder, toCell } from '#src/utils/projection'
+import { getDepthOrder } from '#src/utils/projection'
 import { easeTrapezoid, easeTrapezoidInverse } from '@pixi-demos/core/easing'
 import { createAbortError } from '@pixi-demos/core/errors/utils'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
@@ -43,6 +44,7 @@ export class ClawController extends LiveContainer {
   private readonly cart = new Cart()
   private readonly rope = new Rope()
   private readonly claw = new Claw()
+  private readonly reducedMotion = window.matchMedia(REDUCED_MOTION_QUERY)
   private cartPosition: GroundPoint = FIELD_CENTER
   private clawHeight = CLAW_REST_HEIGHT
   private velocity: GroundPoint = { x: 0, y: 0 }
@@ -146,7 +148,7 @@ export class ClawController extends LiveContainer {
     const swingY = this.swing.y.value
 
     if (this.motion) {
-      this.advanceMotion(isReducedMotion() ? this.motion.durationMs : ticker.deltaMS)
+      this.advanceMotion(this.reducedMotion.matches ? this.motion.durationMs : ticker.deltaMS)
     } else {
       this.drive(ticker.deltaMS)
       this.advanceSwing(ticker.deltaMS)
@@ -197,7 +199,7 @@ export class ClawController extends LiveContainer {
 
     this.previous = { ...this.cartPosition }
 
-    if (isReducedMotion()) {
+    if (this.reducedMotion.matches) {
       this.swing = { x: { value: 0, velocity: 0 }, y: { value: 0, velocity: 0 } }
       return
     }
@@ -287,7 +289,7 @@ export class ClawController extends LiveContainer {
       this.previous = { x: motion.from.x, y: motion.from.y }
       this.motion = motion
       signal?.addEventListener('abort', abort, { once: true })
-      if (isReducedMotion()) {
+      if (this.reducedMotion.matches) {
         this.advanceMotion(durationMs)
         this.render()
         this.publishCell()

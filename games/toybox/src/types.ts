@@ -25,7 +25,7 @@ export type GroundPoint = {
   y: number
 }
 
-/** Точка экрана в дизайн-единицах макета. */
+/** Точка экрана в единицах сцены. */
 export type ScreenPoint = {
   x: number
   y: number
@@ -47,7 +47,7 @@ export type ScreenBounds = {
   readonly height: number
 }
 
-/** Масштаб и начало координат корпуса внутри видимой области макета. */
+/** Масштаб и начало координат корпуса на канвасе. */
 export type MachineLayout = {
   readonly scale: number
   readonly x: number
@@ -79,7 +79,7 @@ export type PathCell = {
 }
 
 /**
- * Идентификатор игрушки. Уникален на всё время жизни стора, а не одного наполнения: рендер держит
+ * Идентификатор игрушки. Уникален на всё время жизни стора, включая повторные наполнения: рендер держит
  * по нему View-компоненты, и повторно выданный id подменил бы новой игрушке чужой силуэт.
  */
 export type ToyId = number
@@ -92,17 +92,13 @@ export type ToyAppearance = {
   readonly color: number
 }
 
-/** Единственный приз текущего цикла. */
-export type Prize = {
-  readonly appearance: ToyAppearance
-  readonly collected: number
-}
-
-/** Результат отпускания текущего цикла; сохраняется до его завершения. */
+/**
+ * Результат отпускания текущего цикла: игрушки в пути нет, отпущенная игрушка ещё движется или дошла до дна
+ * лотка. После посадки отпущенной игрушки в кучу результат снова `none`; он хранится до начала следующего цикла.
+ */
 export type ReleaseOutcome =
   | { status: 'none' }
   | { status: 'pending'; id: ToyId }
-  | { status: 'returned' }
   | { status: 'collected'; appearance: ToyAppearance }
 
 /** Клетка формы относительно её якоря, в базовой ориентации. */
@@ -145,7 +141,6 @@ export type Hole = {
 export const ToyState = {
   resting: 'resting',
   falling: 'falling',
-  sliding: 'sliding',
   carried: 'carried',
   landingBeforeTray: 'landingBeforeTray',
   waitingForTraySlide: 'waitingForTraySlide',
@@ -219,11 +214,13 @@ export type ClawMotion = ClawMotionOptions & {
   readonly cancel: (reason: unknown) => void
 }
 
+/** Длительность твина и функция, которая получает прогресс 0–1 в каждом кадре. */
 export type ProgressTweenOptions = {
   readonly durationMs: number
   readonly apply: (progress: number) => void
 }
 
+/** Имя кнопки в слое доступности и действие по нажатию. */
 export type ButtonOptions = {
   label: string
   onTap: () => void

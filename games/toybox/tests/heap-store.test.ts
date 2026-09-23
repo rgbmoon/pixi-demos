@@ -21,9 +21,9 @@ import {
   ToyState,
   type VolumeCell,
 } from '#src/types'
+import { getCellCenter, isTrayCell } from '#src/utils/grid'
 import { isBoxCell } from '#src/utils/heap'
 import { getMotionMs } from '#src/utils/motion'
-import { getCellCenter, isTrayCell } from '#src/utils/projection'
 import { getBottomCells, getPlacementCells, getWeight } from '#src/utils/shapes'
 import { createRandom } from '@pixi-demos/core/random'
 import type { Random } from '@pixi-demos/core/types'

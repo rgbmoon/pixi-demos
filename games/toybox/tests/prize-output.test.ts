@@ -5,7 +5,7 @@ import { PRIZE_DOOR_MS, PRIZE_OPEN_HOLD_MS, PRIZE_PAUSE_MS, PRIZE_TAKE_MS } from
 import { PrizeOutputController } from '#src/controllers/box/prize-output'
 import type { GameEvents } from '#src/events'
 import { PresentingPhase } from '#src/phases/presenting'
-import { ToyboxStore } from '#src/stores/toybox'
+import type { HeapStore } from '#src/stores/heap'
 import { PhaseName } from '#src/types'
 import { GameEmitter } from '@pixi-demos/core/events/game-emitter'
 import { GameTicker } from '@pixi-demos/engine/game-ticker'
@@ -14,11 +14,11 @@ describe('выдача одного приза', () => {
   it('фаза соблюдает порядок операций и объявляет получение до закрытия дверцы', async () => {
     const ticker = new GameTicker()
     const output = new PrizeOutputController(ticker)
-    const store = new ToyboxStore()
+    const heap = { releaseOutcome: { status: 'collected', appearance: { shape: 'bar2', color: 0xff0000 } } } as unknown as HeapStore
     const emitter = new GameEmitter<GameEvents>()
     const taken = vi.fn()
     const {signal} = new AbortController()
-    const phase = new PresentingPhase(ticker, output, store, emitter)
+    const phase = new PresentingPhase(ticker, output, heap, emitter)
     const log: string[] = []
 
     for (const method of ['show', 'open', 'take', 'close', 'hide'] as const) {
@@ -29,8 +29,7 @@ describe('выдача одного приза', () => {
         return (original as (...values: never[]) => void)(...args)
       })
     }
-    emitter.on('prize:taken', (value) => { log.push('taken'); taken(value) })
-    store.recordCollection({ shape: 'bar2', color: 0xff0000 })
+    emitter.on('prize:taken', () => { log.push('taken'); taken() })
     const pending = phase.enter(signal)
     let time = 0
 
@@ -44,8 +43,7 @@ describe('выдача одного приза', () => {
 
     expect(await pending).toBe(PhaseName.returning)
     expect(log).toEqual(['show', 'open', 'take', 'taken', 'close', 'hide'])
-    expect(taken).toHaveBeenCalledExactlyOnceWith({ collected: 1 })
-    expect(store.prize).toBeUndefined()
+    expect(taken).toHaveBeenCalledOnce()
     output.destroy({ children: true })
     ticker.destroy()
   })

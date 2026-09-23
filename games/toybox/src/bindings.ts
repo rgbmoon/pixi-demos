@@ -8,16 +8,7 @@ import { CORE_TOKENS } from '@pixi-demos/core/tokens'
 import { bindEngine } from '@pixi-demos/engine/bindings'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 
-import {
-  CANVAS_FILL_MAX_WIDTH,
-  DESIGN_HEIGHT,
-  DESIGN_WIDTH,
-  GAME_ASPECT_RATIO,
-  HEAP_DB_NAME,
-  HEAP_SNAPSHOT_KEY,
-  HEAP_STORE_NAME,
-  INITIAL_PHASE,
-} from './constants'
+import { CANVAS_FILL_MAX_WIDTH, HEAP_DB_NAME, HEAP_SNAPSHOT_KEY, HEAP_STORE_NAME, INITIAL_PHASE } from './constants'
 import { ClawController } from './controllers/box/claw'
 import { ContentsController } from './controllers/box/contents'
 import { PrizeOutputController } from './controllers/box/prize-output'
@@ -37,6 +28,7 @@ import { HeapStore } from './stores/heap'
 import { ToyboxStore } from './stores/toybox'
 import { TOYBOX_TOKENS } from './tokens'
 import { type HeapSnapshot, PhaseName } from './types'
+import { getMachineAspectRatio } from './utils/layout'
 
 export const bindFlow = (container: Container): void => {
   container.bind(TOYBOX_TOKENS.ToyboxStore).to(ToyboxStore)
@@ -67,11 +59,8 @@ const bindScene = (container: Container): void => {
   container
     .bind(ENGINE_TOKENS.CanvasConfig)
     .toDynamicValue(() => ({
-      aspectRatio: GAME_ASPECT_RATIO,
+      aspectRatio: getMachineAspectRatio(),
       fillMaxWidth: CANVAS_FILL_MAX_WIDTH,
-      designSize: { width: DESIGN_WIDTH, height: DESIGN_HEIGHT },
-      pixelated: true,
-      antialias: false,
       roundPixels: true,
     }))
 

@@ -37,19 +37,13 @@ export const connectDevtools = async (app: Application | null): Promise<void> =>
 
 /**
  * Размер канваса: до `fillMaxWidth` канвас занимает всю доступную область, выше — бокс
- * с пропорциями макета во всю её высоту. Фиксированный `designSize` всегда вписывается пропорционально.
+ * с пропорциями макета во всю её высоту. Пропорции канваса учитывает `layout` сцены.
  */
 export const getCanvasSize = (
   availableWidth: number,
   availableHeight: number,
-  { aspectRatio, fillMaxWidth, designSize }: CanvasConfig
+  { aspectRatio, fillMaxWidth }: CanvasConfig
 ): CanvasSize => {
-  if (designSize) {
-    const scale = Math.min(availableWidth / designSize.width, availableHeight / designSize.height)
-
-    return { width: designSize.width * scale, height: designSize.height * scale }
-  }
-
   if (availableWidth <= fillMaxWidth) {
     return { width: availableWidth, height: availableHeight }
   }

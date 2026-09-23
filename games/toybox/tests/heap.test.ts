@@ -9,7 +9,6 @@ import {
   HEAP_SNAPSHOT_VERSION,
   HOLE_FILL_MAX_CHANCE,
   MAX_LAYERS,
-  PIXEL_SCALE,
   SHAPES,
   TOY_RADIUS,
   TOY_ROOT_COLOR,
@@ -21,8 +20,9 @@ import {
 import type { CellAddress, Facing, Hole, ScreenPoint, ShapeKey, VolumeCell } from '#src/types'
 import { getShapeOutline, getShapeDepthOffset  } from '#src/ui/box/utils'
 import { shiftColor } from '#src/utils/color'
+import { getCellCenter, getNeighbours, getPathCells, getTrayWallOutlines, isTrayCell, pickFumbleCell, toCell } from '#src/utils/grid'
 import { canPlace, findLanding, findHoles, getGrabChance, getHoleFillChance, getImpact, isBoxCell, isSupported, planDomeProfile } from '#src/utils/heap'
-import { getCellCenter, getDepthOrder, getNeighbours, getPathCells, getTrayWallOutlines, isTrayCell, pickFumbleCell, toCell, worldToScreen } from '#src/utils/projection'
+import { getDepthOrder, worldToScreen } from '#src/utils/projection'
 import { getBodyCenter, getPlacementCells, getShapeCells, getShapeCenter, getWeight, rotateFacing } from '#src/utils/shapes'
 import { isHeapSnapshot } from '#src/utils/snapshot'
 import { createRandom } from '@pixi-demos/core/random'
@@ -444,11 +444,9 @@ describe('getShapeOutline', () => {
     }
   })
 
-  it('обводит одноклеточную форму ступенчатой окружностью на пиксельной сетке', () => {
+  it('обводит одноклеточную форму окружностью радиуса игрушки', () => {
     for (const point of getShapeOutline('single', 0)) {
-      expect(Math.abs(point.x % PIXEL_SCALE)).toBe(0)
-      expect(Math.abs(point.y % PIXEL_SCALE)).toBe(0)
-      expect(Math.abs(Math.hypot(point.x, point.y) - TOY_RADIUS)).toBeLessThan(PIXEL_SCALE)
+      expect(Math.hypot(point.x, point.y)).toBeCloseTo(TOY_RADIUS)
     }
   })
 
@@ -650,9 +648,8 @@ describe('getGrabChance', () => {
 
 
 describe('getImpact', () => {
-  it('бьёт тем сильнее, чем тяжелее игрушка и чем ближе сосед', () => {
-    expect(getImpact(8, 1)).toBeGreaterThan(getImpact(1, 1))
-    expect(getImpact(8, 1)).toBeGreaterThan(getImpact(8, 3))
+  it('бьёт тем сильнее, чем тяжелее игрушка', () => {
+    expect(getImpact(8)).toBeGreaterThan(getImpact(1))
   })
 })
 
