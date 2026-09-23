@@ -6,8 +6,12 @@ import type { HeapSnapshot } from '#src/types'
 /** Сколько ждать бутстрапа игры: на CI канвас рисует программный SwiftShader. */
 const BOOT_TIMEOUT_MS = 30_000
 
-/** Сколько ждать полного цикла клешни: опускание, подъём, путь к лотку и возврат. */
-const CYCLE_TIMEOUT_MS = 15_000
+/**
+ * Сколько ждать полного цикла клешни: опускание, подъём, путь к лотку, выдача приза и возврат.
+ * Цикл длится до 9 с игрового времени; ниже 10 FPS тикер режет кадр до 100 мс, и на CI игровое
+ * время отстаёт от реального в 2–3 раза.
+ */
+const CYCLE_TIMEOUT_MS = 45_000
 
 /**
  * Открывает страницу игры
@@ -59,6 +63,9 @@ const runCycle = async (drop: Locator): Promise<void> => {
 }
 
 test.describe('куча между заходами', () => {
+  // Два бутстрапа и цикл клешни вместе не помещаются в общие 60 с
+  test.describe.configure({ timeout: 120_000 })
+
   test('поднимает ту же кучу и тот же счёт после перезагрузки', async ({ page }) => {
     const address = { dbName: HEAP_DB_NAME, storeName: HEAP_STORE_NAME, key: HEAP_SNAPSHOT_KEY }
 
