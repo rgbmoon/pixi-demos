@@ -193,8 +193,11 @@ describe('регрессии контроллеров и жизненного ц
     let time = 0
     ticker.update(time)
     const grab = claw.grab((progress, point) => heap.setGrabProgress(progress, point), new AbortController().signal)
-    time += CLAW_GRAB_MS
-    ticker.update(time)
+    // PIXI ограничивает deltaMS до 100 мс, поэтому захват продвигаем несколькими кадрами.
+    for (let elapsed = 0; elapsed < CLAW_GRAB_MS; elapsed += 100) {
+      time += Math.min(100, CLAW_GRAB_MS - elapsed)
+      ticker.update(time)
+    }
     await grab
     const move = claw.carryTo(TRAY_CENTER, undefined)
     for (let frame = 0; frame < 35; frame++) {
