@@ -132,7 +132,8 @@ describe('регрессии контроллеров и жизненного ц
     const emitter = new GameEmitter<GameEvents>()
     const phase = new IdlePhase(emitter, heap, store)
     const abort = new AbortController()
-    const reset = vi.spyOn(heap, 'restore')
+    // Подмена убирает наполнение кучи физикой: тесту нужны только вызовы сброса
+    const reset = vi.spyOn(heap, 'restore').mockImplementation(() => {})
     store.setPhase(PhaseName.idle)
     for (let round = 0; round < 3; round++) {
       const pending = phase.enter(abort.signal)
