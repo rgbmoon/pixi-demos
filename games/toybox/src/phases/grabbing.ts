@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify'
 
+import type { ClawRig } from '#src/claw/claw-rig'
 import { PHASE_PAUSE_MS } from '#src/constants'
-import type { ClawController } from '#src/controllers/box/claw'
 import type { Heap } from '#src/heap/heap'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import { PhaseName } from '#src/types'
@@ -18,27 +18,27 @@ export class GrabbingPhase implements Phase<PhaseName> {
   readonly name = PhaseName.grabbing
 
   private readonly ticker: GameTicker
-  private readonly claw: ClawController
+  private readonly rig: ClawRig
   private readonly heap: Heap
 
   constructor(
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
-    @inject(TOYBOX_TOKENS.ClawController) claw: ClawController,
+    @inject(TOYBOX_TOKENS.ClawRig) rig: ClawRig,
     @inject(TOYBOX_TOKENS.Heap) heap: Heap
   ) {
     this.ticker = ticker
-    this.claw = claw
+    this.rig = rig
     this.heap = heap
   }
 
   async enter(signal: AbortSignal): Promise<typeof PhaseName.ascending> {
-    const point = this.claw.getCartPoint()
-    const lifted = Math.random() < this.heap.getGrabChance(point) && this.heap.lift(point, this.claw.getGripPoint())
+    const point = this.rig.getCartPoint()
+    const lifted = Math.random() < this.heap.getGrabChance(point) && this.heap.lift(point, this.rig.getGripPoint())
 
     // При промахе клешня прожимает игрушку под собой
     if (!lifted) this.heap.press(point)
 
-    await this.claw.grab(signal)
+    await this.rig.grab(signal)
     await this.ticker.waitTicks(PHASE_PAUSE_MS, signal)
 
     return PhaseName.ascending

@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { CLAW_MAX_SPEED, SWAY_DAMPING, SWAY_DRAG, SWAY_MAX_OFFSET, SWAY_PERIOD_MS } from '#src/constants'
+import { CLAW_MAX_SPEED, SWAY_DAMPING, SWAY_DRAG, SWAY_MAX_OFFSET, SWAY_PERIOD_MS } from '#src/claw/constants'
+import type { SpringOptions, SpringState } from '#src/claw/types'
+import { advanceSpring, advanceVelocity } from '#src/claw/utils'
 import { lerpPose } from '#src/heap/utils'
-import type { GroundPoint, SpringOptions, SpringState } from '#src/types'
-import { advanceSpring, advanceVelocity } from '#src/utils/motion'
+import type { GroundPoint } from '#src/types'
 
 /** Шаг кадра при 60 fps. */
 const FRAME_MS = 1000 / 60
@@ -51,7 +52,7 @@ describe('advanceVelocity', () => {
 
     expect(first.x).toBeGreaterThan(0)
     expect(first.x).toBeLessThan(CLAW_MAX_SPEED / 2)
-    expect(framesToTarget(full)).toBeGreaterThan(5)
+    expect(framesToTarget(full)).toBeGreaterThan(3)
   })
 
   it('выводит слабое отклонение на его скорость быстрее, чем полное — на свою', () => {

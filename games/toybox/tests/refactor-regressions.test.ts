@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest'
 
+import { ClawRig } from '#src/claw/claw-rig'
 import { CLAW_GRAB_MS, FIELD_CENTER, TOY_ANGLE_STEP, TRAY_CENTER } from '#src/constants'
 import { ClawController } from '#src/controllers/box/claw'
 import { ContentsController } from '#src/controllers/box/contents'
@@ -84,28 +85,29 @@ describe('регрессии контроллеров и жизненного ц
     const ticker = new GameTicker()
     const store = new ToyboxStore()
     const heap = new Heap()
-    const claw = new ClawController(ticker, store)
-    const contents = new ContentsController(ticker, heap, store, claw)
+    const rig = new ClawRig()
+    const claw = new ClawController(ticker, store, rig)
+    const contents = new ContentsController(ticker, heap, store, claw, rig)
     heap.restore([standing('cube8', 3, FIELD_CENTER.y)])
     const body = heap.getTopBodyAt(FIELD_CENTER) as Readonly<ToyBody>
     const initial = { ...body.pose.point }
-    const grip = claw.getGripPoint()
+    const grip = rig.getGripPoint()
     heap.lift(FIELD_CENTER, grip)
     let time = 0
     ticker.update(time)
-    const grab = claw.grab(new AbortController().signal)
+    const grab = rig.grab(new AbortController().signal)
     // PIXI ограничивает deltaMS до 100 мс, поэтому захват продвигаем несколькими кадрами.
     for (let elapsed = 0; elapsed < CLAW_GRAB_MS; elapsed += 100) {
       time += Math.min(100, CLAW_GRAB_MS - elapsed)
       ticker.update(time)
     }
     await grab
-    const move = claw.carryTo(TRAY_CENTER, undefined)
+    const move = rig.carryTo(TRAY_CENTER, undefined)
     for (let frame = 0; frame < 35; frame++) {
       time += 100
       ticker.update(time)
       await Promise.resolve()
-      const current = claw.getGripPoint()
+      const current = rig.getGripPoint()
       expect(body.pose.point.x).toBeCloseTo(current.x, 12)
       expect(body.pose.point.y).toBeCloseTo(current.y, 12)
       expect(body.pose.point.z).toBeCloseTo(current.z + initial.z - grip.z, 12)
@@ -175,23 +177,19 @@ describe('регрессии контроллеров и жизненного ц
 
 it.each([false, true])('выполняет срыв на участке маршрута каретки из текущего захвата, reduced motion: %s', async (reduced) => {
   const media = vi.spyOn(window, 'matchMedia').mockReturnValue({ matches: reduced } as MediaQueryList)
-  const ticker = new GameTicker()
-  const store = new ToyboxStore()
-  const claw = new ClawController(ticker, store)
-  const from = claw.getCartPoint()
+  const rig = new ClawRig()
+  const from = rig.getCartPoint()
   const target = { x: 1, y: 7 }
   const share = 0.31
   const dropped = vi.fn()
   const abort = new AbortController()
   const add = vi.spyOn(abort.signal, 'addEventListener')
   const remove = vi.spyOn(abort.signal, 'removeEventListener')
-  const pending = claw.carryTo(target, {
+  const pending = rig.carryTo(target, {
     share,
-    onDrop: (grip) => dropped({ grip, currentGrip: claw.getGripPoint(), cart: claw.getCartPoint() }),
+    onDrop: (grip) => dropped({ grip, currentGrip: rig.getGripPoint(), cart: rig.getCartPoint() }),
   }, abort.signal)
-  let time = 0
-  ticker.update(time)
-  for (let i = 0; i < 30; i++) { time += 100; ticker.update(time) }
+  for (let i = 0; i < 30; i++) rig.advance(100, { x: 0, y: 0 })
   await pending
 
   expect(dropped).toHaveBeenCalledTimes(1)
@@ -200,26 +198,20 @@ it.each([false, true])('выполняет срыв на участке марш
   expect(cart.x).toBeCloseTo(from.x + (target.x - from.x) * share, 12)
   expect(cart.y).toBeCloseTo(from.y + (target.y - from.y) * share, 12)
   expect(remove).toHaveBeenCalledWith('abort', add.mock.calls[0][1])
-  claw.destroy({ children: true })
-  ticker.destroy()
   media.mockRestore()
 })
 
 it('отменяет предыдущее движение без оставшегося обработчика abort', async () => {
-  const ticker = new GameTicker()
-  const store = new ToyboxStore()
-  const claw = new ClawController(ticker, store)
+  const rig = new ClawRig()
   const abort = new AbortController()
   const add = vi.spyOn(abort.signal, 'addEventListener')
   const remove = vi.spyOn(abort.signal, 'removeEventListener')
-  const first = claw.moveTo({ x: 1, y: 7 }, abort.signal)
+  const first = rig.moveTo({ x: 1, y: 7 }, abort.signal)
   const firstResult = expect(first).rejects.toMatchObject({ name: 'AbortError' })
-  const second = claw.moveTo({ x: 5, y: 4 }, abort.signal)
+  const second = rig.moveTo({ x: 5, y: 4 }, abort.signal)
   const secondResult = expect(second).rejects.toMatchObject({ name: 'AbortError' })
   await firstResult
   abort.abort()
   await secondResult
   expect(remove.mock.calls.map((call) => call[1])).toEqual(add.mock.calls.map((call) => call[1]))
-  claw.destroy({ children: true })
-  ticker.destroy()
 })

@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify'
 
+import type { ClawRig } from '#src/claw/claw-rig'
 import { PHASE_PAUSE_MS } from '#src/constants'
-import type { ClawController } from '#src/controllers/box/claw'
 import type { Heap } from '#src/heap/heap'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import { PhaseName } from '#src/types'
@@ -15,21 +15,21 @@ export class DescendingPhase implements Phase<PhaseName> {
   readonly name = PhaseName.descending
 
   private readonly ticker: GameTicker
-  private readonly claw: ClawController
+  private readonly rig: ClawRig
   private readonly heap: Heap
 
   constructor(
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
-    @inject(TOYBOX_TOKENS.ClawController) claw: ClawController,
+    @inject(TOYBOX_TOKENS.ClawRig) rig: ClawRig,
     @inject(TOYBOX_TOKENS.Heap) heap: Heap
   ) {
     this.ticker = ticker
-    this.claw = claw
+    this.rig = rig
     this.heap = heap
   }
 
   async enter(signal: AbortSignal): Promise<typeof PhaseName.grabbing> {
-    await this.claw.descend(this.heap.getSurfaceHeightAt(this.claw.getCartPoint()), signal)
+    await this.rig.descend(this.heap.getSurfaceHeightAt(this.rig.getCartPoint()), signal)
     await this.ticker.waitTicks(PHASE_PAUSE_MS, signal)
 
     return PhaseName.grabbing

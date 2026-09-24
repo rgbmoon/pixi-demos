@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { CLAW_GRAB_MS, CLAW_REST_HEIGHT, FIELD_CENTER, GRID_SIZE, TRAY_CENTER } from '#src/constants'
+import { CLAW_REST_HEIGHT } from '#src/claw/constants'
+import { CLAW_GRAB_MS, FIELD_CENTER, GRID_SIZE, TRAY_CENTER } from '#src/constants'
 import { Heap } from '#src/heap/heap'
 import { type ToyBody, ToyState } from '#src/heap/types'
 import { pourHeap } from '#src/heap/utils'

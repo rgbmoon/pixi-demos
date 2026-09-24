@@ -8,6 +8,7 @@ import { CORE_TOKENS } from '@pixi-demos/core/tokens'
 import { bindEngine } from '@pixi-demos/engine/bindings'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 
+import { ClawRig } from './claw/claw-rig'
 import { CANVAS_FILL_MAX_WIDTH, HEAP_DB_NAME, HEAP_SNAPSHOT_KEY, HEAP_STORE_NAME, INITIAL_PHASE } from './constants'
 import { ClawController } from './controllers/box/claw'
 import { ContentsController } from './controllers/box/contents'
@@ -33,6 +34,7 @@ import { getMachineAspectRatio } from './utils/machine-geometry'
 export const bindFlow = (container: Container): void => {
   container.bind(TOYBOX_TOKENS.ToyboxStore).to(ToyboxStore)
   container.bind(TOYBOX_TOKENS.Heap).to(Heap)
+  container.bind(TOYBOX_TOKENS.ClawRig).to(ClawRig)
   container
     .bind(TOYBOX_TOKENS.HeapStorage)
     .toDynamicValue(

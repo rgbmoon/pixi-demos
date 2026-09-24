@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { CUBE_HEIGHT, MACHINE_MARGIN, ROPE_REST_LENGTH } from '#src/constants'
+import { ROPE_REST_LENGTH } from '#src/claw/constants'
+import { CUBE_HEIGHT, MACHINE_MARGIN } from '#src/constants'
 import { getMachineBounds, getMachineLayout } from '#src/utils/machine-geometry'
 
 /** Размеры канваса: телефон, планшет и десктопный бокс. */

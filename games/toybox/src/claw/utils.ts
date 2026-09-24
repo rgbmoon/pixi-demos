@@ -1,38 +1,31 @@
+import { FUMBLE_START_CLEARANCE, TRAY_ORIGIN, TRAY_SIZE } from '#src/constants'
+import type { GroundPoint } from '#src/types'
+import { clamp } from '#src/utils/math'
+import type { Random } from '@pixi-demos/core/types'
+
 import {
   CLAW_ACCELERATION,
   CLAW_BRAKE_ACCELERATION,
-  CLAW_BRAKE_MS,
-  CLAW_MIN_SPEED,
-  CLAW_RESPONSE_MS,
-  FUMBLE_START_CLEARANCE,
   SPRING_MAX_DAMPING,
   SPRING_MIN_VALUE,
   SPRING_MIN_VELOCITY,
-  TRAY_ORIGIN,
-  TRAY_SIZE,
-} from '#src/constants'
-import type { GroundPoint, SpringOptions, SpringState } from '#src/types'
-import type { Random } from '@pixi-demos/core/types'
-
-import { clamp } from './math'
+} from './constants'
+import type { SpringOptions, SpringState } from './types'
 
 /**
- * Ведёт скорость клешни к целевой за `deltaMs`.
+ * Скорость клешни через `deltaMs`: меняется к целевой с постоянным ускорением и становится целевой, когда до неё
+ * меньше шага. Ускорение остановки — `CLAW_BRAKE_ACCELERATION`, разгона и смены направления — `CLAW_ACCELERATION`.
  */
 export const advanceVelocity = (velocity: GroundPoint, target: GroundPoint, deltaMs: number): GroundPoint => {
   const gapX = target.x - velocity.x
   const gapY = target.y - velocity.y
   const gap = Math.hypot(gapX, gapY)
+  const acceleration = target.x === 0 && target.y === 0 ? CLAW_BRAKE_ACCELERATION : CLAW_ACCELERATION
+  const change = (acceleration * deltaMs) / 1000
 
-  if (gap === 0) return velocity
+  if (gap <= change) return { ...target }
 
-  const isBraking = target.x === 0 && target.y === 0
-  const limit = ((isBraking ? CLAW_BRAKE_ACCELERATION : CLAW_ACCELERATION) * deltaMs) / 1000
-  const responseMs = isBraking ? CLAW_BRAKE_MS : CLAW_RESPONSE_MS
-  const change = Math.min(gap * (1 - Math.exp(-deltaMs / responseMs)), limit)
-  const next = { x: velocity.x + (gapX / gap) * change, y: velocity.y + (gapY / gap) * change }
-
-  return isBraking && Math.hypot(next.x, next.y) < CLAW_MIN_SPEED ? { x: 0, y: 0 } : next
+  return { x: velocity.x + (gapX / gap) * change, y: velocity.y + (gapY / gap) * change }
 }
 
 /**

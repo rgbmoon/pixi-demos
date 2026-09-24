@@ -3,6 +3,7 @@ import type { ServiceIdentifier } from 'inversify'
 import type { GameEmitter } from '@pixi-demos/core/events/game-emitter'
 import type { IdbStorage } from '@pixi-demos/core/idb-storage'
 
+import type { ClawRig } from './claw/claw-rig'
 import type { ClawController } from './controllers/box/claw'
 import type { ContentsController } from './controllers/box/contents'
 import type { PrizeOutputController } from './controllers/box/prize-output'
@@ -17,6 +18,7 @@ export const TOYBOX_TOKENS = {
   ToyboxStore: Symbol('ToyboxStore') as ServiceIdentifier<ToyboxStore>,
   Heap: Symbol('Heap') as ServiceIdentifier<Heap>,
   HeapStorage: Symbol('HeapStorage') as ServiceIdentifier<IdbStorage<HeapSnapshot>>,
+  ClawRig: Symbol('ClawRig') as ServiceIdentifier<ClawRig>,
   ClawController: Symbol('ClawController') as ServiceIdentifier<ClawController>,
   ContentsController: Symbol('ContentsController') as ServiceIdentifier<ContentsController>,
   PersistenceController: Symbol('PersistenceController') as ServiceIdentifier<PersistenceController>,

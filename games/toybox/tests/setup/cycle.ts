@@ -3,8 +3,9 @@ import { when } from 'mobx'
 import { vi } from 'vitest'
 
 import { bindFlow } from '#src/bindings'
-import { FIELD_CENTER, HEAP_SNAPSHOT_VERSION, CLAW_REST_HEIGHT, CUBE_HEIGHT } from '#src/constants'
-import type { ClawController } from '#src/controllers/box/claw'
+import type { ClawRig } from '#src/claw/claw-rig'
+import { CLAW_REST_HEIGHT } from '#src/claw/constants'
+import { FIELD_CENTER, HEAP_SNAPSHOT_VERSION, CUBE_HEIGHT } from '#src/constants'
 import type { PrizeOutputController } from '#src/controllers/box/prize-output'
 import type { GameEvents } from '#src/events'
 import type { Heap } from '#src/heap/heap'
@@ -68,7 +69,7 @@ const getCycleSnapshot = (): HeapSnapshot => {
  * Дублёр клешни: движения завершаются сразу, но остаются видимыми в журнале.
  * Положение он ведёт по-настоящему — по нему фазы находят игрушку под клешнёй.
  */
-const createClawStub = (log: ClawLog, drops: GroundPoint[]): ClawController => {
+const createClawStub = (log: ClawLog, drops: GroundPoint[]): ClawRig => {
   let position: GroundPoint = FIELD_CENTER
   let z = CLAW_REST_HEIGHT
 
@@ -107,14 +108,14 @@ const createClawStub = (log: ClawLog, drops: GroundPoint[]): ClawController => {
     },
   }
 
-  return stub as unknown as ClawController
+  return stub as unknown as ClawRig
 }
 
 /**
  * Дублёр тикера: игровые выдержки проходят мгновенно, но остаются видимыми в журнале. Ожидание условия
  * продвигает настоящую модель кучи кадрами по 100 мс, пока условие не выполнится.
  */
-const createTickerStub = (log: ClawLog, getHeap: () => Heap, claw: ClawController): GameTicker => {
+const createTickerStub = (log: ClawLog, getHeap: () => Heap, claw: ClawRig): GameTicker => {
   const stub = {
     waitTicks: async (durationMs: number) => {
       log.push(`wait:${durationMs}`)
@@ -149,7 +150,7 @@ export const createCycle = (): Cycle => {
 
   const claw = createClawStub(log, drops)
 
-  container.bind(TOYBOX_TOKENS.ClawController).toConstantValue(claw)
+  container.rebind(TOYBOX_TOKENS.ClawRig).toConstantValue(claw)
   container.rebind(TOYBOX_TOKENS.HeapStorage).toConstantValue({
     read: async () => structuredClone(getCycleSnapshot()),
     write: async () => {},

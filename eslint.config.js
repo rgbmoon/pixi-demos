@@ -159,9 +159,15 @@ const packageBoundaries = [
 // Каждый блок повторяет пакетный набор, иначе он его затрёт.
 const GAME_BASE = [NOT_OTHER_GAME, NO_REACT, NO_PLANCK]
 
+// Модели кучи и клешни — соседние уровни под фазами и контроллерами: друг друга они не импортируют
 const HEAP_FORBIDDEN_LAYERS = forbidLayers(
-  ['stores', 'api', 'phases', 'controllers', 'ui', 'scenes'],
-  'Модель кучи — уровень под фазами и контроллерами: сторы, сеть, автомат и сцену она не импортирует.'
+  ['claw', 'stores', 'api', 'phases', 'controllers', 'ui', 'scenes'],
+  'Модель кучи — уровень под фазами и контроллерами: модель клешни, сторы, сеть, автомат и сцену она не импортирует.'
+)
+
+const CLAW_FORBIDDEN_LAYERS = forbidLayers(
+  ['heap', 'stores', 'api', 'phases', 'controllers', 'ui', 'scenes'],
+  'Модель клешни — уровень под фазами и контроллерами: модель кучи, сторы, сеть, автомат и сцену она не импортирует.'
 )
 
 const gameLayers = [
@@ -170,8 +176,8 @@ const gameLayers = [
     patterns: [
       ...GAME_BASE,
       forbidLayers(
-        ['stores', 'heap', 'api', 'phases', 'controllers', 'scenes'],
-        'ui — то, что рисуется: сторов, модели кучи, сети, контроллеров и сцены он не знает.'
+        ['stores', 'heap', 'claw', 'api', 'phases', 'controllers', 'scenes'],
+        'ui — то, что рисуется: сторов, моделей кучи и клешни, сети, контроллеров и сцены он не знает.'
       ),
       forbidLayers(['events'], 'ui не подписывается на события — это работа контроллера.'),
     ],
@@ -181,7 +187,7 @@ const gameLayers = [
     patterns: [
       ...GAME_BASE,
       forbidLayers(
-        ['stores', 'heap', 'phases', 'controllers', 'ui', 'scenes'],
+        ['stores', 'heap', 'claw', 'phases', 'controllers', 'ui', 'scenes'],
         'api знает только листовые типы и константы игры.'
       ),
     ],
@@ -191,8 +197,8 @@ const gameLayers = [
     patterns: [
       ...GAME_BASE,
       forbidLayers(
-        ['heap', 'phases', 'controllers', 'ui', 'scenes'],
-        'Стор не знает ни модели кучи, ни автомата, ни сцены.'
+        ['heap', 'claw', 'phases', 'controllers', 'ui', 'scenes'],
+        'Стор не знает ни моделей кучи и клешни, ни автомата, ни сцены.'
       ),
     ],
     paths: NO_RAW_SUBSCRIBE,
@@ -221,8 +227,8 @@ const gameLayers = [
     patterns: [
       ...GAME_BASE,
       forbidLayers(
-        ['api', 'phases', 'heap'],
-        'Сцена — раскладка контроллеров: ни сети, ни автомата, ни модели кучи она не знает.'
+        ['api', 'phases', 'heap', 'claw'],
+        'Сцена — раскладка контроллеров: ни сети, ни автомата, ни моделей кучи и клешни она не знает.'
       ),
     ],
     paths: NO_RAW_SUBSCRIBE,
@@ -234,6 +240,10 @@ const gameLayers = [
   // Мир кучи — единственный модуль игры с planck: набор уровня heap без NO_PLANCK
   boundary(['games/*/src/heap/heap-world.ts'], {
     patterns: [NOT_OTHER_GAME, NO_REACT, HEAP_FORBIDDEN_LAYERS],
+    paths: NO_RAW_SUBSCRIBE,
+  }),
+  boundary(['games/*/src/claw/**/*.ts'], {
+    patterns: [...GAME_BASE, CLAW_FORBIDDEN_LAYERS],
     paths: NO_RAW_SUBSCRIBE,
   }),
 ]

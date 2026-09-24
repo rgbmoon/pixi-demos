@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
 
+import { pickFumbleShare } from '#src/claw/utils'
 import {
   CUBE_HEIGHT,
   GRID_SIZE,
@@ -17,7 +18,6 @@ import { isHeapSnapshot } from '#src/heap/utils'
 import { SHAPE_KEYS, SHAPES } from '#src/toys'
 import type { GroundPoint, PlaneVector, ScreenPoint } from '#src/types'
 import { getTrayWallOutlines } from '#src/utils/machine-geometry'
-import { pickFumbleShare } from '#src/utils/motion'
 import { getDepthOrder, worldToScreen } from '#src/utils/projection'
 import { getPrismOutline, getSection, getSectionArea, getVariantCount, getWeight } from '#src/utils/shapes'
 import { createRandom } from '@pixi-demos/core/random'
