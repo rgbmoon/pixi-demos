@@ -10,7 +10,7 @@ import { LiveContainer } from '@pixi-demos/engine/live-container'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 import { tweenProgress } from '@pixi-demos/engine/utils'
 
-/** Отдельные операции окна выдачи; последовательность и выдержки задаёт фаза. */
+/** Контроллер для окна выдача игрушки. Свзяывает View окна выдачи с тикером и предоставляет API для вызова в фазе FSM */
 @injectable()
 export class PrizeOutputController extends LiveContainer {
   private readonly view = new PrizeOutput()

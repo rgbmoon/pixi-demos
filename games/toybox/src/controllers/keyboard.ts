@@ -1,20 +1,28 @@
+import { inject, injectable } from 'inversify'
 import type { DestroyOptions } from 'pixi.js'
 
 import { KEYBOARD_ARROW_CODES, KEYBOARD_DROP_CODES } from '#src/constants'
 import type { GameEvents } from '#src/events'
 import type { ToyboxStore } from '#src/stores/toybox'
+import { TOYBOX_TOKENS } from '#src/tokens'
 import type { GameEmitter } from '@pixi-demos/core/events/game-emitter'
 import type { KeyboardInput } from '@pixi-demos/core/keyboard-input'
+import { CORE_TOKENS } from '@pixi-demos/core/tokens'
 import type { KeyboardChange } from '@pixi-demos/core/types'
 import { LiveContainer } from '@pixi-demos/engine/live-container'
 
-/** Связывает физическую клавиатуру с экранными направлениями клешни и запросом Drop. */
+/** Связывает сервис клавиатуры и игровой стор */
+@injectable()
 export class KeyboardController extends LiveContainer {
   private readonly stopListening: () => void
   private readonly keyboard: KeyboardInput
   private readonly toyboxStore: ToyboxStore
 
-  constructor(keyboard: KeyboardInput, toyboxStore: ToyboxStore, emitter: GameEmitter<GameEvents>) {
+  constructor(
+    @inject(CORE_TOKENS.KeyboardInput) keyboard: KeyboardInput,
+    @inject(TOYBOX_TOKENS.ToyboxStore) toyboxStore: ToyboxStore,
+    @inject(TOYBOX_TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>
+  ) {
     super()
 
     this.keyboard = keyboard

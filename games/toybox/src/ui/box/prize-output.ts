@@ -16,7 +16,7 @@ import { PALETTE } from '@pixi-demos/core/palette'
 import { Toy } from './toy'
 import { ToyShapes } from './toy-shapes'
 
-/** Окно выдачи на передней грани тумбы: игрушка за сдвижной дверцей, обе ограничены маской окна. */
+/** Окно выдачи на передней грани тумбы */
 export class PrizeOutput extends Container {
   private readonly shapes = new ToyShapes()
   private readonly prize = new Toy(this.shapes, 'single', 0, 0xffffff)

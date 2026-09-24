@@ -6,8 +6,7 @@ import { worldToScreen } from '#src/utils/projection'
 import { PALETTE } from '@pixi-demos/core/palette'
 
 /**
- * Дно куба: контур нижней грани, линии сетки 8×8 и залитый квадрант лотка.
- * Лежит под клешнёй — всё содержимое куба рисуется поверх него.
+ * Дно куба: контур нижней грани, линии сетки 8×8 и место под лоток.
  */
 export class Floor extends Graphics {
   constructor() {

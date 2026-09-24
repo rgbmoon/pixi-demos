@@ -5,14 +5,18 @@ import { GameEmitter } from '@pixi-demos/core/events/game-emitter'
 import { traceEvent } from '@pixi-demos/core/events/utils'
 import { IdbStorage } from '@pixi-demos/core/idb-storage'
 import { CORE_TOKENS } from '@pixi-demos/core/tokens'
-import { bindEngine } from '@pixi-demos/engine/bindings'
+import { bindEngine, bindSceneNode } from '@pixi-demos/engine/bindings'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 
 import { ClawRig } from './claw/claw-rig'
 import { CANVAS_FILL_MAX_WIDTH, HEAP_DB_NAME, HEAP_SNAPSHOT_KEY, HEAP_STORE_NAME, INITIAL_PHASE } from './constants'
-import { ClawController } from './controllers/box/claw'
-import { ContentsController } from './controllers/box/contents'
+import { CubeController } from './controllers/box/cube'
+import { MarqueeController } from './controllers/box/marquee'
 import { PrizeOutputController } from './controllers/box/prize-output'
+import { DropButtonController } from './controllers/hud/drop-button'
+import { JoystickController } from './controllers/hud/joystick'
+import { ResetButtonController } from './controllers/hud/reset-button'
+import { KeyboardController } from './controllers/keyboard'
 import { PersistenceController } from './controllers/persistence'
 import type { GameEvents } from './events'
 import { Heap } from './heap/heap'
@@ -66,40 +70,15 @@ const bindScene = (container: Container): void => {
       roundPixels: true,
     }))
 
-  container
-    .bind(ENGINE_TOKENS.Scene)
-    .to(GameScene)
-    .onDeactivation((scene) => {
-      if (!scene.destroyed) scene.destroy({ children: true })
-    })
-
-  container
-    .bind(TOYBOX_TOKENS.ClawController)
-    .to(ClawController)
-    .onDeactivation((claw) => {
-      if (!claw.destroyed) claw.destroy({ children: true })
-    })
-
-  container
-    .bind(TOYBOX_TOKENS.ContentsController)
-    .to(ContentsController)
-    .onDeactivation((contents) => {
-      if (!contents.destroyed) contents.destroy({ children: true })
-    })
-
-  container
-    .bind(TOYBOX_TOKENS.PersistenceController)
-    .to(PersistenceController)
-    .onDeactivation((persistence) => {
-      if (!persistence.destroyed) persistence.destroy({ children: true })
-    })
-
-  container
-    .bind(TOYBOX_TOKENS.PrizeOutputController)
-    .to(PrizeOutputController)
-    .onDeactivation((output) => {
-      if (!output.destroyed) output.destroy({ children: true })
-    })
+  bindSceneNode(container, ENGINE_TOKENS.Scene, GameScene)
+  bindSceneNode(container, TOYBOX_TOKENS.CubeController, CubeController)
+  bindSceneNode(container, TOYBOX_TOKENS.MarqueeController, MarqueeController)
+  bindSceneNode(container, TOYBOX_TOKENS.PrizeOutputController, PrizeOutputController)
+  bindSceneNode(container, TOYBOX_TOKENS.JoystickController, JoystickController)
+  bindSceneNode(container, TOYBOX_TOKENS.DropButtonController, DropButtonController)
+  bindSceneNode(container, TOYBOX_TOKENS.ResetButtonController, ResetButtonController)
+  bindSceneNode(container, TOYBOX_TOKENS.KeyboardController, KeyboardController)
+  bindSceneNode(container, TOYBOX_TOKENS.PersistenceController, PersistenceController)
 }
 
 /** Манифест toybox: состав графа читается по доменным функциям. */

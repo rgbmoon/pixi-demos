@@ -4,7 +4,7 @@ import { bindFsm } from '@pixi-demos/core/bindings'
 import { GameEmitter } from '@pixi-demos/core/events/game-emitter'
 import { traceEvent } from '@pixi-demos/core/events/utils'
 import { CORE_TOKENS } from '@pixi-demos/core/tokens'
-import { bindAudioSynth, bindEngine, bindSpinePool } from '@pixi-demos/engine/bindings'
+import { bindAudioSynth, bindEngine, bindSceneNode, bindSpinePool } from '@pixi-demos/engine/bindings'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 
 import { SlotApi } from './api/slot'
@@ -91,89 +91,18 @@ const bindScene = (container: Container): void => {
     .bind(ENGINE_TOKENS.AudioConfig)
     .toDynamicValue(() => ({ masterGain: SOUND_MASTER_GAIN, sessionType: SOUND_SESSION_TYPE }))
 
-  container
-    .bind(ENGINE_TOKENS.Scene)
-    .to(GameScene)
-    .onDeactivation((scene) => {
-      if (!scene.destroyed) scene.destroy()
-    })
-
-  container
-    .bind(SLOT_TOKENS.BackgroundController)
-    .to(BackgroundController)
-    .onDeactivation((background) => {
-      if (!background.destroyed) background.destroy({ children: true })
-    })
-
-  container
-    .bind(SLOT_TOKENS.ReelsMachineController)
-    .to(ReelsMachineController)
-    .onDeactivation((reelsMachine) => {
-      if (!reelsMachine.destroyed) reelsMachine.destroy({ children: true })
-    })
-
-  container
-    .bind(SLOT_TOKENS.HoldWinMachineController)
-    .to(HoldWinMachineController)
-    .onDeactivation((holdWinMachine) => {
-      if (!holdWinMachine.destroyed) holdWinMachine.destroy({ children: true })
-    })
-
-  container
-    .bind(SLOT_TOKENS.SpinButtonController)
-    .to(SpinButtonController)
-    .onDeactivation((button) => {
-      if (!button.destroyed) button.destroy({ children: true })
-    })
-
-  container
-    .bind(SLOT_TOKENS.SoundToggleButtonController)
-    .to(SoundToggleButtonController)
-    .onDeactivation((button) => {
-      if (!button.destroyed) button.destroy({ children: true })
-    })
-
-  container
-    .bind(SLOT_TOKENS.BetPanelController)
-    .to(BetPanelController)
-    .onDeactivation((panel) => {
-      if (!panel.destroyed) panel.destroy({ children: true })
-    })
-
-  container
-    .bind(SLOT_TOKENS.SettingsButtonController)
-    .to(SettingsButtonController)
-    .onDeactivation((button) => {
-      if (!button.destroyed) button.destroy({ children: true })
-    })
-
-  container
-    .bind(SLOT_TOKENS.SettingsModalController)
-    .to(SettingsModalController)
-    .onDeactivation((modal) => {
-      if (!modal.destroyed) modal.destroy({ children: true })
-    })
-
-  container
-    .bind(SLOT_TOKENS.WinLabelController)
-    .to(WinLabelController)
-    .onDeactivation((label) => {
-      if (!label.destroyed) label.destroy({ children: true })
-    })
-
-  container
-    .bind(SLOT_TOKENS.CreditLabelController)
-    .to(CreditLabelController)
-    .onDeactivation((label) => {
-      if (!label.destroyed) label.destroy({ children: true })
-    })
-
-  container
-    .bind(SLOT_TOKENS.SoundController)
-    .to(SoundController)
-    .onDeactivation((sound) => {
-      if (!sound.destroyed) sound.destroy()
-    })
+  bindSceneNode(container, ENGINE_TOKENS.Scene, GameScene)
+  bindSceneNode(container, SLOT_TOKENS.BackgroundController, BackgroundController)
+  bindSceneNode(container, SLOT_TOKENS.ReelsMachineController, ReelsMachineController)
+  bindSceneNode(container, SLOT_TOKENS.HoldWinMachineController, HoldWinMachineController)
+  bindSceneNode(container, SLOT_TOKENS.SpinButtonController, SpinButtonController)
+  bindSceneNode(container, SLOT_TOKENS.SoundToggleButtonController, SoundToggleButtonController)
+  bindSceneNode(container, SLOT_TOKENS.BetPanelController, BetPanelController)
+  bindSceneNode(container, SLOT_TOKENS.SettingsButtonController, SettingsButtonController)
+  bindSceneNode(container, SLOT_TOKENS.SettingsModalController, SettingsModalController)
+  bindSceneNode(container, SLOT_TOKENS.WinLabelController, WinLabelController)
+  bindSceneNode(container, SLOT_TOKENS.CreditLabelController, CreditLabelController)
+  bindSceneNode(container, SLOT_TOKENS.SoundController, SoundController)
 }
 
 /** Манифест слота: состав графа читается по доменным функциям. */

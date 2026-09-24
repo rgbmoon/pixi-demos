@@ -53,7 +53,7 @@ export class Heap {
    * Позы не проверяются: снимок из хранилища проверяет стартовая фаза.
    */
   restore(bodies: readonly HeapSnapshotBody[]): void {
-    // Новый мир на каждое восстановление: повторно использованный мир planck теряет детерминизм
+    // Новый мир на каждое восстановление: повторно использованный мир не подходит - planck теряет детерминизм
     this.world = new HeapWorld()
     this.bodies.clear()
     this.frames.clear()
@@ -62,7 +62,7 @@ export class Heap {
     this.pendingMs = 0
     this.quietMs = 0
     // `nextId` не обнуляется: id игрушки уникален на всё время жизни модели. Рендер держит по нему
-    // View-компоненты; повторный id связал бы новую игрушку с прежними геометрией и цветом
+    // View-компоненты; повторный id связал бы новую игрушку с прежними геометрией и цветом, что вызовет визуальные баги.
 
     for (const { shape, variant, slab, y, z, angle, color } of bodies) {
       this.create(shape, variant, slab, { y, z, angle }, color)

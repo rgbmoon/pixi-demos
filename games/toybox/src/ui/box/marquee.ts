@@ -12,7 +12,10 @@ import { getMarqueeOutlines } from '#src/utils/machine-geometry'
 import { projectPlaneOffset, worldToScreen } from '#src/utils/projection'
 import { PALETTE } from '@pixi-demos/core/palette'
 
-/** Контурное табло, построенное в тех же мировых осях, что и стеклянный бокс. */
+/**
+ * Крыша автомата с экраном для вывода текста и символов
+ * TODO сделать вывод текста бегущей строкой
+ */
 export class Marquee extends Container {
   private readonly message: Text
 

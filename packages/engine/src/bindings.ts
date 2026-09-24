@@ -1,4 +1,5 @@
-import type { Container } from 'inversify'
+import type { Container, Newable, ServiceIdentifier } from 'inversify'
+import type { Container as SceneNode } from 'pixi.js'
 
 import { AudioSynth } from './audio/audio-synth'
 import { GameRoot } from './game-root'
@@ -41,4 +42,21 @@ export const bindAudioSynth = (container: Container): void => {
     .bind(ENGINE_TOKENS.AudioSynth)
     .to(AudioSynth)
     .onDeactivation((synth) => synth.destroy())
+}
+
+/**
+ * Узел сцены: класс на токене с деактивацией `destroy({ children: true })`. Узел, уже уничтоженный каскадом
+ * `destroy` родителя, деактивация пропускает.
+ */
+export const bindSceneNode = <T extends SceneNode>(
+  container: Container,
+  token: ServiceIdentifier<T>,
+  Node: Newable<T>
+): void => {
+  container
+    .bind(token)
+    .to(Node)
+    .onDeactivation((node) => {
+      if (!node.destroyed) node.destroy({ children: true })
+    })
 }

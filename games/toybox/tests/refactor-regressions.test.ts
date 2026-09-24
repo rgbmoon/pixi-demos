@@ -3,8 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { ClawRig } from '#src/claw/claw-rig'
 import { CLAW_GRAB_MS, FIELD_CENTER, TOY_ANGLE_STEP, TRAY_CENTER } from '#src/constants'
-import { ClawController } from '#src/controllers/box/claw'
-import { ContentsController } from '#src/controllers/box/contents'
+import { CubeController } from '#src/controllers/box/cube'
 import { PersistenceController } from '#src/controllers/persistence'
 import type { GameEvents } from '#src/events'
 import { TRAY_EXIT_Z } from '#src/heap/constants'
@@ -86,8 +85,7 @@ describe('регрессии контроллеров и жизненного ц
     const store = new ToyboxStore()
     const heap = new Heap()
     const rig = new ClawRig()
-    const claw = new ClawController(ticker, store, rig)
-    const contents = new ContentsController(ticker, heap, store, claw, rig)
+    const cube = new CubeController(ticker, heap, store, rig)
     heap.restore([standing('cube8', 3, FIELD_CENTER.y)])
     const body = heap.getTopBodyAt(FIELD_CENTER) as Readonly<ToyBody>
     const initial = { ...body.pose.point }
@@ -115,8 +113,8 @@ describe('регрессии контроллеров и жизненного ц
     await move
     expect(body.pose.point.x).toBeCloseTo(TRAY_CENTER.x, 12)
     expect(body.pose.point.y).toBeCloseTo(TRAY_CENTER.y, 12)
-    contents.destroy({ children: true })
-    contents.destroy({ children: true })
+    cube.destroy({ children: true })
+    cube.destroy({ children: true })
     ticker.destroy()
   })
 

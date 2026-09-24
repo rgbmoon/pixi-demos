@@ -133,9 +133,6 @@ export const TOY_FILL_ALPHA = 0.35
 export const DEPTH_OVERLAP_TOLERANCE = 0.5
 /** Сдвиг силуэта, начиная с которого предмет заново сравнивается с соседями, в единицах сцены. */
 export const DEPTH_SORT_STEP = 1
-/** Кадровый шаг клешни выполняется раньше шага модели кучи и синхронизации View-компонентов. */
-export const CLAW_PRIORITY = 10
-export const CONTENTS_PRIORITY = 0
 
 // Органы управления
 /** Доля хода ручки, ниже которой джойстик не трогает клешню. */

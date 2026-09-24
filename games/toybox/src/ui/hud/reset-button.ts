@@ -1,10 +1,7 @@
-import { Container, Graphics, Polygon } from 'pixi.js'
+import { Graphics } from 'pixi.js'
 
 import {
-  BUTTON_FILL_ALPHA,
   CABINET_FRONT_PLANE,
-  CONTROL_HIT_PADDING,
-  DISABLED_ALPHA,
   ICON_RATIO,
   LINE_THICKNESS,
   RESET_ARC_END,
@@ -13,40 +10,16 @@ import {
   RESET_HEAD_RATIO,
 } from '#src/constants'
 import type { ButtonOptions } from '#src/types'
-import { getProjectedPlaneArc, getProjectedPlaneCircle, projectPlaneOffset } from '#src/utils/projection'
+import { ControlButton } from '#src/ui/hud/control-button'
+import { getProjectedPlaneArc, projectPlaneOffset } from '#src/utils/projection'
 import { PALETTE } from '@pixi-demos/core/palette'
 
-/** Кнопка сброса, установленная на передней вертикальной грани тумбы. */
-export class ResetButton extends Container {
-
+/** Кнопка сброса кучи */
+export class ResetButton extends ControlButton {
   constructor(options: ButtonOptions) {
-    super()
+    super(options, CABINET_FRONT_PLANE, RESET_BUTTON_SIZE_UNITS)
 
-    const radius = RESET_BUTTON_SIZE_UNITS / 2
-    const backing = new Graphics()
-      .poly(getProjectedPlaneCircle(CABINET_FRONT_PLANE, radius))
-      .fill({ color: PALETTE.primary, alpha: BUTTON_FILL_ALPHA })
-      .stroke({ width: LINE_THICKNESS, color: PALETTE.primary })
-
-    this.addChild(backing, ResetButton.createIcon())
-
-    this.eventMode = 'static'
-    this.cursor = 'pointer'
-    this.hitArea = new Polygon(getProjectedPlaneCircle(CABINET_FRONT_PLANE, radius + CONTROL_HIT_PADDING))
-    this.accessible = true
-    this.accessibleType = 'button'
-    this.accessibleHint = options.label
-    this.accessiblePointerEvents = 'none'
-
-    this.on('pointertap', options.onTap)
-  }
-
-  /** Меняет интерактивность, прозрачность и доступность кнопки. */
-  setEnabled(enabled: boolean): void {
-    this.eventMode = enabled ? 'static' : 'none'
-    this.cursor = enabled ? 'pointer' : 'default'
-    this.alpha = enabled ? 1 : DISABLED_ALPHA
-    this.accessible = enabled
+    this.addChild(ResetButton.createIcon())
   }
 
   private static createIcon(): Graphics {

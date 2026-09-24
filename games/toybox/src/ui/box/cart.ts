@@ -6,8 +6,7 @@ import { worldToScreen } from '#src/utils/projection'
 import { PALETTE } from '@pixi-demos/core/palette'
 
 /**
- * Каретка: ездит по верхней грани куба и несёт клешню на тросе. Квадрат размечен в осях поля,
- * поэтому лежит в плоскости грани, а не стоит к ней углом.
+ * Каретка: ездит по верхней грани куба и несёт клешню на тросе.
  */
 export class Cart extends Container {
   constructor() {
@@ -21,9 +20,7 @@ export class Cart extends Container {
       { x: -half, y: half, z: 0 },
     ].map((corner) => worldToScreen(corner))
 
-    this.addChild(
-      new Graphics().poly(corners).stroke({ width: LINE_THICKNESS, color: PALETTE.cyan })
-    )
+    this.addChild(new Graphics().poly(corners).stroke({ width: LINE_THICKNESS, color: PALETTE.cyan }))
   }
 
   /** Ставит каретку в точку мира. */
