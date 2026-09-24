@@ -1,14 +1,7 @@
 import { inject, injectable } from 'inversify'
 import type { Container, DestroyOptions, Ticker } from 'pixi.js'
 
-import {
-  CLAW_RADIUS,
-  CONTENTS_PRIORITY,
-  CUBE_HEIGHT,
-  DEPTH_SORT_STEP,
-  REDUCED_MOTION_QUERY,
-  UNIT_HEIGHT,
-} from '#src/constants'
+import { CLAW_RADIUS, CONTENTS_PRIORITY, CUBE_HEIGHT, DEPTH_SORT_STEP, UNIT_HEIGHT } from '#src/constants'
 import type { ClawController } from '#src/controllers/box/claw'
 import type { HeapStore } from '#src/stores/heap'
 import type { ToyboxStore } from '#src/stores/toybox'
@@ -50,7 +43,6 @@ export class ContentsController extends LiveContainer {
   private readonly shapes = new ToyShapes()
   private readonly toys = new Map<ToyId, Toy>()
   private readonly seen = new Set<ToyId>()
-  private readonly reducedMotion = window.matchMedia(REDUCED_MOTION_QUERY)
   /** Предметы сортировки по ключу и экранная точка с шагом крена, при которых предмет последний раз сравнивался. */
   private readonly entries = new Map<number, { view: Container; item: DepthItem; anchor: ScreenPoint; step: number }>()
   /** Отношения пар предметов: `relations.get(a).get(b)` — ближе ли `a`, чем `b`. */
@@ -113,7 +105,6 @@ export class ContentsController extends LiveContainer {
   }
 
   private step = (ticker: Ticker): void => {
-    this.heap.setReducedMotion(this.reducedMotion.matches)
     this.heap.setGripPoint(this.claw.getGripPoint())
     this.heap.advance(ticker.deltaMS)
     this.sync()

@@ -11,6 +11,7 @@ import {
   REELS_COUNT,
   REELS_ZONE_HEIGHT,
 } from '#src/constants'
+import { isReducedMotion } from '@pixi-demos/core/accessibility'
 import { PALETTE } from '@pixi-demos/core/palette'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 
@@ -67,7 +68,7 @@ export class HeldFrame extends Container {
 
   /** Подсвечивает барабаны из списка; повторный вызов с теми же барабанами ничего не меняет. */
   setHeld(reels: readonly number[]): void {
-    const isStill = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const isStill = isReducedMotion()
 
     this.columns.forEach((column, reel) => {
       const isHeld = reels.includes(reel)

@@ -54,6 +54,7 @@ import {
   toPlane,
 } from '#src/utils/shapes'
 import { isHeapSnapshot } from '#src/utils/snapshot'
+import { isReducedMotion } from '@pixi-demos/core/accessibility'
 import type { Random } from '@pixi-demos/core/types'
 
 /**
@@ -81,7 +82,6 @@ export class HeapStore {
   private initialGripOffset: WorldPoint = { x: 0, y: 0, z: 0 }
   private initialAngle = 0
   private grabProgress = 0
-  private reducedMotion = false
 
   /**
    * Восстанавливает проверенный снимок или насыпает купол из случайных форм.
@@ -268,17 +268,12 @@ export class HeapStore {
     this.world.moveCarried(body.id, { y: point.y, z: point.z, angle: body.pose.angle })
   }
 
-  /** Настройку доступности передаёт контроллер; модель не обращается к браузеру. */
-  setReducedMotion(reduced: boolean): void {
-    this.reducedMotion = reduced
-  }
-
   /**
    * Прожимает игрушку под точкой поля весом промахнувшейся клешни: импульс вниз в точке касания.
    * Удар мимо центра игрушку раскачивает, соседи отвечают по физике. При уменьшенном движении не толкает.
    */
   press(point: GroundPoint): void {
-    if (this.reducedMotion) return
+    if (isReducedMotion()) return
 
     const { id, z } = this.castDown(point)
     const body = id === undefined ? undefined : this.bodies.get(id)
@@ -295,7 +290,7 @@ export class HeapStore {
    */
   advance(deltaMs: number): void {
     if (this.world.hasAwake()) {
-      if (this.reducedMotion) {
+      if (isReducedMotion()) {
         this.settleWorld(true)
         this.pendingMs = 0
       } else {

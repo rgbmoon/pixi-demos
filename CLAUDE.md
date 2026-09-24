@@ -107,8 +107,8 @@ Husky `pre-commit` запускает `pnpm lint`; тесты и E2E гоняе�
 
 ```
 packages/
-  core/                чистый TS: errors/, events/, fsm/ (движки), keyboard-input, palette, easing,
-                       random, storage и idb-storage, tokens
+  core/                чистый TS: errors/, events/, fsm/ (движки), accessibility, keyboard-input,
+                       palette, easing, random, storage и idb-storage, tokens
   net/                 транспорт WS и его биндинг, конверт, msw-хелпер; без PIXI и React
   engine/              PIXI-рантайм: хост, тикер, пул скелетов, skeleton/, синтезатор audio/
                        и базы сцены — LiveContainer и SpineAnimation

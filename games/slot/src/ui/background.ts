@@ -1,5 +1,6 @@
 import { Assets, Container, Graphics, Sprite, type Ticker } from 'pixi.js'
 
+import { isReducedMotion } from '@pixi-demos/core/accessibility'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 import { tweenAlpha } from '@pixi-demos/engine/utils'
 
@@ -67,7 +68,7 @@ export class Background extends Container {
 
     const target = Number(isTurbo)
 
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (isReducedMotion()) {
       this.turboSprite.alpha = target
 
       return

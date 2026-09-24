@@ -12,6 +12,7 @@ import {
 } from '#src/constants'
 import { LabelColor } from '#src/types'
 import { Label } from '#src/ui/hud/label'
+import { isReducedMotion } from '@pixi-demos/core/accessibility'
 import { easeOutBack } from '@pixi-demos/core/easing'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 
@@ -55,7 +56,7 @@ export class CascadeMultiplier extends Container {
     this.valueLabel.text = text
     this.visible = true
 
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (isReducedMotion()) {
       this.valueLabel.scale.set(1)
 
       return

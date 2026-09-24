@@ -1,9 +1,10 @@
 import type { Application, Container, Ticker } from 'pixi.js'
 
+import { isReducedMotion } from '@pixi-demos/core/accessibility'
 import { traceError } from '@pixi-demos/core/errors/utils'
 
 import type { GameTicker } from './game-ticker'
-import type { CanvasConfig, CanvasSize, ShakeOptions } from './types'
+import type { CanvasConfig, CanvasSize, ProgressTweenOptions, ShakeOptions } from './types'
 
 /**
  * Отдаёт приложение расширению PixiJS DevTools и добавляет к нему свои GPU-метрики.
@@ -74,7 +75,7 @@ export const tweenAlpha = (
     const from = target.alpha
     const distance = to - from
 
-    if (distance === 0 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (distance === 0 || isReducedMotion()) {
       target.alpha = to
       resolve()
 
@@ -132,7 +133,7 @@ export const tweenShake = (
       return
     }
 
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (isReducedMotion()) {
       resolve()
 
       return
@@ -162,6 +163,52 @@ export const tweenShake = (
       const progress = elapsed / durationMs
 
       target.x = originX + amplitude * (1 - progress) * Math.sin(progress * oscillations * 2 * Math.PI)
+    }
+
+    const handleAbort = () => settle(() => reject(signal?.reason as Error))
+
+    signal?.addEventListener('abort', handleAbort, { once: true })
+
+    ticker.add(step)
+  })
+
+/** Ведёт нормализованный прогресс на игровом тикере; при уменьшенном движении сразу отдаёт единицу. */
+export const tweenProgress = (
+  ticker: GameTicker,
+  { durationMs, apply }: ProgressTweenOptions,
+  signal?: AbortSignal
+): Promise<void> =>
+  new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(signal.reason as Error)
+
+      return
+    }
+
+    if (isReducedMotion()) {
+      apply(1)
+      resolve()
+
+      return
+    }
+
+    let elapsed = 0
+
+    const settle = (finish: () => void) => {
+      ticker.remove(step)
+      signal?.removeEventListener('abort', handleAbort)
+
+      finish()
+    }
+
+    const step = (frameTicker: Ticker) => {
+      elapsed += frameTicker.deltaMS
+
+      const progress = Math.min(elapsed / durationMs, 1)
+
+      apply(progress)
+
+      if (progress === 1) settle(resolve)
     }
 
     const handleAbort = () => settle(() => reject(signal?.reason as Error))

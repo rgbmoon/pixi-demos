@@ -4,11 +4,11 @@ import type { DestroyOptions } from 'pixi.js'
 import { PRIZE_DOOR_MS, PRIZE_TAKE_MS } from '#src/constants'
 import type { ToyAppearance } from '#src/types'
 import { PrizeOutput } from '#src/ui/box/prize-output'
-import { tweenProgress } from '#src/utils/animation'
 import { createAbortError } from '@pixi-demos/core/errors/utils'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 import { LiveContainer } from '@pixi-demos/engine/live-container'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
+import { tweenProgress } from '@pixi-demos/engine/utils'
 
 /** Отдельные операции окна выдачи; последовательность и выдержки задаёт фаза. */
 @injectable()

@@ -1,6 +1,7 @@
 import type * as PixiModule from 'pixi.js'
 import type { Texture, Ticker } from 'pixi.js'
 
+import { isReducedMotion } from '@pixi-demos/core/accessibility'
 import { easeOutBack } from '@pixi-demos/core/easing'
 import { traceError } from '@pixi-demos/core/errors/utils'
 import { BG_BLOBS, BG_CANVAS_COLOR, BG_SPAWN_DURATION } from 'src/components/BackgroundCanvas/constants'
@@ -123,7 +124,7 @@ export const mountBackground = (container: HTMLElement): (() => void) => {
       layout(elapsed)
     }
 
-    const animate = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const animate = !isReducedMotion()
 
     if (animate) {
       layout(0)

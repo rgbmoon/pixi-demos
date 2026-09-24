@@ -407,9 +407,6 @@ export const PRIZE_TAKE_MS = 450
 export const WELCOME_MS = 1500
 export const RESET_MS = 1000
 
-/** Медиа-запрос системной настройки уменьшенного движения. */
-export const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)'
-
 /** Физические коды клавиш игрового управления. */
 export const KEYBOARD_ARROW_CODES = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'] as const
 export const KEYBOARD_DROP_CODES = ['Enter', 'Space'] as const

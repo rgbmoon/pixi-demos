@@ -227,12 +227,6 @@ export type ClawMotion = ClawMotionOptions & {
   readonly cancel: (reason: unknown) => void
 }
 
-/** Длительность твина и функция, которая получает прогресс 0–1 в каждом кадре. */
-export type ProgressTweenOptions = {
-  readonly durationMs: number
-  readonly apply: (progress: number) => void
-}
-
 /** Имя кнопки в слое доступности и действие по нажатию. */
 export type ButtonOptions = {
   label: string

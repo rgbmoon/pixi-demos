@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { CLAW_REST_HEIGHT, GRID_SIZE, HEAP_SNAPSHOT_VERSION, SHAPE_KEYS, TRAY_CENTER } from '#src/constants'
 import { HeapStore } from '#src/stores/heap'
@@ -126,6 +126,10 @@ const liftToRest = (heap: HeapStore, point: { x: number; y: number }): number | 
 
   return id
 }
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
 describe('HeapStore: наполнение', () => {
   it('насыпает одну и ту же кучу на одном сиде и разные — на разных', () => {
@@ -257,7 +261,7 @@ describe('HeapStore: прожатие', () => {
     const heap = createFilledHeap(2)
     const before = heap.takeSnapshot(0)
 
-    heap.setReducedMotion(true)
+    vi.stubGlobal('matchMedia', () => ({ matches: true }))
     heap.press({ x: 4.5, y: 4 })
     heap.advance(FRAME_MS)
 
@@ -416,7 +420,7 @@ describe('HeapStore: уменьшенное движение', () => {
   it('приходит в покой за один кадр', () => {
     const heap = createFilledHeap(5)
 
-    heap.setReducedMotion(true)
+    vi.stubGlobal('matchMedia', () => ({ matches: true }))
     liftToRest(heap, { x: 4.5, y: 4 })
     heap.release({ x: 2.5, y: 5, z: CLAW_REST_HEIGHT })
     heap.advance(FRAME_MS)
