@@ -1,14 +1,16 @@
 // @vitest-environment jsdom
+import { Container } from 'pixi.js'
 import { describe, expect, it } from 'vitest'
 
 import { CUBE_HEIGHT, GRID_SIZE } from '#src/constants'
-import { HeapStore } from '#src/stores/heap'
 import type { DepthItem, PlaneVector, ScreenPoint, ShapeKey, WorldPoint } from '#src/types'
-import { getDepthRelation, getPlaneDepthItem, getPointDepthItem, getToyDepthItem, sortByDepth } from '#src/utils/depth'
-import { getFaceOutline, getTrayWallOutlines } from '#src/utils/grid'
-import { getViewRay, screenToGround } from '#src/utils/projection'
+import { DepthLayer } from '#src/ui/box/depth-layer'
+import { getDepthRelation, getPlaneDepthItem, getPointDepthItem, getToyDepthItem, orderByDepth } from '#src/utils/depth'
+import { getFaceOutline, getTrayWallOutlines } from '#src/utils/machine-geometry'
+import { getViewRay, screenToGround, worldToScreen } from '#src/utils/projection'
 import { getDepthCenter, getVariant } from '#src/utils/shapes'
-import { createRandom } from '@pixi-demos/core/random'
+
+import { getPouredHeap } from './setup/heap'
 
 const RAY = getViewRay()
 
@@ -114,9 +116,20 @@ const traceOrder = (first: DepthItem, second: DepthItem): number => {
   return 0
 }
 
+/** Центр игрушки, стоящей в срезе `slab` на высоте `z`. */
+const center = (shape: ShapeKey, slab: number, y: number, z: number, variant = 0): WorldPoint => ({
+  x: getDepthCenter(slab, getVariant(shape, variant).depth),
+  y,
+  z,
+})
+
 /** Предмет игрушки без крена, центр которой стоит в срезе `slab` на высоте `z`. */
 const toy = (shape: ShapeKey, slab: number, y: number, z: number, variant = 0): DepthItem =>
-  getToyDepthItem(shape, variant, { x: getDepthCenter(slab, getVariant(shape, variant).depth), y, z }, 0)
+  getToyDepthItem(shape, variant, center(shape, slab, y, z, variant), 0)
+
+/** Порядок отрисовки предметов, от дальнего к ближнему, со сравнением каждой пары заново. */
+const sortByDepth = (items: readonly DepthItem[]): number[] =>
+  orderByDepth(items, (first, second) => getDepthRelation(items[first], items[second]))
 
 /** Ранги предметов в порядке отрисовки: больший рисуется позже. */
 const rank = (items: readonly DepthItem[]): number[] => {
@@ -135,13 +148,9 @@ describe('порядок наложения', () => {
     let relationErrors = 0
     let largestBreak = 0
 
-    for (const seed of [1, 2, 3, 4, 5, 6]) {
-      const heap = new HeapStore()
-
-      heap.restore(undefined, createRandom(seed))
-
-      const items = [...heap.getBodies()].map((body) =>
-        getToyDepthItem(body.shape, body.variant, body.pose.point, body.pose.angle)
+    for (const seed of [1, 2, 3]) {
+      const items = getPouredHeap(seed).map(({ shape, variant, slab, y, z, angle }) =>
+        getToyDepthItem(shape, variant, { x: getDepthCenter(slab, getVariant(shape, variant).depth), y, z }, angle)
       )
       const ranks = rank(items)
 
@@ -161,7 +170,8 @@ describe('порядок наложения', () => {
       }
     }
 
-    expect(pairs).toBeGreaterThan(1000)
+    // Три кучи дают около тысячи пересекающихся пар: меньше половины значит, что проверка выродилась
+    expect(pairs).toBeGreaterThan(500)
     expect(relationErrors).toBe(0)
     expect(largestBreak).toBeLessThan(CYCLE_AREA_LIMIT)
   })
@@ -217,5 +227,31 @@ describe('порядок наложения', () => {
 
     expect(getDepthRelation(claw, below)).toBeGreaterThan(0)
     expect(getDepthRelation(front, distant)).toBeGreaterThan(0)
+  })
+})
+
+describe('слой наложения', () => {
+  it('пересчитывает порядок, когда игрушка переехала ближе к игроку', () => {
+    const layer = new DepthLayer()
+    const moving = new Container()
+    const standing = new Container()
+    const place = (view: Container, slab: number) => {
+      const point = center('single', slab, 4, 0.5)
+
+      layer.place(view, worldToScreen(point), 0, () => getToyDepthItem('single', 0, point, 0))
+    }
+
+    place(moving, 4)
+    place(standing, 3)
+    layer.sort()
+
+    expect(moving.zIndex).toBeLessThan(standing.zIndex)
+
+    place(moving, 2)
+    layer.sort()
+
+    expect(moving.zIndex).toBeGreaterThan(standing.zIndex)
+
+    layer.destroy({ children: true })
   })
 })

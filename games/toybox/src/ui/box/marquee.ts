@@ -1,17 +1,21 @@
 import { Container, Graphics, Matrix, Text } from 'pixi.js'
 
 import {
+  CABINET_FRONT_PLANE,
   CELL_SIZE,
   HUD_FONT_FAMILY,
   LINE_THICKNESS,
+  MARQUEE_FILL_ALPHA,
   MARQUEE_TEXT_CENTER,
-  TRAY_ALPHA,
 } from '#src/constants'
-import { CABINET_FRONT_PLANE, getMarqueeOutlines, projectPlaneOffset } from '#src/utils/machine-geometry'
-import { worldToScreen } from '#src/utils/projection'
+import { getMarqueeOutlines } from '#src/utils/machine-geometry'
+import { projectPlaneOffset, worldToScreen } from '#src/utils/projection'
 import { PALETTE } from '@pixi-demos/core/palette'
 
-/** Контурное табло, построенное в тех же мировых осях, что и стеклянный бокс. */
+/**
+ * Крыша автомата с экраном для вывода текста и символов
+ * TODO сделать вывод текста бегущей строкой
+ */
 export class Marquee extends Container {
   private readonly message: Text
 
@@ -23,7 +27,7 @@ export class Marquee extends Container {
     for (const face of getMarqueeOutlines()) {
       outline
         .poly(face.map((point) => worldToScreen(point)))
-        .fill({ color: PALETTE.accent, alpha: TRAY_ALPHA })
+        .fill({ color: PALETTE.accent, alpha: MARQUEE_FILL_ALPHA })
         .stroke({ color: PALETTE.primary, width: LINE_THICKNESS })
     }
 
@@ -60,10 +64,5 @@ export class Marquee extends Container {
   /** Выводит текст на переднюю грань табло. */
   setMessage(message: string): void {
     this.message.text = message
-  }
-
-  /** Текст, выведенный на табло. */
-  getMessage(): string {
-    return this.message.text
   }
 }

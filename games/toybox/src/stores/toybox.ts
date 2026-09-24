@@ -1,8 +1,8 @@
 import { injectable } from 'inversify'
 import { action, computed, makeObservable, observable } from 'mobx'
 
-import { INITIAL_PHASE } from '#src/constants'
-import { type GroundPoint, type HeapSnapshot, PhaseName, type ScreenPoint } from '#src/types'
+import { HEAP_SNAPSHOT_VERSION, INITIAL_PHASE } from '#src/constants'
+import { type GroundPoint, type HeapSnapshot, type HeapSnapshotBody, PhaseName, type ScreenPoint } from '#src/types'
 import { toGroundDirection } from '#src/utils/projection'
 
 /** Состояние фазы, управления и количества доставленных игрушек. */
@@ -62,9 +62,9 @@ export class ToyboxStore {
     this.collected += 1
   }
 
-  /** Публикует согласованные размещение и счёт после завершения цикла. */
-  @action publishCheckpoint(snapshot: HeapSnapshot): void {
-    this.checkpoint = snapshot
+  /** Публикует после завершения цикла снимок из поз покоя кучи и текущего счёта. */
+  @action publishCheckpoint(bodies: HeapSnapshotBody[]): void {
+    this.checkpoint = { version: HEAP_SNAPSHOT_VERSION, collected: this.collected, bodies }
   }
 
   /** Поднимает счётчик из снимка: его зовёт стартовая фаза после восстановления кучи. */

@@ -125,10 +125,6 @@ export const orderByDepth = (items: readonly DepthItem[], relate: (first: number
   return order
 }
 
-/** Порядок отрисовки предметов, от дальнего к ближнему, со сравнением каждой пары заново. */
-export const sortByDepth = (items: readonly DepthItem[]): number[] =>
-  orderByDepth(items, (first, second) => getDepthRelation(items[first], items[second]))
-
 /** Предмет сортировки для игрушки: центр позы и крен. */
 export const getToyDepthItem = (shape: ShapeKey, variant: number, point: WorldPoint, angle: number): DepthItem => {
   const { depth } = getVariant(shape, variant)

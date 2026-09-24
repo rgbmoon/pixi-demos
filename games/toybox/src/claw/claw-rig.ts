@@ -1,49 +1,35 @@
-import { inject, injectable } from 'inversify'
-import type { DestroyOptions, Ticker } from 'pixi.js'
+import { injectable } from 'inversify'
+
+import { CART_SIZE, CLAW_GRAB_MS, CLAW_RAMP_SHARE, CUBE_HEIGHT, FIELD_CENTER } from '#src/constants'
+import type { ClawDrop, GroundPoint, WorldPoint } from '#src/types'
+import { clampToField } from '#src/utils/machine-geometry'
+import { lerp } from '#src/utils/math'
+import { isReducedMotion } from '@pixi-demos/core/accessibility'
+import { easeTrapezoid, easeTrapezoidInverse } from '@pixi-demos/core/easing'
+import { createAbortError } from '@pixi-demos/core/errors/utils'
 
 import {
-  CLAW_PRIORITY,
-  MIN_TRAVEL_MS,
-  CART_SIZE,
   CLAW_DROP_MS,
-  CLAW_GRAB_MS,
   CLAW_LIFT_MS,
   CLAW_MAX_SPEED,
-  CLAW_RAMP_SHARE,
   CLAW_REST_HEIGHT,
   CLAW_TRAVEL_SPEED,
-  CUBE_HEIGHT,
-  FIELD_CENTER,
-  REDUCED_MOTION_QUERY,
+  MIN_TRAVEL_MS,
   SWAY_DAMPING,
   SWAY_DRAG,
   SWAY_MAX_OFFSET,
   SWAY_PERIOD_MS,
-} from '#src/constants'
-import type { ToyboxStore } from '#src/stores/toybox'
-import { TOYBOX_TOKENS } from '#src/tokens'
-import type { ClawDrop, ClawMotion, ClawMotionOptions, GroundPoint, SpringState, WorldPoint } from '#src/types'
-import { Cart } from '#src/ui/box/cart'
-import { Claw } from '#src/ui/box/claw'
-import { Rope } from '#src/ui/box/rope'
-import { clampToField } from '#src/utils/grid'
-import { lerp } from '#src/utils/math'
-import { advanceSpring, advanceVelocity } from '#src/utils/motion'
-import { easeTrapezoid, easeTrapezoidInverse } from '@pixi-demos/core/easing'
-import { createAbortError } from '@pixi-demos/core/errors/utils'
-import type { GameTicker } from '@pixi-demos/engine/game-ticker'
-import { LiveContainer } from '@pixi-demos/engine/live-container'
-import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
+} from './constants'
+import type { ClawMotion, ClawMotionOptions, SpringState } from './types'
+import { advanceSpring, advanceVelocity } from './utils'
 
-/** Обновляет кинематику каретки и клешни перед шагом модели кучи на игровом тикере. */
+/**
+ * Модель клешни: положение каретки, высота клешни, скорость по вводу игрока, качание на тросе и движения фаз.
+ * Команды фаз возвращают промис конца движения, кадровый шаг `advance` продвигает модель; при уменьшенном
+ * движении команда завершается в самом вызове.
+ */
 @injectable()
-export class ClawController extends LiveContainer {
-  private readonly ticker: GameTicker
-  private readonly toyboxStore: ToyboxStore
-  private readonly cart = new Cart()
-  private readonly rope = new Rope()
-  private readonly claw = new Claw()
-  private readonly reducedMotion = window.matchMedia(REDUCED_MOTION_QUERY)
+export class ClawRig {
   private cartPosition: GroundPoint = FIELD_CENTER
   private clawHeight = CLAW_REST_HEIGHT
   private velocity: GroundPoint = { x: 0, y: 0 }
@@ -52,30 +38,6 @@ export class ClawController extends LiveContainer {
   /** Предыдущее положение каретки для расчёта скорости, вызывающей качание клешни. */
   private previous: GroundPoint = FIELD_CENTER
   private motion?: ClawMotion
-
-  constructor(
-    @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
-    @inject(TOYBOX_TOKENS.ToyboxStore) toyboxStore: ToyboxStore
-  ) {
-    super()
-
-    this.ticker = ticker
-    this.toyboxStore = toyboxStore
-
-    this.addChild(this.rope, this.cart, this.claw)
-    this.render()
-
-    this.ticker.add(this.step, undefined, CLAW_PRIORITY)
-  }
-
-  override destroy(options?: DestroyOptions): void {
-    if (this.destroyed) return
-
-    this.ticker.remove(this.step)
-    this.motion?.cancel(createAbortError('Claw destroyed'))
-
-    super.destroy(options)
-  }
 
   /** Мировая точка каретки на потолке; качание клешни её не изменяет. */
   getCartPoint(): WorldPoint {
@@ -101,9 +63,9 @@ export class ClawController extends LiveContainer {
     await this.tween({ ...target, z: this.clawHeight }, this.getTravelMs(target), signal, { drop, settleSwing: true })
   }
 
-  /** Проигрывает захват на месте; сообщает прогресс 0–1 и точку захвата перед обновлением кучи. */
-  async grab(onProgress: (progress: number, grip: WorldPoint) => void, signal: AbortSignal): Promise<void> {
-    await this.tween({ ...this.cartPosition, z: this.clawHeight }, CLAW_GRAB_MS, signal, { onProgress })
+  /** Проигрывает захват на месте за `CLAW_GRAB_MS`. */
+  async grab(signal: AbortSignal): Promise<void> {
+    await this.tween({ ...this.cartPosition, z: this.clawHeight }, CLAW_GRAB_MS, signal)
   }
 
   /** Опускает клешню до высоты `toZ` */
@@ -121,6 +83,19 @@ export class ClawController extends LiveContainer {
     )
   }
 
+  /**
+   * Кадровый шаг: движение фазы, а без него ход каретки по вводу `direction`. Качание клешни идёт при любом
+   * её движении; пока идёт движение фазы, ввод игрока не применяется.
+   */
+  advance(deltaMs: number, direction: GroundPoint): void {
+    if (this.motion) {
+      this.advanceMotion(isReducedMotion() ? this.motion.durationMs : deltaMs)
+    } else {
+      this.drive(deltaMs, direction)
+      this.advanceSwing(deltaMs)
+    }
+  }
+
   /** Сколько клешне идти до точки поля. */
   private getTravelMs(target: GroundPoint): number {
     const distance = Math.hypot(target.x - this.cartPosition.x, target.y - this.cartPosition.y)
@@ -133,33 +108,8 @@ export class ClawController extends LiveContainer {
     return Math.max((fullMs * Math.abs(toZ - this.clawHeight)) / CUBE_HEIGHT, MIN_TRAVEL_MS)
   }
 
-  /** Кадровый шаг: ход каретки по джойстику и качание клешни, которое идёт при любом её движении. */
-  private step = (ticker: Ticker): void => {
-    const previous = this.cartPosition
-    const { clawHeight } = this
-    const swingX = this.swing.x.value
-    const swingY = this.swing.y.value
-
-    if (this.motion) {
-      this.advanceMotion(this.reducedMotion.matches ? this.motion.durationMs : ticker.deltaMS)
-    } else {
-      this.drive(ticker.deltaMS)
-      this.advanceSwing(ticker.deltaMS)
-    }
-    if (
-      previous.x !== this.cartPosition.x ||
-      previous.y !== this.cartPosition.y ||
-      clawHeight !== this.clawHeight ||
-      swingX !== this.swing.x.value ||
-      swingY !== this.swing.y.value
-    ) {
-      this.render()
-    }
-  }
-
-  /** Кадровый ход каретки по джойстику. Пока идёт движение фазы, ввод игрока не применяется. */
-  private drive(deltaMs: number): void {
-    const { direction } = this.toyboxStore
+  /** Кадровый ход каретки по вводу игрока. */
+  private drive(deltaMs: number, direction: GroundPoint): void {
     const target = { x: direction.x * CLAW_MAX_SPEED, y: direction.y * CLAW_MAX_SPEED }
 
     this.velocity = advanceVelocity(this.velocity, target, deltaMs)
@@ -191,7 +141,7 @@ export class ClawController extends LiveContainer {
 
     this.previous = { ...this.cartPosition }
 
-    if (this.reducedMotion.matches) {
+    if (isReducedMotion()) {
       this.swing = { x: { value: 0, velocity: 0 }, y: { value: 0, velocity: 0 } }
       return
     }
@@ -208,19 +158,6 @@ export class ClawController extends LiveContainer {
     const target = Math.sign(drag) * Math.min(Math.abs(drag), SWAY_MAX_OFFSET)
 
     return advanceSpring(state, { target, periodMs: SWAY_PERIOD_MS, damping: SWAY_DAMPING }, deltaMs)
-  }
-
-  /**
-   * Переносит положение на экран: каретка стоит над своей точкой верхней грани, клешня висит под ней
-   * с отклонением маятника, трос их соединяет. Порядок наложения узла выставляет слой содержимого.
-   */
-  private render(): void {
-    const visible = this.getGripPoint()
-    const mount = this.getCartPoint()
-
-    this.cart.setWorld(mount)
-    this.rope.setSpan(mount, visible)
-    this.claw.setWorld(visible)
   }
 
   /**
@@ -266,10 +203,7 @@ export class ClawController extends LiveContainer {
       this.previous = { x: motion.from.x, y: motion.from.y }
       this.motion = motion
       signal?.addEventListener('abort', abort, { once: true })
-      if (this.reducedMotion.matches) {
-        this.advanceMotion(durationMs)
-        this.render()
-      }
+      if (isReducedMotion()) this.advanceMotion(durationMs)
     })
   }
 
@@ -311,7 +245,6 @@ export class ClawController extends LiveContainer {
 
     motion.elapsed = elapsed
     this.advanceSwing(deltaMs)
-    motion.onProgress?.(share, this.getGripPoint())
   }
 
   private isSwingSettled(): boolean {

@@ -2,22 +2,22 @@ import { Circle, Container, type FederatedPointerEvent, Graphics } from 'pixi.js
 
 import {
   CELL_SIZE,
+  CONTROL_PANEL_PLANE,
   DISABLED_ALPHA,
   JOYSTICK_FILL_ALPHA,
   JOYSTICK_HIT_RADIUS,
   JOYSTICK_KNOB_RADIUS,
   JOYSTICK_RADIUS,
   JOYSTICK_STEM_THICKNESS,
-  JOYSTICK_THICKNESS,
+  LINE_THICKNESS,
 } from '#src/constants'
 import type { JoystickOptions, ScreenPoint } from '#src/types'
 import {
-  CONTROL_PANEL_PLANE,
   getProjectedPlaneCircle,
   projectPlaneOffset,
   screenToPlaneOffset,
-} from '#src/utils/machine-geometry'
-import { worldToScreen } from '#src/utils/projection'
+  worldToScreen,
+} from '#src/utils/projection'
 import { PALETTE } from '@pixi-demos/core/palette'
 
 /** Джойстик, основание и ход ручки которого лежат в мировой плоскости панели управления. */
@@ -37,7 +37,7 @@ export class Joystick extends Container {
     const base = new Graphics()
       .poly(getProjectedPlaneCircle(CONTROL_PANEL_PLANE, JOYSTICK_RADIUS))
       .fill({ color: PALETTE.primary, alpha: JOYSTICK_FILL_ALPHA })
-      .stroke({ width: JOYSTICK_THICKNESS, color: PALETTE.primary })
+      .stroke({ width: LINE_THICKNESS, color: PALETTE.primary })
 
     this.head.poly(getProjectedPlaneCircle(CONTROL_PANEL_PLANE, JOYSTICK_KNOB_RADIUS)).fill(PALETTE.primary)
     this.tilt({ x: 0, y: 0 })

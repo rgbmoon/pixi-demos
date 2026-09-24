@@ -73,10 +73,10 @@ const NO_RAW_SUBSCRIBE = [
 
 const NOT_OTHER_GAME = forbid(GAMES, 'Игра не импортирует пакеты игр; свой пакет импортируется через #src/.')
 
-// Физический движок импортирует только уровень physics/: замена движка не выходит за его пределы
+// Физический движок импортирует только мир кучи heap/heap-world.ts: замена движка не выходит за его пределы
 const NO_PLANCK = {
   group: ['planck', 'planck/*'],
-  message: 'planck импортирует только physics/: остальной код работает с миром через стор.',
+  message: 'planck импортирует только heap/heap-world.ts: остальной код работает с миром через модель кучи.',
 }
 
 const packageBoundaries = [
@@ -159,14 +159,25 @@ const packageBoundaries = [
 // Каждый блок повторяет пакетный набор, иначе он его затрёт.
 const GAME_BASE = [NOT_OTHER_GAME, NO_REACT, NO_PLANCK]
 
+// Модели кучи и клешни — соседние уровни под фазами и контроллерами: друг друга они не импортируют
+const HEAP_FORBIDDEN_LAYERS = forbidLayers(
+  ['claw', 'stores', 'api', 'phases', 'controllers', 'ui', 'scenes'],
+  'Модель кучи — уровень под фазами и контроллерами: модель клешни, сторы, сеть, автомат и сцену она не импортирует.'
+)
+
+const CLAW_FORBIDDEN_LAYERS = forbidLayers(
+  ['heap', 'stores', 'api', 'phases', 'controllers', 'ui', 'scenes'],
+  'Модель клешни — уровень под фазами и контроллерами: модель кучи, сторы, сеть, автомат и сцену она не импортирует.'
+)
+
 const gameLayers = [
   boundary(['games/*/src/**/*.ts'], { patterns: GAME_BASE, paths: NO_RAW_SUBSCRIBE }),
   boundary(['games/*/src/ui/**/*.ts'], {
     patterns: [
       ...GAME_BASE,
       forbidLayers(
-        ['stores', 'physics', 'api', 'phases', 'controllers', 'scenes'],
-        'ui — то, что рисуется: сторов, физики, сети, контроллеров и сцены он не знает.'
+        ['stores', 'heap', 'claw', 'api', 'phases', 'controllers', 'scenes'],
+        'ui — то, что рисуется: сторов, моделей кучи и клешни, сети, контроллеров и сцены он не знает.'
       ),
       forbidLayers(['events'], 'ui не подписывается на события — это работа контроллера.'),
     ],
@@ -176,7 +187,7 @@ const gameLayers = [
     patterns: [
       ...GAME_BASE,
       forbidLayers(
-        ['stores', 'physics', 'phases', 'controllers', 'ui', 'scenes'],
+        ['stores', 'heap', 'claw', 'phases', 'controllers', 'ui', 'scenes'],
         'api знает только листовые типы и константы игры.'
       ),
     ],
@@ -185,7 +196,10 @@ const gameLayers = [
   boundary(['games/*/src/stores/**/*.ts'], {
     patterns: [
       ...GAME_BASE,
-      forbidLayers(['phases', 'controllers', 'ui', 'scenes'], 'Стор не знает ни автомата, ни сцены.'),
+      forbidLayers(
+        ['heap', 'claw', 'phases', 'controllers', 'ui', 'scenes'],
+        'Стор не знает ни моделей кучи и клешни, ни автомата, ни сцены.'
+      ),
     ],
     paths: NO_RAW_SUBSCRIBE,
   }),
@@ -195,7 +209,6 @@ const gameLayers = [
       // DTO живут рядом со своими схемами, поэтому тип ответа контроллеру доступен — вызов нет
       forbidLayers(['api'], 'Контроллер читает данные из стора, в сеть он не ходит.', true),
       forbidLayers(['phases', 'scenes'], 'Контроллер не знает ни автомата, ни сцены: они дёргают его методы сами.'),
-      forbidLayers(['physics'], 'Физику кучи ведёт стор: контроллер читает позы из стора.'),
     ],
     paths: NO_RAW_SUBSCRIBE,
   }),
@@ -207,7 +220,6 @@ const gameLayers = [
         'Фаза получает контроллеры через DI: сцену и виды — только import type.',
         true
       ),
-      forbidLayers(['physics'], 'Физику кучи ведёт стор: фаза зовёт его команды.'),
     ],
     paths: NO_RAW_SUBSCRIBE,
   }),
@@ -215,21 +227,23 @@ const gameLayers = [
     patterns: [
       ...GAME_BASE,
       forbidLayers(
-        ['api', 'phases', 'physics'],
-        'Сцена — раскладка контроллеров: ни сети, ни автомата, ни физики она не знает.'
+        ['api', 'phases', 'heap', 'claw'],
+        'Сцена — раскладка контроллеров: ни сети, ни автомата, ни моделей кучи и клешни она не знает.'
       ),
     ],
     paths: NO_RAW_SUBSCRIBE,
   }),
-  boundary(['games/*/src/physics/**/*.ts'], {
-    patterns: [
-      NOT_OTHER_GAME,
-      NO_REACT,
-      forbidLayers(
-        ['stores', 'api', 'phases', 'controllers', 'ui', 'scenes'],
-        'Физика — уровень под сторами: сторов, сети, автомата и сцены она не знает.'
-      ),
-    ],
+  boundary(['games/*/src/heap/**/*.ts'], {
+    patterns: [...GAME_BASE, HEAP_FORBIDDEN_LAYERS],
+    paths: NO_RAW_SUBSCRIBE,
+  }),
+  // Мир кучи — единственный модуль игры с planck: набор уровня heap без NO_PLANCK
+  boundary(['games/*/src/heap/heap-world.ts'], {
+    patterns: [NOT_OTHER_GAME, NO_REACT, HEAP_FORBIDDEN_LAYERS],
+    paths: NO_RAW_SUBSCRIBE,
+  }),
+  boundary(['games/*/src/claw/**/*.ts'], {
+    patterns: [...GAME_BASE, CLAW_FORBIDDEN_LAYERS],
     paths: NO_RAW_SUBSCRIBE,
   }),
 ]

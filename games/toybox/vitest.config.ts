@@ -7,6 +7,7 @@ export default mergeConfig(
   defineConfig({
     test: {
       setupFiles: ['./tests/setup/hooks.ts'],
+      globalSetup: ['./tests/setup/global.ts'],
     },
   })
 )

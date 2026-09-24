@@ -43,16 +43,6 @@ export type WorldPlane = {
   readonly vertical: WorldPoint
 }
 
-/** Измеренные экранные границы геометрии автомата. */
-export type ScreenBounds = {
-  readonly left: number
-  readonly right: number
-  readonly top: number
-  readonly bottom: number
-  readonly width: number
-  readonly height: number
-}
-
 /** Масштаб и начало координат корпуса на канвасе. */
 export type MachineLayout = {
   readonly scale: number
@@ -67,8 +57,8 @@ export type ClawDrop = {
 }
 
 /**
- * Идентификатор игрушки. Уникален на всё время жизни стора, включая повторные наполнения: рендер держит
- * по нему View-компоненты, и повторно выданный id подменил бы новой игрушке чужой силуэт.
+ * Идентификатор игрушки. Уникален на всё время жизни модели кучи, включая повторные наполнения: рендер
+ * держит по нему View-компоненты, и повторно выданный id подменил бы новой игрушке чужой силуэт.
  */
 export type ToyId = number
 
@@ -102,43 +92,11 @@ export type Shape = {
   readonly fillWeight: number
 }
 
-/** Профиль купола для наполнения: пик на полу, крутизна склона и расстояние от пика до дальнего угла. */
-export type DomeProfile = {
-  readonly peak: GroundPoint
-  readonly falloff: number
-  readonly reach: number
-}
-
 /** Центр игрушки в плоскости сечения и её крен в радианах. */
 export type ToyPose = {
   y: number
   z: number
   angle: number
-}
-
-/** Что с игрушкой происходит сейчас: от этого зависит, сталкивается ли она с кучей. */
-export const ToyState = {
-  /** Лежит в куче или движется по ней. */
-  free: 'free',
-  /** Висит в клешне и повторяет точку захвата. */
-  carried: 'carried',
-  /** Падает в шахту лотка без столкновений. */
-  exiting: 'exiting',
-} as const
-
-export type ToyState = (typeof ToyState)[keyof typeof ToyState]
-
-/** Игрушка в модели кучи: форма, срезы глубины и непрерывная поза, которой её рисуют. */
-export type ToyBody = {
-  readonly id: ToyId
-  readonly shape: ShapeKey
-  readonly variant: number
-  readonly color: number
-  /** Ближний срез глубины; игрушка занимает срезы от него на глубину своего положения. */
-  slab: number
-  /** Центр игрушки в мировых координатах и крен. */
-  pose: { point: WorldPoint; angle: number }
-  state: ToyState
 }
 
 /** Игрушка в снимке: форма, срезы и поза покоя. */
@@ -157,18 +115,6 @@ export type HeapSnapshot = {
   version: number
   collected: number
   bodies: HeapSnapshotBody[]
-}
-
-/** Биты фильтра столкновений фикстуры: её категории и категории, с которыми она сталкивается. */
-export type CollisionFilter = {
-  readonly filterCategoryBits: number
-  readonly filterMaskBits: number
-}
-
-/** Попадание луча, пущенного вниз: игрушка, в которую он упёрся, и высота точки. */
-export type SurfaceHit = {
-  id: ToyId | undefined
-  z: number
 }
 
 /**
@@ -195,42 +141,6 @@ export type ScreenRect = {
   readonly right: number
   readonly top: number
   readonly bottom: number
-}
-
-/** Состояние пружины: отклонение от цели и скорость его изменения. */
-export type SpringState = {
-  value: number
-  velocity: number
-}
-
-/** Цель, период и затухание пружины. */
-export type SpringOptions = {
-  target: number
-  periodMs: number
-  damping: number
-}
-
-/** Настройки движения и синхронизации анимации захвата. */
-export type ClawMotionOptions = {
-  readonly settleSwing?: boolean
-  drop?: ClawDrop
-  readonly onProgress?: (progress: number, grip: WorldPoint) => void
-}
-
-/** Одно отменяемое движение клешни, выполняемое её кадровым шагом. */
-export type ClawMotion = ClawMotionOptions & {
-  readonly from: WorldPoint
-  readonly to: WorldPoint
-  readonly durationMs: number
-  elapsed: number
-  readonly complete: () => void
-  readonly cancel: (reason: unknown) => void
-}
-
-/** Длительность твина и функция, которая получает прогресс 0–1 в каждом кадре. */
-export type ProgressTweenOptions = {
-  readonly durationMs: number
-  readonly apply: (progress: number) => void
 }
 
 /** Имя кнопки в слое доступности и действие по нажатию. */

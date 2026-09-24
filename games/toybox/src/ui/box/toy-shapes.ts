@@ -1,14 +1,13 @@
 import { GraphicsContext } from 'pixi.js'
 
-import { TOY_FILL_ALPHA, TOY_HIGHLIGHT_THICKNESS, TOY_THICKNESS } from '#src/constants'
+import { LINE_THICKNESS, TOY_FILL_ALPHA, TOY_HIGHLIGHT_THICKNESS } from '#src/constants'
 import type { ShapeKey } from '#src/types'
+import { getShapeOutline } from '#src/utils/shapes'
 import { PALETTE } from '@pixi-demos/core/palette'
 
-import { getShapeOutline } from './utils'
-
 /**
- * Общая геометрия игрушек: по контексту на форму, её положение, шаг крена и состояние подсветки.
- * Контекст создаётся при первом обращении и кэшируется до уничтожения владельца.
+ * Общая геометрия игрушек
+ * Хранит контексты контексты графики
  */
 export class ToyShapes {
   private readonly contexts = new Map<string, GraphicsContext>()
@@ -41,6 +40,6 @@ export class ToyShapes {
     return new GraphicsContext()
       .poly(getShapeOutline(shape, variant, step))
       .fill({ color: PALETTE.white, alpha: TOY_FILL_ALPHA })
-      .stroke({ width: highlighted ? TOY_HIGHLIGHT_THICKNESS : TOY_THICKNESS, color: PALETTE.white })
+      .stroke({ width: highlighted ? TOY_HIGHLIGHT_THICKNESS : LINE_THICKNESS, color: PALETTE.white })
   }
 }

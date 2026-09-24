@@ -41,7 +41,10 @@ another game's e2e.
 - [Reel machine](docs/reel-machine.html) — headless reels model and its PIXI adapter:
   architecture, diagrams, integration with the game, extension.
 - [Testing strategy](docs/testing.html) — test layers, what is covered and why.
-- [CLAUDE.md](CLAUDE.md) — layer rules and conventions.
+- [CLAUDE.md](CLAUDE.md) — monorepo rules and conventions; per-directory rules live in
+  [packages/CLAUDE.md](packages/CLAUDE.md), [games/CLAUDE.md](games/CLAUDE.md),
+  [games/slot/CLAUDE.md](games/slot/CLAUDE.md), [games/toybox/CLAUDE.md](games/toybox/CLAUDE.md) and
+  [web/CLAUDE.md](web/CLAUDE.md).
 
 ## Deploy
 

@@ -1,74 +1,39 @@
 import { injectable } from 'inversify'
-import { action, makeObservable, observable } from 'mobx'
+
+import { CLAW_GRAB_MS, CLAW_RAMP_SHARE, CUBE_HEIGHT, GRID_SIZE } from '#src/constants'
+import type { GroundPoint, HeapSnapshotBody, ShapeKey, ToyAppearance, ToyId, ToyPose, WorldPoint } from '#src/types'
+import { getSeparation, polygonsOverlap, projectPolygon } from '#src/utils/geometry'
+import { clamp } from '#src/utils/math'
+import { getDepthCenter, getSection, getVariant, getWeight, placeSection, toPlane } from '#src/utils/shapes'
+import { isReducedMotion } from '@pixi-demos/core/accessibility'
+import { easeTrapezoid } from '@pixi-demos/core/easing'
 
 import {
-  CUBE_HEIGHT,
-  FILL_BATCH,
-  FILL_BATCH_STEPS,
-  FILL_CANDIDATES,
-  FILL_MAX_FAILURES,
-  FILL_MAX_TILT,
-  FILL_SPAWN_GAP,
-  FILL_VOLUME,
-  GRID_SIZE,
+  GRAB_BASE_CHANCE,
+  GRAB_LOAD_PENALTY,
+  GRAB_MAX_CHANCE,
+  GRAB_MIN_CHANCE,
+  GRAB_WEIGHT_PENALTY,
   HEAP_MAX_STEPS_PER_FRAME,
   HEAP_SETTLE_MAX_STEPS,
   HEAP_SETTLE_TIMEOUT_MS,
-  HEAP_SNAPSHOT_VERSION,
   HEAP_STEP_MS,
   LOAD_CONTACT_GAP,
   LOAD_NORMAL_MIN,
-  RELEASE_RAISE_STEP,
   PRESS_SPEED,
-  TOY_ROOT_COLOR,
+  RELEASE_RAISE_STEP,
   TRAY_EXIT_Z,
-  TRAY_ORIGIN,
-  TRAY_SIZE,
-} from '#src/constants'
-import { HeapWorld } from '#src/physics/heap-world'
-import {
-  type GroundPoint,
-  type HeapSnapshot,
-  type ShapeKey,
-  type SurfaceHit,
-  type ToyAppearance,
-  type ToyBody,
-  type ToyId,
-  type ToyPose,
-  ToyState,
-  type WorldPoint,
-} from '#src/types'
-import { shiftColor } from '#src/utils/color'
-import { getSeparation, polygonsOverlap, projectPolygon } from '#src/utils/geometry'
-import { getDomeHeight, pickShape, planDome } from '#src/utils/heap'
-import { clamp } from '#src/utils/math'
-import { lerpPose } from '#src/utils/motion'
-import {
-  getDepthCenter,
-  getSection,
-  getSectionExtent,
-  getVariant,
-  getVariantCount,
-  getWeight,
-  placeSection,
-  toPlane,
-} from '#src/utils/shapes'
-import { isHeapSnapshot } from '#src/utils/snapshot'
-import type { Random } from '@pixi-demos/core/types'
+} from './constants'
+import { HeapWorld } from './heap-world'
+import { type SurfaceHit, type ToyBody, ToyState } from './types'
+import { lerpPose } from './utils'
 
 /**
  * Модель кучи игрушек: физический мир, сами игрушки и очередь призов.
  * Команды фаз меняют мир сразу; кадровый шаг продвигает симуляцию и переносит позы в игрушки.
  */
 @injectable()
-export class HeapStore {
-  constructor() {
-    makeObservable(this)
-  }
-
-  /** В куче все тела пришли в состояние покоя */
-  @observable settled = true
-
+export class Heap {
   private world = new HeapWorld()
   private readonly bodies = new Map<ToyId, ToyBody>()
   /** Позы двух последних шагов физики у движущихся тел: между ними интерполируется видимая поза. */
@@ -80,17 +45,15 @@ export class HeapStore {
   private carried?: ToyBody
   private initialGripOffset: WorldPoint = { x: 0, y: 0, z: 0 }
   private initialAngle = 0
-  private grabProgress = 0
-  private reducedMotion = false
+  /** Время посадки игрушки в клешню с момента `lift`; не больше `CLAW_GRAB_MS`. */
+  private grabMs = 0
 
   /**
-   * Восстанавливает проверенный снимок или насыпает купол из случайных форм.
-   * Некорректный снимок отклоняется до изменения модели.
+   * Загружает кучу из поз покоя: тела создаются спящими и до первого возмущения не двигаются.
+   * Позы не проверяются: снимок из хранилища проверяет стартовая фаза.
    */
-  restore(snapshot: HeapSnapshot | undefined, random: Random): void {
-    if (snapshot && !isHeapSnapshot(snapshot)) throw new Error('Invalid heap snapshot')
-
-    // Новый мир на каждое наполнение: повторно использованный мир planck теряет детерминизм
+  restore(bodies: readonly HeapSnapshotBody[]): void {
+    // Новый мир на каждое восстановление: повторно использованный мир не подходит - planck теряет детерминизм
     this.world = new HeapWorld()
     this.bodies.clear()
     this.frames.clear()
@@ -98,16 +61,12 @@ export class HeapStore {
     this.carried = undefined
     this.pendingMs = 0
     this.quietMs = 0
-    // `nextId` не обнуляется: id игрушки уникален на всё время жизни стора. Рендер держит по нему
-    // View-компоненты; повторный id связал бы новую игрушку с прежними геометрией и цветом
+    // `nextId` не обнуляется: id игрушки уникален на всё время жизни модели. Рендер держит по нему
+    // View-компоненты; повторный id связал бы новую игрушку с прежними геометрией и цветом, что вызовет визуальные баги.
 
-    if (snapshot) {
-      this.load(snapshot)
-    } else {
-      this.fill(random)
+    for (const { shape, variant, slab, y, z, angle, color } of bodies) {
+      this.create(shape, variant, slab, { y, z, angle }, color)
     }
-
-    this.setSettled(true)
   }
 
   /** Верх кучи под точкой поля: на эту высоту садится клешня. */
@@ -117,40 +76,33 @@ export class HeapStore {
 
   /** Игрушка, в которую упирается луч, пущенный вниз из точки поля. */
   getTopBodyAt(point: GroundPoint): Readonly<ToyBody> | undefined {
-    return this.findTop(point)
+    const { id } = this.castDown(point)
+    const body = id === undefined ? undefined : this.bodies.get(id)
+
+    return body?.state === ToyState.free ? body : undefined
   }
 
-  /**
-   * Суммарный вес игрушек, лежащих сверху напрямую или через другие игрушки. Касание считается по
-   * геометрии сечений в общем срезе: контакты движка между спящими телами не обновляются.
-   */
-  getLoad(id: ToyId): number {
-    const start = this.bodies.get(id)
+  /** Доля успешных захватов игрушки под точкой поля: шанс снижают её вес и нагрузка сверху. Над пустым местом — 0. */
+  getGrabChance(point: GroundPoint): number {
+    const body = this.getTopBodyAt(point)
 
-    if (!start) return 0
+    if (!body) return 0
 
-    const seen = new Set<ToyId>([id])
-    const queue: ToyBody[] = [start]
-    let load = 0
-
-    while (queue.length > 0) {
-      const current = queue.shift() as ToyBody
-
-      for (const other of this.bodies.values()) {
-        if (seen.has(other.id) || other.state !== ToyState.free || !this.restsOn(other, current)) continue
-
-        seen.add(other.id)
-        load += getWeight(other.shape)
-        queue.push(other)
-      }
-    }
-
-    return load
+    return clamp(
+      GRAB_BASE_CHANCE / (1 + GRAB_WEIGHT_PENALTY * getWeight(body.shape) + GRAB_LOAD_PENALTY * this.getLoad(body.id)),
+      GRAB_MIN_CHANCE,
+      GRAB_MAX_CHANCE
+    )
   }
 
   /** Все игрушки кучи: их перебирает рендер. */
   getBodies(): IterableIterator<Readonly<ToyBody>> {
     return this.bodies.values()
+  }
+
+  /** Куча в покое: все тела уснули и клешня пуста. */
+  get settled(): boolean {
+    return !this.carried && !this.world.hasAwake()
   }
 
   /** Есть ли игрушка в захвате. Владение хранится только в модели. */
@@ -168,30 +120,30 @@ export class HeapStore {
     return this.prizes.shift()
   }
 
-  /** Снимок согласованного покоя; незавершённое движение сериализовать нельзя. */
-  takeSnapshot(collected: number): HeapSnapshot {
-    if (!this.settled || this.carried) throw new Error('Heap is not settled')
+  /** Позы покоя игрушек для снимка; незавершённое движение сериализовать нельзя. */
+  takeSnapshot(): HeapSnapshotBody[] {
+    if (!this.settled) throw new Error('Heap is not settled')
 
-    return {
-      version: HEAP_SNAPSHOT_VERSION,
-      collected,
-      bodies: [...this.bodies.values()].map(({ shape, variant, slab, pose, color }) => ({
-        shape,
-        variant,
-        slab,
-        y: pose.point.y,
-        z: pose.point.z,
-        angle: pose.angle,
-        color,
-      })),
-    }
+    return [...this.bodies.values()].map(({ shape, variant, slab, pose, color }) => ({
+      shape,
+      variant,
+      slab,
+      y: pose.point.y,
+      z: pose.point.z,
+      angle: pose.angle,
+      color,
+    }))
   }
 
-  /** Снимает игрушку под точкой поля, сохраняя её видимую позу относительно мировой точки захвата. */
-  lift(point: GroundPoint, grip: WorldPoint): ToyId | undefined {
-    const body = this.findTop(point)
+  /**
+   * Снимает игрушку под точкой поля, сохраняя её видимую позу относительно мировой точки захвата, и начинает
+   * посадку в клешню. Отвечает, снята ли игрушка.
+   */
+  lift(point: GroundPoint, grip: WorldPoint): boolean {
+    const top = this.getTopBodyAt(point)
+    const body = top && this.bodies.get(top.id)
 
-    if (!body || this.carried) return undefined
+    if (!body || this.carried) return false
 
     this.frames.delete(body.id)
     this.world.carry(body.id)
@@ -203,10 +155,10 @@ export class HeapStore {
       z: body.pose.point.z - grip.z,
     }
     this.initialAngle = body.pose.angle
-    this.grabProgress = 0
+    this.grabMs = 0
     this.touch()
 
-    return body.id
+    return true
   }
 
   /** Отпускает игрушку из актуальной точки захвата в срезы под ней: дальше её ведёт физика. */
@@ -244,41 +196,12 @@ export class HeapStore {
     this.touch()
   }
 
-  /** Центрирует игрушку по X/Y и выравнивает её крен на доле анимации захвата 0–1. */
-  setGrabProgress(progress: number, grip: WorldPoint): void {
-    if (!this.carried) return
-
-    this.grabProgress = progress
-    this.setGripPoint(grip)
-  }
-
-  /** Обновляет удерживаемую игрушку после движения и качания клешни в этом кадре. */
-  setGripPoint(grip: WorldPoint): void {
-    const body = this.carried
-
-    if (!body) return
-
-    const remaining = 1 - this.grabProgress
-    const { point } = body.pose
-
-    point.x = grip.x + this.initialGripOffset.x * remaining
-    point.y = grip.y + this.initialGripOffset.y * remaining
-    point.z = grip.z + this.initialGripOffset.z
-    body.pose.angle = this.initialAngle * remaining
-    this.world.moveCarried(body.id, { y: point.y, z: point.z, angle: body.pose.angle })
-  }
-
-  /** Настройку доступности передаёт контроллер; модель не обращается к браузеру. */
-  setReducedMotion(reduced: boolean): void {
-    this.reducedMotion = reduced
-  }
-
   /**
    * Прожимает игрушку под точкой поля весом промахнувшейся клешни: импульс вниз в точке касания.
    * Удар мимо центра игрушку раскачивает, соседи отвечают по физике. При уменьшенном движении не толкает.
    */
   press(point: GroundPoint): void {
-    if (this.reducedMotion) return
+    if (isReducedMotion()) return
 
     const { id, z } = this.castDown(point)
     const body = id === undefined ? undefined : this.bodies.get(id)
@@ -290,19 +213,24 @@ export class HeapStore {
   }
 
   /**
-   * Кадровый шаг кучи: продвигает физику фиксированными шагами и засчитывает призы.
-   * Видимая поза движущегося тела интерполируется между двумя последними шагами на долю остатка кадра.
+   * Кадровый шаг кучи: ведёт игрушку в клешне за точкой захвата, продвигает физику фиксированными шагами и
+   * засчитывает призы. Видимая поза движущегося тела интерполируется между двумя последними шагами по остатку кадра.
    */
-  advance(deltaMs: number): void {
+  advance(deltaMs: number, grip: WorldPoint): void {
+    if (this.carried) {
+      this.grabMs = isReducedMotion() ? CLAW_GRAB_MS : Math.min(this.grabMs + deltaMs, CLAW_GRAB_MS)
+      this.setGripPoint(grip)
+    }
+
     if (this.world.hasAwake()) {
-      if (this.reducedMotion) {
-        this.settleWorld(true)
+      if (isReducedMotion()) {
+        this.settleWorld()
         this.pendingMs = 0
       } else {
         this.pendingMs += deltaMs
 
         for (let step = 0; step < HEAP_MAX_STEPS_PER_FRAME && this.pendingMs >= HEAP_STEP_MS; step++) {
-          this.stepWorld(true)
+          this.stepWorld()
           this.pendingMs -= HEAP_STEP_MS
         }
 
@@ -317,17 +245,58 @@ export class HeapStore {
     }
 
     if (this.frames.size > 0) this.applyFrames(this.pendingMs / HEAP_STEP_MS)
-    this.setSettled(!this.carried && !this.world.hasAwake())
-  }
-
-  @action private setSettled(settled: boolean): void {
-    if (this.settled !== settled) this.settled = settled
   }
 
   /** Отмечает команду, которая сдвинула кучу: с неё отсчитывается страховка покоя. */
   private touch(): void {
     this.quietMs = 0
-    this.setSettled(false)
+  }
+
+  /**
+   * Ставит удерживаемую игрушку за точкой захвата после движения и качания клешни в этом кадре. За время
+   * посадки игрушка по `easeTrapezoid` центрируется под точкой захвата и выравнивает крен.
+   */
+  private setGripPoint(grip: WorldPoint): void {
+    const body = this.carried
+
+    if (!body) return
+
+    const remaining = 1 - easeTrapezoid(this.grabMs / CLAW_GRAB_MS, CLAW_RAMP_SHARE)
+    const { point } = body.pose
+
+    point.x = grip.x + this.initialGripOffset.x * remaining
+    point.y = grip.y + this.initialGripOffset.y * remaining
+    point.z = grip.z + this.initialGripOffset.z
+    body.pose.angle = this.initialAngle * remaining
+    this.world.moveCarried(body.id, { y: point.y, z: point.z, angle: body.pose.angle })
+  }
+
+  /**
+   * Суммарный вес игрушек, лежащих сверху напрямую или через другие игрушки. Касание считается по
+   * геометрии сечений в общем срезе: контакты движка между спящими телами не обновляются.
+   */
+  private getLoad(id: ToyId): number {
+    const start = this.bodies.get(id)
+
+    if (!start) return 0
+
+    const seen = new Set<ToyId>([id])
+    const queue: ToyBody[] = [start]
+    let load = 0
+
+    while (queue.length > 0) {
+      const current = queue.shift() as ToyBody
+
+      for (const other of this.bodies.values()) {
+        if (seen.has(other.id) || other.state !== ToyState.free || !this.restsOn(other, current)) continue
+
+        seen.add(other.id)
+        load += getWeight(other.shape)
+        queue.push(other)
+      }
+    }
+
+    return load
   }
 
   /** Лежит ли `upper` на `lower`: игрушки делят срез, их сечения касаются, и нормаль касания смотрит вверх. */
@@ -359,14 +328,7 @@ export class HeapStore {
     return this.world.castDown(point.y, clamp(Math.floor(point.x), 0, GRID_SIZE - 1), 1)
   }
 
-  private findTop(point: GroundPoint): ToyBody | undefined {
-    const { id } = this.castDown(point)
-    const body = id === undefined ? undefined : this.bodies.get(id)
-
-    return body?.state === ToyState.free ? body : undefined
-  }
-
-  private create(shape: ShapeKey, variant: number, slab: number, pose: ToyPose, color: number, awake: boolean): void {
+  private create(shape: ShapeKey, variant: number, slab: number, pose: ToyPose, color: number): void {
     this.nextId += 1
 
     const { depth } = getVariant(shape, variant)
@@ -381,72 +343,7 @@ export class HeapStore {
     }
 
     this.bodies.set(body.id, body)
-    this.world.add(body.id, getSection(shape, variant), getWeight(shape), slab, depth, pose, awake)
-  }
-
-  private load(snapshot: HeapSnapshot): void {
-    for (const { shape, variant, slab, y, z, angle, color } of snapshot.bodies) {
-      this.create(shape, variant, slab, { y, z, angle }, color, false)
-    }
-  }
-
-  /**
-   * Насыпает купол: каждая новая игрушка пробует несколько случайных мест и встаёт туда, где верх кучи
-   * дальше всего ниже профиля купола. Между пачками появлений мир делает шаги, в конце — до сна всех тел.
-   */
-  private fill(random: Random): void {
-    const dome = planDome(random)
-    let volume = 0
-    let failures = 0
-    let spawned = 0
-
-    while (volume < FILL_VOLUME && failures < FILL_MAX_FAILURES) {
-      const shape = pickShape(random)
-      const variant = Math.floor(random() * getVariantCount(shape))
-      const { depth } = getVariant(shape, variant)
-      const { halfWidth, halfHeight } = getSectionExtent(getSection(shape, variant))
-      let best: { slab: number; y: number; surface: number; deficit: number } | undefined
-
-      for (let candidate = 0; candidate < FILL_CANDIDATES; candidate++) {
-        const slab = Math.floor(random() * (GRID_SIZE - depth + 1))
-        // Над шахтой лотка игрушка не появляется: там нет пола
-        const right = slab < TRAY_ORIGIN.x + TRAY_SIZE ? TRAY_ORIGIN.y : GRID_SIZE
-        const y = halfWidth + random() * (right - 2 * halfWidth)
-        const surface = Math.max(
-          this.world.castDown(y - halfWidth, slab, depth).z,
-          this.world.castDown(y, slab, depth).z,
-          this.world.castDown(y + halfWidth, slab, depth).z
-        )
-        const deficit = getDomeHeight(dome, { x: getDepthCenter(slab, depth), y }) - (surface + halfHeight)
-
-        if (!best || deficit > best.deficit) best = { slab, y, surface, deficit }
-      }
-
-      if (!best || best.deficit <= 0) {
-        failures += 1
-        continue
-      }
-
-      failures = 0
-      this.create(
-        shape,
-        variant,
-        best.slab,
-        { y: best.y, z: best.surface + halfHeight + FILL_SPAWN_GAP, angle: (random() * 2 - 1) * FILL_MAX_TILT },
-        shiftColor(TOY_ROOT_COLOR, random),
-        true
-      )
-      volume += getWeight(shape)
-      spawned += 1
-
-      if (spawned % FILL_BATCH === 0) {
-        for (let step = 0; step < FILL_BATCH_STEPS; step++) this.stepWorld(false)
-      }
-    }
-
-    this.settleWorld(false)
-    this.world.sleepAll()
-    this.applyFrames(1)
+    this.world.add(body.id, getSection(shape, variant), getWeight(shape), slab, depth, pose, false)
   }
 
   /**
@@ -488,16 +385,15 @@ export class HeapStore {
   }
 
   /** Шаги мира до сна всех тел, не больше `HEAP_SETTLE_MAX_STEPS`. */
-  private settleWorld(collect: boolean): void {
-    for (let step = 0; step < HEAP_SETTLE_MAX_STEPS && this.world.hasAwake(); step++) this.stepWorld(collect)
+  private settleWorld(): void {
+    for (let step = 0; step < HEAP_SETTLE_MAX_STEPS && this.world.hasAwake(); step++) this.stepWorld()
   }
 
   /**
    * Один шаг мира. Позы шага запоминаются только у тел, которые двигались: у спящих видимая поза остаётся
-   * прежней, у восстановленных — значением из снимка. Игрушка ниже `TRAY_EXIT_Z` уходит из кучи и при
-   * `collect` становится призом.
+   * прежней, у восстановленных — позой из `restore`. Игрушка ниже `TRAY_EXIT_Z` уходит из кучи в очередь призов.
    */
-  private stepWorld(collect: boolean): void {
+  private stepWorld(): void {
     const moving: ToyBody[] = []
 
     for (const body of this.bodies.values()) {
@@ -528,7 +424,7 @@ export class HeapStore {
       this.world.remove(body.id)
       this.bodies.delete(body.id)
       this.frames.delete(body.id)
-      if (collect) this.prizes.push({ shape: body.shape, color: body.color })
+      this.prizes.push({ shape: body.shape, color: body.color })
     }
   }
 

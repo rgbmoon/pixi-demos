@@ -11,6 +11,7 @@ import {
   REELS_COUNT,
   REELS_ZONE_HEIGHT,
 } from '#src/constants'
+import { isReducedMotion } from '@pixi-demos/core/accessibility'
 import { PALETTE } from '@pixi-demos/core/palette'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 
@@ -66,7 +67,7 @@ export class AnticipationGlowFrame extends Container {
 
     if (!column) return
 
-    this.isStill = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    this.isStill = isReducedMotion()
     this.elapsed[reel] = 0
 
     column.alpha = this.isStill ? 1 : 0

@@ -9,6 +9,12 @@ export type ShakeOptions = {
   readonly oscillations: number
 }
 
+/** Длительность твина и функция, которая получает прогресс 0–1 в каждом кадре. */
+export type ProgressTweenOptions = {
+  readonly durationMs: number
+  readonly apply: (progress: number) => void
+}
+
 /**
  * Слушатель трека. Параметр объявлен `never`, потому что колбэк вызывается с записью конкретной
  * реализации: по контравариантности параметров сюда подходит и `AnimationStateListener` Spine,

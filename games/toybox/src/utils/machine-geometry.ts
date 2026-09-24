@@ -1,94 +1,73 @@
 import {
   CABINET_BOTTOM_Z,
-  CABINET_FRONT_HORIZONTAL,
-  CABINET_FRONT_VERTICAL,
+  CABINET_FRONT_PLANE,
   CABINET_FRONT_X,
   CABINET_TOP_Z,
-  CELL_SIZE,
-  CONTROL_OUTLINE_STEPS,
-  CONTROL_PANEL_HORIZONTAL,
-  CONTROL_PANEL_VERTICAL,
   CUBE_HEIGHT,
   GRID_SIZE,
+  MACHINE_MARGIN,
   MARQUEE_TOP_Z,
   PRIZE_HATCH_SIZE,
+  TRAY_ORIGIN,
+  TRAY_SIZE,
+  TRAY_WALL_HEIGHT,
 } from '#src/constants'
-import type { ScreenBounds, ScreenPoint, WorldPlane, WorldPoint } from '#src/types'
+import type { GroundPoint, MachineLayout, ScreenPoint, ScreenRect, WorldPoint } from '#src/types'
 
-import { worldToScreen } from './projection'
+import { getBounds } from './geometry'
+import { clamp } from './math'
+import { getProjectedPlaneRectangle, worldToScreen } from './projection'
 
-/** Плоскость наклонной панели управления. */
-export const CONTROL_PANEL_PLANE: WorldPlane = {
-  horizontal: CONTROL_PANEL_HORIZONTAL,
-  vertical: CONTROL_PANEL_VERTICAL,
-}
+/**
+ * Удерживает точку в пределах поля.
+ */
+export const clampToField = ({ x, y }: GroundPoint, margin = 0): GroundPoint => ({
+  x: clamp(x, margin, GRID_SIZE - margin),
+  y: clamp(y, margin, GRID_SIZE - margin),
+})
 
-/** Передняя вертикальная плоскость тумбы и табло. */
-export const CABINET_FRONT_PLANE: WorldPlane = {
-  horizontal: CABINET_FRONT_HORIZONTAL,
-  vertical: CABINET_FRONT_VERTICAL,
-}
+/** Контур грани куба на высоте `z`: четыре угла в порядке обхода. */
+export const getFaceOutline = (z: number): WorldPoint[] => [
+  { x: 0, y: 0, z },
+  { x: GRID_SIZE, y: 0, z },
+  { x: GRID_SIZE, y: GRID_SIZE, z },
+  { x: 0, y: GRID_SIZE, z },
+]
 
-/** Экранное смещение точки в локальных координатах заданной мировой плоскости. */
-export const projectPlaneOffset = (plane: WorldPlane, horizontal: number, vertical: number): ScreenPoint => {
-  const horizontalScale = horizontal / CELL_SIZE
-  const verticalScale = vertical / CELL_SIZE
-
-  return worldToScreen({
-    x: plane.horizontal.x * horizontalScale + plane.vertical.x * verticalScale,
-    y: plane.horizontal.y * horizontalScale + plane.vertical.y * verticalScale,
-    z: plane.horizontal.z * horizontalScale + plane.vertical.z * verticalScale,
-  })
-}
-
-/** Возвращает локальные координаты экранного смещения в мировой плоскости. */
-export const screenToPlaneOffset = (plane: WorldPlane, point: ScreenPoint): ScreenPoint => {
-  const horizontal = projectPlaneOffset(plane, CELL_SIZE, 0)
-  const vertical = projectPlaneOffset(plane, 0, CELL_SIZE)
-  const determinant = horizontal.x * vertical.y - horizontal.y * vertical.x
-
-  return {
-    x: ((point.x * vertical.y - point.y * vertical.x) / determinant) * CELL_SIZE,
-    y: ((horizontal.x * point.y - horizontal.y * point.x) / determinant) * CELL_SIZE,
-  }
-}
-
-/** Проецирует окружность, заданную в локальных координатах мировой плоскости. */
-export const getProjectedPlaneCircle = (
-  plane: WorldPlane,
-  radius: number,
-  steps = CONTROL_OUTLINE_STEPS
-): ScreenPoint[] =>
-  Array.from({ length: steps }, (_, step) => {
-    const angle = (2 * Math.PI * step) / steps
-
-    return projectPlaneOffset(plane, Math.cos(angle) * radius, Math.sin(angle) * radius)
-  })
-
-/** Проецирует дугу, включая обе её крайние точки. */
-export const getProjectedPlaneArc = (
-  plane: WorldPlane,
-  radius: number,
-  start: number,
-  end: number,
-  steps = CONTROL_OUTLINE_STEPS
-): ScreenPoint[] =>
-  Array.from({ length: steps + 1 }, (_, step) => {
-    const angle = start + ((end - start) * step) / steps
-
-    return projectPlaneOffset(plane, Math.cos(angle) * radius, Math.sin(angle) * radius)
-  })
-
-/** Прямоугольник с центром в начале координат мировой плоскости. */
-export const getProjectedPlaneRectangle = (plane: WorldPlane, width: number, height: number): ScreenPoint[] => {
-  const halfWidth = width / 2
-  const halfHeight = height / 2
+/** Контур лотка на полу: четыре угла его квадранта в порядке обхода. */
+export const getTrayOutline = (): WorldPoint[] => {
+  const { x, y } = TRAY_ORIGIN
 
   return [
-    projectPlaneOffset(plane, -halfWidth, -halfHeight),
-    projectPlaneOffset(plane, halfWidth, -halfHeight),
-    projectPlaneOffset(plane, halfWidth, halfHeight),
-    projectPlaneOffset(plane, -halfWidth, halfHeight),
+    { x, y, z: 0 },
+    { x: x + TRAY_SIZE, y, z: 0 },
+    { x: x + TRAY_SIZE, y: y + TRAY_SIZE, z: 0 },
+    { x, y: y + TRAY_SIZE, z: 0 },
+  ]
+}
+
+/**
+ * Контуры двух граней, которыми лоток отгорожен от куба. Двух других граней у него нет —
+ * там лоток прилегает к стенкам самого куба.
+ */
+export const getTrayWallOutlines = (): WorldPoint[][] => {
+  const { x, y } = TRAY_ORIGIN
+  const far = x + TRAY_SIZE
+  const top = TRAY_WALL_HEIGHT
+
+  return [
+    [
+      { x: far, y, z: 0 },
+      { x: far, y: y + TRAY_SIZE, z: 0 },
+      { x: far, y: y + TRAY_SIZE, z: top },
+      { x: far, y, z: top },
+    ],
+    [
+      { x, y, z: 0 },
+      { x: far, y, z: 0 },
+      { x: far, y, z: top },
+      { x, y, z: top },
+    ],
   ]
 }
 
@@ -154,14 +133,24 @@ export const getPrizeHatchOutline = (): ScreenPoint[] =>
   getProjectedPlaneRectangle(CABINET_FRONT_PLANE, PRIZE_HATCH_SIZE, PRIZE_HATCH_SIZE)
 
 /** Экранные границы автомата по контурам тумбы и табло; стеклянный бокс и органы управления лежат внутри них. */
-export const getMachineBounds = (): ScreenBounds => {
-  const points = [...getCabinetOutlines(), ...getMarqueeOutlines()].flat().map((point) => worldToScreen(point))
-  const xs = points.map(({ x }) => x)
-  const ys = points.map(({ y }) => y)
-  const left = Math.min(...xs)
-  const right = Math.max(...xs)
-  const top = Math.min(...ys)
-  const bottom = Math.max(...ys)
+export const getMachineBounds = (): ScreenRect =>
+  getBounds([...getCabinetOutlines(), ...getMarqueeOutlines()].flat().map((point) => worldToScreen(point)))
 
-  return { left, right, top, bottom, width: right - left, height: bottom - top }
+/** Вписывает корпус в область `width × height` одним масштабом с отступом `MACHINE_MARGIN` и центрирует его. */
+export const getMachineLayout = (width: number, height: number): MachineLayout => {
+  const { left, right, top, bottom } = getMachineBounds()
+  const scale = Math.min(width / (right - left + 2 * MACHINE_MARGIN), height / (bottom - top + 2 * MACHINE_MARGIN))
+
+  return {
+    scale,
+    x: width / 2 - ((left + right) / 2) * scale,
+    y: height / 2 - ((top + bottom) / 2) * scale,
+  }
+}
+
+/** Пропорции корпуса вместе с отступом: по ним хост строит канвас шире `CANVAS_FILL_MAX_WIDTH`. */
+export const getMachineAspectRatio = (): number => {
+  const { left, right, top, bottom } = getMachineBounds()
+
+  return (right - left + 2 * MACHINE_MARGIN) / (bottom - top + 2 * MACHINE_MARGIN)
 }

@@ -1,15 +1,19 @@
+import { inject, injectable } from 'inversify'
 import type { DestroyOptions } from 'pixi.js'
 
 import { RESET_MS, WELCOME_MS } from '#src/constants'
 import type { GameEvents } from '#src/events'
 import type { ToyboxStore } from '#src/stores/toybox'
+import { TOYBOX_TOKENS } from '#src/tokens'
 import { Marquee } from '#src/ui/box/marquee'
 import { createAbortError, isAbortError, notifyError } from '@pixi-demos/core/errors/utils'
 import type { GameEmitter } from '@pixi-demos/core/events/game-emitter'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 import { LiveContainer } from '@pixi-demos/engine/live-container'
+import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 
-/** Управляет временными сообщениями табло и визуальным моментом обновления счётчика. */
+/** Управляет сообщениями табло */
+@injectable()
 export class MarqueeController extends LiveContainer {
   private readonly view = new Marquee()
   private readonly life = new AbortController()
@@ -17,7 +21,11 @@ export class MarqueeController extends LiveContainer {
   private readonly toyboxStore: ToyboxStore
   private revision = 0
 
-  constructor(ticker: GameTicker, toyboxStore: ToyboxStore, emitter: GameEmitter<GameEvents>) {
+  constructor(
+    @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
+    @inject(TOYBOX_TOKENS.ToyboxStore) toyboxStore: ToyboxStore,
+    @inject(TOYBOX_TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>
+  ) {
     super()
 
     this.ticker = ticker
@@ -30,11 +38,6 @@ export class MarqueeController extends LiveContainer {
       this.revision += 1
       this.showCount()
     })
-  }
-
-  /** Текст, который табло показывает сейчас. */
-  getMessage(): string {
-    return this.view.getMessage()
   }
 
   override destroy(options?: DestroyOptions): void {

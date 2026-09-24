@@ -1,19 +1,22 @@
 import { Container, type DestroyOptions, Graphics } from 'pixi.js'
 
-import { LINE_THICKNESS, PRIZE_DOOR_INSET, PRIZE_HATCH_SIZE, PRIZE_SCALE, PRIZE_TAKE_GROWTH } from '#src/constants'
-import type { ToyAppearance } from '#src/types'
 import {
   CABINET_FRONT_PLANE,
-  getPrizeHatchOutline,
-  getProjectedPlaneRectangle,
-  projectPlaneOffset,
-} from '#src/utils/machine-geometry'
+  LINE_THICKNESS,
+  PRIZE_DOOR_INSET,
+  PRIZE_HATCH_SIZE,
+  PRIZE_SCALE,
+  PRIZE_TAKE_GROWTH,
+} from '#src/constants'
+import type { ToyAppearance } from '#src/types'
+import { getPrizeHatchOutline } from '#src/utils/machine-geometry'
+import { getProjectedPlaneRectangle, projectPlaneOffset } from '#src/utils/projection'
 import { PALETTE } from '@pixi-demos/core/palette'
 
 import { Toy } from './toy'
 import { ToyShapes } from './toy-shapes'
 
-/** Окно выдачи на передней грани тумбы: игрушка за сдвижной дверцей, обе ограничены маской окна. */
+/** Окно выдачи на передней грани тумбы */
 export class PrizeOutput extends Container {
   private readonly shapes = new ToyShapes()
   private readonly prize = new Toy(this.shapes, 'single', 0, 0xffffff)
@@ -47,7 +50,7 @@ export class PrizeOutput extends Container {
   /** Ставит выигранную игрушку за закрытую дверцу. */
   show(appearance: ToyAppearance): void {
     this.prize.setAppearance(appearance.shape, 0, appearance.color)
-    this.prize.setPresentationScale(PRIZE_SCALE)
+    this.prize.scale.set(PRIZE_SCALE)
     this.prize.alpha = 1
     this.prize.visible = true
     this.setDoorProgress(0)
@@ -63,7 +66,7 @@ export class PrizeOutput extends Container {
   /** Растворяет игрушку с небольшим увеличением: 0 — начало получения, 1 — игрушка забрана. */
   setTakeProgress(progress: number): void {
     this.prize.alpha = 1 - progress
-    this.prize.setPresentationScale(PRIZE_SCALE + progress * PRIZE_TAKE_GROWTH)
+    this.prize.scale.set(PRIZE_SCALE + progress * PRIZE_TAKE_GROWTH)
   }
 
   /** Прячет игрушку и закрывает дверцу. */

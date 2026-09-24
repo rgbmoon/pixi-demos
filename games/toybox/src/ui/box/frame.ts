@@ -1,13 +1,13 @@
 import { Graphics } from 'pixi.js'
 
 import { CUBE_HEIGHT, LINE_THICKNESS } from '#src/constants'
-import { getFaceOutline } from '#src/utils/grid'
+import { getFaceOutline } from '#src/utils/machine-geometry'
 import { worldToScreen } from '#src/utils/projection'
 import { PALETTE } from '@pixi-demos/core/palette'
 
 /**
  * Верхняя грань куба. Рисуется под содержимым: выше неё поднимается только каретка клешни.
- * Вертикальные рёбра в каркас не входят — они сортируются вместе с содержимым.
+ * Вертикальные рёбра в каркас не входят — они сортируются вместе с содержимым для соблюдения правильного порядка слоев.
  */
 export class Frame extends Graphics {
   constructor() {

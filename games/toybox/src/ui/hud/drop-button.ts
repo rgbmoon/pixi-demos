@@ -1,52 +1,17 @@
-import { Container, Graphics, Polygon } from 'pixi.js'
+import { Graphics } from 'pixi.js'
 
-import {
-  BUTTON_FILL_ALPHA,
-  BUTTON_SIZE_UNITS,
-  BUTTON_THICKNESS,
-  CONTROL_HIT_PADDING,
-  DISABLED_ALPHA,
-  ICON_RATIO,
-} from '#src/constants'
+import { BUTTON_SIZE_UNITS, CONTROL_PANEL_PLANE, ICON_RATIO } from '#src/constants'
 import type { ButtonOptions } from '#src/types'
-import {
-  CONTROL_PANEL_PLANE,
-  getProjectedPlaneCircle,
-  projectPlaneOffset,
-} from '#src/utils/machine-geometry'
+import { ControlButton } from '#src/ui/hud/control-button'
+import { projectPlaneOffset } from '#src/utils/projection'
 import { PALETTE } from '@pixi-demos/core/palette'
 
 /** Кнопка опускания клешни, спроецированная в плоскость панели управления. */
-export class DropButton extends Container {
-
+export class DropButton extends ControlButton {
   constructor(options: ButtonOptions) {
-    super()
+    super(options, CONTROL_PANEL_PLANE, BUTTON_SIZE_UNITS)
 
-    const radius = BUTTON_SIZE_UNITS / 2
-    const backing = new Graphics()
-      .poly(getProjectedPlaneCircle(CONTROL_PANEL_PLANE, radius))
-      .fill({ color: PALETTE.primary, alpha: BUTTON_FILL_ALPHA })
-      .stroke({ width: BUTTON_THICKNESS, color: PALETTE.primary })
-
-    this.addChild(backing, this.createIcon())
-
-    this.eventMode = 'static'
-    this.cursor = 'pointer'
-    this.hitArea = new Polygon(getProjectedPlaneCircle(CONTROL_PANEL_PLANE, radius + CONTROL_HIT_PADDING))
-    this.accessible = true
-    this.accessibleType = 'button'
-    this.accessibleHint = options.label
-    this.accessiblePointerEvents = 'none'
-
-    this.on('pointertap', options.onTap)
-  }
-
-  /** Включает или гасит кнопку. */
-  setEnabled(enabled: boolean): void {
-    this.eventMode = enabled ? 'static' : 'none'
-    this.cursor = enabled ? 'pointer' : 'default'
-    this.alpha = enabled ? 1 : DISABLED_ALPHA
-    this.accessible = enabled
+    this.addChild(this.createIcon())
   }
 
   private createIcon(): Graphics {
