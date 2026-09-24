@@ -25,6 +25,7 @@
     "inversify": "catalog:",
     "mobx": "catalog:",
     "pixi.js": "catalog:",
+    "planck": "catalog:",
     "reflect-metadata": "catalog:"
   },
   "devDependencies": {

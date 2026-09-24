@@ -25,6 +25,12 @@ export type GroundPoint = {
   y: number
 }
 
+/** Точка или вектор плоскости для геометрических расчётов: к нему приводятся точки экрана и сечения. */
+export type PlaneVector = {
+  x: number
+  y: number
+}
+
 /** Точка экрана в единицах сцены. */
 export type ScreenPoint = {
   x: number
@@ -54,28 +60,10 @@ export type MachineLayout = {
   readonly y: number
 }
 
-/** Адрес ячейки сетки: колонка по оси `x`, ряд по оси `y`. */
-export type CellAddress = {
-  col: number
-  row: number
-}
-
-/** Адрес клетки объёма: ячейка пола и слой над ней. */
-export type VolumeCell = CellAddress & {
-  layer: number
-}
-
 /** Действие на заданной доле перемещения после обновления точки захвата. */
 export type ClawDrop = {
   share: number
   onDrop: (grip: WorldPoint) => void
-}
-
-/** Ячейка маршрута и интервал её пересечения, в долях пути. */
-export type PathCell = {
-  cell: CellAddress
-  enter: number
-  exit: number
 }
 
 /**
@@ -84,7 +72,7 @@ export type PathCell = {
  */
 export type ToyId = number
 
-export type ShapeKey = 'single' | 'bar2' | 'square4' | 'cube8'
+export type ShapeKey = 'single' | 'bar2' | 'square4' | 'cube8' | 'triangle'
 
 /** Внешний вид выданной игрушки без её положения в куче. */
 export type ToyAppearance = {
@@ -92,96 +80,121 @@ export type ToyAppearance = {
   readonly color: number
 }
 
-/**
- * Результат отпускания текущего цикла: игрушки в пути нет, отпущенная игрушка ещё движется или дошла до дна
- * лотка. После посадки отпущенной игрушки в кучу результат снова `none`; он хранится до начала следующего цикла.
- */
-export type ReleaseOutcome =
-  | { status: 'none' }
-  | { status: 'pending'; id: ToyId }
-  | { status: 'collected'; appearance: ToyAppearance }
-
-/** Клетка формы относительно её якоря, в базовой ориентации. */
-export type ShapeCell = {
-  dx: number
-  dy: number
-  dz: number
+/** Точка плоскости сечения: `y` — ось поля вдоль фронтальной грани, `z` — высота. */
+export type SectionPoint = {
+  y: number
+  z: number
 }
 
-/** Форма игрушки: занимаемые клетки и то, как часто она попадается при наполнении куба. */
+/** Положение формы: выпуклое сечение в плоскости `(y, z)` и глубина в срезах. */
+export type ShapeVariant = {
+  /** Вершины выпуклого многоугольника сечения в клетках, против часовой стрелки. */
+  readonly section: readonly SectionPoint[]
+  /** Радиус скругления углов сечения в клетках. */
+  readonly radius: number
+  readonly depth: number
+}
+
+/** Форма игрушки: её положения, вес в клетках и то, как часто она попадается при наполнении. */
 export type Shape = {
-  readonly cells: readonly ShapeCell[]
+  readonly variants: readonly ShapeVariant[]
+  readonly weight: number
   readonly fillWeight: number
 }
 
-/** Ориентация формы вокруг вертикальной оси: четверть оборота на шаг. */
-export type Facing = 0 | 1 | 2 | 3
-
-/** Куда игрушка встаёт: якорь формы, её ориентация и слой основания. */
-export type Placement = {
-  anchor: CellAddress
-  facing: Facing
-  layer: number
+/** Профиль купола для наполнения: пик на полу, крутизна склона и расстояние от пика до дальнего угла. */
+export type DomeProfile = {
+  readonly peak: GroundPoint
+  readonly falloff: number
+  readonly reach: number
 }
 
-/** Занята ли клетка объёма: этим предикатом планировщики читают решётку, не зная о сторе. */
-export type Occupancy = (cell: VolumeCell) => boolean
-
-/** Верх занятости ячейки: этим читателем планировщики видят рельеф кучи. */
-export type Surface = (cell: CellAddress) => number
-
-/** Дыра в куче: её столбцы, слой основания и насколько её край выше этого основания. */
-export type Hole = {
-  cells: CellAddress[]
-  floor: number
-  depth: number
+/** Центр игрушки в плоскости сечения и её крен в радианах. */
+export type ToyPose = {
+  y: number
+  z: number
+  angle: number
 }
 
-/** Что с игрушкой происходит сейчас: от этого зависит, ведёт ли её кадровый шаг. */
+/** Что с игрушкой происходит сейчас: от этого зависит, сталкивается ли она с кучей. */
 export const ToyState = {
-  resting: 'resting',
-  falling: 'falling',
+  /** Лежит в куче или движется по ней. */
+  free: 'free',
+  /** Висит в клешне и повторяет точку захвата. */
   carried: 'carried',
-  landingBeforeTray: 'landingBeforeTray',
-  waitingForTraySlide: 'waitingForTraySlide',
-  slidingToTray: 'slidingToTray',
-  fallingIntoTray: 'fallingIntoTray',
+  /** Падает в шахту лотка без столкновений. */
+  exiting: 'exiting',
 } as const
 
 export type ToyState = (typeof ToyState)[keyof typeof ToyState]
 
-/** Игрушка в модели кучи: место в решётке и непрерывное состояние, которым её рисуют. */
+/** Игрушка в модели кучи: форма, срезы глубины и непрерывная поза, которой её рисуют. */
 export type ToyBody = {
   readonly id: ToyId
   readonly shape: ShapeKey
+  readonly variant: number
   readonly color: number
-  /** Зарезервированное размещение в решётке; у удерживаемой игрушки — прежнее место. */
-  placement: Placement
-  /** Текущая отображаемая поза в мировых координатах. */
-  pose: { point: WorldPoint; facing: Facing }
+  /** Ближний срез глубины; игрушка занимает срезы от него на глубину своего положения. */
+  slab: number
+  /** Центр игрушки в мировых координатах и крен. */
+  pose: { point: WorldPoint; angle: number }
   state: ToyState
-  /** Точка, с которой начался текущий ход: от неё и ведётся интерполяция. */
-  from: WorldPoint
-  /** Цель текущего движения. */
-  target: WorldPoint
-  /** Сколько текущий ход уже идёт и сколько ему отмерено, мс. */
-  elapsed: number
-  durationMs: number
-  /** Просадка под клешнёй и отскок после посадки, поверх точки. */
-  bounce: SpringState
 }
 
-/** Снимок кучи для хранилища: только решётка, без непрерывного состояния. */
+/** Игрушка в снимке: форма, срезы и поза покоя. */
+export type HeapSnapshotBody = {
+  shape: ShapeKey
+  variant: number
+  slab: number
+  y: number
+  z: number
+  angle: number
+  color: number
+}
+
+/** Снимок кучи для хранилища: позы покоя без скоростей. */
 export type HeapSnapshot = {
   version: number
   collected: number
-  bodies: {
-    shape: ShapeKey
-    facing: Facing
-    anchor: CellAddress
-    layer: number
-    color: number
-  }[]
+  bodies: HeapSnapshotBody[]
+}
+
+/** Биты фильтра столкновений фикстуры: её категории и категории, с которыми она сталкивается. */
+export type CollisionFilter = {
+  readonly filterCategoryBits: number
+  readonly filterMaskBits: number
+}
+
+/** Попадание луча, пущенного вниз: игрушка, в которую он упёрся, и высота точки. */
+export type SurfaceHit = {
+  id: ToyId | undefined
+  z: number
+}
+
+/**
+ * Предмет слоя содержимого для сортировки наложения: диапазон глубины, выпуклое сечение и экранный
+ * силуэт. Сечение хранится фигурой плоскости: `x` — мировая `y`, `y` — высота. Сечение из точки или
+ * отрезка тоже допустимо.
+ */
+export type DepthItem = {
+  readonly near: number
+  readonly far: number
+  readonly section: readonly PlaneVector[]
+  readonly outline: readonly ScreenPoint[]
+  /** Оси проверки сечения и силуэта и рамка силуэта: считаются один раз при создании предмета. */
+  readonly sectionAxes: readonly PlaneVector[]
+  readonly outlineAxes: readonly PlaneVector[]
+  readonly bounds: ScreenRect
+  /** Запасной ключ порядка: по нему идёт очередь сортировки и разрываются циклы. */
+  readonly key: number
+}
+
+/** Рамка на экране, выровненная по осям. */
+export type ScreenRect = {
+  readonly left: number
+  readonly right: number
+  readonly top: number
+  readonly bottom: number
 }
 
 /** Состояние пружины: отклонение от цели и скорость его изменения. */

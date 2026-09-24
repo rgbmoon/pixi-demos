@@ -22,14 +22,13 @@ import {
 } from '#src/constants'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
-import type { CellAddress, ClawDrop, ClawMotion, ClawMotionOptions, GroundPoint, SpringState, WorldPoint } from '#src/types'
+import type { ClawDrop, ClawMotion, ClawMotionOptions, GroundPoint, SpringState, WorldPoint } from '#src/types'
 import { Cart } from '#src/ui/box/cart'
 import { Claw } from '#src/ui/box/claw'
 import { Rope } from '#src/ui/box/rope'
-import { clampToField, toCell } from '#src/utils/grid'
+import { clampToField } from '#src/utils/grid'
 import { lerp } from '#src/utils/math'
 import { advanceSpring, advanceVelocity } from '#src/utils/motion'
-import { getDepthOrder } from '#src/utils/projection'
 import { easeTrapezoid, easeTrapezoidInverse } from '@pixi-demos/core/easing'
 import { createAbortError } from '@pixi-demos/core/errors/utils'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
@@ -65,7 +64,6 @@ export class ClawController extends LiveContainer {
 
     this.addChild(this.rope, this.cart, this.claw)
     this.render()
-    this.publishCell()
 
     this.ticker.add(this.step, undefined, CLAW_PRIORITY)
   }
@@ -77,11 +75,6 @@ export class ClawController extends LiveContainer {
     this.motion?.cancel(createAbortError('Claw destroyed'))
 
     super.destroy(options)
-  }
-
-  /** Ячейка поля под кареткой. */
-  getCell(): CellAddress {
-    return toCell(this.cartPosition)
   }
 
   /** Мировая точка каретки на потолке; качание клешни её не изменяет. */
@@ -161,7 +154,6 @@ export class ClawController extends LiveContainer {
       swingY !== this.swing.y.value
     ) {
       this.render()
-      this.publishCell()
     }
   }
 
@@ -220,30 +212,15 @@ export class ClawController extends LiveContainer {
 
   /**
    * Переносит положение на экран: каретка стоит над своей точкой верхней грани, клешня висит под ней
-   * с отклонением маятника, трос их соединяет. Наложение узла считается по видимой точке клешни,
-   * а ячейка под клешнёй — по каретке, поэтому подсветка цели от качания не дрожит.
+   * с отклонением маятника, трос их соединяет. Порядок наложения узла выставляет слой содержимого.
    */
   private render(): void {
     const visible = this.getGripPoint()
     const mount = this.getCartPoint()
 
-    const depth = getDepthOrder(visible)
-
-    if (this.zIndex !== depth) this.zIndex = depth
-
     this.cart.setWorld(mount)
     this.rope.setSpan(mount, visible)
     this.claw.setWorld(visible)
-  }
-
-  /** Публикует в стор ячейку под клешнёй, когда та сменилась. */
-  private publishCell(): void {
-    const cell = this.getCell()
-    const current = this.toyboxStore.clawCell
-
-    if (current && current.col === cell.col && current.row === cell.row) return
-
-    this.toyboxStore.setClawCell(cell)
   }
 
   /**
@@ -292,7 +269,6 @@ export class ClawController extends LiveContainer {
       if (this.reducedMotion.matches) {
         this.advanceMotion(durationMs)
         this.render()
-        this.publishCell()
       }
     })
   }

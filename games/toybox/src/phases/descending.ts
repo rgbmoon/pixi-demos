@@ -29,7 +29,7 @@ export class DescendingPhase implements Phase<PhaseName> {
   }
 
   async enter(signal: AbortSignal): Promise<typeof PhaseName.grabbing> {
-    await this.claw.descend(this.heap.getSurfaceHeight(this.claw.getCell()), signal)
+    await this.claw.descend(this.heap.getSurfaceHeightAt(this.claw.getCartPoint()), signal)
     await this.ticker.waitTicks(PHASE_PAUSE_MS, signal)
 
     return PhaseName.grabbing

@@ -1,20 +1,8 @@
-import { GRID_SIZE, TRAY_ORIGIN, TRAY_SIZE, TRAY_WALL_LAYERS } from '#src/constants'
-import type { CellAddress, GroundPoint, PathCell, WorldPoint } from '#src/types'
+import { FUMBLE_START_CLEARANCE, GRID_SIZE, TRAY_ORIGIN, TRAY_SIZE, TRAY_WALL_HEIGHT } from '#src/constants'
+import type { GroundPoint, WorldPoint } from '#src/types'
 import type { Random } from '@pixi-demos/core/types'
 
 import { clamp } from './math'
-
-/** Ячейка поля, в которой лежит точка; точка вне поля относится к ближайшей крайней ячейке. */
-export const toCell = ({ x, y }: GroundPoint): CellAddress => ({
-  col: clamp(Math.floor(x), 0, GRID_SIZE - 1),
-  row: clamp(Math.floor(y), 0, GRID_SIZE - 1),
-})
-
-/** Центр ячейки в координатах поля. */
-export const getCellCenter = ({ col, row }: CellAddress): GroundPoint => ({ x: col + 0.5, y: row + 0.5 })
-
-/** Числовой ключ столбца для множеств и словарей. */
-export const getColumnKey = ({ col, row }: CellAddress): number => col * GRID_SIZE + row
 
 /**
  * Удерживает точку в пределах поля.
@@ -24,21 +12,9 @@ export const clampToField = ({ x, y }: GroundPoint, margin = 0): GroundPoint => 
   y: clamp(y, margin, GRID_SIZE - margin),
 })
 
-/** Лежит ли ячейка в квадранте лотка. */
-export const isTrayCell = ({ col, row }: CellAddress): boolean =>
-  col >= TRAY_ORIGIN.col &&
-  col < TRAY_ORIGIN.col + TRAY_SIZE &&
-  row >= TRAY_ORIGIN.row &&
-  row < TRAY_ORIGIN.row + TRAY_SIZE
-
-/** Соседи ячейки по четырём сторонам, не выходящие за поле. */
-export const getNeighbours = ({ col, row }: CellAddress): CellAddress[] =>
-  [
-    { col: col + 1, row },
-    { col: col - 1, row },
-    { col, row: row + 1 },
-    { col, row: row - 1 },
-  ].filter(({ col: c, row: r }) => c >= 0 && c < GRID_SIZE && r >= 0 && r < GRID_SIZE)
+/** Лежит ли точка пола над лотком. */
+export const isOverTray = ({ x, y }: GroundPoint): boolean =>
+  x >= TRAY_ORIGIN.x && x <= TRAY_ORIGIN.x + TRAY_SIZE && y >= TRAY_ORIGIN.y && y <= TRAY_ORIGIN.y + TRAY_SIZE
 
 /** Контур грани куба на высоте `z`: четыре угла в порядке обхода. */
 export const getFaceOutline = (z: number): WorldPoint[] => [
@@ -50,13 +26,13 @@ export const getFaceOutline = (z: number): WorldPoint[] => [
 
 /** Контур лотка на полу: четыре угла его квадранта в порядке обхода. */
 export const getTrayOutline = (): WorldPoint[] => {
-  const { col, row } = TRAY_ORIGIN
+  const { x, y } = TRAY_ORIGIN
 
   return [
-    { x: col, y: row, z: 0 },
-    { x: col + TRAY_SIZE, y: row, z: 0 },
-    { x: col + TRAY_SIZE, y: row + TRAY_SIZE, z: 0 },
-    { x: col, y: row + TRAY_SIZE, z: 0 },
+    { x, y, z: 0 },
+    { x: x + TRAY_SIZE, y, z: 0 },
+    { x: x + TRAY_SIZE, y: y + TRAY_SIZE, z: 0 },
+    { x, y: y + TRAY_SIZE, z: 0 },
   ]
 }
 
@@ -65,75 +41,63 @@ export const getTrayOutline = (): WorldPoint[] => {
  * там лоток прилегает к стенкам самого куба.
  */
 export const getTrayWallOutlines = (): WorldPoint[][] => {
-  const { col, row } = TRAY_ORIGIN
-  const far = col + TRAY_SIZE
-  const top = TRAY_WALL_LAYERS
+  const { x, y } = TRAY_ORIGIN
+  const far = x + TRAY_SIZE
+  const top = TRAY_WALL_HEIGHT
 
   return [
     [
-      { x: far, y: row, z: 0 },
-      { x: far, y: row + TRAY_SIZE, z: 0 },
-      { x: far, y: row + TRAY_SIZE, z: top },
-      { x: far, y: row, z: top },
+      { x: far, y, z: 0 },
+      { x: far, y: y + TRAY_SIZE, z: 0 },
+      { x: far, y: y + TRAY_SIZE, z: top },
+      { x: far, y, z: top },
     ],
     [
-      { x: col, y: row, z: 0 },
-      { x: far, y: row, z: 0 },
-      { x: far, y: row, z: top },
-      { x: col, y: row, z: top },
+      { x, y, z: 0 },
+      { x: far, y, z: 0 },
+      { x: far, y, z: top },
+      { x, y, z: top },
     ],
   ]
 }
 
-/** Интервалы пересечения ячеек. Касание угла без участка пути отдельной ячейкой не считается. */
-export const getPathIntervals = (from: GroundPoint, to: GroundPoint): PathCell[] => {
-  const shares = new Set([0, 1])
+/** Доля пути от `from` к `to`, на которой путь входит в лоток: 0 — путь начинается над лотком, 1 — не входит в него. */
+const getTrayEntryShare = (from: GroundPoint, to: GroundPoint): number => {
+  let enter = 0
+  let exit = 1
 
   for (const axis of ['x', 'y'] as const) {
     const distance = to[axis] - from[axis]
+    const low = TRAY_ORIGIN[axis]
+    const high = TRAY_ORIGIN[axis] + TRAY_SIZE
 
-    if (distance === 0) continue
-
-    const first = Math.floor(Math.min(from[axis], to[axis])) + 1
-    const last = Math.max(from[axis], to[axis])
-
-    for (let boundary = first; boundary < last; boundary++) {
-      shares.add((boundary - from[axis]) / distance)
+    if (distance === 0) {
+      if (from[axis] < low || from[axis] > high) return 1
+      continue
     }
+
+    const first = (low - from[axis]) / distance
+    const second = (high - from[axis]) / distance
+
+    enter = Math.max(enter, Math.min(first, second))
+    exit = Math.min(exit, Math.max(first, second))
   }
 
-  const sorted = [...shares].sort((a, b) => a - b)
-  const intervals: PathCell[] = []
-
-  for (let index = 1; index < sorted.length; index++) {
-    const enter = sorted[index - 1]
-    const exit = sorted[index]
-    const share = (enter + exit) / 2
-    const cell = toCell({ x: from.x + (to.x - from.x) * share, y: from.y + (to.y - from.y) * share })
-    const last = intervals[intervals.length - 1]
-
-    if (last && last.cell.col === cell.col && last.cell.row === cell.row) last.exit = exit
-    else intervals.push({ cell, enter, exit })
-  }
-
-  return intervals
+  return enter <= exit ? enter : 1
 }
 
-/** Ячейки маршрута, включая его начальную и конечную точки, без повторов подряд. */
-export const getPathCells = (from: GroundPoint, to: GroundPoint): CellAddress[] => {
-  const cells = [toCell(from), ...getPathIntervals(from, to).map(({ cell }) => cell), toCell(to)]
+/**
+ * Доля пути клешни от `from` к `to`, на которой она роняет игрушку: равномерно по длине участка, который
+ * начинается дальше `FUMBLE_START_CLEARANCE` от места захвата и заканчивается на входе в лоток. Без такого
+ * участка — `undefined`.
+ */
+export const pickFumbleShare = (from: GroundPoint, to: GroundPoint, random: Random): number | undefined => {
+  const length = Math.hypot(to.x - from.x, to.y - from.y)
 
-  return cells.filter(
-    (cell, index) => index === 0 || cell.col !== cells[index - 1].col || cell.row !== cells[index - 1].row
-  )
-}
+  if (length === 0) return undefined
 
-/** Выбирает участок маршрута вне стартовой ячейки и лотка. */
-export const pickFumbleCell = (from: GroundPoint, to: GroundPoint, random: Random): PathCell | undefined => {
-  const start = toCell(from)
-  const candidates = getPathIntervals(from, to).filter(
-    ({ cell }) => (cell.col !== start.col || cell.row !== start.row) && !isTrayCell(cell)
-  )
+  const start = FUMBLE_START_CLEARANCE / length
+  const end = getTrayEntryShare(from, to)
 
-  return candidates.length > 0 ? candidates[Math.floor(random() * candidates.length)] : undefined
+  return end > start ? start + random() * (end - start) : undefined
 }

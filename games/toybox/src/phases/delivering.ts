@@ -5,12 +5,12 @@ import type { ClawController } from '#src/controllers/box/claw'
 import type { HeapStore } from '#src/stores/heap'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import { type ClawDrop, type GroundPoint, PhaseName } from '#src/types'
-import { pickFumbleCell } from '#src/utils/grid'
+import { pickFumbleShare } from '#src/utils/grid'
 import type { Phase } from '@pixi-demos/core/fsm/types'
 
 /**
- * Фаза доставки: клешня одним ходом движется к лотку. С вероятностью `FUMBLE_CHANCE` она
- * роняет игрушку над ячейкой по дороге, и та возвращается в кучу.
+ * Фаза доставки: клешня одним ходом движется к лотку. С вероятностью `FUMBLE_CHANCE` она роняет
+ * игрушку по дороге — вдали от места захвата и до лотка, — и та падает в кучу.
  */
 @injectable()
 export class DeliveringPhase implements Phase<PhaseName> {
@@ -36,12 +36,12 @@ export class DeliveringPhase implements Phase<PhaseName> {
   private rollFumble(target: GroundPoint): ClawDrop | undefined {
     if (!this.heap.isHolding || Math.random() >= FUMBLE_CHANCE) return undefined
 
-    const cell = pickFumbleCell(this.claw.getCartPoint(), target, Math.random)
+    const share = pickFumbleShare(this.claw.getCartPoint(), target, Math.random)
 
-    if (!cell) return undefined
+    if (share === undefined) return undefined
 
     return {
-      share: (cell.enter + cell.exit) / 2,
+      share,
       onDrop: (grip) => {
         this.heap.release(grip)
       },

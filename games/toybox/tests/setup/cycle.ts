@@ -7,22 +7,24 @@ import { FIELD_CENTER, HEAP_SNAPSHOT_VERSION, CLAW_REST_HEIGHT, CUBE_HEIGHT } fr
 import type { ClawController } from '#src/controllers/box/claw'
 import type { PrizeOutputController } from '#src/controllers/box/prize-output'
 import type { GameEvents } from '#src/events'
-import type { HeapStore } from '#src/stores/heap'
+import { HeapStore } from '#src/stores/heap'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import {
   type ClawDrop,
   type GroundPoint,
+  type HeapSnapshot,
   PhaseName,
   type ToyAppearance,
   type WorldPoint,
 } from '#src/types'
-import { toCell } from '#src/utils/grid'
 import { getGrabChance } from '#src/utils/heap'
 import { getWeight } from '#src/utils/shapes'
 import { bindFsm } from '@pixi-demos/core/bindings'
 import type { GameEmitter } from '@pixi-demos/core/events/game-emitter'
 import type { Fsm } from '@pixi-demos/core/fsm/fsm'
+import type { IdbStorage } from '@pixi-demos/core/idb-storage'
+import { createRandom } from '@pixi-demos/core/random'
 import { CORE_TOKENS } from '@pixi-demos/core/tokens'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
@@ -51,18 +53,39 @@ export type Cycle = {
   stop: () => Promise<void>
   /** Промис петли автомата: резолвится, когда автомат вышел. */
   started?: Promise<void>
+  /** Точки, над которыми клешня уронила игрушку по дороге к лотку. */
+  drops: GroundPoint[]
+}
+
+/** Сид кучи, над которой идут сценарии цикла. */
+const CYCLE_SEED = 7
+
+let cycleSnapshot: HeapSnapshot | undefined
+
+/**
+ * Куча сценариев, насыпанная по сиду. В цикле `Math.random` отвечает очередью бросков теста, поэтому
+ * кучу стартовой фазе отдаёт дублёр хранилища.
+ */
+const getCycleSnapshot = (): HeapSnapshot => {
+  if (!cycleSnapshot) {
+    const heap = new HeapStore()
+
+    heap.restore(undefined, createRandom(CYCLE_SEED))
+    cycleSnapshot = heap.takeSnapshot(0)
+  }
+
+  return cycleSnapshot
 }
 
 /**
  * Дублёр клешни: движения завершаются сразу, но остаются видимыми в журнале.
- * Положение он ведёт по-настоящему — по нему фазы считают ячейку под клешнёй.
+ * Положение он ведёт по-настоящему — по нему фазы находят игрушку под клешнёй.
  */
-const createClawStub = (log: ClawLog): ClawController => {
+const createClawStub = (log: ClawLog, drops: GroundPoint[]): ClawController => {
   let position: GroundPoint = FIELD_CENTER
   let z = CLAW_REST_HEIGHT
 
   const stub = {
-    getCell: () => toCell(position),
     getCartPoint: () => ({ ...position, z: CUBE_HEIGHT }),
     getGripPoint: () => ({ ...position, z }),
     descend: async (toZ: number) => {
@@ -88,10 +111,12 @@ const createClawStub = (log: ClawLog): ClawController => {
         y: position.y + (target.y - position.y) * drop.share,
         z,
       } : undefined
-      const cell = at && toCell(at)
 
-      log.push(`carryTo:${target.x},${target.y}${cell ? ` drop:${cell.col},${cell.row}` : ''}`)
-      if (drop && at) drop.onDrop(at)
+      log.push(`carryTo:${target.x},${target.y}${at ? ' drop' : ''}`)
+      if (drop && at) {
+        drops.push({ x: at.x, y: at.y })
+        drop.onDrop(at)
+      }
       position = target
     },
   }
@@ -134,8 +159,13 @@ export const createCycle = (): Cycle => {
   const log: ClawLog = []
   const world: CycleWorld = { rolls: [] }
   const prizes: Cycle['prizes'] = []
+  const drops: GroundPoint[] = []
 
-  container.bind(TOYBOX_TOKENS.ClawController).toConstantValue(createClawStub(log))
+  container.bind(TOYBOX_TOKENS.ClawController).toConstantValue(createClawStub(log, drops))
+  container.rebind(TOYBOX_TOKENS.HeapStorage).toConstantValue({
+    read: async () => structuredClone(getCycleSnapshot()),
+    write: async () => {},
+  } as unknown as IdbStorage<HeapSnapshot>)
   container
     .bind(ENGINE_TOKENS.GameTicker)
     .toConstantValue(createTickerStub(log, () => container.get(TOYBOX_TOKENS.HeapStore)))
@@ -168,6 +198,7 @@ export const createCycle = (): Cycle => {
     log,
     world,
     prizes,
+    drops,
     waitForPhase: async (phase: PhaseName) => {
       await when(() => store.phase === phase)
     },
@@ -192,15 +223,12 @@ export const startCycle = async (): Promise<Cycle> => {
   return { ...cycle, started }
 }
 
-/** Ячейка, над которой стоит клешня в покое. */
-export const getHomeCell = () => toCell(FIELD_CENTER)
-
 /**
  * Броски, на которых захват игрушки под клешнёй удаётся и проваливается. Шанс теперь зависит от
  * формы и нагрузки сверху, поэтому тест берёт его у самой кучи, а не у константы.
  */
 export const getGrabRolls = (cycle: Cycle): { hit: number; miss: number } => {
-  const body = cycle.heap.getTopBody(getHomeCell())
+  const body = cycle.heap.getTopBodyAt(FIELD_CENTER)
 
   if (!body) return { hit: 0, miss: 1 }
 

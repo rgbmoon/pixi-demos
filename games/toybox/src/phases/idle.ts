@@ -39,8 +39,6 @@ export class IdlePhase implements Phase<PhaseName> {
       unsubscribe()
     }
 
-    this.heap.beginCycle()
-
     return PhaseName.descending
   }
 

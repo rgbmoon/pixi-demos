@@ -73,6 +73,12 @@ const NO_RAW_SUBSCRIBE = [
 
 const NOT_OTHER_GAME = forbid(GAMES, 'Игра не импортирует пакеты игр; свой пакет импортируется через #src/.')
 
+// Физический движок импортирует только уровень physics/: замена движка не выходит за его пределы
+const NO_PLANCK = {
+  group: ['planck', 'planck/*'],
+  message: 'planck импортирует только physics/: остальной код работает с миром через стор.',
+}
+
 const packageBoundaries = [
   boundary(['packages/core/src/**/*.ts'], {
     patterns: [
@@ -87,7 +93,10 @@ const packageBoundaries = [
   // Рил-машина — самостоятельная библиотека: модель не импортирует пакеты монорепо, адаптер импортирует только модель
   boundary(['packages/reels/src/**/*.ts'], {
     patterns: [
-      { group: ['@pixi-demos/*', '@pixi-demos/*/**'], message: 'reels — независимая библиотека: импорт пакетов монорепо запрещён.' },
+      {
+        group: ['@pixi-demos/*', '@pixi-demos/*/**'],
+        message: 'reels — независимая библиотека: импорт пакетов монорепо запрещён.',
+      },
       NO_PIXI,
       NO_REACT,
     ],
@@ -127,12 +136,20 @@ const packageBoundaries = [
   }),
   // Из пакета игры странице доступен только контракт — вход `.`; внутренние модули игры не импортируются
   boundary(['web/src/pages/**/*.{ts,tsx}'], {
-    patterns: [{ group: GAMES.map((game) => `${game}/**`), message: 'Из пакета игры странице доступен только контракт: импорт из корня пакета.' }],
+    patterns: [
+      {
+        group: GAMES.map((game) => `${game}/**`),
+        message: 'Из пакета игры странице доступен только контракт: импорт из корня пакета.',
+      },
+    ],
   }),
   // Лендинг и 404 — общий бандл: игра и PIXI приезжают только с ленивым чанком страницы игры
   boundary(['web/src/pages/main/**/*.{ts,tsx}', 'web/src/pages/not-found/**/*.{ts,tsx}'], {
     patterns: [
-      forbid(['@pixi-demos/engine', ...GAMES], 'Страницы вне игры не тянут ни игру, ни PIXI — иначе они уедут в стартовый чанк.'),
+      forbid(
+        ['@pixi-demos/engine', ...GAMES],
+        'Страницы вне игры не тянут ни игру, ни PIXI — иначе они уедут в стартовый чанк.'
+      ),
       NO_PIXI_RUNTIME,
     ],
   }),
@@ -140,7 +157,7 @@ const packageBoundaries = [
 
 // Уровни внутри игры: вниз импортировать можно, вверх — только `import type`.
 // Каждый блок повторяет пакетный набор, иначе он его затрёт.
-const GAME_BASE = [NOT_OTHER_GAME, NO_REACT]
+const GAME_BASE = [NOT_OTHER_GAME, NO_REACT, NO_PLANCK]
 
 const gameLayers = [
   boundary(['games/*/src/**/*.ts'], { patterns: GAME_BASE, paths: NO_RAW_SUBSCRIBE }),
@@ -148,8 +165,8 @@ const gameLayers = [
     patterns: [
       ...GAME_BASE,
       forbidLayers(
-        ['stores', 'api', 'phases', 'controllers', 'scenes'],
-        'ui — то, что рисуется: сторов, сети, контроллеров и сцены он не знает.'
+        ['stores', 'physics', 'api', 'phases', 'controllers', 'scenes'],
+        'ui — то, что рисуется: сторов, физики, сети, контроллеров и сцены он не знает.'
       ),
       forbidLayers(['events'], 'ui не подписывается на события — это работа контроллера.'),
     ],
@@ -158,12 +175,18 @@ const gameLayers = [
   boundary(['games/*/src/api/**/*.ts'], {
     patterns: [
       ...GAME_BASE,
-      forbidLayers(['stores', 'phases', 'controllers', 'ui', 'scenes'], 'api знает только листовые типы и константы игры.'),
+      forbidLayers(
+        ['stores', 'physics', 'phases', 'controllers', 'ui', 'scenes'],
+        'api знает только листовые типы и константы игры.'
+      ),
     ],
     paths: NO_RAW_SUBSCRIBE,
   }),
   boundary(['games/*/src/stores/**/*.ts'], {
-    patterns: [...GAME_BASE, forbidLayers(['phases', 'controllers', 'ui', 'scenes'], 'Стор не знает ни автомата, ни сцены.')],
+    patterns: [
+      ...GAME_BASE,
+      forbidLayers(['phases', 'controllers', 'ui', 'scenes'], 'Стор не знает ни автомата, ни сцены.'),
+    ],
     paths: NO_RAW_SUBSCRIBE,
   }),
   boundary(['games/*/src/controllers/**/*.ts'], {
@@ -172,6 +195,7 @@ const gameLayers = [
       // DTO живут рядом со своими схемами, поэтому тип ответа контроллеру доступен — вызов нет
       forbidLayers(['api'], 'Контроллер читает данные из стора, в сеть он не ходит.', true),
       forbidLayers(['phases', 'scenes'], 'Контроллер не знает ни автомата, ни сцены: они дёргают его методы сами.'),
+      forbidLayers(['physics'], 'Физику кучи ведёт стор: контроллер читает позы из стора.'),
     ],
     paths: NO_RAW_SUBSCRIBE,
   }),
@@ -183,13 +207,28 @@ const gameLayers = [
         'Фаза получает контроллеры через DI: сцену и виды — только import type.',
         true
       ),
+      forbidLayers(['physics'], 'Физику кучи ведёт стор: фаза зовёт его команды.'),
     ],
     paths: NO_RAW_SUBSCRIBE,
   }),
   boundary(['games/*/src/scenes/**/*.ts'], {
     patterns: [
       ...GAME_BASE,
-      forbidLayers(['api', 'phases'], 'Сцена — раскладка контроллеров: ни сети, ни автомата она не знает.'),
+      forbidLayers(
+        ['api', 'phases', 'physics'],
+        'Сцена — раскладка контроллеров: ни сети, ни автомата, ни физики она не знает.'
+      ),
+    ],
+    paths: NO_RAW_SUBSCRIBE,
+  }),
+  boundary(['games/*/src/physics/**/*.ts'], {
+    patterns: [
+      NOT_OTHER_GAME,
+      NO_REACT,
+      forbidLayers(
+        ['stores', 'api', 'phases', 'controllers', 'ui', 'scenes'],
+        'Физика — уровень под сторами: сторов, сети, автомата и сцены она не знает.'
+      ),
     ],
     paths: NO_RAW_SUBSCRIBE,
   }),
@@ -256,7 +295,10 @@ export default [
       // Состав публичного API задаёт явный список: новый экспорт внутреннего модуля не становится публичным
       'no-restricted-syntax': [
         'error',
-        { selector: 'ExportAllDeclaration', message: 'Реэкспорт — только именованный: export { A } from, export type { B } from.' },
+        {
+          selector: 'ExportAllDeclaration',
+          message: 'Реэкспорт — только именованный: export { A } from, export type { B } from.',
+        },
       ],
 
       // TypeScript

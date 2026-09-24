@@ -1,47 +1,47 @@
 import { Container, Graphics } from 'pixi.js'
 
-import type { Facing, ShapeKey, WorldPoint } from '#src/types'
+import type { ShapeKey, WorldPoint } from '#src/types'
 import type { ToyShapes } from '#src/ui/box/toy-shapes'
-import { getDepthOrder, worldToScreen } from '#src/utils/projection'
+import { worldToScreen } from '#src/utils/projection'
 
-import { getShapeDepthOffset } from './utils'
+import { getAngleStep } from './utils'
 
 /**
  * Игрушка в куче: силуэт формы с цветом через `tint`. Экземпляры используют общие кэшированные
- * контексты геометрии.
+ * контексты геометрии; крен выбирает контекст ближайшего шага угла.
  *
- * Методы не меняют PIXI-объекты при повторе прежних значений. Запись `zIndex` иначе запускала бы
- * сортировку слоя каждый кадр.
+ * Силуэт повторяет коллайдер формы из каталога. Когда форма получит спрайт, коллайдер можно строить по
+ * выпуклой оболочке непрозрачных пикселей спрайта: силуэт и физика совпадут без ручной подгонки.
+ *
+ * Методы не меняют PIXI-объекты при повторе прежних значений.
  */
 export class Toy extends Container {
   private readonly shapes: ToyShapes
   private readonly body: Graphics
   private shape: ShapeKey
-  private facing: Facing
+  private variant: number
+  private step = 0
   private highlighted = false
-  private depthOffset = 0
-  private depth = Number.NaN
 
-  constructor(shapes: ToyShapes, shape: ShapeKey, facing: Facing, color: number) {
+  constructor(shapes: ToyShapes, shape: ShapeKey, variant: number, color: number) {
     super()
 
     this.shapes = shapes
     this.shape = shape
-    this.facing = facing
-    this.body = new Graphics(shapes.get(shape, facing, false))
+    this.variant = variant
+    this.body = new Graphics(shapes.get(shape, variant, this.step, false))
     this.body.tint = color
 
     this.addChild(this.body)
-    this.updateDepthOffset()
   }
 
-  /** Переиспользует экземпляр для другой формы и цвета. */
-  setAppearance(shape: ShapeKey, facing: Facing, color: number): void {
+  /** Переиспользует экземпляр для другой формы и цвета, без крена. */
+  setAppearance(shape: ShapeKey, variant: number, color: number): void {
     this.shape = shape
-    this.facing = facing
+    this.variant = variant
+    this.step = 0
     this.body.tint = color
     this.refresh()
-    this.updateDepthOffset()
   }
 
   /** Масштаб отдельной презентации в окне выдачи. */
@@ -49,26 +49,16 @@ export class Toy extends Container {
     this.scale.set(scale)
   }
 
-  /** Ставит центр в мировую точку и сортирует по ближайшей клетке текущего силуэта. */
-  setWorld(point: WorldPoint, bounce: number): void {
-    const visible = { x: point.x, y: point.y, z: point.z + bounce }
-    const screen = worldToScreen(visible)
-    const depth = getDepthOrder(visible) + this.depthOffset
+  /** Ставит центр в мировую точку и поворачивает силуэт на крен. */
+  setPose(point: WorldPoint, angle: number): void {
+    const screen = worldToScreen(point)
+    const step = getAngleStep(angle)
 
     this.position.set(screen.x, screen.y)
-    if (depth !== this.depth) {
-      this.depth = depth
-      this.zIndex = depth
+    if (step !== this.step) {
+      this.step = step
+      this.refresh()
     }
-  }
-
-  /** Меняет ориентацию силуэта при посадке. */
-  setFacing(facing: Facing): void {
-    if (facing === this.facing) return
-
-    this.facing = facing
-    this.refresh()
-    this.updateDepthOffset()
   }
 
   /** Помечает игрушку как цель клешни. */
@@ -80,10 +70,6 @@ export class Toy extends Container {
   }
 
   private refresh(): void {
-    this.body.context = this.shapes.get(this.shape, this.facing, this.highlighted)
-  }
-
-  private updateDepthOffset(): void {
-    this.depthOffset = getShapeDepthOffset(this.shape, this.facing)
+    this.body.context = this.shapes.get(this.shape, this.variant, this.step, this.highlighted)
   }
 }

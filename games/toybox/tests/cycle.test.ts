@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   FIELD_CENTER,
   FUMBLE_CHANCE,
+  FUMBLE_START_CLEARANCE,
   LIFT_FUMBLE_CHANCE,
   PHASE_PAUSE_MS,
   TRAY_CENTER,
@@ -13,9 +14,9 @@ import {
   TRAY_RELEASE_MS,
 } from '#src/constants'
 import { PhaseName } from '#src/types'
-import { isTrayCell } from '#src/utils/grid'
+import { isOverTray } from '#src/utils/grid'
 
-import { countToys, type Cycle, emptyHeap, getGrabRolls, getHomeCell, startCycle } from './setup/cycle'
+import { countToys, type Cycle, emptyHeap, getGrabRolls, startCycle } from './setup/cycle'
 
 /** Бросок, на котором клешня роняет игрушку, и бросок, на котором она её доносит. */
 const FUMBLE_HIT = FUMBLE_CHANCE / 2
@@ -31,9 +32,9 @@ const PAUSE = `wait:${PHASE_PAUSE_MS}`
 /** Возврат клешни в покой. */
 const RETURN = [`moveTo:${FIELD_CENTER.x},${FIELD_CENTER.y}`]
 
-/** Начало цикла: спуск до верха стопки и сжатие клешни — они одинаковы при любом исходе. */
+/** Начало цикла: спуск до верха кучи и сжатие клешни — они одинаковы при любом исходе. */
 const approach = (cycle: Cycle): string[] => [
-  `descend:${cycle.heap.getSurfaceHeight(getHomeCell())}`,
+  `descend:${cycle.heap.getSurfaceHeightAt(FIELD_CENTER)}`,
   PAUSE,
   'grab',
 ]
@@ -67,7 +68,7 @@ describe('цикл клешни', () => {
 
     const steps = approach(cycle)
     const before = countToys(cycle)
-    const expected = cycle.heap.getTopBody(getHomeCell())
+    const expected = cycle.heap.getTopBodyAt(FIELD_CENTER)
 
     cycle.world.rolls = [getGrabRolls(cycle).hit, SLIP_MISS, FUMBLE_MISS]
 
@@ -122,18 +123,19 @@ describe('цикл клешни', () => {
     expect(countToys(cycle)).toBe(before)
   })
 
-  it('не берёт игрушку из пустой ячейки, даже когда бросок удачен', async () => {
+  it('не берёт игрушку, когда под клешнёй пусто, даже при удачном броске', async () => {
     cycle = await startCycle()
     emptyHeap(cycle)
     cycle.world.rolls = [0]
 
+    const steps = approach(cycle)
+
     await runCycle(cycle)
 
-    // Ячейка пуста: клешня села на пол, брать оказалось нечего и она ушла к лотку ни с чем
+    // Под клешнёй пусто: она села на пол, брать оказалось нечего, и она ушла к лотку ни с чем
+    expect(cycle.heap.getSurfaceHeightAt(FIELD_CENTER)).toBeCloseTo(0, 12)
     expect(cycle.log).toEqual([
-      'descend:0',
-      PAUSE,
-      'grab',
+      ...steps,
       PAUSE,
       'ascend',
       PAUSE,
@@ -178,14 +180,13 @@ describe('цикл клешни', () => {
 
     await runCycle(cycle)
 
-    // Из {4,4} к лотку путь идёт по ячейкам бокса {3,4} и {2,5}; бросок 0.5 выбирает вторую.
     // Ход к лотку один: клешня разжимается прямо в нём
     expect(cycle.log).toEqual([
       ...steps,
       PAUSE,
       'ascend',
       PAUSE,
-      `carryTo:${TRAY_CENTER.x},${TRAY_CENTER.y} drop:2,5`,
+      `carryTo:${TRAY_CENTER.x},${TRAY_CENTER.y} drop`,
       `wait:${TRAY_HOLD_MS}`,
       ...RETURN,
     ])
@@ -202,20 +203,23 @@ describe('цикл клешни', () => {
     const travels = cycle.log.filter((entry) => entry.startsWith('carryTo:') || entry.startsWith('moveTo:'))
 
     // Один ход к лотку и один возврат: промежуточной остановки в точке потери нет
-    expect(travels).toEqual([`carryTo:${TRAY_CENTER.x},${TRAY_CENTER.y} drop:2,5`, ...RETURN])
+    expect(travels).toEqual([`carryTo:${TRAY_CENTER.x},${TRAY_CENTER.y} drop`, ...RETURN])
   })
 
-  it('роняет игрушку только над ячейкой бокса, не над лотком', async () => {
+  it('роняет игрушку над кубом: вне лотка и дальше порога от места захвата', async () => {
     for (const pick of [0, 0.25, 0.5, 0.75, 0.99]) {
       cycle = await startCycle()
       cycle.world.rolls = [getGrabRolls(cycle).hit, SLIP_MISS, FUMBLE_HIT, pick]
 
       await runCycle(cycle)
 
-      const carried = cycle.log.find((entry) => entry.includes(' drop:')) as string
-      const [col, row] = carried.slice(carried.indexOf(' drop:') + ' drop:'.length).split(',').map(Number)
+      const [drop] = cycle.drops
 
-      expect(isTrayCell({ col, row })).toBe(false)
+      expect(cycle.drops).toHaveLength(1)
+      expect(isOverTray(drop)).toBe(false)
+      expect(Math.hypot(drop.x - FIELD_CENTER.x, drop.y - FIELD_CENTER.y)).toBeGreaterThanOrEqual(
+        FUMBLE_START_CLEARANCE - 1e-9
+      )
       // Потерянная игрушка в счётчик не идёт, но сама клешня доезжает до лотка пустой
       expect(cycle.log.some((entry) => entry.startsWith(`carryTo:${TRAY_CENTER.x},${TRAY_CENTER.y}`))).toBe(true)
       expect(cycle.store.collected).toBe(0)
