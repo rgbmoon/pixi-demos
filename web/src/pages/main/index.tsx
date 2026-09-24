@@ -22,7 +22,7 @@ const GAME_TILES = [
     to: '/toybox',
     title: 'Toy Box',
     description:
-      'Isometric claw machine made with frame-by-frame pixel art. Aseprite animations played through a custom PixiJS animation layer. Optimized for mobile devices with touch controls.',
+      'Isometric claw machine made with frame-by-frame pixel art. Aseprite animations played through a custom PixiJS animation layer. Physics are based on planck engine. Optimized for mobile devices.',
     cover: (
       <picture>
         <source srcSet="/games/toybox/toy-box.webp" type="image/webp" />
