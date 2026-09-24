@@ -20,7 +20,6 @@ test.describe('лендинг', () => {
     await page.getByRole('link', { name: /toy box/i }).first().click()
 
     await expect(page).toHaveURL(/\/toybox/)
-    // Игра в разработке: прод-сборка показывает заглушку вместо канваса
-    await expect(page.getByText('The game is under development')).toBeVisible()
+    await expect(page.getByRole('main').locator('canvas')).toBeVisible({ timeout: BOOT_TIMEOUT_MS })
   })
 })

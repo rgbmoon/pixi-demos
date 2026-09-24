@@ -1,7 +1,15 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest'
 
-import { CLAW_GRAB_MS, FACINGS, GRID_SIZE, HEAP_SNAPSHOT_VERSION, MAX_LAYERS, SHAPE_KEYS, TRAY_CENTER, TRAY_EXIT_Z } from '#src/constants'
+import {
+  CLAW_GRAB_MS,
+  FIELD_CENTER,
+  HEAP_SNAPSHOT_VERSION,
+  SHAPE_KEYS,
+  TOY_ANGLE_STEP,
+  TRAY_CENTER,
+  TRAY_EXIT_Z,
+} from '#src/constants'
 import { ClawController } from '#src/controllers/box/claw'
 import { ContentsController } from '#src/controllers/box/contents'
 import { PersistenceController } from '#src/controllers/persistence'
@@ -9,118 +17,41 @@ import type { GameEvents } from '#src/events'
 import { IdlePhase } from '#src/phases/idle'
 import { HeapStore } from '#src/stores/heap'
 import { ToyboxStore } from '#src/stores/toybox'
-import { type HeapSnapshot, PhaseName, ToyState } from '#src/types'
+import { type HeapSnapshot, type HeapSnapshotBody, PhaseName, type ShapeKey, type ToyBody } from '#src/types'
 import { Toy } from '#src/ui/box/toy'
 import { ToyShapes } from '#src/ui/box/toy-shapes'
 import { getShapeOutline } from '#src/ui/box/utils'
-import { getPathIntervals, isTrayCell } from '#src/utils/grid'
 import { getCabinetOutlines } from '#src/utils/machine-geometry'
-import { getDepthOrder, worldToScreen } from '#src/utils/projection'
-import { getPlacementCells, getShapeCells, getShapeCenter } from '#src/utils/shapes'
-import { isHeapSnapshot } from '#src/utils/snapshot'
+import { worldToScreen } from '#src/utils/projection'
+import { getSection, getVariantCount } from '#src/utils/shapes'
 import { GameEmitter } from '@pixi-demos/core/events/game-emitter'
 import type { IdbStorage } from '@pixi-demos/core/idb-storage'
 import { GameTicker } from '@pixi-demos/engine/game-ticker'
 
-const snapshot = (bodies: HeapSnapshot['bodies']): HeapSnapshot => ({ version: HEAP_SNAPSHOT_VERSION, collected: 0, bodies })
-const single = { shape: 'single', facing: 0, anchor: { col: 3, row: 3 }, layer: 0, color: 0xff8800 } as const
+const snapshot = (bodies: HeapSnapshotBody[]): HeapSnapshot => ({ version: HEAP_SNAPSHOT_VERSION, collected: 0, bodies })
 
-const settle = (heap: HeapStore) => {
-  for (let frame = 0; frame < 1000; frame++) {
-    heap.advance(1000 / 60)
-    if (heap.settled) return
-  }
-  throw new Error('Heap did not settle')
-}
+/** Игрушка снимка, стоящая без крена на полу. */
+const standing = (shape: ShapeKey, slab: number, y: number): HeapSnapshotBody => ({
+  shape,
+  variant: 0,
+  slab,
+  y,
+  z: 0.001 - Math.min(...getSection(shape, 0).map(({ z }) => z)),
+  angle: 0,
+  color: 0xff8800,
+})
+
+/** Число шагов крена, с которым силуэт проверяется на скрытие корпусом. */
+const HIDDEN_ANGLE_STEPS = 24
 
 describe('регрессии модели и геометрии', () => {
-  it('сохраняет видимую позицию при захвате любой формы и ориентации, включая просадку', () => {
-    for (const shape of SHAPE_KEYS) for (const facing of FACINGS) {
-      const heap = new HeapStore()
-      const cell = { col: 3, row: 3 }
-      heap.restore(snapshot([{ ...single, shape, facing }]), () => 0.99)
-      heap.setPressed(cell)
-      heap.advance(100)
-      const body = heap.getTopBody(cell)!
-      const visible = { ...body.pose.point, z: body.pose.point.z + body.bounce.value }
-      const grip = { x: 3.5, y: 3.5, z: heap.getSurfaceHeight(cell) }
-
-      heap.lift(cell, grip)
-      heap.setPressed(undefined)
-      heap.setGripPoint(grip)
-      heap.advance(16)
-
-      expect(body.pose.point).toEqual(visible)
-      expect(body.bounce.value).toBe(0)
-      heap.setGripPoint({ x: grip.x + 1, y: grip.y - 1, z: grip.z + 2 })
-      expect(body.pose.point).toEqual({ x: visible.x + 1, y: visible.y - 1, z: visible.z + 2 })
-    }
-  })
-
-  it('отменяет срыв при отсутствии доступного места и сохраняет игрушку в захвате', () => {
-    const bodies: HeapSnapshot['bodies'] = [
-      { ...single, shape: 'bar2' },
-      { ...single, shape: 'cube8', anchor: { col: 2, row: 2 }, layer: 1 },
-    ]
-    const occupied = new Set(bodies.flatMap((body) => getPlacementCells(body.shape, body.facing, body.anchor, body.layer))
-      .map(({ col, row, layer }) => `${col}:${row}:${layer}`))
-    for (let col = 0; col < GRID_SIZE; col++) for (let row = 0; row < GRID_SIZE; row++) {
-      for (let layer = 0; layer < MAX_LAYERS; layer++) {
-        if (isTrayCell({ col, row }) || occupied.has(`${col}:${row}:${layer}`) || (col === 4 && row === 3)) continue
-        bodies.push({ ...single, anchor: { col, row }, layer })
-      }
-    }
-    const heap = new HeapStore()
-    heap.restore(snapshot(bodies), () => 0.99)
-    const grip = { x: 4.5, y: 3.5, z: 1 }
-    const id = heap.lift({ col: 4, row: 3 }, grip)
-
-    expect(id).toBeDefined()
-    // Срыв бывает выше прежнего места игрушки: посадка ищется сверху плотно заполненной кучи
-    expect(heap.release({ ...grip, z: 6 })).toBe(false)
-    expect(heap.isHolding).toBe(true)
-    expect(heap.releaseOutcome.status).toBe('none')
-    expect([...heap.getBodies()].find((body) => body.id === id)?.state).toBe(ToyState.carried)
-  })
-
-  it('меняет отображаемую ориентацию только при посадке', () => {
-    const heap = new HeapStore()
-    heap.restore(snapshot([{ ...single, shape: 'bar2' }]), () => 0.99)
-    heap.lift(single.anchor, { x: 3.5, y: 3.5, z: 1 })
-    heap.release({ x: 5.5, y: 5.5, z: 6 })
-    const body = [...heap.getBodies()][0]
-    expect(body.placement.facing).toBe(1)
-    expect(body.pose.facing).toBe(0)
-    heap.advance(body.durationMs / 2)
-    expect(body.pose.facing).toBe(0)
-    settle(heap)
-    expect(body.pose.facing).toBe(1)
-  })
-
-  it('не пропускает короткое пересечение ячейки и выбирает точки внутри интервалов', () => {
-    const from = { x: 2.095, y: 1.322 }
-    const to = { x: 1, y: 7 }
-    const intervals = getPathIntervals(from, to)
-    expect(intervals.map(({ cell }) => cell)).toContainEqual({ col: 1, row: 1 })
-    for (const { cell, enter, exit } of intervals) {
-      const t = (enter + exit) / 2
-      expect(Math.floor(from.x + (to.x - from.x) * t)).toBe(cell.col)
-      expect(Math.floor(from.y + (to.y - from.y) * t)).toBe(cell.row)
-    }
-  })
-
-  it('сортирует каждую текущую позу по ближайшей клетке без изменения масштаба', () => {
+  it('ставит игрушку в проекцию позы и не меняет её масштаб', () => {
     const shapes = new ToyShapes()
-    for (const shape of SHAPE_KEYS) for (const facing of FACINGS) {
-      const toy = new Toy(shapes, shape, facing, 0xffffff)
-      const center = getShapeCenter(shape, facing)
+    for (const shape of SHAPE_KEYS) {
+      const toy = new Toy(shapes, shape, 0, 0xffffff)
       for (const point of [{ x: 0.3, y: 1.7, z: 5.2 }, { x: 5, y: 4, z: 1 }, { ...TRAY_CENTER, z: TRAY_EXIT_Z }]) {
-        const bounce = -0.13
-        toy.setWorld(point, bounce)
-        const expected = Math.max(...getShapeCells(shape, facing).map(({ dx, dy, dz }) =>
-          getDepthOrder({ x: point.x + dx - center.dx, y: point.y + dy - center.dy, z: point.z + bounce + dz - center.dz })))
-        expect(toy.zIndex).toBeCloseTo(expected, 12)
-        expect({ x: toy.x, y: toy.y }).toEqual(worldToScreen({ ...point, z: point.z + bounce }))
+        toy.setPose(point, 0.4)
+        expect({ x: toy.x, y: toy.y }).toEqual(worldToScreen(point))
         expect(toy.scale.x).toBe(1)
         expect(toy.scale.y).toBe(1)
       }
@@ -129,7 +60,7 @@ describe('регрессии модели и геометрии', () => {
     shapes.destroy()
   })
 
-  it('скрывает конечный контур каждой формы корпусом с обводкой и запасом', () => {
+  it('скрывает силуэт каждой формы на высоте ухода из шахты корпусом с обводкой и запасом при любом крене', () => {
     const faces = getCabinetOutlines().map((face) => face.map((point) => worldToScreen(point)))
     const origin = worldToScreen({ ...TRAY_CENTER, z: TRAY_EXIT_Z })
     const inside = (x: number, y: number) => faces.some((face) => {
@@ -140,32 +71,19 @@ describe('регрессии модели и геометрии', () => {
       }
       return hit
     })
-    for (const shape of SHAPE_KEYS) for (const facing of FACINGS) {
-      const outline = getShapeOutline(shape, facing)
-      for (let i = 0; i < outline.length; i++) for (let t = 0; t <= 1; t += 0.1) {
-        const a = outline[i], b = outline[(i + 1) % outline.length]
-        for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 8) {
-          expect(inside(origin.x + a.x + (b.x - a.x) * t + 6 * Math.cos(angle),
-            origin.y + a.y + (b.y - a.y) * t + 6 * Math.sin(angle))).toBe(true)
+    const stepsPerTurn = Math.round((2 * Math.PI) / TOY_ANGLE_STEP)
+    for (const shape of SHAPE_KEYS) for (let variant = 0; variant < getVariantCount(shape); variant++) {
+      for (let turn = 0; turn < HIDDEN_ANGLE_STEPS; turn++) {
+        const outline = getShapeOutline(shape, variant, Math.round((turn * stepsPerTurn) / HIDDEN_ANGLE_STEPS))
+        for (let i = 0; i < outline.length; i++) for (const t of [0, 0.5]) {
+          const a = outline[i], b = outline[(i + 1) % outline.length]
+          for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
+            expect(inside(origin.x + a.x + (b.x - a.x) * t + 6 * Math.cos(angle),
+              origin.y + a.y + (b.y - a.y) * t + 6 * Math.sin(angle))).toBe(true)
+          }
         }
       }
     }
-  })
-
-  it.each([0.5, NaN, Infinity, -1, 8])('отвергает недопустимую координату %s до изменения модели', (col) => {
-    const invalid = snapshot([{ ...single, anchor: { col, row: 3 } }])
-    expect(isHeapSnapshot(invalid)).toBe(false)
-    const heap = new HeapStore()
-    heap.restore(snapshot([single]), () => 0.99)
-    const before = heap.takeSnapshot(0)
-    expect(() => heap.restore(invalid, () => 0.99)).toThrow('Invalid heap snapshot')
-    expect(heap.takeSnapshot(0)).toEqual(before)
-  })
-
-  it('отвергает унаследованное имя формы, дробную ориентацию и пересечения', () => {
-    expect(isHeapSnapshot(snapshot([{ ...single, shape: 'toString' } as never]))).toBe(false)
-    expect(isHeapSnapshot(snapshot([{ ...single, facing: 0.5 } as never]))).toBe(false)
-    expect(isHeapSnapshot(snapshot([single, single]))).toBe(false)
   })
 })
 
@@ -176,11 +94,11 @@ describe('регрессии контроллеров и жизненного ц
     const heap = new HeapStore()
     const claw = new ClawController(ticker, store)
     const contents = new ContentsController(ticker, heap, store, claw)
-    heap.restore(snapshot([{ ...single, shape: 'cube8' }]), () => 0.99)
-    const body = heap.getTopBody(single.anchor)!
+    heap.restore(snapshot([standing('cube8', 3, FIELD_CENTER.y)]), () => 0.99)
+    const body = heap.getTopBodyAt(FIELD_CENTER) as Readonly<ToyBody>
     const initial = { ...body.pose.point }
     const grip = claw.getGripPoint()
-    heap.lift(single.anchor, grip)
+    heap.lift(FIELD_CENTER, grip)
     let time = 0
     ticker.update(time)
     const grab = claw.grab((progress, point) => heap.setGrabProgress(progress, point), new AbortController().signal)
@@ -231,16 +149,14 @@ describe('регрессии контроллеров и жизненного ц
   it('при уходе посреди цикла сохраняет прежний снимок без потери соседа', () => {
     const store = new ToyboxStore()
     const heap = new HeapStore()
-    heap.restore(snapshot([
-      { ...single, shape: 'bar2' },
-      { ...single, anchor: { col: 4, row: 3 }, layer: 1 },
-    ]), () => 0.99)
+    heap.restore(snapshot([standing('bar2', 3, 3), standing('single', 3, 5)]), () => 0.99)
     const checkpoint = heap.takeSnapshot(0)
     const write = vi.fn(async () => { })
     store.publishCheckpoint(checkpoint)
     const persistence = new PersistenceController(store, { write } as unknown as IdbStorage<HeapSnapshot>)
-    heap.lift({ col: 3, row: 3 }, { x: 3.5, y: 3.5, z: 1 })
-    settle(heap)
+    const point = { x: 3.5, y: 3 }
+    heap.lift(point, { ...point, z: heap.getSurfaceHeightAt(point) })
+    for (let frame = 0; frame < 60; frame++) heap.advance(1000 / 60)
     window.dispatchEvent(new Event('pagehide'))
     expect(write).toHaveBeenLastCalledWith(checkpoint)
     const restored = new HeapStore()

@@ -45,3 +45,6 @@ const VIEW_Z = (AXIS_X.y * VIEW_X + AXIS_Y.y) / UNIT_HEIGHT
 
 /** Порядок наложения точки: её смещение против луча взгляда. Чем больше, тем ближе к игроку. */
 export const getDepthOrder = ({ x, y, z }: WorldPoint): number => -(x * VIEW_X + y + z * VIEW_Z)
+
+/** Луч взгляда в осях мира: при движении вдоль него точка удаляется от игрока. */
+export const getViewRay = (): WorldPoint => ({ x: VIEW_X, y: 1, z: VIEW_Z })

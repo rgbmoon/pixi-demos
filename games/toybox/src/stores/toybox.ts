@@ -2,7 +2,7 @@ import { injectable } from 'inversify'
 import { action, computed, makeObservable, observable } from 'mobx'
 
 import { INITIAL_PHASE } from '#src/constants'
-import { type CellAddress, type GroundPoint, type HeapSnapshot, PhaseName, type ScreenPoint } from '#src/types'
+import { type GroundPoint, type HeapSnapshot, PhaseName, type ScreenPoint } from '#src/types'
 import { toGroundDirection } from '#src/utils/projection'
 
 /** Состояние фазы, управления и количества доставленных игрушек. */
@@ -43,9 +43,6 @@ export class ToyboxStore {
     this.joystick = vector
   }
 
-  /** Ячейка под клешнёй. Единственный писатель — контроллер клешни. */
-  @observable.ref clawCell: CellAddress | undefined = undefined
-
   /** Доступно ли опускание клешни: цикл идёт целиком, прервать его нечем. */
   @computed get canDrop(): boolean {
     return this.isIdle
@@ -56,19 +53,11 @@ export class ToyboxStore {
     return this.isIdle
   }
 
-  /**
-   * Ячейка, которую игрок выбирает сейчас: по ней сцена подсвечивает игрушку.
-   * Подсветка идёт только в покое, пока игрок ищет игрушку джойстиком.
-   */
-  @computed get targetCell(): CellAddress | undefined {
-    return this.canDrop ? this.clawCell : undefined
-  }
-
   @action setPhase(phase: PhaseName) {
     this.phase = phase
   }
 
-  /** Засчитывает игрушку, дошедшую до дна лотка. */
+  /** Засчитывает приз перед его показом в окне выдачи. */
   @action recordCollection(): void {
     this.collected += 1
   }
@@ -81,9 +70,5 @@ export class ToyboxStore {
   /** Поднимает счётчик из снимка: его зовёт стартовая фаза после восстановления кучи. */
   @action applyCollected(collected: number) {
     this.collected = collected
-  }
-
-  @action setClawCell(cell: CellAddress) {
-    this.clawCell = cell
   }
 }

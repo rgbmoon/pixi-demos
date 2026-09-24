@@ -1,16 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  CLAW_MAX_SPEED,
-  MOTION_MIN_DURATION_SCALE,
-  SWAY_DAMPING,
-  SWAY_DRAG,
-  SWAY_MAX_OFFSET,
-  SWAY_PERIOD_MS,
-  TOY_FALL_MS,
-} from '#src/constants'
-import type { GroundPoint, SpringOptions, SpringState, WorldPoint } from '#src/types'
-import { advanceSpring, advanceVelocity, getMotionDurationScale, getMotionMs } from '#src/utils/motion'
+import { CLAW_MAX_SPEED, SWAY_DAMPING, SWAY_DRAG, SWAY_MAX_OFFSET, SWAY_PERIOD_MS } from '#src/constants'
+import type { GroundPoint, SpringOptions, SpringState } from '#src/types'
+import { advanceSpring, advanceVelocity, lerpPose } from '#src/utils/motion'
 
 /** Шаг кадра при 60 fps. */
 const FRAME_MS = 1000 / 60
@@ -197,47 +189,22 @@ describe('качание клешни', () => {
   })
 })
 
-describe('getMotionMs', () => {
-  const AT = (x: number, y: number, z: number): WorldPoint => ({ x, y, z })
+describe('lerpPose', () => {
+  it('ведёт крен по кратчайшей дуге через переход угла от π к −π', () => {
+    const from = { y: 1, z: 2, angle: Math.PI - 0.1 }
+    const to = { y: 3, z: 4, angle: -Math.PI + 0.1 }
+    const middle = lerpPose(from, to, 0.5)
 
-  it('отмеряет ход даже там, где спуска нет вовсе', () => {
-    // Игрушку отпустили вровень с её местом: остаётся только переехать по полу
-    expect(getMotionMs(1, AT(4, 4, 2), AT(4, 4, 2))).toBeGreaterThan(0)
-    expect(getMotionMs(1, AT(4, 4, 2), AT(6, 4, 2))).toBeGreaterThan(0)
+    expect(middle.y).toBe(2)
+    expect(middle.z).toBe(3)
+    expect(Math.cos(middle.angle)).toBeCloseTo(-1, 12)
   })
 
-  it('отмеряет ход снизу вверх так же, как спуск', () => {
-    expect(getMotionMs(1, AT(4, 4, 1), AT(4, 4, 3))).toBe(getMotionMs(1, AT(4, 4, 3), AT(4, 4, 1)))
-  })
+  it('совпадает с концами отрезка на долях 0 и 1', () => {
+    const from = { y: 0.5, z: 1.5, angle: 7 }
+    const to = { y: 2.5, z: 0.5, angle: 7.2 }
 
-  it('растёт с высотой спуска и с путём по полу', () => {
-    expect(getMotionMs(1, AT(4, 4, 4), AT(4, 4, 0))).toBeGreaterThan(getMotionMs(1, AT(4, 4, 2), AT(4, 4, 0)))
-    expect(getMotionMs(1, AT(0, 0, 0), AT(7, 7, 0))).toBeGreaterThan(getMotionMs(1, AT(0, 0, 0), AT(1, 0, 0)))
-  })
-
-  it('использует базовую скорость 90 мс на ячейку свободного падения', () => {
-    expect(TOY_FALL_MS).toBe(90)
-    expect(getMotionMs(1, AT(4, 4, 3), AT(4, 4, 0))).toBe(3 * TOY_FALL_MS)
-  })
-
-  it('роняет тяжёлое быстрее лёгкого, но лишь немного', () => {
-    const light = getMotionMs(1, AT(4, 4, 4), AT(4, 4, 0))
-    const heavy = getMotionMs(8, AT(4, 4, 4), AT(4, 4, 0))
-
-    expect(heavy).toBeLessThan(light)
-    expect(light / heavy).toBeLessThanOrEqual(1 / MOTION_MIN_DURATION_SCALE)
-  })
-})
-
-describe('getMotionDurationScale', () => {
-  it('держится между полом и единицей при любом весе', () => {
-    for (const weight of [1, 2, 3, 4, 8, 64]) {
-      expect(getMotionDurationScale(weight)).toBeLessThanOrEqual(1)
-      expect(getMotionDurationScale(weight)).toBeGreaterThanOrEqual(MOTION_MIN_DURATION_SCALE)
-    }
-  })
-
-  it('не ускоряет одноклеточную игрушку вовсе', () => {
-    expect(getMotionDurationScale(1)).toBe(1)
+    expect(lerpPose(from, to, 0)).toEqual(from)
+    expect(lerpPose(from, to, 1).angle).toBeCloseTo(to.angle, 12)
   })
 })

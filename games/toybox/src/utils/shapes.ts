@@ -1,98 +1,118 @@
-import { FACINGS, SHAPES, TOY_LAYER_CENTER } from '#src/constants'
-import type { CellAddress, Facing, ShapeCell, ShapeKey, VolumeCell, WorldPoint } from '#src/types'
+import { CORNER_EDGE_SHARE, SHAPES, TOY_INSET } from '#src/constants'
+import type { PlaneVector, ScreenPoint, SectionPoint, ShapeKey, ShapeVariant, ToyPose } from '#src/types'
 
-import { getCellCenter, getColumnKey } from './grid'
+import { getConvexHull } from './geometry'
+import { worldToScreen } from './projection'
 
-/** Число клеток формы. */
-export const getWeight = (shape: ShapeKey): number => SHAPES[shape].cells.length
+/** Вес формы в клетках: от него зависят шанс захвата и масса тела. */
+export const getWeight = (shape: ShapeKey): number => SHAPES[shape].weight
 
-/** Поворот ориентации на `steps` четвертей оборота. */
-export const rotateFacing = (facing: Facing, steps: number): Facing => ((((facing + steps) % 4) + 4) % 4) as Facing
+/** Положение формы из каталога. */
+export const getVariant = (shape: ShapeKey, variant: number): ShapeVariant => SHAPES[shape].variants[variant]
 
-/** Четверть оборота клетки формы вокруг вертикальной оси: `(dx, dy)` переходит в `(-dy, dx)`. */
-const turnCell = ({ dx, dy, dz }: ShapeCell, facing: Facing): ShapeCell => {
-  if (facing === 1) return { dx: -dy, dy: dx, dz }
-  if (facing === 2) return { dx: -dx, dy: -dy, dz }
-  if (facing === 3) return { dx: dy, dy: -dx, dz }
-
-  return { dx, dy, dz }
-}
-
-/** Клетки формы после поворота, сдвинутые так, что минимальные `dx` и `dy` снова равны нулю. */
-const buildShapeCells = (shape: ShapeKey, facing: Facing): ShapeCell[] => {
-  const turned = SHAPES[shape].cells.map((cell) => turnCell(cell, facing))
-  const minX = Math.min(...turned.map(({ dx }) => dx))
-  const minY = Math.min(...turned.map(({ dy }) => dy))
-
-  return turned.map(({ dx, dy, dz }) => ({ dx: dx - minX, dy: dy - minY, dz }))
-}
-
-/** Среднее смещение клеток формы. */
-const buildShapeCenter = (cells: readonly ShapeCell[]): ShapeCell => {
-  const sum = cells.reduce(
-    (total, { dx, dy, dz }) => ({ dx: total.dx + dx, dy: total.dy + dy, dz: total.dz + dz }),
-    { dx: 0, dy: 0, dz: 0 }
-  )
-
-  return { dx: sum.dx / cells.length, dy: sum.dy / cells.length, dz: sum.dz / cells.length }
-}
-
-/** Клетки и середина формы в каждой из четырёх ориентаций. */
-const buildOrientations = (shape: ShapeKey): { readonly cells: readonly ShapeCell[]; readonly center: ShapeCell }[] =>
-  FACINGS.map((facing) => {
-    const cells = buildShapeCells(shape, facing)
-
-    return { cells, center: buildShapeCenter(cells) }
-  })
-
-/** Клетки и середины всех форм во всех ориентациях: планировщики читают их в каждом проходе разбора кучи. */
-const SHAPE_TABLE: Record<ShapeKey, ReturnType<typeof buildOrientations>> = {
-  single: buildOrientations('single'),
-  bar2: buildOrientations('bar2'),
-  square4: buildOrientations('square4'),
-  cube8: buildOrientations('cube8'),
-}
+/** Число положений формы в каталоге. */
+export const getVariantCount = (shape: ShapeKey): number => SHAPES[shape].variants.length
 
 /**
- * Клетки формы в ориентации `facing`, приведённые к нулевому якорю: после поворота смещения
- * сдвигаются так, что минимальные `dx` и `dy` снова равны нулю. Поэтому четыре поворота подряд
- * возвращают исходный набор.
+ * Скругляет углы выпуклого многоугольника: у каждой вершины срез на `radius` вдоль обоих рёбер и точка
+ * квадратичной кривой между срезами. Радиус ограничен долей ребра, поэтому соседние скругления не пересекаются.
  */
-export const getShapeCells = (shape: ShapeKey, facing: Facing): readonly ShapeCell[] => SHAPE_TABLE[shape][facing].cells
+const roundCorners = (section: readonly SectionPoint[], radius: number): SectionPoint[] =>
+  section.flatMap((point, index) => {
+    const previous = section[(index + section.length - 1) % section.length]
+    const next = section[(index + 1) % section.length]
+    const toPrevious = Math.hypot(previous.y - point.y, previous.z - point.z)
+    const toNext = Math.hypot(next.y - point.y, next.z - point.z)
+    const cutPrevious = Math.min(radius, toPrevious * CORNER_EDGE_SHARE) / toPrevious
+    const cutNext = Math.min(radius, toNext * CORNER_EDGE_SHARE) / toNext
+    const start = { y: point.y + (previous.y - point.y) * cutPrevious, z: point.z + (previous.z - point.z) * cutPrevious }
+    const end = { y: point.y + (next.y - point.y) * cutNext, z: point.z + (next.z - point.z) * cutNext }
 
-/** Возвращает клетки формы для заданных якоря, ориентации и слоя. */
-export const getPlacementCells = (
-  shape: ShapeKey,
-  facing: Facing,
-  anchor: CellAddress,
-  layer: number
-): VolumeCell[] =>
-  getShapeCells(shape, facing).map(({ dx, dy, dz }) => ({
-    col: anchor.col + dx,
-    row: anchor.row + dy,
-    layer: layer + dz,
-  }))
+    return [
+      start,
+      { y: (start.y + 2 * point.y + end.y) / 4, z: (start.z + 2 * point.z + end.z) / 4 },
+      end,
+    ]
+  })
 
-/** Возвращает самую нижнюю клетку каждого столбца формы. */
-export const getBottomCells = (cells: readonly VolumeCell[]): VolumeCell[] => {
-  const lowest = new Map<number, VolumeCell>()
+/** Центр масс выпуклого многоугольника. */
+const getCentroid = (section: readonly SectionPoint[]): SectionPoint => {
+  let area = 0
+  let y = 0
+  let z = 0
 
-  for (const cell of cells) {
-    const key = getColumnKey(cell)
-    const current = lowest.get(key)
+  section.forEach((point, index) => {
+    const next = section[(index + 1) % section.length]
+    const cross = point.y * next.z - next.y * point.z
 
-    if (!current || cell.layer < current.layer) lowest.set(key, cell)
-  }
+    area += cross
+    y += (point.y + next.y) * cross
+    z += (point.z + next.z) * cross
+  })
 
-  return [...lowest.values()]
+  return { y: y / (3 * area), z: z / (3 * area) }
 }
 
-/** Середина формы в её смещениях от якоря: в этой точке стоит центр игрушки на экране. */
-export const getShapeCenter = (shape: ShapeKey, facing: Facing): ShapeCell => SHAPE_TABLE[shape][facing].center
+/** Сечение тела: многоугольник каталога со скруглёнными углами, перенесённый в центр масс и уменьшенный на `TOY_INSET`. */
+const buildSections = (shape: ShapeKey): readonly (readonly SectionPoint[])[] =>
+  SHAPES[shape].variants.map(({ section, radius }) => {
+    const rounded = roundCorners(section, radius)
+    const centroid = getCentroid(rounded)
 
-/** Точка мира, в которой стоит середина игрушки. */
-export const getBodyCenter = (shape: ShapeKey, facing: Facing, anchor: CellAddress, layer: number): WorldPoint => {
-  const { dx, dy, dz } = getShapeCenter(shape, facing)
+    return rounded.map(({ y, z }) => ({ y: (y - centroid.y) * TOY_INSET, z: (z - centroid.z) * TOY_INSET }))
+  })
 
-  return { ...getCellCenter({ col: anchor.col + dx, row: anchor.row + dy }), z: layer + dz + TOY_LAYER_CENTER }
+/** Сечения тел всех форм во всех положениях: их читают физика, рендер и сортировка наложения. */
+const SECTION_TABLE: Record<ShapeKey, readonly (readonly SectionPoint[])[]> = {
+  single: buildSections('single'),
+  bar2: buildSections('bar2'),
+  square4: buildSections('square4'),
+  cube8: buildSections('cube8'),
+  triangle: buildSections('triangle'),
+}
+
+/** Сечение тела игрушки относительно её центра, без крена. */
+export const getSection = (shape: ShapeKey, variant: number): readonly SectionPoint[] => SECTION_TABLE[shape][variant]
+
+/** Площадь выпуклого сечения. */
+export const getSectionArea = (section: readonly SectionPoint[]): number =>
+  Math.abs(
+    section.reduce((sum, point, index) => {
+      const next = section[(index + 1) % section.length]
+
+      return sum + point.y * next.z - next.y * point.z
+    }, 0)
+  ) / 2
+
+/** Наибольшие отступы сечения от центра по осям. */
+export const getSectionExtent = (section: readonly SectionPoint[]): { halfWidth: number; halfHeight: number } => ({
+  halfWidth: Math.max(...section.map(({ y }) => Math.abs(y))),
+  halfHeight: Math.max(...section.map(({ z }) => Math.abs(z))),
+})
+
+/** Сечение, повёрнутое на крен позы и перенесённое в её центр. */
+export const placeSection = (section: readonly SectionPoint[], { y, z, angle }: ToyPose): SectionPoint[] => {
+  const cos = Math.cos(angle)
+  const sin = Math.sin(angle)
+
+  return section.map((point) => ({ y: y + point.y * cos - point.z * sin, z: z + point.y * sin + point.z * cos }))
+}
+
+/** Сечение как фигура плоскости для геометрических проверок: `y` идёт в `x`, `z` — в `y`. */
+export const toPlane = (section: readonly SectionPoint[]): PlaneVector[] => section.map(({ y, z }) => ({ x: y, y: z }))
+
+/** Центр игрушки по глубине: середина занятых срезов. */
+export const getDepthCenter = (slab: number, depth: number): number => slab + depth / 2
+
+/**
+ * Экранный силуэт тела относительно его центра: выпуклая оболочка проекций сечения на ближней и
+ * дальней границе глубины.
+ */
+export const getPrismOutline = (section: readonly SectionPoint[], depth: number, angle: number): ScreenPoint[] => {
+  const half = (depth * TOY_INSET) / 2
+  const turned = placeSection(section, { y: 0, z: 0, angle })
+
+  return getConvexHull(
+    [-half, half].flatMap((x) => turned.map(({ y, z }) => worldToScreen({ x, y, z })))
+  )
 }

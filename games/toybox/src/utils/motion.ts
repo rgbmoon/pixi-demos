@@ -4,18 +4,13 @@ import {
   CLAW_BRAKE_MS,
   CLAW_MIN_SPEED,
   CLAW_RESPONSE_MS,
-  MOTION_MIN_DURATION_SCALE,
-  MOTION_WEIGHT_GAIN,
   SPRING_MAX_DAMPING,
   SPRING_MIN_VALUE,
   SPRING_MIN_VELOCITY,
-  TOY_FALL_MS,
-  TOY_MIN_MOTION_MS,
-  TOY_TRAVEL_MS,
 } from '#src/constants'
-import type { GroundPoint, SpringOptions, SpringState, WorldPoint } from '#src/types'
+import type { GroundPoint, SpringOptions, SpringState, ToyPose } from '#src/types'
 
-import { clamp } from './math'
+import { clamp, lerp } from './math'
 
 /**
  * Ведёт скорость клешни к целевой за `deltaMs`.
@@ -68,18 +63,11 @@ export const advanceSpring = (
 }
 
 /**
- * Множитель длительности движения с учётом веса игрушки.
+ * Поза между двумя шагами физики на доле `share` пути от `from` к `to`. Крен идёт по кратчайшей дуге:
+ * угол тела после смены позы приводится к полуинтервалу (−π, π], и прямая интерполяция прокрутила бы полный оборот.
  */
-export const getMotionDurationScale = (weight: number): number =>
-  clamp(1 - MOTION_WEIGHT_GAIN * (weight - 1), MOTION_MIN_DURATION_SCALE, 1)
+export const lerpPose = (from: ToyPose, to: ToyPose, share: number): ToyPose => {
+  const turn = Math.atan2(Math.sin(to.angle - from.angle), Math.cos(to.angle - from.angle))
 
-/**
- * Длительность движения в миллисекундах: максимум вертикального, горизонтального пути и
- * базового минимума, умноженный на коэффициент веса игрушки.
- */
-export const getMotionMs = (weight: number, from: WorldPoint, to: WorldPoint): number => {
-  const fall = Math.abs(from.z - to.z) * TOY_FALL_MS
-  const travel = Math.hypot(to.x - from.x, to.y - from.y) * TOY_TRAVEL_MS
-
-  return Math.max(fall, travel, TOY_MIN_MOTION_MS) * getMotionDurationScale(weight)
+  return { y: lerp(from.y, to.y, share), z: lerp(from.z, to.z, share), angle: from.angle + turn * share }
 }

@@ -2,146 +2,128 @@ import { injectable } from 'inversify'
 import { action, makeObservable, observable } from 'mobx'
 
 import {
+  CUBE_HEIGHT,
+  FILL_BATCH,
+  FILL_BATCH_STEPS,
+  FILL_CANDIDATES,
+  FILL_MAX_FAILURES,
+  FILL_MAX_TILT,
+  FILL_SPAWN_GAP,
+  FILL_VOLUME,
   GRID_SIZE,
-  FACINGS,
+  HEAP_MAX_STEPS_PER_FRAME,
+  HEAP_SETTLE_MAX_STEPS,
+  HEAP_SETTLE_TIMEOUT_MS,
   HEAP_SNAPSHOT_VERSION,
-  HOLE_MAX_WAVES,
-  MAX_LAYERS,
-  TRAY_CENTER,
-  TRAY_EXIT_Z,
-  TRAY_SLIDE_DELAY_MS,
-  TOY_LANDING_IMPULSE,
-  TOY_PRESS_DEPTH,
+  HEAP_STEP_MS,
+  LOAD_CONTACT_GAP,
+  LOAD_NORMAL_MIN,
+  RELEASE_RAISE_STEP,
+  PRESS_SPEED,
   TOY_ROOT_COLOR,
-  TOY_SPRING_DAMPING,
-  TOY_SPRING_PERIOD_MS,
+  TRAY_EXIT_Z,
+  TRAY_ORIGIN,
+  TRAY_SIZE,
 } from '#src/constants'
+import { HeapWorld } from '#src/physics/heap-world'
 import {
-  type CellAddress,
+  type GroundPoint,
   type HeapSnapshot,
-  type Hole,
-  type Placement,
   type ShapeKey,
+  type SurfaceHit,
+  type ToyAppearance,
   type ToyBody,
-  type ReleaseOutcome,
   type ToyId,
+  type ToyPose,
   ToyState,
-  type VolumeCell,
   type WorldPoint,
 } from '#src/types'
 import { shiftColor } from '#src/utils/color'
-import { getColumnKey, isTrayCell, toCell } from '#src/utils/grid'
+import { getSeparation, polygonsOverlap, projectPolygon } from '#src/utils/geometry'
+import { getDomeHeight, pickShape, planDome } from '#src/utils/heap'
+import { clamp } from '#src/utils/math'
+import { lerpPose } from '#src/utils/motion'
 import {
-  canPlace,
-  createBody,
-  createOccupancy,
-  findHoles,
-  findLanding,
-  findSlide,
-  getHoleFillChance,
-  pickFillShapes,
-  planDomeProfile,
-  getImpact,
-  getTouchingCells,
-  isFullySupported,
-  isSupported,
-  planLanding,
-  shuffle,
-  shouldSlideIntoTray,
-} from '#src/utils/heap'
-import { lerp } from '#src/utils/math'
-import { advanceSpring, getMotionMs } from '#src/utils/motion'
-import { getBodyCenter, getPlacementCells, getWeight } from '#src/utils/shapes'
+  getDepthCenter,
+  getSection,
+  getSectionExtent,
+  getVariant,
+  getVariantCount,
+  getWeight,
+  placeSection,
+  toPlane,
+} from '#src/utils/shapes'
 import { isHeapSnapshot } from '#src/utils/snapshot'
-import { easeInQuad } from '@pixi-demos/core/easing'
 import type { Random } from '@pixi-demos/core/types'
 
 /**
- * Модель кучи игрушек: занятость объёма куба, сами игрушки и их покадровое движение.
- * Размещение резервируется при команде; текущая поза изменяется кадровым шагом.
+ * Модель кучи игрушек: физический мир, сами игрушки и очередь призов.
+ * Команды фаз меняют мир сразу; кадровый шаг продвигает симуляцию и переносит позы в игрушки.
  */
 @injectable()
 export class HeapStore {
   constructor() {
     makeObservable(this)
-
-    this.cells = createOccupancy()
   }
 
-  /** В куче завершились движение, осыпание и пружины; удержание проверяется отдельно. */
+  /** В куче все тела пришли в состояние покоя */
   @observable settled = true
 
-  /** Результат единственного отпускания текущего цикла. */
-  @observable.ref releaseOutcome: ReleaseOutcome = { status: 'none' }
-
-  private readonly cells: (ToyId | undefined)[][][]
+  private world = new HeapWorld()
   private readonly bodies = new Map<ToyId, ToyBody>()
-  private readonly moving = new Set<ToyBody>()
-  private readonly springs = new Set<ToyBody>()
-  private dirty = false
-  private waves = 0
+  /** Позы двух последних шагов физики у движущихся тел: между ними интерполируется видимая поза. */
+  private readonly frames = new Map<ToyId, { previous: ToyPose; current: ToyPose }>()
+  private readonly prizes: ToyAppearance[] = []
   private nextId = 0
-  private random: Random = Math.random
+  private pendingMs = 0
+  private quietMs = 0
   private carried?: ToyBody
   private initialGripOffset: WorldPoint = { x: 0, y: 0, z: 0 }
+  private initialAngle = 0
   private grabProgress = 0
   private reducedMotion = false
-  private pressed?: ToyBody
 
   /**
-   * Восстанавливает проверенный снимок или создаёт купол из случайных форм.
+   * Восстанавливает проверенный снимок или насыпает купол из случайных форм.
    * Некорректный снимок отклоняется до изменения модели.
    */
   restore(snapshot: HeapSnapshot | undefined, random: Random): void {
     if (snapshot && !isHeapSnapshot(snapshot)) throw new Error('Invalid heap snapshot')
 
-    this.random = random
+    // Новый мир на каждое наполнение: повторно использованный мир planck теряет детерминизм
+    this.world = new HeapWorld()
     this.bodies.clear()
-    this.moving.clear()
-    this.springs.clear()
-    this.setReleaseOutcome({ status: 'none' })
+    this.frames.clear()
+    this.prizes.length = 0
     this.carried = undefined
-    this.pressed = undefined
+    this.pendingMs = 0
+    this.quietMs = 0
     // `nextId` не обнуляется: id игрушки уникален на всё время жизни стора. Рендер держит по нему
     // View-компоненты; повторный id связал бы новую игрушку с прежними геометрией и цветом
-
-    for (let col = 0; col < GRID_SIZE; col++) {
-      for (let row = 0; row < GRID_SIZE; row++) {
-        this.cells[col][row].fill(undefined)
-      }
-    }
 
     if (snapshot) {
       this.load(snapshot)
     } else {
-      this.fill()
+      this.fill(random)
     }
 
-    this.dirty = false
-    this.waves = 0
     this.setSettled(true)
   }
 
+  /** Верх кучи под точкой поля: на эту высоту садится клешня. */
+  getSurfaceHeightAt(point: GroundPoint): number {
+    return this.castDown(point).z
+  }
+
+  /** Игрушка, в которую упирается луч, пущенный вниз из точки поля. */
+  getTopBodyAt(point: GroundPoint): Readonly<ToyBody> | undefined {
+    return this.findTop(point)
+  }
+
   /**
-   * Верх занятости ячейки: на эту высоту садится клешня.
-   * Объявлен полем-стрелкой: ссылку на него получают чистые функции планирования.
+   * Суммарный вес игрушек, лежащих сверху напрямую или через другие игрушки. Касание считается по
+   * геометрии сечений в общем срезе: контакты движка между спящими телами не обновляются.
    */
-  getSurfaceHeight = ({ col, row }: CellAddress): number => {
-    const column = this.cells[col][row]
-
-    for (let layer = MAX_LAYERS - 1; layer >= 0; layer--) {
-      if (column[layer] !== undefined) return layer + 1
-    }
-
-    return 0
-  }
-
-  /** Игрушка в верхней занятой клетке столбца. */
-  getTopBody(cell: CellAddress): Readonly<ToyBody> | undefined {
-    return this.getTop(cell)
-  }
-
-  /** Суммарный вес игрушек, лежащих сверху напрямую или через другие игрушки. */
   getLoad(id: ToyId): number {
     const start = this.bodies.get(id)
 
@@ -154,15 +136,12 @@ export class HeapStore {
     while (queue.length > 0) {
       const current = queue.shift() as ToyBody
 
-      for (const { col, row, layer } of this.getBodyCells(current)) {
-        const above = layer + 1 < MAX_LAYERS ? this.cells[col][row][layer + 1] : undefined
-        const body = above === undefined || seen.has(above) ? undefined : this.bodies.get(above)
+      for (const other of this.bodies.values()) {
+        if (seen.has(other.id) || other.state !== ToyState.free || !this.restsOn(other, current)) continue
 
-        if (!body) continue
-
-        seen.add(body.id)
-        load += getWeight(body.shape)
-        queue.push(body)
+        seen.add(other.id)
+        load += getWeight(other.shape)
+        queue.push(other)
       }
     }
 
@@ -174,14 +153,19 @@ export class HeapStore {
     return this.bodies.values()
   }
 
-  /** Начинает новый цикл после завершения предыдущего. */
-  beginCycle(): void {
-    this.setReleaseOutcome({ status: 'none' })
-  }
-
   /** Есть ли игрушка в захвате. Владение хранится только в модели. */
   get isHolding(): boolean {
     return this.carried !== undefined
+  }
+
+  /** Сколько игрушек дошло до дна лотка и ждёт показа. */
+  get prizeCount(): number {
+    return this.prizes.length
+  }
+
+  /** Забирает из очереди следующий приз. */
+  takePrize(): ToyAppearance | undefined {
+    return this.prizes.shift()
   }
 
   /** Снимок согласованного покоя; незавершённое движение сериализовать нельзя. */
@@ -191,25 +175,26 @@ export class HeapStore {
     return {
       version: HEAP_SNAPSHOT_VERSION,
       collected,
-      bodies: [...this.bodies.values()].map(({ shape, placement, color }) => ({
+      bodies: [...this.bodies.values()].map(({ shape, variant, slab, pose, color }) => ({
         shape,
-        ...placement,
-        anchor: { ...placement.anchor },
+        variant,
+        slab,
+        y: pose.point.y,
+        z: pose.point.z,
+        angle: pose.angle,
         color,
       })),
     }
   }
 
-  /** Снимает верхнюю игрушку, сохраняя её видимую позу относительно мировой точки захвата. */
-  lift(cell: CellAddress, grip: WorldPoint): ToyId | undefined {
-    const body = this.getTop(cell)
+  /** Снимает игрушку под точкой поля, сохраняя её видимую позу относительно мировой точки захвата. */
+  lift(point: GroundPoint, grip: WorldPoint): ToyId | undefined {
+    const body = this.findTop(point)
 
-    if (!body || this.carried || body.state !== ToyState.resting) return undefined
+    if (!body || this.carried) return undefined
 
-    this.vacate(body)
-    body.pose.point.z += body.bounce.value
-    this.clearSpring(body)
-    if (this.pressed === body) this.pressed = undefined
+    this.frames.delete(body.id)
+    this.world.carry(body.id)
     body.state = ToyState.carried
     this.carried = body
     this.initialGripOffset = {
@@ -217,44 +202,36 @@ export class HeapStore {
       y: body.pose.point.y - grip.y,
       z: body.pose.point.z - grip.z,
     }
+    this.initialAngle = body.pose.angle
     this.grabProgress = 0
-    this.dirty = true
-    this.setSettled(false)
+    this.touch()
 
     return body.id
   }
 
-  /** Рассчитывает посадку из текущей позы до освобождения захвата. При отсутствии места удержание сохраняется. */
-  release(grip: WorldPoint): boolean {
+  /** Отпускает игрушку из актуальной точки захвата в срезы под ней: дальше её ведёт физика. */
+  release(grip: WorldPoint): void {
     const body = this.carried
 
-    if (!body) return false
+    if (!body) return
 
     this.setGripPoint(grip)
-
-    const overTray = isTrayCell(toCell(body.pose.point))
-    const landing = overTray ? undefined : planLanding(body.shape, body.pose.facing, body.pose.point, this.isOccupied)
-
-    if (!overTray && !landing) return false
-
     this.carried = undefined
-    this.setReleaseOutcome({ status: 'pending', id: body.id })
 
-    if (landing) {
-      const cells = getPlacementCells(body.shape, landing.facing, landing.anchor, landing.layer)
-      const state = shouldSlideIntoTray(cells, this.random) ? ToyState.landingBeforeTray : ToyState.falling
+    const { depth } = getVariant(body.shape, body.variant)
+    const slab = clamp(Math.round(body.pose.point.x - depth / 2), 0, GRID_SIZE - depth)
+    const pose = this.findFreePose(body, slab, depth)
 
-      this.moveTo(body, landing, state)
-    } else {
-      this.startTrayFall(body)
-    }
-
-    this.dirty = true
-
-    return true
+    body.slab = slab
+    body.state = ToyState.free
+    body.pose.point.x = getDepthCenter(slab, depth)
+    body.pose.point.y = pose.y
+    body.pose.point.z = pose.z
+    this.world.drop(body.id, slab, depth, pose)
+    this.touch()
   }
 
-  /** Отпускает доставленную игрушку из актуальной мировой точки захвата. */
+  /** Отпускает доставленную игрушку над лотком: она падает в шахту без столкновений. */
   dropIntoTray(grip: WorldPoint): void {
     const body = this.carried
 
@@ -262,11 +239,12 @@ export class HeapStore {
 
     this.setGripPoint(grip)
     this.carried = undefined
-    this.setReleaseOutcome({ status: 'pending', id: body.id })
-    this.startTrayFall(body)
+    body.state = ToyState.exiting
+    this.world.ghost(body.id)
+    this.touch()
   }
 
-  /** Центрирует игрушку по X/Y на доле анимации захвата 0–1, сохраняя высотный отступ. */
+  /** Центрирует игрушку по X/Y и выравнивает её крен на доле анимации захвата 0–1. */
   setGrabProgress(progress: number, grip: WorldPoint): void {
     if (!this.carried) return
 
@@ -276,478 +254,301 @@ export class HeapStore {
 
   /** Обновляет удерживаемую игрушку после движения и качания клешни в этом кадре. */
   setGripPoint(grip: WorldPoint): void {
-    if (!this.carried) return
+    const body = this.carried
+
+    if (!body) return
 
     const remaining = 1 - this.grabProgress
+    const { point } = body.pose
 
-    this.place(
-      this.carried,
-      grip.x + this.initialGripOffset.x * remaining,
-      grip.y + this.initialGripOffset.y * remaining,
-      grip.z + this.initialGripOffset.z
-    )
+    point.x = grip.x + this.initialGripOffset.x * remaining
+    point.y = grip.y + this.initialGripOffset.y * remaining
+    point.z = grip.z + this.initialGripOffset.z
+    body.pose.angle = this.initialAngle * remaining
+    this.world.moveCarried(body.id, { y: point.y, z: point.z, angle: body.pose.angle })
   }
 
   /** Настройку доступности передаёт контроллер; модель не обращается к браузеру. */
   setReducedMotion(reduced: boolean): void {
-    if (this.reducedMotion === reduced) return
-
     this.reducedMotion = reduced
-    if (reduced) {
-      for (const body of this.springs) this.clearSpring(body)
-    }
   }
 
-  /** Прожимает верхнюю игрушку ячейки под весом клешни; без ячейки прожатие снимается. */
-  setPressed(cell: CellAddress | undefined): void {
-    if (this.pressed) {
-      this.clearSpring(this.pressed)
-      this.pressed = undefined
-    }
+  /**
+   * Прожимает игрушку под точкой поля весом промахнувшейся клешни: импульс вниз в точке касания.
+   * Удар мимо центра игрушку раскачивает, соседи отвечают по физике. При уменьшенном движении не толкает.
+   */
+  press(point: GroundPoint): void {
+    if (this.reducedMotion) return
 
-    if (!cell || this.reducedMotion) return
+    const { id, z } = this.castDown(point)
+    const body = id === undefined ? undefined : this.bodies.get(id)
 
-    const body = this.getTop(cell)
+    if (!body || body.state !== ToyState.free) return
 
-    if (!body) return
-
-    this.pressed = body
-    this.springs.add(body)
+    this.world.push(body.id, { y: 0, z: -getWeight(body.shape) * PRESS_SPEED }, { y: point.y, z })
+    this.touch()
   }
 
-  /** Кадровый шаг всей кучи: ведёт движение, разбирает его последствия и гасит пружины. */
+  /**
+   * Кадровый шаг кучи: продвигает физику фиксированными шагами и засчитывает призы.
+   * Видимая поза движущегося тела интерполируется между двумя последними шагами на долю остатка кадра.
+   */
   advance(deltaMs: number): void {
-    if (this.moving.size > 0) this.stepMoving(deltaMs)
-    if (this.dirty) this.resolve()
-    if (this.springs.size > 0) this.stepSprings(deltaMs)
-    this.setSettled(!this.dirty && this.moving.size === 0 && this.springs.size === 0)
+    if (this.world.hasAwake()) {
+      if (this.reducedMotion) {
+        this.settleWorld(true)
+        this.pendingMs = 0
+      } else {
+        this.pendingMs += deltaMs
+
+        for (let step = 0; step < HEAP_MAX_STEPS_PER_FRAME && this.pendingMs >= HEAP_STEP_MS; step++) {
+          this.stepWorld(true)
+          this.pendingMs -= HEAP_STEP_MS
+        }
+
+        // Остаток длинного кадра отбрасывается: догонять его следующими кадрами незачем
+        this.pendingMs = Math.min(this.pendingMs, HEAP_STEP_MS)
+      }
+
+      this.quietMs += deltaMs
+      if (this.quietMs >= HEAP_SETTLE_TIMEOUT_MS) this.world.sleepAll()
+    } else {
+      this.pendingMs = 0
+    }
+
+    if (this.frames.size > 0) this.applyFrames(this.pendingMs / HEAP_STEP_MS)
+    this.setSettled(!this.carried && !this.world.hasAwake())
   }
 
   @action private setSettled(settled: boolean): void {
     if (this.settled !== settled) this.settled = settled
   }
 
-  @action private setReleaseOutcome(outcome: ReleaseOutcome): void {
-    this.releaseOutcome = outcome
+  /** Отмечает команду, которая сдвинула кучу: с неё отсчитывается страховка покоя. */
+  private touch(): void {
+    this.quietMs = 0
+    this.setSettled(false)
   }
 
-  /** Занята ли клетка. Клетка вне куба занятой не считается — её отсекает `isBoxCell`. */
-  private isOccupied = ({ col, row, layer }: VolumeCell): boolean => this.cells[col]?.[row]?.[layer] !== undefined
+  /** Лежит ли `upper` на `lower`: игрушки делят срез, их сечения касаются, и нормаль касания смотрит вверх. */
+  private restsOn(upper: ToyBody, lower: ToyBody): boolean {
+    const upperDepth = getVariant(upper.shape, upper.variant).depth
+    const lowerDepth = getVariant(lower.shape, lower.variant).depth
 
-  /** Игрушка верхней занятой клетки ячейки, как она лежит в модели. */
-  private getTop({ col, row }: CellAddress): ToyBody | undefined {
-    const column = this.cells[col][row]
+    if (upper.slab >= lower.slab + lowerDepth || lower.slab >= upper.slab + upperDepth) return false
 
-    for (let layer = MAX_LAYERS - 1; layer >= 0; layer--) {
-      const id = column[layer]
+    const top = toPlane(
+      placeSection(getSection(upper.shape, upper.variant), { ...upper.pose.point, angle: upper.pose.angle })
+    )
+    const bottom = toPlane(
+      placeSection(getSection(lower.shape, lower.variant), { ...lower.pose.point, angle: lower.pose.angle })
+    )
+    const { axis, gap } = getSeparation(bottom, top)
 
-      if (id !== undefined) return this.bodies.get(id)
-    }
+    if (gap > LOAD_CONTACT_GAP) return false
 
-    return undefined
+    // Ось разделения направляется от нижней игрушки к верхней по центрам их проекций
+    const bottomSide = projectPolygon(bottom, axis)
+    const topSide = projectPolygon(top, axis)
+    const sign = topSide.min + topSide.max >= bottomSide.min + bottomSide.max ? 1 : -1
+
+    return axis.y * sign >= LOAD_NORMAL_MIN
   }
 
-  private getBodyCells(body: ToyBody): VolumeCell[] {
-    return getPlacementCells(body.shape, body.placement.facing, body.placement.anchor, body.placement.layer)
+  private castDown(point: GroundPoint): SurfaceHit {
+    return this.world.castDown(point.y, clamp(Math.floor(point.x), 0, GRID_SIZE - 1), 1)
   }
 
-  private occupy(body: ToyBody): void {
-    for (const { col, row, layer } of this.getBodyCells(body)) {
-      this.cells[col][row][layer] = body.id
-    }
+  private findTop(point: GroundPoint): ToyBody | undefined {
+    const { id } = this.castDown(point)
+    const body = id === undefined ? undefined : this.bodies.get(id)
+
+    return body?.state === ToyState.free ? body : undefined
   }
 
-  private vacate(body: ToyBody): void {
-    for (const { col, row, layer } of this.getBodyCells(body)) {
-      if (this.cells[col][row][layer] === body.id) this.cells[col][row][layer] = undefined
-    }
-  }
-
-  private create(shape: ShapeKey, placement: Placement, color: number): ToyBody {
+  private create(shape: ShapeKey, variant: number, slab: number, pose: ToyPose, color: number, awake: boolean): void {
     this.nextId += 1
 
-    const body = createBody(this.nextId, shape, placement, color)
+    const { depth } = getVariant(shape, variant)
+    const body: ToyBody = {
+      id: this.nextId,
+      shape,
+      variant,
+      color,
+      slab,
+      pose: { point: { x: getDepthCenter(slab, depth), y: pose.y, z: pose.z }, angle: pose.angle },
+      state: ToyState.free,
+    }
 
     this.bodies.set(body.id, body)
-    this.occupy(body)
-
-    return body
+    this.world.add(body.id, getSection(shape, variant), getWeight(shape), slab, depth, pose, awake)
   }
 
   private load(snapshot: HeapSnapshot): void {
-    for (const { shape, facing, anchor, layer, color } of snapshot.bodies) {
-      this.create(shape, { anchor, facing, layer }, color)
+    for (const { shape, variant, slab, y, z, angle, color } of snapshot.bodies) {
+      this.create(shape, variant, slab, { y, z, angle }, color, false)
     }
   }
 
   /**
-   * Создаёт куполообразную раскладку со случайным порядком ячеек, форм и ориентаций.
+   * Насыпает купол: каждая новая игрушка пробует несколько случайных мест и встаёт туда, где верх кучи
+   * дальше всего ниже профиля купола. Между пачками появлений мир делает шаги, в конце — до сна всех тел.
    */
-  private fill(): void {
-    // Первый этап резервирует место составным формам; второй заполняет оставшиеся одиночными
-    const profile = planDomeProfile(this.random)
+  private fill(random: Random): void {
+    const dome = planDome(random)
+    let volume = 0
+    let failures = 0
+    let spawned = 0
 
-    this.fillPasses(profile, false)
-    this.fillPasses(profile, true)
-  }
+    while (volume < FILL_VOLUME && failures < FILL_MAX_FAILURES) {
+      const shape = pickShape(random)
+      const variant = Math.floor(random() * getVariantCount(shape))
+      const { depth } = getVariant(shape, variant)
+      const { halfWidth, halfHeight } = getSectionExtent(getSection(shape, variant))
+      let best: { slab: number; y: number; surface: number; deficit: number } | undefined
 
-  private fillPasses(profile: number[][], allowSingle: boolean): void {
-    for (let pass = 0; pass < MAX_LAYERS * GRID_SIZE; pass++) {
-      let placed = false
-      const anchors = Array.from({ length: GRID_SIZE }, (_, col) =>
-        Array.from({ length: GRID_SIZE }, (_, row) => ({ col, row }))
-      ).flat()
+      for (let candidate = 0; candidate < FILL_CANDIDATES; candidate++) {
+        const slab = Math.floor(random() * (GRID_SIZE - depth + 1))
+        // Над шахтой лотка игрушка не появляется: там нет пола
+        const right = slab < TRAY_ORIGIN.x + TRAY_SIZE ? TRAY_ORIGIN.y : GRID_SIZE
+        const y = halfWidth + random() * (right - 2 * halfWidth)
+        const surface = Math.max(
+          this.world.castDown(y - halfWidth, slab, depth).z,
+          this.world.castDown(y, slab, depth).z,
+          this.world.castDown(y + halfWidth, slab, depth).z
+        )
+        const deficit = getDomeHeight(dome, { x: getDepthCenter(slab, depth), y }) - (surface + halfHeight)
 
-      for (const anchor of shuffle(anchors, this.random)) {
-        if (this.fillCell(profile, anchor, allowSingle)) placed = true
+        if (!best || deficit > best.deficit) best = { slab, y, surface, deficit }
       }
 
-      if (!placed) return
-    }
-  }
-
-  private fillCell(profile: number[][], anchor: CellAddress, allowSingle: boolean): boolean {
-    const layer = this.getSurfaceHeight(anchor)
-
-    if (layer >= profile[anchor.col][anchor.row]) return false
-
-    for (const shape of pickFillShapes(this.random, allowSingle)) {
-      for (const facing of shuffle(FACINGS, this.random)) {
-        const cells = getPlacementCells(shape, facing, anchor, layer)
-
-        if (!canPlace(cells, this.isOccupied)) continue
-        // Начальная раскладка требует опору под каждой нижней клеткой
-        if (!isFullySupported(cells, this.isOccupied)) continue
-        // Каждая клетка формы должна оставаться ниже профиля своей ячейки
-        if (cells.some((cell) => cell.layer >= profile[cell.col][cell.row])) continue
-
-        this.create(shape, { anchor, facing, layer }, shiftColor(TOY_ROOT_COLOR, this.random))
-
-        return true
-      }
-    }
-
-    return false
-  }
-
-  private moveTo(body: ToyBody, { anchor, facing, layer }: Placement, state: ToyState): void {
-    this.vacate(body)
-
-    body.placement.anchor = anchor
-    body.placement.facing = facing
-    body.placement.layer = layer
-    this.occupy(body)
-
-    this.startMotion(body, state, getBodyCenter(body.shape, facing, anchor, layer))
-  }
-
-  private startTrayFall(body: ToyBody): void {
-    this.vacate(body)
-    this.clearSpring(body)
-    this.dirty = true
-
-    this.startMotion(body, ToyState.fallingIntoTray, { x: body.pose.point.x, y: body.pose.point.y, z: TRAY_EXIT_Z })
-  }
-
-  private startTraySlide(body: ToyBody): void {
-    this.vacate(body)
-    this.clearSpring(body)
-    this.dirty = true
-    this.startMotion(body, ToyState.slidingToTray, { ...TRAY_CENTER, z: body.pose.point.z })
-  }
-
-  /**
-   * Начинает движение к `target`. Длительность учитывает вертикальный и горизонтальный пути.
-   */
-  private startMotion(body: ToyBody, state: ToyState, target: WorldPoint): void {
-    body.state = state
-    body.from = { ...body.pose.point }
-    body.target = target
-    body.elapsed = 0
-    body.durationMs = getMotionMs(getWeight(body.shape), body.pose.point, target)
-    this.setSettled(false)
-
-    if (this.reducedMotion) {
-      this.arrive(body)
-
-      return
-    }
-
-    this.moving.add(body)
-  }
-
-  /**
-   * Обновляет положение по `easeInQuad`; задержка перед лотком изменяет только прошедшее время.
-   */
-  private stepMoving(deltaMs: number): void {
-    for (const body of [...this.moving]) {
-      body.elapsed += deltaMs
-
-      const progress = Math.min(body.elapsed / body.durationMs, 1)
-
-      if (progress === 1) {
-        this.arrive(body)
-
+      if (!best || best.deficit <= 0) {
+        failures += 1
         continue
       }
 
-      if (body.state === ToyState.waitingForTraySlide) continue
-
-      const eased = easeInQuad(progress)
-
-      this.place(
-        body,
-        lerp(body.from.x, body.target.x, eased),
-        lerp(body.from.y, body.target.y, eased),
-        lerp(body.from.z, body.target.z, eased)
+      failures = 0
+      this.create(
+        shape,
+        variant,
+        best.slab,
+        { y: best.y, z: best.surface + halfHeight + FILL_SPAWN_GAP, angle: (random() * 2 - 1) * FILL_MAX_TILT },
+        shiftColor(TOY_ROOT_COLOR, random),
+        true
       )
-    }
-  }
+      volume += getWeight(shape)
+      spawned += 1
 
-  private arrive(body: ToyBody): void {
-    const fallHeight = body.from.z - body.target.z
-
-    this.moving.delete(body)
-    this.place(body, body.target.x, body.target.y, body.target.z)
-    body.elapsed = body.durationMs
-    this.dirty = true
-
-    if (body.state === ToyState.landingBeforeTray) {
-      body.pose.facing = body.placement.facing
-      this.waitForTraySlide(body)
-      this.land(body, fallHeight)
-
-      return
+      if (spawned % FILL_BATCH === 0) {
+        for (let step = 0; step < FILL_BATCH_STEPS; step++) this.stepWorld(false)
+      }
     }
 
-    if (body.state === ToyState.waitingForTraySlide) {
-      this.startTraySlide(body)
-
-      return
-    }
-
-    if (body.state === ToyState.slidingToTray) {
-      this.startTrayFall(body)
-
-      return
-    }
-
-    if (body.state === ToyState.fallingIntoTray) {
-      const appearance = { shape: body.shape, color: body.color }
-
-      this.springs.delete(body)
-      this.bodies.delete(body.id)
-      this.setReleaseOutcome({ status: 'collected', appearance })
-
-      return
-    }
-
-    body.pose.facing = body.placement.facing
-    body.state = ToyState.resting
-    if (this.releaseOutcome.status === 'pending' && this.releaseOutcome.id === body.id) {
-      this.setReleaseOutcome({ status: 'none' })
-    }
-    this.land(body, fallHeight)
-  }
-
-  private waitForTraySlide(body: ToyBody): void {
-    body.state = ToyState.waitingForTraySlide
-    body.from = { ...body.pose.point }
-    body.target = { ...body.pose.point }
-    body.elapsed = 0
-    body.durationMs = TRAY_SLIDE_DELAY_MS
-    this.moving.add(body)
-  }
-
-  private land(body: ToyBody, fallHeight: number): void {
-    if (this.reducedMotion || body === this.pressed) return
-
-    const share = Math.min(Math.max(fallHeight, 0) / MAX_LAYERS, 1)
-
-    this.push(body, TOY_LANDING_IMPULSE * share)
-
-    for (const neighbour of this.getNeighbourBodies(body)) {
-      this.push(neighbour, getImpact(getWeight(body.shape)) * share)
-    }
-  }
-
-  private push(body: ToyBody, impulse: number): void {
-    body.bounce = { value: body.bounce.value, velocity: body.bounce.velocity - impulse }
-    this.springs.add(body)
-  }
-
-  private getNeighbourBodies(body: ToyBody): ToyBody[] {
-    const found = new Map<ToyId, ToyBody>()
-
-    for (const { col, row, layer } of getTouchingCells(this.getBodyCells(body))) {
-      const id = layer < 0 ? undefined : this.cells[col][row][layer]
-      const neighbour = id === undefined ? undefined : this.bodies.get(id)
-
-      if (neighbour && neighbour !== body) found.set(neighbour.id, neighbour)
-    }
-
-    return [...found.values()]
-  }
-
-  private planSlide(body: ToyBody): Placement | undefined {
-    this.vacate(body)
-
-    const target = findSlide(body.shape, this.getBodyCells(body), body.placement.layer, this.isOccupied)
-
-    this.occupy(body)
-
-    return target
-  }
-
-  private resolve(): void {
-    this.dirty = false
-
-    this.collapse()
-    this.slide()
+    this.settleWorld(false)
+    this.world.sleepAll()
+    this.applyFrames(1)
   }
 
   /**
-   * Обвал: игрушка без опоры падает до ближайшего места, где опора есть, а если прямо вниз не
-   * пройти — заваливается набок. Проход повторяется, потому что упавшая уводит опору из-под
-   * следующей. Число проходов ограничено числом игрушек.
+   * Поза отпускания: игрушка остаётся в точке захвата внутри куба по оси `y` и поднимается, пока её
+   * сечение пересекает игрушки тех же срезов.
    */
-  private collapse(): void {
-    for (let pass = 0; pass < this.bodies.size; pass++) {
-      let moved = false
+  private findFreePose(body: ToyBody, slab: number, depth: number): ToyPose {
+    const section = getSection(body.shape, body.variant)
+    const { angle } = body.pose
+    const turned = placeSection(section, { y: 0, z: 0, angle })
+    const left = -Math.min(...turned.map(({ y }) => y))
+    const right = GRID_SIZE - Math.max(...turned.map(({ y }) => y))
+    const pose = { y: clamp(body.pose.point.y, left, right), z: body.pose.point.z, angle }
 
-      for (const body of this.bodies.values()) {
-        if (body.state !== ToyState.resting) continue
-        if (isSupported(this.getBodyCells(body), this.isOccupied)) continue
-        if (this.drop(body)) moved = true
+    while (pose.z < CUBE_HEIGHT) {
+      const placed = placeSection(section, pose)
+      const blocked = this.world.queryToys(placed, slab, depth).some((id) => {
+        const other = this.bodies.get(id)
+
+        return (
+          other !== undefined &&
+          other.state === ToyState.free &&
+          polygonsOverlap(
+            toPlane(placed),
+            toPlane(
+              placeSection(getSection(other.shape, other.variant), { ...other.pose.point, angle: other.pose.angle })
+            ),
+            RELEASE_RAISE_STEP / 2
+          )
+        )
+      })
+
+      if (!blocked) break
+
+      pose.z += RELEASE_RAISE_STEP
+    }
+
+    return pose
+  }
+
+  /** Шаги мира до сна всех тел, не больше `HEAP_SETTLE_MAX_STEPS`. */
+  private settleWorld(collect: boolean): void {
+    for (let step = 0; step < HEAP_SETTLE_MAX_STEPS && this.world.hasAwake(); step++) this.stepWorld(collect)
+  }
+
+  /**
+   * Один шаг мира. Позы шага запоминаются только у тел, которые двигались: у спящих видимая поза остаётся
+   * прежней, у восстановленных — значением из снимка. Игрушка ниже `TRAY_EXIT_Z` уходит из кучи и при
+   * `collect` становится призом.
+   */
+  private stepWorld(collect: boolean): void {
+    const moving: ToyBody[] = []
+
+    for (const body of this.bodies.values()) {
+      if (body.state === ToyState.carried || !this.world.isAwake(body.id)) continue
+
+      const frame = this.frames.get(body.id)
+
+      if (frame) {
+        frame.previous = frame.current
+      } else {
+        const pose = this.world.getPose(body.id)
+
+        this.frames.set(body.id, { previous: pose, current: pose })
       }
 
-      if (!moved) return
+      moving.push(body)
+    }
+
+    this.world.step(HEAP_STEP_MS)
+
+    for (const body of moving) {
+      const current = this.world.getPose(body.id)
+      const frame = this.frames.get(body.id)
+
+      if (frame) frame.current = current
+      if (current.z > TRAY_EXIT_Z) continue
+
+      this.world.remove(body.id)
+      this.bodies.delete(body.id)
+      this.frames.delete(body.id)
+      if (collect) this.prizes.push({ shape: body.shape, color: body.color })
     }
   }
 
-  private drop(body: ToyBody): boolean {
-    this.vacate(body)
+  /** Переносит в игрушки позы между шагами на доле `share`; уснувшее тело получает точную позу последнего шага. */
+  private applyFrames(share: number): void {
+    for (const [id, { previous, current }] of this.frames) {
+      const body = this.bodies.get(id)
 
-    const layer = findLanding(body.shape, body.placement.facing, body.placement.anchor, body.placement.layer, this.isOccupied)
+      if (!body) {
+        this.frames.delete(id)
+        continue
+      }
 
-    this.occupy(body)
+      const asleep = !this.world.isAwake(id)
+      const pose = asleep ? current : lerpPose(previous, current, share)
 
-    if (layer !== undefined && layer < body.placement.layer) {
-      this.moveTo(body, { anchor: body.placement.anchor, facing: body.placement.facing, layer }, ToyState.falling)
-
-      return true
+      body.pose.point.y = pose.y
+      body.pose.point.z = pose.z
+      body.pose.angle = pose.angle
+      if (asleep) this.frames.delete(id)
     }
-
-    const topple = this.planSlide(body)
-
-    if (!topple) return false
-
-    this.moveTo(body, topple, ToyState.falling)
-
-    return true
-  }
-
-  /**
-   * Осыпание: игрушка у края дыры сползает в неё с вероятностью, которая растёт с глубиной провала и
-   * уменьшается с весом. Пока хотя бы у одной покоящейся игрушки шанс больше нуля, проход повторяется
-   * в следующих кадрах, но не больше `HOLE_MAX_WAVES` раз подряд без соскальзывания.
-   */
-  private slide(): void {
-    let holes = findHoles(this.getSurfaceHeight)
-    let hasCandidates = false
-    let slid = false
-
-    for (const body of [...this.bodies.values()]) {
-      if (body.state !== ToyState.resting) continue
-
-      const chance = this.getSlideChanceOf(body, holes)
-
-      if (chance <= 0) continue
-
-      hasCandidates = true
-
-      if (this.random() >= chance) continue
-
-      const target = this.planSlide(body)
-
-      if (!target) continue
-
-      this.moveTo(body, target, ToyState.falling)
-      slid = true
-      // Место соскальзывания занимается сразу, поэтому следующим игрушкам нужен новый список дыр
-      holes = findHoles(this.getSurfaceHeight)
-    }
-
-    if (slid) this.waves = 0
-
-    if (!hasCandidates || this.waves >= HOLE_MAX_WAVES) {
-      this.waves = 0
-
-      return
-    }
-
-    this.waves += 1
-    this.dirty = true
-  }
-
-  /**
-   * Вероятность засыпки соседнего провала с учётом веса игрушки.
-   */
-  private getSlideChanceOf(body: ToyBody, holes: readonly Hole[]): number {
-    const weight = getWeight(body.shape)
-    const hole = this.findBorderedHole(body, holes)
-
-    return hole ? getHoleFillChance(weight, hole) : 0
-  }
-
-  /** Самая глубокая дыра, к краю которой примыкает игрушка. */
-  private findBorderedHole(body: ToyBody, holes: readonly Hole[]): Hole | undefined {
-    const cells = this.getBodyCells(body)
-    const own = new Set(cells.map((cell) => getColumnKey(cell)))
-    const touching = new Set(
-      getTouchingCells(cells)
-        .map((cell) => getColumnKey(cell))
-        .filter((key) => !own.has(key))
-    )
-
-    let deepest: Hole | undefined
-
-    for (const hole of holes) {
-      if (!hole.cells.some((cell) => touching.has(getColumnKey(cell)))) continue
-      if (hole.floor >= body.placement.layer) continue
-      if (deepest && hole.depth <= deepest.depth) continue
-
-      deepest = hole
-    }
-
-    return deepest
-  }
-
-  private stepSprings(deltaMs: number): void {
-    for (const body of this.springs) {
-      const target = body === this.pressed ? -TOY_PRESS_DEPTH : 0
-
-      body.bounce = advanceSpring(
-        body.bounce,
-        { target, periodMs: TOY_SPRING_PERIOD_MS, damping: TOY_SPRING_DAMPING },
-        deltaMs
-      )
-
-      const bouncing = target !== 0 || body.bounce.value !== 0 || body.bounce.velocity !== 0
-
-      if (!bouncing) this.springs.delete(body)
-    }
-  }
-
-  private clearSpring(body: ToyBody): void {
-    this.springs.delete(body)
-    body.bounce = { value: 0, velocity: 0 }
-  }
-
-  /** Ставит центр игрушки в мировую точку без изменения зарезервированного места. */
-  private place(body: ToyBody, x: number, y: number, z: number): void {
-    body.pose.point.x = x
-    body.pose.point.y = y
-    body.pose.point.z = z
   }
 }

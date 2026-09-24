@@ -131,7 +131,7 @@ describe('clampToField', () => {
 
 describe('лоток', () => {
   it('стоит квадратом в левом углу фронтальной грани', () => {
-    expect(TRAY_ORIGIN).toEqual({ col: 0, row: GRID_SIZE - TRAY_SIZE })
+    expect(TRAY_ORIGIN).toEqual({ x: 0, y: GRID_SIZE - TRAY_SIZE })
     expect(getTrayOutline()).toEqual([
       { x: 0, y: GRID_SIZE - TRAY_SIZE, z: 0 },
       { x: TRAY_SIZE, y: GRID_SIZE - TRAY_SIZE, z: 0 },

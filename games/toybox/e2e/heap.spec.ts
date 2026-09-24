@@ -17,7 +17,7 @@ const CYCLE_TIMEOUT_MS = 45_000
  * Открывает страницу игры
  */
 const openGame = async (page: Page): Promise<Locator> => {
-  await page.goto('/toybox?play')
+  await page.goto('/toybox')
 
   const drop = page.getByRole('button', { name: 'Drop the claw', exact: true })
 
