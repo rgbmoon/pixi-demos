@@ -2,7 +2,7 @@ import { inject, injectable } from 'inversify'
 
 import { LIFT_FUMBLE_CHANCE, LIFT_SLIP_MAX_SHARE, LIFT_SLIP_MIN_SHARE, PHASE_PAUSE_MS } from '#src/constants'
 import type { ClawController } from '#src/controllers/box/claw'
-import type { HeapStore } from '#src/stores/heap'
+import type { Heap } from '#src/heap/heap'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import { type ClawDrop, PhaseName } from '#src/types'
 import type { Phase } from '@pixi-demos/core/fsm/types'
@@ -19,12 +19,12 @@ export class AscendingPhase implements Phase<PhaseName> {
 
   private readonly ticker: GameTicker
   private readonly claw: ClawController
-  private readonly heap: HeapStore
+  private readonly heap: Heap
 
   constructor(
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
     @inject(TOYBOX_TOKENS.ClawController) claw: ClawController,
-    @inject(TOYBOX_TOKENS.HeapStore) heap: HeapStore
+    @inject(TOYBOX_TOKENS.Heap) heap: Heap
   ) {
     this.ticker = ticker
     this.claw = claw

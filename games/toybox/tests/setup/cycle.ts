@@ -7,7 +7,8 @@ import { FIELD_CENTER, HEAP_SNAPSHOT_VERSION, CLAW_REST_HEIGHT, CUBE_HEIGHT } fr
 import type { ClawController } from '#src/controllers/box/claw'
 import type { PrizeOutputController } from '#src/controllers/box/prize-output'
 import type { GameEvents } from '#src/events'
-import { HeapStore } from '#src/stores/heap'
+import { Heap } from '#src/heap/heap'
+import { getGrabChance } from '#src/heap/utils'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import {
@@ -18,7 +19,6 @@ import {
   type ToyAppearance,
   type WorldPoint,
 } from '#src/types'
-import { getGrabChance } from '#src/utils/heap'
 import { getWeight } from '#src/utils/shapes'
 import { bindFsm } from '@pixi-demos/core/bindings'
 import type { GameEmitter } from '@pixi-demos/core/events/game-emitter'
@@ -42,7 +42,7 @@ export type Cycle = {
   container: Container
   fsm: Fsm
   store: ToyboxStore
-  heap: HeapStore
+  heap: Heap
   emitter: GameEmitter<GameEvents>
   log: ClawLog
   world: CycleWorld
@@ -68,7 +68,7 @@ let cycleSnapshot: HeapSnapshot | undefined
  */
 const getCycleSnapshot = (): HeapSnapshot => {
   if (!cycleSnapshot) {
-    const heap = new HeapStore()
+    const heap = new Heap()
 
     heap.restore(undefined, createRandom(CYCLE_SEED))
     cycleSnapshot = heap.takeSnapshot(0)
@@ -128,7 +128,7 @@ const createClawStub = (log: ClawLog, drops: GroundPoint[]): ClawController => {
  * Дублёр тикера: игровые выдержки проходят мгновенно, но остаются видимыми в журнале. Ожидание условия
  * продвигает настоящую модель кучи кадрами по 100 мс, пока условие не выполнится.
  */
-const createTickerStub = (log: ClawLog, getHeap: () => HeapStore): GameTicker => {
+const createTickerStub = (log: ClawLog, getHeap: () => Heap): GameTicker => {
   const stub = {
     waitTicks: async (durationMs: number) => {
       log.push(`wait:${durationMs}`)
@@ -168,7 +168,7 @@ export const createCycle = (): Cycle => {
   } as unknown as IdbStorage<HeapSnapshot>)
   container
     .bind(ENGINE_TOKENS.GameTicker)
-    .toConstantValue(createTickerStub(log, () => container.get(TOYBOX_TOKENS.HeapStore)))
+    .toConstantValue(createTickerStub(log, () => container.get(TOYBOX_TOKENS.Heap)))
   container.bind(TOYBOX_TOKENS.PrizeOutputController).toConstantValue({
     show: (appearance: ToyAppearance) => {
       const { collected } = container.get(TOYBOX_TOKENS.ToyboxStore)
@@ -186,7 +186,7 @@ export const createCycle = (): Cycle => {
 
   const fsm = container.get(CORE_TOKENS.Fsm)
   const store = container.get(TOYBOX_TOKENS.ToyboxStore)
-  const heap = container.get(TOYBOX_TOKENS.HeapStore)
+  const heap = container.get(TOYBOX_TOKENS.Heap)
   const emitter = container.get(TOYBOX_TOKENS.GameEmitter)
 
   return {

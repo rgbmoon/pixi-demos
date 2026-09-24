@@ -11,10 +11,10 @@ import {
   TRAY_ORIGIN,
   TRAY_SIZE,
 } from '#src/constants'
-import type { GroundPoint, SpringOptions, SpringState, ToyPose } from '#src/types'
+import type { GroundPoint, SpringOptions, SpringState } from '#src/types'
 import type { Random } from '@pixi-demos/core/types'
 
-import { clamp, lerp } from './math'
+import { clamp } from './math'
 
 /**
  * Ведёт скорость клешни к целевой за `deltaMs`.
@@ -64,16 +64,6 @@ export const advanceSpring = (
   }
 
   return { value, velocity }
-}
-
-/**
- * Поза между двумя шагами физики на доле `share` пути от `from` к `to`. Крен идёт по кратчайшей дуге:
- * угол тела после смены позы приводится к полуинтервалу (−π, π], и прямая интерполяция прокрутила бы полный оборот.
- */
-export const lerpPose = (from: ToyPose, to: ToyPose, share: number): ToyPose => {
-  const turn = Math.atan2(Math.sin(to.angle - from.angle), Math.cos(to.angle - from.angle))
-
-  return { y: lerp(from.y, to.y, share), z: lerp(from.z, to.z, share), angle: from.angle + turn * share }
 }
 
 /** Доля пути от `from` к `to`, на которой путь входит в лоток: 0 — путь начинается над лотком, 1 — не входит в него. */

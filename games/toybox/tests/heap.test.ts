@@ -3,29 +3,29 @@ import { describe, expect, it } from 'vitest'
 
 import {
   CUBE_HEIGHT,
-  DOME_CENTER_HEIGHT,
-  DOME_EDGE_HEIGHT,
-  GRAB_MAX_CHANCE,
-  GRAB_MIN_CHANCE,
   GRID_SIZE,
   HEAP_SNAPSHOT_VERSION,
   TOY_INSET,
-  TOY_ROOT_COLOR,
   TRAY_CENTER,
   FUMBLE_START_CLEARANCE,
   TRAY_ORIGIN,
   TRAY_SIZE,
   TRAY_WALL_HEIGHT,
 } from '#src/constants'
+import {
+  DOME_CENTER_HEIGHT,
+  DOME_EDGE_HEIGHT,
+  GRAB_MAX_CHANCE,
+  GRAB_MIN_CHANCE,
+  TOY_ROOT_COLOR,
+} from '#src/heap/constants'
+import { getDomeHeight, getGrabChance, isHeapSnapshot, planDome, shiftColor } from '#src/heap/utils'
 import { SHAPE_KEYS, SHAPES } from '#src/toys'
 import type { GroundPoint, PlaneVector, ScreenPoint } from '#src/types'
-import { shiftColor } from '#src/utils/color'
-import { getDomeHeight, getGrabChance, planDome } from '#src/utils/heap'
 import { getTrayWallOutlines } from '#src/utils/machine-geometry'
 import { pickFumbleShare } from '#src/utils/motion'
 import { getDepthOrder, worldToScreen } from '#src/utils/projection'
 import { getPrismOutline, getSection, getSectionArea, getVariantCount, getWeight } from '#src/utils/shapes'
-import { isHeapSnapshot } from '#src/utils/snapshot'
 import { createRandom } from '@pixi-demos/core/random'
 
 /** Сколько падений разыгрывать там, где проверяется доля исходов, а не одно конкретное. */

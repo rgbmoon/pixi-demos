@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
 import { CLAW_MAX_SPEED, SWAY_DAMPING, SWAY_DRAG, SWAY_MAX_OFFSET, SWAY_PERIOD_MS } from '#src/constants'
+import { lerpPose } from '#src/heap/utils'
 import type { GroundPoint, SpringOptions, SpringState } from '#src/types'
-import { advanceSpring, advanceVelocity, lerpPose } from '#src/utils/motion'
+import { advanceSpring, advanceVelocity } from '#src/utils/motion'
 
 /** Шаг кадра при 60 fps. */
 const FRAME_MS = 1000 / 60

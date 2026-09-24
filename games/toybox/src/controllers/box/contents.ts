@@ -3,10 +3,11 @@ import type { Container, DestroyOptions, Ticker } from 'pixi.js'
 
 import { CLAW_RADIUS, CONTENTS_PRIORITY, CUBE_HEIGHT, DEPTH_SORT_STEP, UNIT_HEIGHT } from '#src/constants'
 import type { ClawController } from '#src/controllers/box/claw'
-import type { HeapStore } from '#src/stores/heap'
+import type { Heap } from '#src/heap/heap'
+import type { ToyBody } from '#src/heap/types'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
-import type { DepthItem, ScreenPoint, ToyBody, ToyId, WorldPoint } from '#src/types'
+import type { DepthItem, ScreenPoint, ToyId, WorldPoint } from '#src/types'
 import { Pillar } from '#src/ui/box/pillar'
 import { Toy } from '#src/ui/box/toy'
 import { ToyShapes } from '#src/ui/box/toy-shapes'
@@ -38,7 +39,7 @@ export class ContentsController extends LiveContainer {
   private static readonly CLAW_KEY = 0
 
   private readonly ticker: GameTicker
-  private readonly heap: HeapStore
+  private readonly heap: Heap
   private readonly claw: ClawController
   private readonly shapes = new ToyShapes()
   private readonly toys = new Map<ToyId, Toy>()
@@ -54,7 +55,7 @@ export class ContentsController extends LiveContainer {
 
   constructor(
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
-    @inject(TOYBOX_TOKENS.HeapStore) heap: HeapStore,
+    @inject(TOYBOX_TOKENS.Heap) heap: Heap,
     @inject(TOYBOX_TOKENS.ToyboxStore) toyboxStore: ToyboxStore,
     @inject(TOYBOX_TOKENS.ClawController) claw: ClawController
   ) {

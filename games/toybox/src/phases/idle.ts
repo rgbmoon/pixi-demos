@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify'
 
 import type { GameEvents } from '#src/events'
-import type { HeapStore } from '#src/stores/heap'
+import type { Heap } from '#src/heap/heap'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import { PhaseName } from '#src/types'
@@ -17,12 +17,12 @@ export class IdlePhase implements Phase<PhaseName> {
   readonly name = PhaseName.idle
 
   private readonly emitter: GameEmitter<GameEvents>
-  private readonly heap: HeapStore
+  private readonly heap: Heap
   private readonly toyboxStore: ToyboxStore
 
   constructor(
     @inject(TOYBOX_TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>,
-    @inject(TOYBOX_TOKENS.HeapStore) heap: HeapStore,
+    @inject(TOYBOX_TOKENS.Heap) heap: Heap,
     @inject(TOYBOX_TOKENS.ToyboxStore) toyboxStore: ToyboxStore
   ) {
     this.emitter = emitter

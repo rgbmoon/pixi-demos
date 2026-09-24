@@ -1,23 +1,18 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest'
 
-import {
-  CLAW_GRAB_MS,
-  FIELD_CENTER,
-  HEAP_SNAPSHOT_VERSION,
-  TOY_ANGLE_STEP,
-  TRAY_CENTER,
-  TRAY_EXIT_Z,
-} from '#src/constants'
+import { CLAW_GRAB_MS, FIELD_CENTER, HEAP_SNAPSHOT_VERSION, TOY_ANGLE_STEP, TRAY_CENTER } from '#src/constants'
 import { ClawController } from '#src/controllers/box/claw'
 import { ContentsController } from '#src/controllers/box/contents'
 import { PersistenceController } from '#src/controllers/persistence'
 import type { GameEvents } from '#src/events'
+import { TRAY_EXIT_Z } from '#src/heap/constants'
+import { Heap } from '#src/heap/heap'
+import type { ToyBody } from '#src/heap/types'
 import { IdlePhase } from '#src/phases/idle'
-import { HeapStore } from '#src/stores/heap'
 import { ToyboxStore } from '#src/stores/toybox'
 import { SHAPE_KEYS } from '#src/toys'
-import { type HeapSnapshot, type HeapSnapshotBody, PhaseName, type ShapeKey, type ToyBody } from '#src/types'
+import { type HeapSnapshot, type HeapSnapshotBody, PhaseName, type ShapeKey } from '#src/types'
 import { Toy } from '#src/ui/box/toy'
 import { ToyShapes } from '#src/ui/box/toy-shapes'
 import { getCabinetOutlines } from '#src/utils/machine-geometry'
@@ -90,7 +85,7 @@ describe('регрессии контроллеров и жизненного ц
   it('ведёт игрушку в том же кадре, что клешню, и доставляет её центр точно над лотком', async () => {
     const ticker = new GameTicker()
     const store = new ToyboxStore()
-    const heap = new HeapStore()
+    const heap = new Heap()
     const claw = new ClawController(ticker, store)
     const contents = new ContentsController(ticker, heap, store, claw)
     heap.restore(snapshot([standing('cube8', 3, FIELD_CENTER.y)]), () => 0.99)
@@ -127,7 +122,7 @@ describe('регрессии контроллеров и жизненного ц
 
   it('оставляет одну подписку Reset после нескольких входов в idle', async () => {
     const store = new ToyboxStore()
-    const heap = new HeapStore()
+    const heap = new Heap()
     const emitter = new GameEmitter<GameEvents>()
     const phase = new IdlePhase(emitter, heap, store)
     const abort = new AbortController()
@@ -148,7 +143,7 @@ describe('регрессии контроллеров и жизненного ц
 
   it('при уходе посреди цикла сохраняет прежний снимок без потери соседа', () => {
     const store = new ToyboxStore()
-    const heap = new HeapStore()
+    const heap = new Heap()
     heap.restore(snapshot([standing('bar2', 3, 3), standing('single', 3, 5)]), () => 0.99)
     const checkpoint = heap.takeSnapshot(0)
     const write = vi.fn(async () => { })
@@ -159,7 +154,7 @@ describe('регрессии контроллеров и жизненного ц
     for (let frame = 0; frame < 60; frame++) heap.advance(1000 / 60)
     window.dispatchEvent(new Event('pagehide'))
     expect(write).toHaveBeenLastCalledWith(checkpoint)
-    const restored = new HeapStore()
+    const restored = new Heap()
     restored.restore(checkpoint, () => 0.99)
     expect([...restored.getBodies()]).toHaveLength(2)
     persistence.destroy()

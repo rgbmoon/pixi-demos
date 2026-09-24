@@ -2,7 +2,7 @@ import { inject, injectable } from 'inversify'
 
 import { FUMBLE_CHANCE, TRAY_CENTER } from '#src/constants'
 import type { ClawController } from '#src/controllers/box/claw'
-import type { HeapStore } from '#src/stores/heap'
+import type { Heap } from '#src/heap/heap'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import { type ClawDrop, type GroundPoint, PhaseName } from '#src/types'
 import { pickFumbleShare } from '#src/utils/motion'
@@ -17,11 +17,11 @@ export class DeliveringPhase implements Phase<PhaseName> {
   readonly name = PhaseName.delivering
 
   private readonly claw: ClawController
-  private readonly heap: HeapStore
+  private readonly heap: Heap
 
   constructor(
     @inject(TOYBOX_TOKENS.ClawController) claw: ClawController,
-    @inject(TOYBOX_TOKENS.HeapStore) heap: HeapStore
+    @inject(TOYBOX_TOKENS.Heap) heap: Heap
   ) {
     this.claw = claw
     this.heap = heap

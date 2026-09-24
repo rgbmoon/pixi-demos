@@ -1,48 +1,9 @@
 import { injectable } from 'inversify'
-import { action, makeObservable, observable } from 'mobx'
 
-import {
-  CUBE_HEIGHT,
-  FILL_BATCH,
-  FILL_BATCH_STEPS,
-  FILL_CANDIDATES,
-  FILL_MAX_FAILURES,
-  FILL_MAX_TILT,
-  FILL_SPAWN_GAP,
-  FILL_VOLUME,
-  GRID_SIZE,
-  HEAP_MAX_STEPS_PER_FRAME,
-  HEAP_SETTLE_MAX_STEPS,
-  HEAP_SETTLE_TIMEOUT_MS,
-  HEAP_SNAPSHOT_VERSION,
-  HEAP_STEP_MS,
-  LOAD_CONTACT_GAP,
-  LOAD_NORMAL_MIN,
-  RELEASE_RAISE_STEP,
-  PRESS_SPEED,
-  TOY_ROOT_COLOR,
-  TRAY_EXIT_Z,
-  TRAY_ORIGIN,
-  TRAY_SIZE,
-} from '#src/constants'
-import { HeapWorld } from '#src/physics/heap-world'
-import {
-  type GroundPoint,
-  type HeapSnapshot,
-  type ShapeKey,
-  type SurfaceHit,
-  type ToyAppearance,
-  type ToyBody,
-  type ToyId,
-  type ToyPose,
-  ToyState,
-  type WorldPoint,
-} from '#src/types'
-import { shiftColor } from '#src/utils/color'
+import { CUBE_HEIGHT, GRID_SIZE, HEAP_SNAPSHOT_VERSION, TRAY_ORIGIN, TRAY_SIZE } from '#src/constants'
+import type { GroundPoint, HeapSnapshot, ShapeKey, ToyAppearance, ToyId, ToyPose, WorldPoint } from '#src/types'
 import { getSeparation, polygonsOverlap, projectPolygon } from '#src/utils/geometry'
-import { getDomeHeight, pickShape, planDome } from '#src/utils/heap'
 import { clamp } from '#src/utils/math'
-import { lerpPose } from '#src/utils/motion'
 import {
   getDepthCenter,
   getSection,
@@ -53,23 +14,38 @@ import {
   placeSection,
   toPlane,
 } from '#src/utils/shapes'
-import { isHeapSnapshot } from '#src/utils/snapshot'
 import { isReducedMotion } from '@pixi-demos/core/accessibility'
 import type { Random } from '@pixi-demos/core/types'
+
+import {
+  FILL_BATCH,
+  FILL_BATCH_STEPS,
+  FILL_CANDIDATES,
+  FILL_MAX_FAILURES,
+  FILL_MAX_TILT,
+  FILL_SPAWN_GAP,
+  FILL_VOLUME,
+  HEAP_MAX_STEPS_PER_FRAME,
+  HEAP_SETTLE_MAX_STEPS,
+  HEAP_SETTLE_TIMEOUT_MS,
+  HEAP_STEP_MS,
+  LOAD_CONTACT_GAP,
+  LOAD_NORMAL_MIN,
+  PRESS_SPEED,
+  RELEASE_RAISE_STEP,
+  TOY_ROOT_COLOR,
+  TRAY_EXIT_Z,
+} from './constants'
+import { HeapWorld } from './heap-world'
+import { type SurfaceHit, type ToyBody, ToyState } from './types'
+import { getDomeHeight, isHeapSnapshot, lerpPose, pickShape, planDome, shiftColor } from './utils'
 
 /**
  * Модель кучи игрушек: физический мир, сами игрушки и очередь призов.
  * Команды фаз меняют мир сразу; кадровый шаг продвигает симуляцию и переносит позы в игрушки.
  */
 @injectable()
-export class HeapStore {
-  constructor() {
-    makeObservable(this)
-  }
-
-  /** В куче все тела пришли в состояние покоя */
-  @observable settled = true
-
+export class Heap {
   private world = new HeapWorld()
   private readonly bodies = new Map<ToyId, ToyBody>()
   /** Позы двух последних шагов физики у движущихся тел: между ними интерполируется видимая поза. */
@@ -98,7 +74,7 @@ export class HeapStore {
     this.carried = undefined
     this.pendingMs = 0
     this.quietMs = 0
-    // `nextId` не обнуляется: id игрушки уникален на всё время жизни стора. Рендер держит по нему
+    // `nextId` не обнуляется: id игрушки уникален на всё время жизни модели. Рендер держит по нему
     // View-компоненты; повторный id связал бы новую игрушку с прежними геометрией и цветом
 
     if (snapshot) {
@@ -106,8 +82,6 @@ export class HeapStore {
     } else {
       this.fill(random)
     }
-
-    this.setSettled(true)
   }
 
   /** Верх кучи под точкой поля: на эту высоту садится клешня. */
@@ -153,6 +127,11 @@ export class HeapStore {
     return this.bodies.values()
   }
 
+  /** Куча в покое: все тела уснули и клешня пуста. */
+  get settled(): boolean {
+    return !this.carried && !this.world.hasAwake()
+  }
+
   /** Есть ли игрушка в захвате. Владение хранится только в модели. */
   get isHolding(): boolean {
     return this.carried !== undefined
@@ -170,7 +149,7 @@ export class HeapStore {
 
   /** Снимок согласованного покоя; незавершённое движение сериализовать нельзя. */
   takeSnapshot(collected: number): HeapSnapshot {
-    if (!this.settled || this.carried) throw new Error('Heap is not settled')
+    if (!this.settled) throw new Error('Heap is not settled')
 
     return {
       version: HEAP_SNAPSHOT_VERSION,
@@ -312,17 +291,11 @@ export class HeapStore {
     }
 
     if (this.frames.size > 0) this.applyFrames(this.pendingMs / HEAP_STEP_MS)
-    this.setSettled(!this.carried && !this.world.hasAwake())
-  }
-
-  @action private setSettled(settled: boolean): void {
-    if (this.settled !== settled) this.settled = settled
   }
 
   /** Отмечает команду, которая сдвинула кучу: с неё отсчитывается страховка покоя. */
   private touch(): void {
     this.quietMs = 0
-    this.setSettled(false)
   }
 
   /** Лежит ли `upper` на `lower`: игрушки делят срез, их сечения касаются, и нормаль касания смотрит вверх. */

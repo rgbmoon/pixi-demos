@@ -4,15 +4,15 @@ import { describe, expect, it, vi } from 'vitest'
 import { PRIZE_DOOR_MS, PRIZE_OPEN_HOLD_MS, PRIZE_PAUSE_MS, PRIZE_TAKE_MS } from '#src/constants'
 import { PrizeOutputController } from '#src/controllers/box/prize-output'
 import type { GameEvents } from '#src/events'
+import type { Heap } from '#src/heap/heap'
 import { PresentingPhase } from '#src/phases/presenting'
-import type { HeapStore } from '#src/stores/heap'
 import { ToyboxStore } from '#src/stores/toybox'
 import { PhaseName, type ToyAppearance } from '#src/types'
 import { GameEmitter } from '@pixi-demos/core/events/game-emitter'
 import { GameTicker } from '@pixi-demos/engine/game-ticker'
 
 /** Дублёр модели кучи: очередь призов без физики. */
-const createQueue = (prizes: readonly ToyAppearance[]): HeapStore => {
+const createQueue = (prizes: readonly ToyAppearance[]): Heap => {
   const queue = [...prizes]
 
   return {
@@ -20,7 +20,7 @@ const createQueue = (prizes: readonly ToyAppearance[]): HeapStore => {
     get prizeCount() {
       return queue.length
     },
-  } as unknown as HeapStore
+  } as unknown as Heap
 }
 
 describe('выдача призов', () => {

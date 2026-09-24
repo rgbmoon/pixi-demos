@@ -14,6 +14,7 @@ import { ContentsController } from './controllers/box/contents'
 import { PrizeOutputController } from './controllers/box/prize-output'
 import { PersistenceController } from './controllers/persistence'
 import type { GameEvents } from './events'
+import { Heap } from './heap/heap'
 import { AscendingPhase } from './phases/ascending'
 import { BootingPhase } from './phases/booting'
 import { DeliveringPhase } from './phases/delivering'
@@ -24,7 +25,6 @@ import { PresentingPhase } from './phases/presenting'
 import { ReleasingPhase } from './phases/releasing'
 import { ReturningPhase } from './phases/returning'
 import { GameScene } from './scenes/game'
-import { HeapStore } from './stores/heap'
 import { ToyboxStore } from './stores/toybox'
 import { TOYBOX_TOKENS } from './tokens'
 import { type HeapSnapshot, PhaseName } from './types'
@@ -32,7 +32,7 @@ import { getMachineAspectRatio } from './utils/machine-geometry'
 
 export const bindFlow = (container: Container): void => {
   container.bind(TOYBOX_TOKENS.ToyboxStore).to(ToyboxStore)
-  container.bind(TOYBOX_TOKENS.HeapStore).to(HeapStore)
+  container.bind(TOYBOX_TOKENS.Heap).to(Heap)
   container
     .bind(TOYBOX_TOKENS.HeapStorage)
     .toDynamicValue(

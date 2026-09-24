@@ -118,7 +118,7 @@ games/
   slot/                сама игра: api/ stores/ phases/ scenes/ mocks/ + листовые tokens, types,
                        constants, events, assets, utils, skeletons, reels, sounds; ui/ и controllers/
                        внутри разбиты по зонам сцены: hud/ и reels/
-  toybox/              автомат с игрушками: bindings, stores/ physics/ phases/ scenes/ + листовые
+  toybox/              автомат с игрушками: bindings, heap/ stores/ phases/ scenes/ + листовые
                        tokens, types, constants, events, toys, utils; ui/ и controllers/ внутри разбиты
                        по зонам сцены: box/ и hud/, вне зон — controllers/persistence.ts и keyboard.ts
 web/                   приложение
@@ -208,8 +208,8 @@ Composition root — [app/container.ts](web/src/app/container.ts) (контей�
 - **`types.ts`** / **`constants.ts`** / **`utils.ts`** / **`tokens.ts`** — типы, константы, утилиты
   и DI-токены пакета. Общее для нескольких пакетов живёт в `core/`.
 - **`utils/` (папка)** — когда утилиты слоя сами классы (по классу на файл) или когда лист `utils.ts`
-  разросся и делится по темам (`utils/projection.ts`, `utils/heap.ts`, `utils/motion.ts`).
-  Импорт адресный (`#src/utils/heap`), барреля у папки нет.
+  разросся и делится по темам (`utils/projection.ts`, `utils/shapes.ts`, `utils/motion.ts`).
+  Импорт адресный (`#src/utils/shapes`), барреля у папки нет.
 - Единственное исключение — **zod-схемы api-слоя**: они живут в файле класса, который ими парсит.
 - Пустых файлов-заготовок не создаём; module-scope синглтонов нет (исключение — composition root).
 

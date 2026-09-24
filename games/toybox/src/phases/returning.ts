@@ -2,7 +2,7 @@ import { inject, injectable } from 'inversify'
 
 import { FIELD_CENTER } from '#src/constants'
 import type { ClawController } from '#src/controllers/box/claw'
-import type { HeapStore } from '#src/stores/heap'
+import type { Heap } from '#src/heap/heap'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import { PhaseName } from '#src/types'
@@ -17,13 +17,13 @@ export class ReturningPhase implements Phase<PhaseName> {
 
   private readonly ticker: GameTicker
   private readonly claw: ClawController
-  private readonly heap: HeapStore
+  private readonly heap: Heap
   private readonly toyboxStore: ToyboxStore
 
   constructor(
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
     @inject(TOYBOX_TOKENS.ClawController) claw: ClawController,
-    @inject(TOYBOX_TOKENS.HeapStore) heap: HeapStore,
+    @inject(TOYBOX_TOKENS.Heap) heap: Heap,
     @inject(TOYBOX_TOKENS.ToyboxStore) toyboxStore: ToyboxStore
   ) {
     this.ticker = ticker

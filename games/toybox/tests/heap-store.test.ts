@@ -2,9 +2,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { CLAW_REST_HEIGHT, GRID_SIZE, HEAP_SNAPSHOT_VERSION, TRAY_CENTER } from '#src/constants'
-import { HeapStore } from '#src/stores/heap'
+import { Heap } from '#src/heap/heap'
+import { type ToyBody, ToyState } from '#src/heap/types'
 import { SHAPE_KEYS } from '#src/toys'
-import { type HeapSnapshot, type HeapSnapshotBody, type ShapeKey, type ToyBody, ToyState, type WorldPoint } from '#src/types'
+import type { HeapSnapshot, HeapSnapshotBody, ShapeKey, WorldPoint } from '#src/types'
 import { polygonsOverlap } from '#src/utils/geometry'
 import { getSection, getVariant, getVariantCount, getWeight, placeSection, toPlane } from '#src/utils/shapes'
 import { createRandom } from '@pixi-demos/core/random'
@@ -16,7 +17,7 @@ const MAX_FRAMES = 10_000
 const OVERLAP_TOLERANCE = 0.05
 
 /** Крутит кадры, пока куча не придёт в покой; отвечает, сколько кадров на это ушло. */
-const settle = (heap: HeapStore, deltaMs = FRAME_MS): number => {
+const settle = (heap: Heap, deltaMs = FRAME_MS): number => {
   for (let frame = 1; frame <= MAX_FRAMES; frame++) {
     heap.advance(deltaMs)
 
@@ -26,8 +27,8 @@ const settle = (heap: HeapStore, deltaMs = FRAME_MS): number => {
   throw new Error('Heap never settled')
 }
 
-const createFilledHeap = (seed: number): HeapStore => {
-  const heap = new HeapStore()
+const createFilledHeap = (seed: number): Heap => {
+  const heap = new Heap()
 
   heap.restore(undefined, createRandom(seed))
 
@@ -35,8 +36,8 @@ const createFilledHeap = (seed: number): HeapStore => {
 }
 
 /** Куча из снимка: тесты, которым нужна известная раскладка, строят её руками. */
-const createHeap = (bodies: HeapSnapshotBody[]): HeapStore => {
-  const heap = new HeapStore()
+const createHeap = (bodies: HeapSnapshotBody[]): Heap => {
+  const heap = new Heap()
 
   heap.restore({ version: HEAP_SNAPSHOT_VERSION, collected: 0, bodies }, createRandom(1))
 
@@ -71,7 +72,7 @@ const shareSlab = (first: Readonly<ToyBody>, second: Readonly<ToyBody>): boolean
   first.slab < second.slab + getVariant(second.shape, second.variant).depth &&
   second.slab < first.slab + getVariant(first.shape, first.variant).depth
 
-const findBody = (heap: HeapStore, id: number | undefined): Readonly<ToyBody> => {
+const findBody = (heap: Heap, id: number | undefined): Readonly<ToyBody> => {
   const body = [...heap.getBodies()].find((candidate) => candidate.id === id)
 
   if (!body) throw new Error(`No toy ${id}`)
@@ -80,7 +81,7 @@ const findBody = (heap: HeapStore, id: number | undefined): Readonly<ToyBody> =>
 }
 
 /** Проверяет то, что обязано быть верно про кучу в покое: позы конечны, игрушки в кубе и не пересекаются. */
-const expectSoundHeap = (heap: HeapStore): void => {
+const expectSoundHeap = (heap: Heap): void => {
   const bodies = [...heap.getBodies()].filter((body) => body.state === ToyState.free)
 
   for (const body of bodies) {
@@ -112,7 +113,7 @@ const expectPoint = (actual: WorldPoint, expected: WorldPoint): void => {
 }
 
 /** Поднимает игрушку под точкой на высоту покоя клешни; отвечает её id. */
-const liftToRest = (heap: HeapStore, point: { x: number; y: number }): number | undefined => {
+const liftToRest = (heap: Heap, point: { x: number; y: number }): number | undefined => {
   const grip = { ...point, z: heap.getSurfaceHeightAt(point) }
   const id = heap.lift(point, grip)
 
@@ -132,7 +133,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('HeapStore: наполнение', () => {
+describe('Heap: наполнение', () => {
   it('насыпает одну и ту же кучу на одном сиде и разные — на разных', () => {
     const first = createFilledHeap(1).takeSnapshot(0)
 
@@ -192,7 +193,7 @@ describe('HeapStore: наполнение', () => {
   })
 })
 
-describe('HeapStore: захват', () => {
+describe('Heap: захват', () => {
   const cube = stand('cube8', 3, 4, 0)
   const pillow = stand('square4', 3, 4, topOf(cube))
   const ball = stand('single', 3, 4, topOf(pillow))
@@ -247,7 +248,7 @@ describe('HeapStore: захват', () => {
   })
 })
 
-describe('HeapStore: прожатие', () => {
+describe('Heap: прожатие', () => {
   it('толкает игрушку под клешнёй импульсом: куча выходит из покоя и снова приходит в него целой', () => {
     const heap = createFilledHeap(2)
 
@@ -271,7 +272,7 @@ describe('HeapStore: прожатие', () => {
   })
 })
 
-describe('HeapStore: отпускание', () => {
+describe('Heap: отпускание', () => {
   it('возвращает отпущенную игрушку в кучу и приходит в покой', () => {
     const heap = createFilledHeap(3)
     const count = [...heap.getBodies()].length
@@ -306,7 +307,7 @@ describe('HeapStore: отпускание', () => {
   })
 })
 
-describe('HeapStore: лоток', () => {
+describe('Heap: лоток', () => {
   it('засчитывает доставленную игрушку призом один раз и убирает её из кучи', () => {
     const heap = createHeap([stand('cube8', 4, 3, 0), stand('single', 5, 6, 0)])
     const id = liftToRest(heap, { x: 5.5, y: 6 })
@@ -334,7 +335,7 @@ describe('HeapStore: лоток', () => {
   })
 })
 
-describe('HeapStore: снимок', () => {
+describe('Heap: снимок', () => {
   it('переживает круг снимок — восстановление — снимок, в том числе после цикла', () => {
     const heap = createFilledHeap(4)
 
@@ -343,7 +344,7 @@ describe('HeapStore: снимок', () => {
     settle(heap)
 
     for (const snapshot of [createFilledHeap(5).takeSnapshot(3), heap.takeSnapshot(7)]) {
-      const restored = new HeapStore()
+      const restored = new Heap()
 
       restored.restore(snapshot, createRandom(1))
 
@@ -353,7 +354,7 @@ describe('HeapStore: снимок', () => {
 
   it('не сдвигает восстановленную кучу, пока её не тронули', () => {
     const snapshot = createFilledHeap(6).takeSnapshot(0)
-    const heap = new HeapStore()
+    const heap = new Heap()
 
     heap.restore(snapshot, createRandom(1))
     for (let frame = 0; frame < 120; frame++) heap.advance(FRAME_MS)
@@ -392,7 +393,7 @@ describe('HeapStore: снимок', () => {
   })
 })
 
-describe('HeapStore: нагрузка', () => {
+describe('Heap: нагрузка', () => {
   it('приходит в покой после серии случайных циклов и сохраняет кучу целой', () => {
     const heap = createFilledHeap(11)
     const random = createRandom(99)
@@ -417,7 +418,7 @@ describe('HeapStore: нагрузка', () => {
   })
 })
 
-describe('HeapStore: уменьшенное движение', () => {
+describe('Heap: уменьшенное движение', () => {
   it('приходит в покой за один кадр', () => {
     const heap = createFilledHeap(5)
 

@@ -3,7 +3,7 @@ import { inject, injectable } from 'inversify'
 import { PRIZE_OPEN_HOLD_MS, PRIZE_PAUSE_MS } from '#src/constants'
 import type { PrizeOutputController } from '#src/controllers/box/prize-output'
 import type { GameEvents } from '#src/events'
-import type { HeapStore } from '#src/stores/heap'
+import type { Heap } from '#src/heap/heap'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import { PhaseName } from '#src/types'
@@ -19,14 +19,14 @@ export class PresentingPhase implements Phase<PhaseName> {
 
   private readonly ticker: GameTicker
   private readonly output: PrizeOutputController
-  private readonly heap: HeapStore
+  private readonly heap: Heap
   private readonly toyboxStore: ToyboxStore
   private readonly emitter: GameEmitter<GameEvents>
 
   constructor(
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
     @inject(TOYBOX_TOKENS.PrizeOutputController) output: PrizeOutputController,
-    @inject(TOYBOX_TOKENS.HeapStore) heap: HeapStore,
+    @inject(TOYBOX_TOKENS.Heap) heap: Heap,
     @inject(TOYBOX_TOKENS.ToyboxStore) toyboxStore: ToyboxStore,
     @inject(TOYBOX_TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>
   ) {

@@ -1,33 +1,31 @@
 import { Box, Polygon, World } from 'planck'
 import type { Body, Fixture } from 'planck'
 
+import { CUBE_HEIGHT, GRID_SIZE, TRAY_ORIGIN, TRAY_SIZE, TRAY_WALL_HEIGHT } from '#src/constants'
+import type { SectionPoint, ToyId, ToyPose } from '#src/types'
+import { getSectionArea } from '#src/utils/shapes'
+
 import {
   COLLISION_BACK_FLOOR,
   COLLISION_FAR_SPAN,
   COLLISION_FAR_WALL,
   COLLISION_TRAY_WALL,
   COLLISION_WALL,
-  CUBE_HEIGHT,
-  GRID_SIZE,
   HEAP_GRAVITY,
   TOY_ANGULAR_DAMPING,
   TOY_FRICTION,
   TOY_LINEAR_DAMPING,
   TOY_RESTITUTION,
   TRAY_EXIT_Z,
-  TRAY_ORIGIN,
-  TRAY_SIZE,
-  TRAY_WALL_HEIGHT,
   TRAY_WALL_THICKNESS,
   WAKE_MARGIN,
   WALL_THICKNESS,
-} from '#src/constants'
-import type { CollisionFilter, SectionPoint, SurfaceHit, ToyId, ToyPose } from '#src/types'
-import { getSectionArea } from '#src/utils/shapes'
+} from './constants'
+import type { CollisionFilter, SurfaceHit } from './types'
 
 /**
  * Физический мир кучи на planck: плоскость `(y, z)` с креном, статика куба и лотка, тела игрушек по id.
- * Срезы глубины разводят тела битами фильтра. Единственный модуль игры, который импортирует движок.
+ * Срезы глубины разводят тела битами фильтра. Единственный модуль игры, который импортирует движок planck.
  */
 export class HeapWorld {
   private readonly world = new World({ gravity: { x: 0, y: -HEAP_GRAVITY } })
@@ -295,7 +293,10 @@ export class HeapWorld {
 
   /** Столкнулась бы фикстура с игрушкой такого фильтра: то же правило битов, что у движка. */
   private static collides(fixture: Fixture, { filterCategoryBits, filterMaskBits }: CollisionFilter): boolean {
-    return (fixture.getFilterMaskBits() & filterCategoryBits) !== 0 && (fixture.getFilterCategoryBits() & filterMaskBits) !== 0
+    return (
+      (fixture.getFilterMaskBits() & filterCategoryBits) !== 0 &&
+      (fixture.getFilterCategoryBits() & filterMaskBits) !== 0
+    )
   }
 
   private static getToyId(fixture: Fixture): ToyId | undefined {
