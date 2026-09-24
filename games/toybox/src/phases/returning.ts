@@ -35,7 +35,7 @@ export class ReturningPhase implements Phase<PhaseName> {
   async enter(signal: AbortSignal): Promise<typeof PhaseName.idle> {
     await this.claw.moveTo(FIELD_CENTER, signal)
     await this.ticker.waitUntil(() => this.heap.settled, signal)
-    this.toyboxStore.publishCheckpoint(this.heap.takeSnapshot(this.toyboxStore.collected))
+    this.toyboxStore.publishCheckpoint(this.heap.takeSnapshot())
 
     return PhaseName.idle
   }

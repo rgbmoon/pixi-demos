@@ -156,11 +156,10 @@ export type SpringOptions = {
   damping: number
 }
 
-/** Настройки движения и синхронизации анимации захвата. */
+/** Настройки движения клешни: ожидание затухания качания и действие на доле хода. */
 export type ClawMotionOptions = {
   readonly settleSwing?: boolean
   drop?: ClawDrop
-  readonly onProgress?: (progress: number, grip: WorldPoint) => void
 }
 
 /** Одно отменяемое движение клешни, выполняемое её кадровым шагом. */

@@ -106,8 +106,7 @@ export class ContentsController extends LiveContainer {
   }
 
   private step = (ticker: Ticker): void => {
-    this.heap.setGripPoint(this.claw.getGripPoint())
-    this.heap.advance(ticker.deltaMS)
+    this.heap.advance(ticker.deltaMS, this.claw.getGripPoint())
     this.sync()
   }
 

@@ -34,8 +34,8 @@ export type ToyBody = {
 
 /** Биты фильтра столкновений фикстуры: её категории и категории, с которыми она сталкивается. */
 export type CollisionFilter = {
-  readonly filterCategoryBits: number
-  readonly filterMaskBits: number
+  readonly category: number
+  readonly mask: number
 }
 
 /** Попадание луча, пущенного вниз: игрушка, в которую он упёрся, и высота точки. */

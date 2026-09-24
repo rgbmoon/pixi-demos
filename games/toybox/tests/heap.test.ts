@@ -12,14 +12,8 @@ import {
   TRAY_SIZE,
   TRAY_WALL_HEIGHT,
 } from '#src/constants'
-import {
-  DOME_CENTER_HEIGHT,
-  DOME_EDGE_HEIGHT,
-  GRAB_MAX_CHANCE,
-  GRAB_MIN_CHANCE,
-  TOY_ROOT_COLOR,
-} from '#src/heap/constants'
-import { getDomeHeight, getGrabChance, isHeapSnapshot, planDome, shiftColor } from '#src/heap/utils'
+import { DOME_CENTER_HEIGHT } from '#src/heap/constants'
+import { isHeapSnapshot } from '#src/heap/utils'
 import { SHAPE_KEYS, SHAPES } from '#src/toys'
 import type { GroundPoint, PlaneVector, ScreenPoint } from '#src/types'
 import { getTrayWallOutlines } from '#src/utils/machine-geometry'
@@ -34,31 +28,6 @@ const ROLLS = 200
 /** Лежит ли точка пола над лотком. */
 const isOverTray = ({ x, y }: GroundPoint): boolean =>
   x >= TRAY_ORIGIN.x && x <= TRAY_ORIGIN.x + TRAY_SIZE && y >= TRAY_ORIGIN.y && y <= TRAY_ORIGIN.y + TRAY_SIZE
-
-describe('getDomeHeight', () => {
-  const domes = [1, 2, 3, 4, 5].map((seed) => planDome(createRandom(seed)))
-
-  it('поднимает верх кучи под пиком и опускает у дальнего угла поля', () => {
-    for (const dome of domes) {
-      const corners = [0, GRID_SIZE].flatMap((x) => [0, GRID_SIZE].map((y) => getDomeHeight(dome, { x, y })))
-
-      expect(getDomeHeight(dome, dome.peak)).toBeCloseTo(DOME_CENTER_HEIGHT, 12)
-      expect(Math.min(...corners)).toBeCloseTo(DOME_EDGE_HEIGHT, 12)
-    }
-  })
-
-  it('снижает высоту с удалением от пика', () => {
-    for (const dome of domes) {
-      const heights = [0, 1, 2, 3, 4].map((step) => getDomeHeight(dome, { x: dome.peak.x + step, y: dome.peak.y }))
-
-      for (let step = 1; step < heights.length; step++) expect(heights[step]).toBeLessThan(heights[step - 1])
-    }
-  })
-
-  it('каждый раз ставит пик по-своему', () => {
-    expect(new Set(domes.map(({ peak }) => `${peak.x}:${peak.y}`)).size).toBe(domes.length)
-  })
-})
 
 describe('getDepthOrder', () => {
   it('ставит верхнюю точку стопки ближе к игроку, чем нижние', () => {
@@ -260,25 +229,6 @@ describe('getPrismOutline', () => {
   })
 })
 
-describe('getGrabChance', () => {
-  it('снижает шанс и от веса, и от нагрузки сверху', () => {
-    expect(getGrabChance(1, 0)).toBeGreaterThan(getGrabChance(8, 0))
-    expect(getGrabChance(1, 0)).toBeGreaterThan(getGrabChance(1, 4))
-  })
-
-  it('держится в своих пределах при любом весе и нагрузке сверху', () => {
-    for (const weight of [1, 2, 3, 4, 8]) {
-      for (const load of [0, 1, 8, 64]) {
-        const chance = getGrabChance(weight, load)
-
-        expect(chance).toBeGreaterThanOrEqual(GRAB_MIN_CHANCE)
-        expect(chance).toBeLessThanOrEqual(GRAB_MAX_CHANCE)
-      }
-    }
-  })
-})
-
-
 describe('isHeapSnapshot', () => {
   const body = { shape: 'cube8', variant: 0, slab: 3, y: 4, z: 0.9, angle: 0.3, color: 0xffa24b }
   const snapshot = { version: HEAP_SNAPSHOT_VERSION, collected: 3, bodies: [body] }
@@ -308,26 +258,5 @@ describe('isHeapSnapshot', () => {
   it.each([NaN, Infinity, -0.5, GRID_SIZE + 0.5])('отбрасывает координату %s', (value) => {
     expect(isHeapSnapshot(withBody({ y: value }))).toBe(false)
     expect(isHeapSnapshot(withBody({ z: value === GRID_SIZE + 0.5 ? CUBE_HEIGHT + 0.5 : value }))).toBe(false)
-  })
-})
-
-describe('shiftColor', () => {
-  it('разводит игрушки по цвету вокруг корневого', () => {
-    const random = createRandom(5)
-    const colors = new Set(Array.from({ length: 32 }, () => shiftColor(TOY_ROOT_COLOR, random)))
-
-    expect(colors.size).toBeGreaterThan(24)
-  })
-
-  it('держится в пределах 24-битного цвета', () => {
-    const random = createRandom(9)
-
-    for (let index = 0; index < 64; index++) {
-      const color = shiftColor(TOY_ROOT_COLOR, random)
-
-      expect(Number.isInteger(color)).toBe(true)
-      expect(color).toBeGreaterThanOrEqual(0)
-      expect(color).toBeLessThanOrEqual(0xffffff)
-    }
   })
 })

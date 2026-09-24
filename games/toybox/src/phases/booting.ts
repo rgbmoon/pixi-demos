@@ -2,7 +2,7 @@ import { inject, injectable } from 'inversify'
 
 import type { GameEvents } from '#src/events'
 import type { Heap } from '#src/heap/heap'
-import { isHeapSnapshot } from '#src/heap/utils'
+import { isHeapSnapshot, pourHeap } from '#src/heap/utils'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import { type HeapSnapshot, PhaseName } from '#src/types'
@@ -41,9 +41,9 @@ export class BootingPhase implements Phase<PhaseName> {
 
     const snapshot = isHeapSnapshot(stored) ? stored : undefined
 
-    this.heap.restore(snapshot, Math.random)
+    this.heap.restore(snapshot?.bodies ?? pourHeap(Math.random))
     this.toyboxStore.applyCollected(snapshot?.collected ?? 0)
-    this.toyboxStore.publishCheckpoint(this.heap.takeSnapshot(this.toyboxStore.collected))
+    this.toyboxStore.publishCheckpoint(this.heap.takeSnapshot())
     this.emitter.emit('game:booted')
 
     return PhaseName.idle

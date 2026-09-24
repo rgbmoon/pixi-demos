@@ -6,11 +6,8 @@ import type { SectionPoint, ToyId, ToyPose } from '#src/types'
 import { getSectionArea } from '#src/utils/shapes'
 
 import {
-  COLLISION_BACK_FLOOR,
   COLLISION_FAR_SPAN,
-  COLLISION_FAR_WALL,
-  COLLISION_TRAY_WALL,
-  COLLISION_WALL,
+  COLLISION_STATIC,
   HEAP_GRAVITY,
   TOY_ANGULAR_DAMPING,
   TOY_FRICTION,
@@ -38,32 +35,30 @@ export class HeapWorld {
     const wallHeight = CUBE_HEIGHT - TRAY_EXIT_Z + WALL_THICKNESS
     const wallCenter = (CUBE_HEIGHT + TRAY_EXIT_Z - WALL_THICKNESS) / 2
     const trayWallHeight = TRAY_WALL_HEIGHT - TRAY_EXIT_Z + WALL_THICKNESS
-    const addStatic = (width: number, height: number, y: number, z: number, category: number, mask: number) =>
+    const addStatic = (width: number, height: number, y: number, z: number, mask: number) =>
       ground.createFixture({
         shape: new Box(width / 2, height / 2, { x: y, y: z }),
         friction: TOY_FRICTION,
-        filterCategoryBits: category,
+        filterCategoryBits: COLLISION_STATIC,
         filterMaskBits: mask,
       })
 
     // Пол перед шахтой лотка — во всех срезах, над шахтой — только в срезах за лотком
-    addStatic(TRAY_ORIGIN.y, WALL_THICKNESS, TRAY_ORIGIN.y / 2, -WALL_THICKNESS / 2, COLLISION_WALL, allSlabs)
+    addStatic(TRAY_ORIGIN.y, WALL_THICKNESS, TRAY_ORIGIN.y / 2, -WALL_THICKNESS / 2, allSlabs)
     addStatic(
       GRID_SIZE - TRAY_ORIGIN.y,
       WALL_THICKNESS,
       (GRID_SIZE + TRAY_ORIGIN.y) / 2,
       -WALL_THICKNESS / 2,
-      COLLISION_BACK_FLOOR,
       allSlabs & ~traySlabs
     )
-    addStatic(WALL_THICKNESS, wallHeight, -WALL_THICKNESS / 2, wallCenter, COLLISION_WALL, allSlabs)
-    addStatic(WALL_THICKNESS, wallHeight, GRID_SIZE + WALL_THICKNESS / 2, wallCenter, COLLISION_WALL, allSlabs)
+    addStatic(WALL_THICKNESS, wallHeight, -WALL_THICKNESS / 2, wallCenter, allSlabs)
+    addStatic(WALL_THICKNESS, wallHeight, GRID_SIZE + WALL_THICKNESS / 2, wallCenter, allSlabs)
     addStatic(
       TRAY_WALL_THICKNESS,
       trayWallHeight,
       TRAY_ORIGIN.y,
       (TRAY_WALL_HEIGHT + TRAY_EXIT_Z - WALL_THICKNESS) / 2,
-      COLLISION_TRAY_WALL,
       traySlabs
     )
     // Дальняя стенка лотка стоит на границе срезов: в неё упирается только игрушка, занимающая оба
@@ -72,7 +67,6 @@ export class HeapWorld {
       TRAY_WALL_HEIGHT,
       (GRID_SIZE + TRAY_ORIGIN.y) / 2,
       TRAY_WALL_HEIGHT / 2,
-      COLLISION_FAR_WALL,
       COLLISION_FAR_SPAN
     )
   }
@@ -96,6 +90,7 @@ export class HeapWorld {
       awake,
       userData: id,
     })
+    const { category, mask } = HeapWorld.getFilter(slab, depth)
 
     body.createFixture({
       shape: new Polygon(section.map((point) => ({ x: point.y, y: point.z }))),
@@ -103,7 +98,8 @@ export class HeapWorld {
       friction: TOY_FRICTION,
       restitution: TOY_RESTITUTION,
       userData: id,
-      ...HeapWorld.getFilter(slab, depth),
+      filterCategoryBits: category,
+      filterMaskBits: mask,
     })
     this.bodies.set(id, body)
   }
@@ -166,10 +162,11 @@ export class HeapWorld {
   drop(id: ToyId, slab: number, depth: number, { y, z, angle }: ToyPose): void {
     const body = this.getBody(id)
     const fixture = body.getFixtureList()
+    const { category, mask } = HeapWorld.getFilter(slab, depth)
 
     body.setTransform({ x: y, y: z }, angle)
     body.setType('dynamic')
-    fixture?.setFilterData({ groupIndex: 0, ...HeapWorld.toFilterData(HeapWorld.getFilter(slab, depth)) })
+    fixture?.setFilterData({ groupIndex: 0, categoryBits: category, maskBits: mask })
     body.setAwake(true)
   }
 
@@ -278,25 +275,12 @@ export class HeapWorld {
     const farEdge = TRAY_ORIGIN.x + TRAY_SIZE
     const spansFarWall = slab < farEdge && slab + depth > farEdge
 
-    return {
-      filterCategoryBits: slabs | (spansFarWall ? COLLISION_FAR_SPAN : 0),
-      filterMaskBits: slabs | COLLISION_WALL | COLLISION_BACK_FLOOR | COLLISION_TRAY_WALL | COLLISION_FAR_WALL,
-    }
-  }
-
-  private static toFilterData({ filterCategoryBits, filterMaskBits }: CollisionFilter): {
-    categoryBits: number
-    maskBits: number
-  } {
-    return { categoryBits: filterCategoryBits, maskBits: filterMaskBits }
+    return { category: slabs | (spansFarWall ? COLLISION_FAR_SPAN : 0), mask: slabs | COLLISION_STATIC }
   }
 
   /** Столкнулась бы фикстура с игрушкой такого фильтра: то же правило битов, что у движка. */
-  private static collides(fixture: Fixture, { filterCategoryBits, filterMaskBits }: CollisionFilter): boolean {
-    return (
-      (fixture.getFilterMaskBits() & filterCategoryBits) !== 0 &&
-      (fixture.getFilterCategoryBits() & filterMaskBits) !== 0
-    )
+  private static collides(fixture: Fixture, { category, mask }: CollisionFilter): boolean {
+    return (fixture.getFilterMaskBits() & category) !== 0 && (fixture.getFilterCategoryBits() & mask) !== 0
   }
 
   private static getToyId(fixture: Fixture): ToyId | undefined {

@@ -1,13 +1,14 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { CLAW_REST_HEIGHT, GRID_SIZE, HEAP_SNAPSHOT_VERSION, TRAY_CENTER } from '#src/constants'
+import { CLAW_GRAB_MS, CLAW_REST_HEIGHT, FIELD_CENTER, GRID_SIZE, TRAY_CENTER } from '#src/constants'
 import { Heap } from '#src/heap/heap'
 import { type ToyBody, ToyState } from '#src/heap/types'
+import { pourHeap } from '#src/heap/utils'
 import { SHAPE_KEYS } from '#src/toys'
-import type { HeapSnapshot, HeapSnapshotBody, ShapeKey, WorldPoint } from '#src/types'
+import type { HeapSnapshotBody, ShapeKey, WorldPoint } from '#src/types'
 import { polygonsOverlap } from '#src/utils/geometry'
-import { getSection, getVariant, getVariantCount, getWeight, placeSection, toPlane } from '#src/utils/shapes'
+import { getSection, getVariant, getVariantCount, placeSection, toPlane } from '#src/utils/shapes'
 import { createRandom } from '@pixi-demos/core/random'
 
 const FRAME_MS = 1000 / 60
@@ -15,11 +16,13 @@ const FRAME_MS = 1000 / 60
 const MAX_FRAMES = 10_000
 /** Допуск пересечения тел: движок держит касание с проникновением порядка своего допуска. */
 const OVERLAP_TOLERANCE = 0.05
+/** Точка захвата пустой клешни в покое: её получает кадровый шаг, пока игрушки в клешне нет. */
+const REST_GRIP: WorldPoint = { ...FIELD_CENTER, z: CLAW_REST_HEIGHT }
 
 /** Крутит кадры, пока куча не придёт в покой; отвечает, сколько кадров на это ушло. */
 const settle = (heap: Heap, deltaMs = FRAME_MS): number => {
   for (let frame = 1; frame <= MAX_FRAMES; frame++) {
-    heap.advance(deltaMs)
+    heap.advance(deltaMs, REST_GRIP)
 
     if (heap.settled) return frame
   }
@@ -30,7 +33,7 @@ const settle = (heap: Heap, deltaMs = FRAME_MS): number => {
 const createFilledHeap = (seed: number): Heap => {
   const heap = new Heap()
 
-  heap.restore(undefined, createRandom(seed))
+  heap.restore(pourHeap(createRandom(seed)))
 
   return heap
 }
@@ -39,7 +42,7 @@ const createFilledHeap = (seed: number): Heap => {
 const createHeap = (bodies: HeapSnapshotBody[]): Heap => {
   const heap = new Heap()
 
-  heap.restore({ version: HEAP_SNAPSHOT_VERSION, collected: 0, bodies }, createRandom(1))
+  heap.restore(bodies)
 
   return heap
 }
@@ -115,15 +118,14 @@ const expectPoint = (actual: WorldPoint, expected: WorldPoint): void => {
 /** Поднимает игрушку под точкой на высоту покоя клешни; отвечает её id. */
 const liftToRest = (heap: Heap, point: { x: number; y: number }): number | undefined => {
   const grip = { ...point, z: heap.getSurfaceHeightAt(point) }
-  const id = heap.lift(point, grip)
+  const id = heap.getTopBodyAt(point)?.id
 
-  if (id === undefined) return undefined
+  if (!heap.lift(point, grip)) return undefined
 
-  heap.setGrabProgress(1, grip)
+  heap.advance(CLAW_GRAB_MS, grip)
 
   for (let {z} = grip; z < CLAW_REST_HEIGHT; z += 0.25) {
-    heap.setGripPoint({ ...point, z })
-    heap.advance(FRAME_MS)
+    heap.advance(FRAME_MS, { ...point, z })
   }
 
   return id
@@ -135,10 +137,10 @@ afterEach(() => {
 
 describe('Heap: наполнение', () => {
   it('насыпает одну и ту же кучу на одном сиде и разные — на разных', () => {
-    const first = createFilledHeap(1).takeSnapshot(0)
+    const first = createFilledHeap(1).takeSnapshot()
 
-    expect(createFilledHeap(1).takeSnapshot(0)).toEqual(first)
-    expect(createFilledHeap(2).takeSnapshot(0)).not.toEqual(first)
+    expect(createFilledHeap(1).takeSnapshot()).toEqual(first)
+    expect(createFilledHeap(2).takeSnapshot()).not.toEqual(first)
   })
 
   it('насыпает все формы каталога и не засчитывает призов', () => {
@@ -174,20 +176,20 @@ describe('Heap: наполнение', () => {
 
   it('оставляет наполненную кучу в покое: сама она не движется', () => {
     const heap = createFilledHeap(3)
-    const before = heap.takeSnapshot(0)
+    const before = heap.takeSnapshot()
 
     expect(heap.settled).toBe(true)
-    for (let frame = 0; frame < 120; frame++) heap.advance(FRAME_MS)
+    for (let frame = 0; frame < 120; frame++) heap.advance(FRAME_MS, REST_GRIP)
 
     expect(heap.settled).toBe(true)
-    expect(heap.takeSnapshot(0)).toEqual(before)
+    expect(heap.takeSnapshot()).toEqual(before)
   })
 
   it('не выдаёт повторно id игрушек после нового наполнения', () => {
     const heap = createFilledHeap(1)
     const first = new Set([...heap.getBodies()].map(({ id }) => id))
 
-    heap.restore(undefined, createRandom(2))
+    heap.restore(pourHeap(createRandom(2)))
 
     expect([...heap.getBodies()].some(({ id }) => first.has(id))).toBe(false)
   })
@@ -204,24 +206,17 @@ describe('Heap: захват', () => {
     expect(heap.getTopBodyAt({ x: 3.5, y: 4 })?.shape).toBe('single')
   })
 
-  it('считает нагрузкой игрушки сверху, включая лежащие через посредника', () => {
-    const heap = createHeap([cube, pillow, ball])
-    const [bottom, middle, top] = [...heap.getBodies()]
-
-    expect(heap.getLoad(bottom.id)).toBe(getWeight('square4') + getWeight('single'))
-    expect(heap.getLoad(middle.id)).toBe(getWeight('single'))
-    expect(heap.getLoad(top.id)).toBe(0)
-  })
-
   it('роняет игрушку, лежавшую на поднятой', () => {
     const heap = createHeap([cube, stand('single', 3, 4.5, topOf(cube))])
     const [base, rider] = [...heap.getBodies()]
     const before = rider.pose.point.z
     const point = { x: 3.5, y: 3.3 }
+    const grip = { ...point, z: heap.getSurfaceHeightAt(point) }
 
-    expect(heap.lift(point, { ...point, z: heap.getSurfaceHeightAt(point) })).toBe(base.id)
+    expect(heap.getTopBodyAt(point)?.id).toBe(base.id)
+    expect(heap.lift(point, grip)).toBe(true)
 
-    for (let frame = 0; frame < 90; frame++) heap.advance(FRAME_MS)
+    for (let frame = 0; frame < 90; frame++) heap.advance(FRAME_MS, grip)
 
     expect(rider.pose.point.z).toBeLessThan(before - 1)
   })
@@ -236,11 +231,11 @@ describe('Heap: захват', () => {
         const grip = { ...point, z: heap.getSurfaceHeightAt(point) }
 
         heap.lift(point, grip)
-        heap.setGripPoint(grip)
+        heap.advance(0, grip)
 
         expectPoint(body.pose.point, visible)
 
-        heap.setGripPoint({ x: grip.x + 1, y: grip.y - 1, z: grip.z + 2 })
+        heap.advance(0, { x: grip.x + 1, y: grip.y - 1, z: grip.z + 2 })
 
         expectPoint(body.pose.point, { x: visible.x + 1, y: visible.y - 1, z: visible.z + 2 })
       }
@@ -261,14 +256,14 @@ describe('Heap: прожатие', () => {
 
   it('не толкает игрушку при уменьшенном движении', () => {
     const heap = createFilledHeap(2)
-    const before = heap.takeSnapshot(0)
+    const before = heap.takeSnapshot()
 
     vi.stubGlobal('matchMedia', () => ({ matches: true }))
     heap.press({ x: 4.5, y: 4 })
-    heap.advance(FRAME_MS)
+    heap.advance(FRAME_MS, REST_GRIP)
 
     expect(heap.settled).toBe(true)
-    expect(heap.takeSnapshot(0)).toEqual(before)
+    expect(heap.takeSnapshot()).toEqual(before)
   })
 })
 
@@ -297,7 +292,7 @@ describe('Heap: отпускание', () => {
     const grip = { ...point, z: heap.getSurfaceHeightAt(point) }
 
     heap.lift(point, grip)
-    heap.setGrabProgress(1, grip)
+    heap.advance(CLAW_GRAB_MS, grip)
     heap.release({ x: 3.5, y: 4, z: cubeBody.z })
 
     expect(polygonsOverlap(sectionOf(ball), sectionOf(cube), OVERLAP_TOLERANCE)).toBe(false)
@@ -313,7 +308,6 @@ describe('Heap: лоток', () => {
     const id = liftToRest(heap, { x: 5.5, y: 6 })
     const { shape, color } = findBody(heap, id)
 
-    heap.setGripPoint({ ...TRAY_CENTER, z: CLAW_REST_HEIGHT })
     heap.dropIntoTray({ ...TRAY_CENTER, z: CLAW_REST_HEIGHT })
     settle(heap)
 
@@ -343,24 +337,24 @@ describe('Heap: снимок', () => {
     heap.release({ x: 5.5, y: 5.5, z: CLAW_REST_HEIGHT })
     settle(heap)
 
-    for (const snapshot of [createFilledHeap(5).takeSnapshot(3), heap.takeSnapshot(7)]) {
+    for (const snapshot of [createFilledHeap(5).takeSnapshot(), heap.takeSnapshot()]) {
       const restored = new Heap()
 
-      restored.restore(snapshot, createRandom(1))
+      restored.restore(snapshot)
 
-      expect(restored.takeSnapshot(snapshot.collected)).toEqual(snapshot)
+      expect(restored.takeSnapshot()).toEqual(snapshot)
     }
   })
 
   it('не сдвигает восстановленную кучу, пока её не тронули', () => {
-    const snapshot = createFilledHeap(6).takeSnapshot(0)
+    const snapshot = createFilledHeap(6).takeSnapshot()
     const heap = new Heap()
 
-    heap.restore(snapshot, createRandom(1))
-    for (let frame = 0; frame < 120; frame++) heap.advance(FRAME_MS)
+    heap.restore(snapshot)
+    for (let frame = 0; frame < 120; frame++) heap.advance(FRAME_MS, REST_GRIP)
 
     expect(heap.settled).toBe(true)
-    expect(heap.takeSnapshot(0)).toEqual(snapshot)
+    expect(heap.takeSnapshot()).toEqual(snapshot)
   })
 
   it('запрещает снимок с игрушкой в клешне и до покоя после отпускания', () => {
@@ -368,28 +362,15 @@ describe('Heap: снимок', () => {
 
     liftToRest(heap, { x: 4.5, y: 4 })
 
-    expect(() => heap.takeSnapshot(0)).toThrow('Heap is not settled')
+    expect(() => heap.takeSnapshot()).toThrow('Heap is not settled')
 
     heap.release({ x: 2.5, y: 4, z: CLAW_REST_HEIGHT })
 
-    expect(() => heap.takeSnapshot(0)).toThrow('Heap is not settled')
+    expect(() => heap.takeSnapshot()).toThrow('Heap is not settled')
 
     settle(heap)
 
-    expect(() => heap.takeSnapshot(0)).not.toThrow()
-  })
-
-  it('отклоняет неверный снимок до изменения модели', () => {
-    const heap = createFilledHeap(1)
-    const before = heap.takeSnapshot(0)
-    const invalid = {
-      version: HEAP_SNAPSHOT_VERSION,
-      collected: 0,
-      bodies: [{ ...stand('single', 3, 4, 0), slab: GRID_SIZE }],
-    } satisfies HeapSnapshot
-
-    expect(() => heap.restore(invalid, createRandom(1))).toThrow('Invalid heap snapshot')
-    expect(heap.takeSnapshot(0)).toEqual(before)
+    expect(() => heap.takeSnapshot()).not.toThrow()
   })
 })
 
@@ -408,7 +389,6 @@ describe('Heap: нагрузка', () => {
         ? { ...TRAY_CENTER, z: CLAW_REST_HEIGHT }
         : { x: 1 + random() * (GRID_SIZE - 2), y: 1 + random() * (GRID_SIZE - 2), z: CLAW_REST_HEIGHT }
 
-      heap.setGripPoint(target)
       if (toTray) heap.dropIntoTray(target)
       else heap.release(target)
 
@@ -425,7 +405,7 @@ describe('Heap: уменьшенное движение', () => {
     vi.stubGlobal('matchMedia', () => ({ matches: true }))
     liftToRest(heap, { x: 4.5, y: 4 })
     heap.release({ x: 2.5, y: 5, z: CLAW_REST_HEIGHT })
-    heap.advance(FRAME_MS)
+    heap.advance(FRAME_MS, REST_GRIP)
 
     expect(heap.settled).toBe(true)
   })

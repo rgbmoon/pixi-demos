@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { CUBE_HEIGHT, GRID_SIZE } from '#src/constants'
 import { Heap } from '#src/heap/heap'
+import { pourHeap } from '#src/heap/utils'
 import type { DepthItem, PlaneVector, ScreenPoint, ShapeKey, WorldPoint } from '#src/types'
 import { getDepthRelation, getPlaneDepthItem, getPointDepthItem, getToyDepthItem, orderByDepth } from '#src/utils/depth'
 import { getFaceOutline, getTrayWallOutlines } from '#src/utils/machine-geometry'
@@ -142,7 +143,7 @@ describe('порядок наложения', () => {
     for (const seed of [1, 2, 3, 4, 5, 6]) {
       const heap = new Heap()
 
-      heap.restore(undefined, createRandom(seed))
+      heap.restore(pourHeap(createRandom(seed)))
 
       const items = [...heap.getBodies()].map((body) =>
         getToyDepthItem(body.shape, body.variant, body.pose.point, body.pose.angle)

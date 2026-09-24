@@ -3,10 +3,8 @@ import { inject, injectable } from 'inversify'
 import { PHASE_PAUSE_MS } from '#src/constants'
 import type { ClawController } from '#src/controllers/box/claw'
 import type { Heap } from '#src/heap/heap'
-import { getGrabChance } from '#src/heap/utils'
 import { TOYBOX_TOKENS } from '#src/tokens'
-import { type GroundPoint, PhaseName } from '#src/types'
-import { getWeight } from '#src/utils/shapes'
+import { PhaseName } from '#src/types'
 import type { Phase } from '@pixi-demos/core/fsm/types'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
@@ -35,21 +33,14 @@ export class GrabbingPhase implements Phase<PhaseName> {
 
   async enter(signal: AbortSignal): Promise<typeof PhaseName.ascending> {
     const point = this.claw.getCartPoint()
-    const lifted = Math.random() < this.getChance(point) && this.heap.lift(point, this.claw.getGripPoint()) !== undefined
+    const lifted = Math.random() < this.heap.getGrabChance(point) && this.heap.lift(point, this.claw.getGripPoint())
 
     // При промахе клешня прожимает игрушку под собой
     if (!lifted) this.heap.press(point)
 
-    await this.claw.grab((progress, grip) => this.heap.setGrabProgress(progress, grip), signal)
+    await this.claw.grab(signal)
     await this.ticker.waitTicks(PHASE_PAUSE_MS, signal)
 
     return PhaseName.ascending
-  }
-
-  /** Доля успешных захватов игрушки под точкой; над пустым местом захватывать нечего. */
-  private getChance(point: GroundPoint): number {
-    const body = this.heap.getTopBodyAt(point)
-
-    return body ? getGrabChance(getWeight(body.shape), this.heap.getLoad(body.id)) : 0
   }
 }

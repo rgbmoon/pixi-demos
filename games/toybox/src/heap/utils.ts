@@ -1,7 +1,8 @@
-import { CUBE_HEIGHT, GRID_SIZE, HEAP_SNAPSHOT_VERSION } from '#src/constants'
+import { CUBE_HEIGHT, GRID_SIZE, HEAP_SNAPSHOT_VERSION, TRAY_ORIGIN, TRAY_SIZE } from '#src/constants'
 import { SHAPE_KEYS, SHAPES } from '#src/toys'
-import type { GroundPoint, HeapSnapshot, HeapSnapshotBody, ShapeKey, ToyPose } from '#src/types'
+import type { GroundPoint, HeapSnapshot, HeapSnapshotBody, ShapeKey, ToyId, ToyPose } from '#src/types'
 import { clamp, lerp } from '#src/utils/math'
+import { getDepthCenter, getSection, getSectionExtent, getVariant, getVariantCount, getWeight } from '#src/utils/shapes'
 import type { Random } from '@pixi-demos/core/types'
 
 import {
@@ -10,28 +11,25 @@ import {
   DOME_FALLOFF_MAX,
   DOME_FALLOFF_MIN,
   DOME_PEAK_JITTER,
-  GRAB_BASE_CHANCE,
-  GRAB_LOAD_PENALTY,
-  GRAB_MAX_CHANCE,
-  GRAB_MIN_CHANCE,
-  GRAB_WEIGHT_PENALTY,
+  FILL_BATCH,
+  FILL_BATCH_STEPS,
+  FILL_CANDIDATES,
+  FILL_MAX_FAILURES,
+  FILL_MAX_TILT,
+  FILL_SPAWN_GAP,
+  FILL_VOLUME,
+  HEAP_SETTLE_MAX_STEPS,
+  HEAP_STEP_MS,
   TOY_HUE_SPREAD,
   TOY_LIGHTNESS_SPREAD,
+  TOY_ROOT_COLOR,
+  TRAY_EXIT_Z,
 } from './constants'
+import { HeapWorld } from './heap-world'
 import type { DomeProfile } from './types'
 
-/**
- * Вероятность захвата с учётом веса игрушки и нагрузки сверху.
- */
-export const getGrabChance = (weight: number, load: number): number =>
-  clamp(
-    GRAB_BASE_CHANCE / (1 + GRAB_WEIGHT_PENALTY * weight + GRAB_LOAD_PENALTY * load),
-    GRAB_MIN_CHANCE,
-    GRAB_MAX_CHANCE
-  )
-
 /** Форма для наполнения: выбор с весами `fillWeight`. */
-export const pickShape = (random: Random): ShapeKey => {
+const pickShape = (random: Random): ShapeKey => {
   const total = SHAPE_KEYS.reduce((sum, key) => sum + SHAPES[key].fillWeight, 0)
   let roll = random() * total
 
@@ -45,7 +43,7 @@ export const pickShape = (random: Random): ShapeKey => {
 }
 
 /** Профиль купола: бросок сдвигает пик от центра поля и задаёт крутизну склона. */
-export const planDome = (random: Random): DomeProfile => {
+const planDome = (random: Random): DomeProfile => {
   const middle = GRID_SIZE / 2
   const peak = {
     x: middle + (random() * 2 - 1) * DOME_PEAK_JITTER,
@@ -61,7 +59,7 @@ export const planDome = (random: Random): DomeProfile => {
 }
 
 /** Высота верха купола над точкой пола: под пиком `DOME_CENTER_HEIGHT`, у дальнего угла `DOME_EDGE_HEIGHT`. */
-export const getDomeHeight = ({ peak, falloff, reach }: DomeProfile, point: GroundPoint): number => {
+const getDomeHeight = ({ peak, falloff, reach }: DomeProfile, point: GroundPoint): number => {
   const slope = (Math.hypot(point.x - peak.x, point.y - peak.y) / reach) ** falloff
 
   return lerp(DOME_CENTER_HEIGHT, DOME_EDGE_HEIGHT, slope)
@@ -87,7 +85,7 @@ const toHsl = (color: string): { h: number; s: number; l: number } => {
 }
 
 /** Цвет игрушки: корневой цвет со случайным сдвигом тона и светлоты. */
-export const shiftColor = (base: string, random: Random): number => {
+const shiftColor = (base: string, random: Random): number => {
   const { h, s, l } = toHsl(base)
   const hue = (((h + (random() * 2 - 1) * TOY_HUE_SPREAD) % 360) + 360) % 360
   const lightness = clamp(l + (random() * 2 - 1) * TOY_LIGHTNESS_SPREAD, 0.2, 0.8)
@@ -100,6 +98,87 @@ export const shiftColor = (base: string, random: Random): number => {
   }
 
   return (channel(0) << 16) | (channel(8) << 8) | channel(4)
+}
+
+/**
+ * Насыпает купол во временном мире и отдаёт позы покоя. Каждая новая игрушка пробует несколько случайных мест
+ * и встаёт туда, где верх кучи дальше всего ниже профиля купола. Между пачками появлений мир делает шаги,
+ * в конце — до сна всех тел. Игрушка, опустившаяся в шахте лотка до `TRAY_EXIT_Z`, в кучу не попадает.
+ */
+export const pourHeap = (random: Random): HeapSnapshotBody[] => {
+  // Новый мир на каждое насыпание: повторно использованный мир planck теряет детерминизм
+  const world = new HeapWorld()
+  const toys = new Map<ToyId, HeapSnapshotBody>()
+  const dome = planDome(random)
+  let volume = 0
+  let failures = 0
+  let spawned = 0
+
+  const stepWorld = (): void => {
+    const moving = [...toys.keys()].filter((id) => world.isAwake(id))
+
+    world.step(HEAP_STEP_MS)
+
+    for (const id of moving) {
+      if (world.getPose(id).z > TRAY_EXIT_Z) continue
+
+      world.remove(id)
+      toys.delete(id)
+    }
+  }
+
+  while (volume < FILL_VOLUME && failures < FILL_MAX_FAILURES) {
+    const shape = pickShape(random)
+    const variant = Math.floor(random() * getVariantCount(shape))
+    const { depth } = getVariant(shape, variant)
+    const section = getSection(shape, variant)
+    const { halfWidth, halfHeight } = getSectionExtent(section)
+    let best: { slab: number; y: number; surface: number; deficit: number } | undefined
+
+    for (let candidate = 0; candidate < FILL_CANDIDATES; candidate++) {
+      const slab = Math.floor(random() * (GRID_SIZE - depth + 1))
+      // Над шахтой лотка игрушка не появляется: там нет пола
+      const right = slab < TRAY_ORIGIN.x + TRAY_SIZE ? TRAY_ORIGIN.y : GRID_SIZE
+      const y = halfWidth + random() * (right - 2 * halfWidth)
+      const surface = Math.max(
+        world.castDown(y - halfWidth, slab, depth).z,
+        world.castDown(y, slab, depth).z,
+        world.castDown(y + halfWidth, slab, depth).z
+      )
+      const deficit = getDomeHeight(dome, { x: getDepthCenter(slab, depth), y }) - (surface + halfHeight)
+
+      if (!best || deficit > best.deficit) best = { slab, y, surface, deficit }
+    }
+
+    if (!best || best.deficit <= 0) {
+      failures += 1
+      continue
+    }
+
+    failures = 0
+
+    const pose: ToyPose = {
+      y: best.y,
+      z: best.surface + halfHeight + FILL_SPAWN_GAP,
+      angle: (random() * 2 - 1) * FILL_MAX_TILT,
+    }
+    const color = shiftColor(TOY_ROOT_COLOR, random)
+
+    // Номер появления служит id тела во временном мире
+    spawned += 1
+    toys.set(spawned, { shape, variant, slab: best.slab, ...pose, color })
+    world.add(spawned, section, getWeight(shape), best.slab, depth, pose, true)
+    volume += getWeight(shape)
+
+    if (spawned % FILL_BATCH === 0) {
+      for (let step = 0; step < FILL_BATCH_STEPS; step++) stepWorld()
+    }
+  }
+
+  for (let step = 0; step < HEAP_SETTLE_MAX_STEPS && world.hasAwake(); step++) stepWorld()
+
+  // Тела сдвинулись с мест появления: позы покоя отдаёт мир
+  return [...toys].map(([id, toy]) => ({ ...toy, ...world.getPose(id) }))
 }
 
 /** Предел числа игрушек в снимке: куча столько не вмещает, больший список — мусор. */

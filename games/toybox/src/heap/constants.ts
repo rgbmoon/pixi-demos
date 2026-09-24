@@ -19,14 +19,11 @@ export const TRAY_EXIT_Z = -1.5
 
 /**
  * Биты фильтра столкновений. Биты 0–7 — срезы глубины: игрушки сталкиваются, если занимают общий срез.
- * Остальные — категории статики.
+ * Бит статики общий для пола и стенок: с какими игрушками сталкивается статика, задаёт её маска.
  */
-export const COLLISION_WALL = 1 << 8
-export const COLLISION_BACK_FLOOR = 1 << 9
-export const COLLISION_TRAY_WALL = 1 << 10
-export const COLLISION_FAR_WALL = 1 << 11
+export const COLLISION_STATIC = 1 << 8
 /** Бит игрушки, занимающей срезы 1 и 2: только она упирается в дальнюю стенку лотка. */
-export const COLLISION_FAR_SPAN = 1 << 12
+export const COLLISION_FAR_SPAN = 1 << 9
 
 /** Шаг физики кучи. Между шагами позы игрушек интерполируются: на экранах 120 Гц движение остаётся ровным. */
 export const HEAP_STEP_MS = 1000 / 60

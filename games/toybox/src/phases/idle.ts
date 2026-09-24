@@ -2,6 +2,7 @@ import { inject, injectable } from 'inversify'
 
 import type { GameEvents } from '#src/events'
 import type { Heap } from '#src/heap/heap'
+import { pourHeap } from '#src/heap/utils'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import { PhaseName } from '#src/types'
@@ -46,9 +47,9 @@ export class IdlePhase implements Phase<PhaseName> {
   private reset(): void {
     if (!this.toyboxStore.canReset) return
 
-    this.heap.restore(undefined, Math.random)
+    this.heap.restore(pourHeap(Math.random))
     this.toyboxStore.applyCollected(0)
-    this.toyboxStore.publishCheckpoint(this.heap.takeSnapshot(0))
+    this.toyboxStore.publishCheckpoint(this.heap.takeSnapshot())
     this.emitter.emit('heap:reset')
   }
 }

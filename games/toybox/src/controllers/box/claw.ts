@@ -100,9 +100,9 @@ export class ClawController extends LiveContainer {
     await this.tween({ ...target, z: this.clawHeight }, this.getTravelMs(target), signal, { drop, settleSwing: true })
   }
 
-  /** Проигрывает захват на месте; сообщает прогресс 0–1 и точку захвата перед обновлением кучи. */
-  async grab(onProgress: (progress: number, grip: WorldPoint) => void, signal: AbortSignal): Promise<void> {
-    await this.tween({ ...this.cartPosition, z: this.clawHeight }, CLAW_GRAB_MS, signal, { onProgress })
+  /** Проигрывает захват на месте за `CLAW_GRAB_MS`. */
+  async grab(signal: AbortSignal): Promise<void> {
+    await this.tween({ ...this.cartPosition, z: this.clawHeight }, CLAW_GRAB_MS, signal)
   }
 
   /** Опускает клешню до высоты `toZ` */
@@ -310,7 +310,6 @@ export class ClawController extends LiveContainer {
 
     motion.elapsed = elapsed
     this.advanceSwing(deltaMs)
-    motion.onProgress?.(share, this.getGripPoint())
   }
 
   private isSwingSettled(): boolean {

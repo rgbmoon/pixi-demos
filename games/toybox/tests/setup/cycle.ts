@@ -7,19 +7,11 @@ import { FIELD_CENTER, HEAP_SNAPSHOT_VERSION, CLAW_REST_HEIGHT, CUBE_HEIGHT } fr
 import type { ClawController } from '#src/controllers/box/claw'
 import type { PrizeOutputController } from '#src/controllers/box/prize-output'
 import type { GameEvents } from '#src/events'
-import { Heap } from '#src/heap/heap'
-import { getGrabChance } from '#src/heap/utils'
+import type { Heap } from '#src/heap/heap'
+import { pourHeap } from '#src/heap/utils'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
-import {
-  type ClawDrop,
-  type GroundPoint,
-  type HeapSnapshot,
-  PhaseName,
-  type ToyAppearance,
-  type WorldPoint,
-} from '#src/types'
-import { getWeight } from '#src/utils/shapes'
+import { type ClawDrop, type GroundPoint, type HeapSnapshot, PhaseName, type ToyAppearance } from '#src/types'
 import { bindFsm } from '@pixi-demos/core/bindings'
 import type { GameEmitter } from '@pixi-demos/core/events/game-emitter'
 import type { Fsm } from '@pixi-demos/core/fsm/fsm'
@@ -67,12 +59,7 @@ let cycleSnapshot: HeapSnapshot | undefined
  * кучу стартовой фазе отдаёт дублёр хранилища.
  */
 const getCycleSnapshot = (): HeapSnapshot => {
-  if (!cycleSnapshot) {
-    const heap = new Heap()
-
-    heap.restore(undefined, createRandom(CYCLE_SEED))
-    cycleSnapshot = heap.takeSnapshot(0)
-  }
+  cycleSnapshot ??= { version: HEAP_SNAPSHOT_VERSION, collected: 0, bodies: pourHeap(createRandom(CYCLE_SEED)) }
 
   return cycleSnapshot
 }
@@ -92,8 +79,7 @@ const createClawStub = (log: ClawLog, drops: GroundPoint[]): ClawController => {
       z = toZ
       log.push(`descend:${toZ}`)
     },
-    grab: async (onProgress: (progress: number, grip: WorldPoint) => void) => {
-      onProgress(1, { ...position, z })
+    grab: async () => {
       log.push('grab')
     },
     ascend: async (slip: ClawDrop | undefined) => {
@@ -128,14 +114,14 @@ const createClawStub = (log: ClawLog, drops: GroundPoint[]): ClawController => {
  * Дублёр тикера: игровые выдержки проходят мгновенно, но остаются видимыми в журнале. Ожидание условия
  * продвигает настоящую модель кучи кадрами по 100 мс, пока условие не выполнится.
  */
-const createTickerStub = (log: ClawLog, getHeap: () => Heap): GameTicker => {
+const createTickerStub = (log: ClawLog, getHeap: () => Heap, claw: ClawController): GameTicker => {
   const stub = {
     waitTicks: async (durationMs: number) => {
       log.push(`wait:${durationMs}`)
-      getHeap().advance(durationMs)
+      getHeap().advance(durationMs, claw.getGripPoint())
     },
     waitUntil: async (ready: () => boolean) => {
-      for (let frame = 0; frame < 10_000 && !ready(); frame++) getHeap().advance(100)
+      for (let frame = 0; frame < 10_000 && !ready(); frame++) getHeap().advance(100, claw.getGripPoint())
       if (!ready()) throw new Error('Condition was not reached')
     },
   }
@@ -161,14 +147,16 @@ export const createCycle = (): Cycle => {
   const prizes: Cycle['prizes'] = []
   const drops: GroundPoint[] = []
 
-  container.bind(TOYBOX_TOKENS.ClawController).toConstantValue(createClawStub(log, drops))
+  const claw = createClawStub(log, drops)
+
+  container.bind(TOYBOX_TOKENS.ClawController).toConstantValue(claw)
   container.rebind(TOYBOX_TOKENS.HeapStorage).toConstantValue({
     read: async () => structuredClone(getCycleSnapshot()),
     write: async () => {},
   } as unknown as IdbStorage<HeapSnapshot>)
   container
     .bind(ENGINE_TOKENS.GameTicker)
-    .toConstantValue(createTickerStub(log, () => container.get(TOYBOX_TOKENS.Heap)))
+    .toConstantValue(createTickerStub(log, () => container.get(TOYBOX_TOKENS.Heap), claw))
   container.bind(TOYBOX_TOKENS.PrizeOutputController).toConstantValue({
     show: (appearance: ToyAppearance) => {
       const { collected } = container.get(TOYBOX_TOKENS.ToyboxStore)
@@ -228,19 +216,15 @@ export const startCycle = async (): Promise<Cycle> => {
  * формы и нагрузки сверху, поэтому тест берёт его у самой кучи, а не у константы.
  */
 export const getGrabRolls = (cycle: Cycle): { hit: number; miss: number } => {
-  const body = cycle.heap.getTopBodyAt(FIELD_CENTER)
-
-  if (!body) return { hit: 0, miss: 1 }
-
-  const chance = getGrabChance(getWeight(body.shape), cycle.heap.getLoad(body.id))
+  const chance = cycle.heap.getGrabChance(FIELD_CENTER)
 
   return { hit: chance / 2, miss: (1 + chance) / 2 }
 }
 
 /** Опустошает куб: так проверяется цикл над пустой ячейкой. */
 export const emptyHeap = (cycle: Cycle): void => {
-  cycle.heap.restore({ version: HEAP_SNAPSHOT_VERSION, collected: 0, bodies: [] }, Math.random)
+  cycle.heap.restore([])
 }
 
 /** Сколько игрушек лежит в куче: та, что уходит в лоток, в ней уже не числится. */
-export const countToys = (cycle: Cycle): number => cycle.heap.takeSnapshot(0).bodies.length
+export const countToys = (cycle: Cycle): number => cycle.heap.takeSnapshot().length

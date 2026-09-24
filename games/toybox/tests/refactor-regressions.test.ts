@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest'
 
-import { CLAW_GRAB_MS, FIELD_CENTER, HEAP_SNAPSHOT_VERSION, TOY_ANGLE_STEP, TRAY_CENTER } from '#src/constants'
+import { CLAW_GRAB_MS, FIELD_CENTER, TOY_ANGLE_STEP, TRAY_CENTER } from '#src/constants'
 import { ClawController } from '#src/controllers/box/claw'
 import { ContentsController } from '#src/controllers/box/contents'
 import { PersistenceController } from '#src/controllers/persistence'
@@ -21,8 +21,6 @@ import { getSection, getShapeOutline, getVariantCount } from '#src/utils/shapes'
 import { GameEmitter } from '@pixi-demos/core/events/game-emitter'
 import type { IdbStorage } from '@pixi-demos/core/idb-storage'
 import { GameTicker } from '@pixi-demos/engine/game-ticker'
-
-const snapshot = (bodies: HeapSnapshotBody[]): HeapSnapshot => ({ version: HEAP_SNAPSHOT_VERSION, collected: 0, bodies })
 
 /** Игрушка снимка, стоящая без крена на полу. */
 const standing = (shape: ShapeKey, slab: number, y: number): HeapSnapshotBody => ({
@@ -88,14 +86,14 @@ describe('регрессии контроллеров и жизненного ц
     const heap = new Heap()
     const claw = new ClawController(ticker, store)
     const contents = new ContentsController(ticker, heap, store, claw)
-    heap.restore(snapshot([standing('cube8', 3, FIELD_CENTER.y)]), () => 0.99)
+    heap.restore([standing('cube8', 3, FIELD_CENTER.y)])
     const body = heap.getTopBodyAt(FIELD_CENTER) as Readonly<ToyBody>
     const initial = { ...body.pose.point }
     const grip = claw.getGripPoint()
     heap.lift(FIELD_CENTER, grip)
     let time = 0
     ticker.update(time)
-    const grab = claw.grab((progress, point) => heap.setGrabProgress(progress, point), new AbortController().signal)
+    const grab = claw.grab(new AbortController().signal)
     // PIXI ограничивает deltaMS до 100 мс, поэтому захват продвигаем несколькими кадрами.
     for (let elapsed = 0; elapsed < CLAW_GRAB_MS; elapsed += 100) {
       time += Math.min(100, CLAW_GRAB_MS - elapsed)
@@ -126,8 +124,7 @@ describe('регрессии контроллеров и жизненного ц
     const emitter = new GameEmitter<GameEvents>()
     const phase = new IdlePhase(emitter, heap, store)
     const abort = new AbortController()
-    // Подмена убирает наполнение кучи физикой: тесту нужны только вызовы сброса
-    const reset = vi.spyOn(heap, 'restore').mockImplementation(() => {})
+    const reset = vi.spyOn(heap, 'restore')
     store.setPhase(PhaseName.idle)
     for (let round = 0; round < 3; round++) {
       const pending = phase.enter(abort.signal)
@@ -144,18 +141,20 @@ describe('регрессии контроллеров и жизненного ц
   it('при уходе посреди цикла сохраняет прежний снимок без потери соседа', () => {
     const store = new ToyboxStore()
     const heap = new Heap()
-    heap.restore(snapshot([standing('bar2', 3, 3), standing('single', 3, 5)]), () => 0.99)
-    const checkpoint = heap.takeSnapshot(0)
+    heap.restore([standing('bar2', 3, 3), standing('single', 3, 5)])
+    const bodies = heap.takeSnapshot()
     const write = vi.fn(async () => { })
-    store.publishCheckpoint(checkpoint)
+    store.publishCheckpoint(bodies)
+    const { checkpoint } = store
     const persistence = new PersistenceController(store, { write } as unknown as IdbStorage<HeapSnapshot>)
     const point = { x: 3.5, y: 3 }
-    heap.lift(point, { ...point, z: heap.getSurfaceHeightAt(point) })
-    for (let frame = 0; frame < 60; frame++) heap.advance(1000 / 60)
+    const grip = { ...point, z: heap.getSurfaceHeightAt(point) }
+    heap.lift(point, grip)
+    for (let frame = 0; frame < 60; frame++) heap.advance(1000 / 60, grip)
     window.dispatchEvent(new Event('pagehide'))
     expect(write).toHaveBeenLastCalledWith(checkpoint)
     const restored = new Heap()
-    restored.restore(checkpoint, () => 0.99)
+    restored.restore(bodies)
     expect([...restored.getBodies()]).toHaveLength(2)
     persistence.destroy()
   })
