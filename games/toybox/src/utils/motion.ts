@@ -4,11 +4,15 @@ import {
   CLAW_BRAKE_MS,
   CLAW_MIN_SPEED,
   CLAW_RESPONSE_MS,
+  FUMBLE_START_CLEARANCE,
   SPRING_MAX_DAMPING,
   SPRING_MIN_VALUE,
   SPRING_MIN_VELOCITY,
+  TRAY_ORIGIN,
+  TRAY_SIZE,
 } from '#src/constants'
 import type { GroundPoint, SpringOptions, SpringState, ToyPose } from '#src/types'
+import type { Random } from '@pixi-demos/core/types'
 
 import { clamp, lerp } from './math'
 
@@ -70,4 +74,45 @@ export const lerpPose = (from: ToyPose, to: ToyPose, share: number): ToyPose => 
   const turn = Math.atan2(Math.sin(to.angle - from.angle), Math.cos(to.angle - from.angle))
 
   return { y: lerp(from.y, to.y, share), z: lerp(from.z, to.z, share), angle: from.angle + turn * share }
+}
+
+/** Доля пути от `from` к `to`, на которой путь входит в лоток: 0 — путь начинается над лотком, 1 — не входит в него. */
+const getTrayEntryShare = (from: GroundPoint, to: GroundPoint): number => {
+  let enter = 0
+  let exit = 1
+
+  for (const axis of ['x', 'y'] as const) {
+    const distance = to[axis] - from[axis]
+    const low = TRAY_ORIGIN[axis]
+    const high = TRAY_ORIGIN[axis] + TRAY_SIZE
+
+    if (distance === 0) {
+      if (from[axis] < low || from[axis] > high) return 1
+      continue
+    }
+
+    const first = (low - from[axis]) / distance
+    const second = (high - from[axis]) / distance
+
+    enter = Math.max(enter, Math.min(first, second))
+    exit = Math.min(exit, Math.max(first, second))
+  }
+
+  return enter <= exit ? enter : 1
+}
+
+/**
+ * Доля пути клешни от `from` к `to`, на которой она роняет игрушку: равномерно по длине участка, который
+ * начинается дальше `FUMBLE_START_CLEARANCE` от места захвата и заканчивается на входе в лоток. Без такого
+ * участка — `undefined`.
+ */
+export const pickFumbleShare = (from: GroundPoint, to: GroundPoint, random: Random): number | undefined => {
+  const length = Math.hypot(to.x - from.x, to.y - from.y)
+
+  if (length === 0) return undefined
+
+  const start = FUMBLE_START_CLEARANCE / length
+  const end = getTrayEntryShare(from, to)
+
+  return end > start ? start + random() * (end - start) : undefined
 }

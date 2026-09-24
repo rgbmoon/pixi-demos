@@ -5,7 +5,7 @@ import type { ClawController } from '#src/controllers/box/claw'
 import type { HeapStore } from '#src/stores/heap'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import { type ClawDrop, type GroundPoint, PhaseName } from '#src/types'
-import { pickFumbleShare } from '#src/utils/grid'
+import { pickFumbleShare } from '#src/utils/motion'
 import type { Phase } from '@pixi-demos/core/fsm/types'
 
 /**

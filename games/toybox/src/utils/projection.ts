@@ -1,5 +1,5 @@
-import { AXIS_X, AXIS_Y, JOYSTICK_DEADZONE, UNIT_HEIGHT } from '#src/constants'
-import type { GroundPoint, ScreenPoint, WorldPoint } from '#src/types'
+import { AXIS_X, AXIS_Y, CELL_SIZE, CONTROL_OUTLINE_STEPS, JOYSTICK_DEADZONE, UNIT_HEIGHT } from '#src/constants'
+import type { GroundPoint, ScreenPoint, WorldPlane, WorldPoint } from '#src/types'
 
 /** Определитель осей проекции: он же множитель обратного перевода. */
 const AXES_DETERMINANT = AXIS_X.x * AXIS_Y.y - AXIS_X.y * AXIS_Y.x
@@ -48,3 +48,66 @@ export const getDepthOrder = ({ x, y, z }: WorldPoint): number => -(x * VIEW_X +
 
 /** Луч взгляда в осях мира: при движении вдоль него точка удаляется от игрока. */
 export const getViewRay = (): WorldPoint => ({ x: VIEW_X, y: 1, z: VIEW_Z })
+
+/** Экранное смещение точки в локальных координатах заданной мировой плоскости. */
+export const projectPlaneOffset = (plane: WorldPlane, horizontal: number, vertical: number): ScreenPoint => {
+  const horizontalScale = horizontal / CELL_SIZE
+  const verticalScale = vertical / CELL_SIZE
+
+  return worldToScreen({
+    x: plane.horizontal.x * horizontalScale + plane.vertical.x * verticalScale,
+    y: plane.horizontal.y * horizontalScale + plane.vertical.y * verticalScale,
+    z: plane.horizontal.z * horizontalScale + plane.vertical.z * verticalScale,
+  })
+}
+
+/** Возвращает локальные координаты экранного смещения в мировой плоскости. */
+export const screenToPlaneOffset = (plane: WorldPlane, point: ScreenPoint): ScreenPoint => {
+  const horizontal = projectPlaneOffset(plane, CELL_SIZE, 0)
+  const vertical = projectPlaneOffset(plane, 0, CELL_SIZE)
+  const determinant = horizontal.x * vertical.y - horizontal.y * vertical.x
+
+  return {
+    x: ((point.x * vertical.y - point.y * vertical.x) / determinant) * CELL_SIZE,
+    y: ((horizontal.x * point.y - horizontal.y * point.x) / determinant) * CELL_SIZE,
+  }
+}
+
+/** Проецирует окружность, заданную в локальных координатах мировой плоскости. */
+export const getProjectedPlaneCircle = (
+  plane: WorldPlane,
+  radius: number,
+  steps = CONTROL_OUTLINE_STEPS
+): ScreenPoint[] =>
+  Array.from({ length: steps }, (_, step) => {
+    const angle = (2 * Math.PI * step) / steps
+
+    return projectPlaneOffset(plane, Math.cos(angle) * radius, Math.sin(angle) * radius)
+  })
+
+/** Проецирует дугу, включая обе её крайние точки. */
+export const getProjectedPlaneArc = (
+  plane: WorldPlane,
+  radius: number,
+  start: number,
+  end: number,
+  steps = CONTROL_OUTLINE_STEPS
+): ScreenPoint[] =>
+  Array.from({ length: steps + 1 }, (_, step) => {
+    const angle = start + ((end - start) * step) / steps
+
+    return projectPlaneOffset(plane, Math.cos(angle) * radius, Math.sin(angle) * radius)
+  })
+
+/** Прямоугольник с центром в начале координат мировой плоскости. */
+export const getProjectedPlaneRectangle = (plane: WorldPlane, width: number, height: number): ScreenPoint[] => {
+  const halfWidth = width / 2
+  const halfHeight = height / 2
+
+  return [
+    projectPlaneOffset(plane, -halfWidth, -halfHeight),
+    projectPlaneOffset(plane, halfWidth, -halfHeight),
+    projectPlaneOffset(plane, halfWidth, halfHeight),
+    projectPlaneOffset(plane, -halfWidth, halfHeight),
+  ]
+}

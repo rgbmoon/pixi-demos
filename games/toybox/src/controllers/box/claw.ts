@@ -25,7 +25,7 @@ import type { ClawDrop, ClawMotion, ClawMotionOptions, GroundPoint, SpringState,
 import { Cart } from '#src/ui/box/cart'
 import { Claw } from '#src/ui/box/claw'
 import { Rope } from '#src/ui/box/rope'
-import { clampToField } from '#src/utils/grid'
+import { clampToField } from '#src/utils/machine-geometry'
 import { lerp } from '#src/utils/math'
 import { advanceSpring, advanceVelocity } from '#src/utils/motion'
 import { isReducedMotion } from '@pixi-demos/core/accessibility'

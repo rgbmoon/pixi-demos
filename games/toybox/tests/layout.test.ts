@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { CUBE_HEIGHT, MACHINE_MARGIN, ROPE_REST_LENGTH } from '#src/constants'
-import { getMachineLayout } from '#src/utils/layout'
-import { getMachineBounds } from '#src/utils/machine-geometry'
+import { getMachineBounds, getMachineLayout } from '#src/utils/machine-geometry'
 
 /** Размеры канваса: телефон, планшет и десктопный бокс. */
 const CANVAS_SIZES = [
@@ -17,7 +16,7 @@ describe('габариты автомата', () => {
 
     expect(CUBE_HEIGHT).toBe(8)
     expect(ROPE_REST_LENGTH).toBe(1.5)
-    expect(bounds).toEqual({ left: -536, right: 64, top: -672, bottom: 592, width: 600, height: 1264 })
+    expect(bounds).toEqual({ left: -536, right: 64, top: -672, bottom: 592 })
   })
 })
 

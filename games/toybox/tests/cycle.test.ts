@@ -11,12 +11,17 @@ import {
   PRIZE_PAUSE_MS,
   PRIZE_OPEN_HOLD_MS,
   TRAY_HOLD_MS,
+  TRAY_ORIGIN,
   TRAY_RELEASE_MS,
+  TRAY_SIZE,
 } from '#src/constants'
-import { PhaseName } from '#src/types'
-import { isOverTray } from '#src/utils/grid'
+import { type GroundPoint, PhaseName } from '#src/types'
 
 import { countToys, type Cycle, emptyHeap, getGrabRolls, startCycle } from './setup/cycle'
+
+/** Лежит ли точка пола над лотком. */
+const isOverTray = ({ x, y }: GroundPoint): boolean =>
+  x >= TRAY_ORIGIN.x && x <= TRAY_ORIGIN.x + TRAY_SIZE && y >= TRAY_ORIGIN.y && y <= TRAY_ORIGIN.y + TRAY_SIZE
 
 /** Бросок, на котором клешня роняет игрушку, и бросок, на котором она её доносит. */
 const FUMBLE_HIT = FUMBLE_CHANCE / 2

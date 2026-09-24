@@ -1,7 +1,7 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
 
 import { CUBE_HEIGHT, FIELD_CENTER, JOYSTICK_CENTER } from '#src/constants'
-import { getMachineLayout } from '#src/utils/layout'
+import { getMachineLayout } from '#src/utils/machine-geometry'
 import { worldToScreen } from '#src/utils/projection'
 
 /** Сколько ждать бутстрапа игры: на CI канвас рисует программный SwiftShader. */

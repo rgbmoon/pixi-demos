@@ -11,7 +11,6 @@ import { Pillar } from '#src/ui/box/pillar'
 import { Toy } from '#src/ui/box/toy'
 import { ToyShapes } from '#src/ui/box/toy-shapes'
 import { TrayWall } from '#src/ui/box/tray-wall'
-import { getAngleStep } from '#src/ui/box/utils'
 import {
   getDepthRelation,
   getPlaneDepthItem,
@@ -19,8 +18,9 @@ import {
   getToyDepthItem,
   orderByDepth,
 } from '#src/utils/depth'
-import { getFaceOutline, getTrayWallOutlines } from '#src/utils/grid'
+import { getFaceOutline, getTrayWallOutlines } from '#src/utils/machine-geometry'
 import { worldToScreen } from '#src/utils/projection'
+import { getAngleStep } from '#src/utils/shapes'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 import { LiveContainer } from '@pixi-demos/engine/live-container'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'

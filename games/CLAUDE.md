@@ -13,7 +13,7 @@
 `#src/<уровень>`:
 
 ```
-types/constants/tokens/assets/sounds  ←  лист
+types/constants/tokens/assets/sounds/utils/skeletons/reels/toys  ←  лист
 api          →  лист
 physics      →  лист;   единственный уровень, которому доступен физический движок
 stores       →  physics, api, лист

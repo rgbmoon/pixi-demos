@@ -1,4 +1,5 @@
-import { CUBE_HEIGHT, GRID_SIZE, HEAP_SNAPSHOT_VERSION, SHAPES } from '#src/constants'
+import { CUBE_HEIGHT, GRID_SIZE, HEAP_SNAPSHOT_VERSION } from '#src/constants'
+import { SHAPES } from '#src/toys'
 import type { HeapSnapshot, HeapSnapshotBody, ShapeKey } from '#src/types'
 
 /** Предел числа игрушек в снимке: куча столько не вмещает, больший список — мусор. */

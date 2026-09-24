@@ -11,7 +11,7 @@ import {
   TRAY_SIZE,
   UNIT_HEIGHT,
 } from '#src/constants'
-import { clampToField, getFaceOutline, getTrayOutline } from '#src/utils/grid'
+import { clampToField, getFaceOutline, getTrayOutline } from '#src/utils/machine-geometry'
 import { screenToGround, toGroundDirection, worldToScreen } from '#src/utils/projection'
 
 describe('worldToScreen', () => {

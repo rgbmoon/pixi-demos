@@ -2,22 +2,18 @@ import { Container, Graphics, Polygon } from 'pixi.js'
 
 import {
   BUTTON_FILL_ALPHA,
-  BUTTON_THICKNESS,
+  CABINET_FRONT_PLANE,
   CONTROL_HIT_PADDING,
   DISABLED_ALPHA,
   ICON_RATIO,
+  LINE_THICKNESS,
   RESET_ARC_END,
   RESET_ARC_START,
   RESET_BUTTON_SIZE_UNITS,
   RESET_HEAD_RATIO,
 } from '#src/constants'
 import type { ButtonOptions } from '#src/types'
-import {
-  CABINET_FRONT_PLANE,
-  getProjectedPlaneArc,
-  getProjectedPlaneCircle,
-  projectPlaneOffset,
-} from '#src/utils/machine-geometry'
+import { getProjectedPlaneArc, getProjectedPlaneCircle, projectPlaneOffset } from '#src/utils/projection'
 import { PALETTE } from '@pixi-demos/core/palette'
 
 /** Кнопка сброса, установленная на передней вертикальной грани тумбы. */
@@ -30,7 +26,7 @@ export class ResetButton extends Container {
     const backing = new Graphics()
       .poly(getProjectedPlaneCircle(CABINET_FRONT_PLANE, radius))
       .fill({ color: PALETTE.primary, alpha: BUTTON_FILL_ALPHA })
-      .stroke({ width: BUTTON_THICKNESS, color: PALETTE.primary })
+      .stroke({ width: LINE_THICKNESS, color: PALETTE.primary })
 
     this.addChild(backing, ResetButton.createIcon())
 
@@ -61,7 +57,7 @@ export class ResetButton extends Container {
 
     for (const point of arc.slice(1)) icon.lineTo(point.x, point.y)
 
-    icon.stroke({ width: BUTTON_THICKNESS, color: PALETTE.white })
+    icon.stroke({ width: LINE_THICKNESS, color: PALETTE.white })
 
     const tip = { x: Math.cos(RESET_ARC_START) * radius, y: Math.sin(RESET_ARC_START) * radius }
 

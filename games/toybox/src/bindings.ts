@@ -28,7 +28,7 @@ import { HeapStore } from './stores/heap'
 import { ToyboxStore } from './stores/toybox'
 import { TOYBOX_TOKENS } from './tokens'
 import { type HeapSnapshot, PhaseName } from './types'
-import { getMachineAspectRatio } from './utils/layout'
+import { getMachineAspectRatio } from './utils/machine-geometry'
 
 export const bindFlow = (container: Container): void => {
   container.bind(TOYBOX_TOKENS.ToyboxStore).to(ToyboxStore)

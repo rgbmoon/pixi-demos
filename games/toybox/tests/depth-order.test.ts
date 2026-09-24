@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest'
 import { CUBE_HEIGHT, GRID_SIZE } from '#src/constants'
 import { HeapStore } from '#src/stores/heap'
 import type { DepthItem, PlaneVector, ScreenPoint, ShapeKey, WorldPoint } from '#src/types'
-import { getDepthRelation, getPlaneDepthItem, getPointDepthItem, getToyDepthItem, sortByDepth } from '#src/utils/depth'
-import { getFaceOutline, getTrayWallOutlines } from '#src/utils/grid'
+import { getDepthRelation, getPlaneDepthItem, getPointDepthItem, getToyDepthItem, orderByDepth } from '#src/utils/depth'
+import { getFaceOutline, getTrayWallOutlines } from '#src/utils/machine-geometry'
 import { getViewRay, screenToGround } from '#src/utils/projection'
 import { getDepthCenter, getVariant } from '#src/utils/shapes'
 import { createRandom } from '@pixi-demos/core/random'
@@ -117,6 +117,10 @@ const traceOrder = (first: DepthItem, second: DepthItem): number => {
 /** Предмет игрушки без крена, центр которой стоит в срезе `slab` на высоте `z`. */
 const toy = (shape: ShapeKey, slab: number, y: number, z: number, variant = 0): DepthItem =>
   getToyDepthItem(shape, variant, { x: getDepthCenter(slab, getVariant(shape, variant).depth), y, z }, 0)
+
+/** Порядок отрисовки предметов, от дальнего к ближнему, со сравнением каждой пары заново. */
+const sortByDepth = (items: readonly DepthItem[]): number[] =>
+  orderByDepth(items, (first, second) => getDepthRelation(items[first], items[second]))
 
 /** Ранги предметов в порядке отрисовки: больший рисуется позже. */
 const rank = (items: readonly DepthItem[]): number[] => {

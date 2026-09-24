@@ -5,7 +5,6 @@ import {
   CLAW_GRAB_MS,
   FIELD_CENTER,
   HEAP_SNAPSHOT_VERSION,
-  SHAPE_KEYS,
   TOY_ANGLE_STEP,
   TRAY_CENTER,
   TRAY_EXIT_Z,
@@ -17,13 +16,13 @@ import type { GameEvents } from '#src/events'
 import { IdlePhase } from '#src/phases/idle'
 import { HeapStore } from '#src/stores/heap'
 import { ToyboxStore } from '#src/stores/toybox'
+import { SHAPE_KEYS } from '#src/toys'
 import { type HeapSnapshot, type HeapSnapshotBody, PhaseName, type ShapeKey, type ToyBody } from '#src/types'
 import { Toy } from '#src/ui/box/toy'
 import { ToyShapes } from '#src/ui/box/toy-shapes'
-import { getShapeOutline } from '#src/ui/box/utils'
 import { getCabinetOutlines } from '#src/utils/machine-geometry'
 import { worldToScreen } from '#src/utils/projection'
-import { getSection, getVariantCount } from '#src/utils/shapes'
+import { getSection, getShapeOutline, getVariantCount } from '#src/utils/shapes'
 import { GameEmitter } from '@pixi-demos/core/events/game-emitter'
 import type { IdbStorage } from '@pixi-demos/core/idb-storage'
 import { GameTicker } from '@pixi-demos/engine/game-ticker'

@@ -10,9 +10,8 @@ import {
   GRAB_MIN_CHANCE,
   GRAB_WEIGHT_PENALTY,
   GRID_SIZE,
-  SHAPE_KEYS,
-  SHAPES,
 } from '#src/constants'
+import { SHAPE_KEYS, SHAPES } from '#src/toys'
 import type { DomeProfile, GroundPoint, ShapeKey } from '#src/types'
 import type { Random } from '@pixi-demos/core/types'
 

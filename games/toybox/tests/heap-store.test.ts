@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { CLAW_REST_HEIGHT, GRID_SIZE, HEAP_SNAPSHOT_VERSION, SHAPE_KEYS, TRAY_CENTER } from '#src/constants'
+import { CLAW_REST_HEIGHT, GRID_SIZE, HEAP_SNAPSHOT_VERSION, TRAY_CENTER } from '#src/constants'
 import { HeapStore } from '#src/stores/heap'
+import { SHAPE_KEYS } from '#src/toys'
 import { type HeapSnapshot, type HeapSnapshotBody, type ShapeKey, type ToyBody, ToyState, type WorldPoint } from '#src/types'
 import { polygonsOverlap } from '#src/utils/geometry'
 import { getSection, getVariant, getVariantCount, getWeight, placeSection, toPlane } from '#src/utils/shapes'

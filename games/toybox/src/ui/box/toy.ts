@@ -3,8 +3,7 @@ import { Container, Graphics } from 'pixi.js'
 import type { ShapeKey, WorldPoint } from '#src/types'
 import type { ToyShapes } from '#src/ui/box/toy-shapes'
 import { worldToScreen } from '#src/utils/projection'
-
-import { getAngleStep } from './utils'
+import { getAngleStep } from '#src/utils/shapes'
 
 /**
  * Игрушка в куче: силуэт формы с цветом через `tint`. Экземпляры используют общие кэшированные
@@ -42,11 +41,6 @@ export class Toy extends Container {
     this.step = 0
     this.body.tint = color
     this.refresh()
-  }
-
-  /** Масштаб отдельной презентации в окне выдачи. */
-  setPresentationScale(scale: number): void {
-    this.scale.set(scale)
   }
 
   /** Ставит центр в мировую точку и поворачивает силуэт на крен. */

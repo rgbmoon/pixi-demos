@@ -1,6 +1,6 @@
 import { Container, Graphics } from 'pixi.js'
 
-import { CART_SIZE, CART_THICKNESS } from '#src/constants'
+import { CART_SIZE, LINE_THICKNESS } from '#src/constants'
 import type { WorldPoint } from '#src/types'
 import { worldToScreen } from '#src/utils/projection'
 import { PALETTE } from '@pixi-demos/core/palette'
@@ -22,7 +22,7 @@ export class Cart extends Container {
     ].map((corner) => worldToScreen(corner))
 
     this.addChild(
-      new Graphics().poly(corners).stroke({ width: CART_THICKNESS, color: PALETTE.cyan })
+      new Graphics().poly(corners).stroke({ width: LINE_THICKNESS, color: PALETTE.cyan })
     )
   }
 

@@ -43,16 +43,6 @@ export type WorldPlane = {
   readonly vertical: WorldPoint
 }
 
-/** Измеренные экранные границы геометрии автомата. */
-export type ScreenBounds = {
-  readonly left: number
-  readonly right: number
-  readonly top: number
-  readonly bottom: number
-  readonly width: number
-  readonly height: number
-}
-
 /** Масштаб и начало координат корпуса на канвасе. */
 export type MachineLayout = {
   readonly scale: number

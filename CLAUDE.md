@@ -119,7 +119,7 @@ games/
                        constants, events, assets, utils, skeletons, reels, sounds; ui/ и controllers/
                        внутри разбиты по зонам сцены: hud/ и reels/
   toybox/              автомат с игрушками: bindings, stores/ physics/ phases/ scenes/ + листовые
-                       tokens, types, constants, events, utils; ui/ и controllers/ внутри разбиты
+                       tokens, types, constants, events, toys, utils; ui/ и controllers/ внутри разбиты
                        по зонам сцены: box/ и hud/, вне зон — controllers/persistence.ts и keyboard.ts
 web/                   приложение
   src/main.tsx         вход; сюда же подключён styles/index.css

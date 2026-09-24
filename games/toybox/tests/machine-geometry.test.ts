@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
-import { AXIS_Y, DROP_BUTTON_CENTER, JOYSTICK_CENTER, PRIZE_HATCH_CENTER, RESET_BUTTON_CENTER } from '#src/constants'
 import {
+  AXIS_Y,
   CONTROL_PANEL_PLANE,
-  getCabinetOutlines,
-  projectPlaneOffset,
-  screenToPlaneOffset,
-} from '#src/utils/machine-geometry'
-import { worldToScreen } from '#src/utils/projection'
+  DROP_BUTTON_CENTER,
+  JOYSTICK_CENTER,
+  PRIZE_HATCH_CENTER,
+  RESET_BUTTON_CENTER,
+} from '#src/constants'
+import { getCabinetOutlines } from '#src/utils/machine-geometry'
+import { projectPlaneOffset, screenToPlaneOffset, worldToScreen } from '#src/utils/projection'
 
 describe('геометрия корпуса автомата', () => {
   it('строит панель из мировых точек и сохраняет оси проекции', () => {

@@ -3,17 +3,14 @@ import { Container, Graphics, Polygon } from 'pixi.js'
 import {
   BUTTON_FILL_ALPHA,
   BUTTON_SIZE_UNITS,
-  BUTTON_THICKNESS,
   CONTROL_HIT_PADDING,
+  CONTROL_PANEL_PLANE,
   DISABLED_ALPHA,
   ICON_RATIO,
+  LINE_THICKNESS,
 } from '#src/constants'
 import type { ButtonOptions } from '#src/types'
-import {
-  CONTROL_PANEL_PLANE,
-  getProjectedPlaneCircle,
-  projectPlaneOffset,
-} from '#src/utils/machine-geometry'
+import { getProjectedPlaneCircle, projectPlaneOffset } from '#src/utils/projection'
 import { PALETTE } from '@pixi-demos/core/palette'
 
 /** Кнопка опускания клешни, спроецированная в плоскость панели управления. */
@@ -26,7 +23,7 @@ export class DropButton extends Container {
     const backing = new Graphics()
       .poly(getProjectedPlaneCircle(CONTROL_PANEL_PLANE, radius))
       .fill({ color: PALETTE.primary, alpha: BUTTON_FILL_ALPHA })
-      .stroke({ width: BUTTON_THICKNESS, color: PALETTE.primary })
+      .stroke({ width: LINE_THICKNESS, color: PALETTE.primary })
 
     this.addChild(backing, this.createIcon())
 

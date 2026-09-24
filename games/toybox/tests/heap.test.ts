@@ -9,8 +9,6 @@ import {
   GRAB_MIN_CHANCE,
   GRID_SIZE,
   HEAP_SNAPSHOT_VERSION,
-  SHAPE_KEYS,
-  SHAPES,
   TOY_INSET,
   TOY_ROOT_COLOR,
   TRAY_CENTER,
@@ -19,10 +17,12 @@ import {
   TRAY_SIZE,
   TRAY_WALL_HEIGHT,
 } from '#src/constants'
+import { SHAPE_KEYS, SHAPES } from '#src/toys'
 import type { GroundPoint, PlaneVector, ScreenPoint } from '#src/types'
 import { shiftColor } from '#src/utils/color'
-import { getTrayWallOutlines, isOverTray, pickFumbleShare } from '#src/utils/grid'
 import { getDomeHeight, getGrabChance, planDome } from '#src/utils/heap'
+import { getTrayWallOutlines } from '#src/utils/machine-geometry'
+import { pickFumbleShare } from '#src/utils/motion'
 import { getDepthOrder, worldToScreen } from '#src/utils/projection'
 import { getPrismOutline, getSection, getSectionArea, getVariantCount, getWeight } from '#src/utils/shapes'
 import { isHeapSnapshot } from '#src/utils/snapshot'
@@ -30,6 +30,10 @@ import { createRandom } from '@pixi-demos/core/random'
 
 /** Сколько падений разыгрывать там, где проверяется доля исходов, а не одно конкретное. */
 const ROLLS = 200
+
+/** Лежит ли точка пола над лотком. */
+const isOverTray = ({ x, y }: GroundPoint): boolean =>
+  x >= TRAY_ORIGIN.x && x <= TRAY_ORIGIN.x + TRAY_SIZE && y >= TRAY_ORIGIN.y && y <= TRAY_ORIGIN.y + TRAY_SIZE
 
 describe('getDomeHeight', () => {
   const domes = [1, 2, 3, 4, 5].map((seed) => planDome(createRandom(seed)))
