@@ -34,8 +34,11 @@ jobs:
           path: .turbo/cache
           key: turbo-${{ github.job }}-${{ github.sha }}
           restore-keys: turbo-${{ github.job }}-
-      - run: pnpm exec turbo run lint:ci typecheck test $FORCE
+      - run: pnpm exec turbo run lint:ci typecheck $FORCE
       - run: pnpm exec eslint --quiet '*.ts' # конфиги в корне репозитория, вне пакетов
+      # Тесты выполняются отдельным шагом: рядом с type-aware ESLint и tsc тесты физики toybox
+      # на 4 vCPU раннера замедляются в разы и не укладываются в testTimeout
+      - run: pnpm exec turbo run test $FORCE
       # Удаляет записи кэша старше 7 дней: без этого размер кэша растёт с каждым запуском
       - run: find .turbo/cache -type f -mtime +7 -delete
 
