@@ -1,53 +1,122 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { RESET_MS, WELCOME_MS } from '#src/constants'
 import { MarqueeController } from '#src/controllers/box/marquee'
 import type { GameEvents } from '#src/events'
 import { ToyboxStore } from '#src/stores/toybox'
+import { Marquee } from '#src/ui/box/marquee'
 import { GameEmitter } from '@pixi-demos/core/events/game-emitter'
-import type { GameTicker } from '@pixi-demos/engine/game-ticker'
+import { GameTicker } from '@pixi-demos/engine/game-ticker'
 
-describe('MarqueeController', () => {
-  it('показывает WELCOME и RESET на заданное время, затем возвращает счёт', async () => {
-    const waits: Array<{ readonly durationMs: number; readonly resolve: () => void }> = []
-    const ticker = {
-      waitTicks: (durationMs: number) =>
-        new Promise<void>((resolve) => {
-          waits.push({ durationMs, resolve })
-        }),
-    } as unknown as GameTicker
-    const store = new ToyboxStore()
-    const emitter = new GameEmitter<GameEvents>()
-    const marquee = new MarqueeController(ticker, store, emitter)
+/** Шаг кадра при 60 fps. */
+const FRAME_MS = 1000 / 60
 
-    store.applyCollected(3)
-    emitter.emit('game:booted')
+type Board = {
+  store: ToyboxStore
+  emitter: GameEmitter<GameEvents>
+  /** Последний текст, выведенный на табло. */
+  message: () => string | undefined
+  /** Крутит кадры игры `ms` миллисекунд. */
+  wait: (ms: number) => Promise<void>
+  destroy: () => void
+}
 
-    expect(marquee.getMessage()).toBe('WELCOME')
-    expect(waits[0]?.durationMs).toBe(WELCOME_MS)
+const createBoard = (): Board => {
+  const setMessage = vi.spyOn(Marquee.prototype, 'setMessage')
+  const ticker = new GameTicker()
+  const store = new ToyboxStore()
+  const emitter = new GameEmitter<GameEvents>()
+  const marquee = new MarqueeController(ticker, store, emitter)
+  let time = 0
 
-    waits.shift()?.resolve()
-    await Promise.resolve()
+  ticker.update(time)
 
-    expect(marquee.getMessage()).toBe('TOYS 3')
+  return {
+    store,
+    emitter,
+    message: () => setMessage.mock.lastCall?.[0],
+    wait: async (ms) => {
+      for (let passed = 0; passed < ms; passed += FRAME_MS) {
+        time += FRAME_MS
+        ticker.update(time)
+        await new Promise(setImmediate)
+      }
+    },
+    destroy: () => {
+      marquee.destroy({ children: true })
+      ticker.destroy()
+    },
+  }
+}
 
-    store.applyCollected(0)
-    emitter.emit('heap:reset')
+describe('табло', () => {
+  let board: Board | undefined
 
-    expect(marquee.getMessage()).toBe('RESET')
-    expect(waits[0]?.durationMs).toBe(RESET_MS)
+  afterEach(() => {
+    board?.destroy()
+    board = undefined
+    vi.restoreAllMocks()
+  })
 
-    waits.shift()?.resolve()
-    await Promise.resolve()
+  it('показывает WELCOME после загрузки, а по его истечении — счёт', async () => {
+    board = createBoard()
+    board.store.applyCollected(3)
+    board.emitter.emit('game:booted')
 
-    expect(marquee.getMessage()).toBe('TOYS 0')
+    expect(board.message()).toBe('WELCOME')
 
-    store.recordCollection()
-    emitter.emit('prize:taken')
+    await board.wait(WELCOME_MS - 100)
 
-    expect(marquee.getMessage()).toBe('TOYS 1')
+    expect(board.message()).toBe('WELCOME')
 
-    marquee.destroy({ children: true })
+    await board.wait(200)
+
+    expect(board.message()).toBe('TOYS 3')
+  })
+
+  it('показывает RESET после сброса, а по его истечении — обнулённый счёт', async () => {
+    board = createBoard()
+    board.emitter.emit('game:booted')
+    await board.wait(WELCOME_MS)
+    board.store.applyCollected(0)
+    board.emitter.emit('heap:reset')
+
+    expect(board.message()).toBe('RESET')
+
+    await board.wait(RESET_MS - 100)
+
+    expect(board.message()).toBe('RESET')
+
+    await board.wait(200)
+
+    expect(board.message()).toBe('TOYS 0')
+  })
+
+  it('обновляет счёт в момент получения приза', async () => {
+    board = createBoard()
+    board.emitter.emit('game:booted')
+    await board.wait(WELCOME_MS)
+    board.store.recordCollection()
+    board.emitter.emit('prize:taken')
+
+    expect(board.message()).toBe('TOYS 1')
+  })
+
+  it('держит RESET весь его срок, даже если сброс пришёл посреди WELCOME', async () => {
+    board = createBoard()
+    board.store.applyCollected(2)
+    board.emitter.emit('game:booted')
+    await board.wait(WELCOME_MS - 500)
+    board.store.applyCollected(0)
+    board.emitter.emit('heap:reset')
+    // Срок WELCOME истекает, пока на табло RESET: табло не возвращается к счёту раньше времени
+    await board.wait(600)
+
+    expect(board.message()).toBe('RESET')
+
+    await board.wait(RESET_MS)
+
+    expect(board.message()).toBe('TOYS 0')
   })
 })

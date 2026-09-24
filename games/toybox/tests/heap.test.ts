@@ -1,132 +1,37 @@
-// @vitest-environment jsdom
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { pickFumbleShare } from '#src/claw/utils'
-import {
-  CUBE_HEIGHT,
-  GRID_SIZE,
-  HEAP_SNAPSHOT_VERSION,
-  TOY_INSET,
-  TRAY_CENTER,
-  FUMBLE_START_CLEARANCE,
-  TRAY_ORIGIN,
-  TRAY_SIZE,
-  TRAY_WALL_HEIGHT,
-} from '#src/constants'
-import { DOME_CENTER_HEIGHT } from '#src/heap/constants'
-import { isHeapSnapshot } from '#src/heap/utils'
-import { SHAPE_KEYS, SHAPES } from '#src/toys'
-import type { GroundPoint, PlaneVector, ScreenPoint } from '#src/types'
-import { getTrayWallOutlines } from '#src/utils/machine-geometry'
-import { getDepthOrder, worldToScreen } from '#src/utils/projection'
-import { getPrismOutline, getSection, getSectionArea, getVariantCount, getWeight } from '#src/utils/shapes'
+import { CLAW_REST_HEIGHT } from '#src/claw/constants'
+import { CLAW_GRAB_MS, GRID_SIZE, TRAY_CENTER } from '#src/constants'
+import type { Heap } from '#src/heap/heap'
+import { type ToyBody, ToyState } from '#src/heap/types'
+import { lerpPose, pourHeap } from '#src/heap/utils'
+import { SHAPE_KEYS } from '#src/toys'
+import type { GroundPoint, HeapSnapshotBody, PlaneVector, ShapeKey } from '#src/types'
+import { polygonsOverlap } from '#src/utils/geometry'
+import { getSection, getSectionExtent, getVariantCount } from '#src/utils/shapes'
 import { createRandom } from '@pixi-demos/core/random'
 
-/** Сколько падений разыгрывать там, где проверяется доля исходов, а не одно конкретное. */
-const ROLLS = 200
+import {
+  createHeap,
+  expectSoundHeap,
+  findBody,
+  FRAME_MS,
+  getPouredHeap,
+  liftToRest,
+  REST_GRIP,
+  sectionOf,
+  settle,
+  stand,
+  topOf,
+} from './setup/heap'
 
-/** Лежит ли точка пола над лотком. */
-const isOverTray = ({ x, y }: GroundPoint): boolean =>
-  x >= TRAY_ORIGIN.x && x <= TRAY_ORIGIN.x + TRAY_SIZE && y >= TRAY_ORIGIN.y && y <= TRAY_ORIGIN.y + TRAY_SIZE
+/** Сиды насыпанных куч, на которых проверяются свойства наполнения. */
+const SAMPLE_SEEDS = [1, 2, 3]
 
-describe('getDepthOrder', () => {
-  it('ставит верхнюю точку стопки ближе к игроку, чем нижние', () => {
-    const stack = [0.5, 1.5, 2.5, 3.5].map((z) => getDepthOrder({ x: 4, y: 4, z }))
-
-    for (let index = 1; index < stack.length; index++) {
-      expect(stack[index]).toBeGreaterThan(stack[index - 1])
-    }
-  })
-
-  it('ставит ближнюю по осям поля ячейку ближе к игроку', () => {
-    const far = getDepthOrder({ x: 4, y: 4, z: 0 })
-
-    expect(getDepthOrder({ x: 3, y: 4, z: 0 })).toBeGreaterThan(far)
-    expect(getDepthOrder({ x: 4, y: 3, z: 0 })).toBeGreaterThan(far)
-  })
-
-  it('разводит точки, которые заслоняют друг друга на экране', () => {
-    // Обе точки лежат на одном луче взгляда и проецируются в одно место: заслоняет ближняя
-    const near = { x: 0, y: 0, z: 1 }
-    const far = { x: 128 / 17, y: 16 / 17, z: 0 }
-
-    expect(worldToScreen(near)).toEqual(worldToScreen(far))
-    expect(getDepthOrder(near)).toBeGreaterThan(getDepthOrder(far))
-  })
-
-  it('растёт монотонно по каждой оси', () => {
-    const at = (x: number, y: number, z: number) => getDepthOrder({ x, y, z })
-
-    for (let step = 1; step < GRID_SIZE; step++) {
-      // Ближе к игроку — меньше по осям поля и выше по z
-      expect(at(step - 1, 4, 1)).toBeGreaterThan(at(step, 4, 1))
-      expect(at(4, step - 1, 1)).toBeGreaterThan(at(4, step, 1))
-    }
-
-    for (let height = 1; height <= CUBE_HEIGHT; height++) {
-      expect(at(4, 4, height)).toBeGreaterThan(at(4, 4, height - 1))
-    }
-  })
-})
-
-describe('pickFumbleShare', () => {
-  const FROM: GroundPoint = { x: 4, y: 4 }
-  const at = (share: number): GroundPoint => ({
-    x: FROM.x + (TRAY_CENTER.x - FROM.x) * share,
-    y: FROM.y + (TRAY_CENTER.y - FROM.y) * share,
-  })
-
-  it('роняет игрушку над кубом: дальше порога от места захвата и до входа в лоток', () => {
-    const random = createRandom(2)
-
-    for (let run = 0; run < ROLLS; run++) {
-      const share = pickFumbleShare(FROM, TRAY_CENTER, random) as number
-      const point = at(share)
-
-      expect(Math.hypot(point.x - FROM.x, point.y - FROM.y)).toBeGreaterThanOrEqual(FUMBLE_START_CLEARANCE - 1e-9)
-      expect(isOverTray(point)).toBe(false)
-    }
-  })
-
-  it('покрывает весь допустимый участок пути', () => {
-    const shares = [0, 0.999999].map((roll) => pickFumbleShare(FROM, TRAY_CENTER, () => roll) as number)
-
-    expect(isOverTray(at(shares[1] + 0.01))).toBe(true)
-    expect(Math.hypot(at(shares[0]).x - FROM.x, at(shares[0]).y - FROM.y)).toBeCloseTo(FUMBLE_START_CLEARANCE, 9)
-  })
-
-  it('не отдаёт ничего, когда ронять по дороге негде', () => {
-    // Путь начинается над лотком или короче порога: участка над кубом на нём нет
-    expect(pickFumbleShare(TRAY_CENTER, { x: 4, y: 4 }, createRandom(4))).toBeUndefined()
-    expect(pickFumbleShare({ x: 2.5, y: 6.5 }, TRAY_CENTER, createRandom(4))).toBeUndefined()
-  })
-})
-
-describe('getTrayWallOutlines', () => {
-  it('отгораживает лоток двумя гранями, которых не закрывает сам куб', () => {
-    const [far, near] = getTrayWallOutlines()
-
-    // Грань вдоль оси y стоит на границе лотка в глубину, грань вдоль оси x — на его ближней к куче стороне
-    expect(far.every(({ x }) => x === TRAY_ORIGIN.x + TRAY_SIZE)).toBe(true)
-    expect(near.every(({ y }) => y === TRAY_ORIGIN.y)).toBe(true)
-  })
-
-  it('поднимает стенки ниже верха кучи: игрушка через них переваливается', () => {
-    for (const outline of getTrayWallOutlines()) {
-      expect(outline.map(({ z }) => z).sort()).toEqual([0, 0, TRAY_WALL_HEIGHT, TRAY_WALL_HEIGHT])
-    }
-
-    expect(TRAY_WALL_HEIGHT).toBeLessThan(DOME_CENTER_HEIGHT)
-  })
-
-  it('не рисует грани, которыми лоток прилегает к стенкам куба', () => {
-    const outlines = getTrayWallOutlines()
-
-    expect(outlines).toHaveLength(2)
-    expect(outlines.some((outline) => outline.every(({ x }) => x === TRAY_ORIGIN.x))).toBe(false)
-    expect(outlines.some((outline) => outline.every(({ y }) => y === GRID_SIZE))).toBe(false)
-  })
-})
+/** Все положения всех форм каталога. */
+const VARIANTS = SHAPE_KEYS.flatMap((shape) =>
+  Array.from({ length: getVariantCount(shape) }, (_, variant) => ({ shape, variant }))
+)
 
 /** Лежит ли точка внутри выпуклого многоугольника или на его границе. */
 const isInside = (polygon: readonly PlaneVector[], point: PlaneVector): boolean => {
@@ -139,124 +44,353 @@ const isInside = (polygon: readonly PlaneVector[], point: PlaneVector): boolean 
   return sides.every((side) => side >= -1e-9) || sides.every((side) => side <= 1e-9)
 }
 
-/** Все положения всех форм каталога. */
-const VARIANTS = SHAPE_KEYS.flatMap((shape) =>
-  Array.from({ length: getVariantCount(shape) }, (_, variant) => ({ shape, variant }))
-)
+/** Точка поля над центром игрушки снимка. */
+const above = ({ slab, y }: HeapSnapshotBody): GroundPoint => ({ x: slab + 0.5, y })
 
-describe('getWeight', () => {
-  it('держит веса форм по их прежнему числу клеток', () => {
-    expect(SHAPE_KEYS.map((shape) => [shape, getWeight(shape)])).toEqual([
-      ['single', 1],
-      ['bar2', 2],
-      ['square4', 4],
-      ['cube8', 8],
-      ['triangle', 3],
-    ])
+/** Наклоняет игрушку снимка на угол `angle`. */
+const tilted = (body: HeapSnapshotBody, angle: number): HeapSnapshotBody => ({ ...body, angle })
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
+describe('куча: наполнение', () => {
+  it('насыпает одну и ту же кучу на одном сиде и разные — на разных', () => {
+    expect(pourHeap(createRandom(2))).toEqual(getPouredHeap(2))
+    expect(getPouredHeap(3)).not.toEqual(getPouredHeap(2))
+  })
+
+  it('насыпает все формы каталога', () => {
+    const shapes = new Set(SAMPLE_SEEDS.flatMap((seed) => getPouredHeap(seed).map(({ shape }) => shape)))
+
+    expect([...shapes].sort()).toEqual([...SHAPE_KEYS].sort())
+  })
+
+  it('держит игрушки внутри куба, над полом и без взаимных пересечений', () => {
+    for (const seed of SAMPLE_SEEDS) expectSoundHeap(createHeap(getPouredHeap(seed)))
+  })
+
+  it('складывает купол: в середине поля игрушки лежат выше, чем у стенок', () => {
+    const average = (bodies: Readonly<ToyBody>[]) =>
+      bodies.reduce((sum, { pose }) => sum + pose.point.z, 0) / bodies.length
+
+    for (const seed of SAMPLE_SEEDS) {
+      const bodies = [...createHeap(getPouredHeap(seed)).getBodies()]
+      const middle = bodies.filter(({ pose: { point } }) =>
+        [point.x, point.y].every((value) => Math.abs(value - GRID_SIZE / 2) < 2)
+      )
+      const edge = bodies.filter(({ pose: { point } }) =>
+        [point.x, point.y].some((value) => value < 1.5 || value > GRID_SIZE - 1.5)
+      )
+
+      expect(average(middle)).toBeGreaterThan(average(edge))
+    }
+  })
+
+  it('восстанавливает кучу спящей: без возмущения она не сдвигается', () => {
+    const snapshot = getPouredHeap(1)
+    const heap = createHeap(snapshot)
+
+    for (let frame = 0; frame < 120; frame++) heap.advance(FRAME_MS, REST_GRIP)
+
+    expect(heap.settled).toBe(true)
+    expect(heap.takeSnapshot()).toEqual(snapshot)
   })
 })
 
-describe('getSection', () => {
-  const toPlanePoints = (shape: (typeof VARIANTS)[number]): PlaneVector[] =>
-    getSection(shape.shape, shape.variant).map(({ y, z }) => ({ x: y, y: z }))
-
+describe('куча: каталог форм', () => {
   it('даёт выпуклое сечение не длиннее предела вершин многоугольника planck', () => {
-    for (const variant of VARIANTS) {
-      const polygon = toPlanePoints(variant)
+    // planck молча обрезает многоугольник до 12 вершин, а сортировка наложения полагается на выпуклость
+    for (const { shape, variant } of VARIANTS) {
+      const polygon = getSection(shape, variant).map(({ y, z }) => ({ x: y, y: z }))
 
       expect(polygon.length).toBeGreaterThanOrEqual(3)
       expect(polygon.length).toBeLessThanOrEqual(12)
       for (const point of polygon) expect(isInside(polygon, point)).toBe(true)
     }
   })
+})
 
-  it('ставит центр масс сечения в центр игрушки', () => {
+describe('куча: захват', () => {
+  const cube = stand('cube8', 3, 4, 0)
+  const pillow = stand('square4', 3, 4, topOf(cube))
+  const ball = stand('single', 3, 4, topOf(pillow))
+
+  it('отдаёт клешне верхнюю игрушку под точкой, а не ту, что под ней', () => {
+    const heap = createHeap([cube, pillow, ball])
+
+    expect(heap.getTopBodyAt({ x: 3.5, y: 4 })?.shape).toBe('single')
+  })
+
+  it('роняет игрушку, лежавшую на поднятой', () => {
+    const heap = createHeap([cube, stand('single', 3, 4.5, topOf(cube))])
+    const rider = [...heap.getBodies()][1]
+    const before = rider.pose.point.z
+    const point = { x: 3.5, y: 3.3 }
+    const grip = { ...point, z: heap.getSurfaceHeightAt(point) }
+
+    expect(heap.lift(point, grip)).toBe(true)
+
+    for (let frame = 0; frame < 90; frame++) heap.advance(FRAME_MS, grip)
+
+    expect(rider.pose.point.z).toBeLessThan(before - 1)
+  })
+
+  it('не дёргает игрушку при захвате и за время захвата ставит её под клешню без крена', () => {
     for (const { shape, variant } of VARIANTS) {
-      const section = getSection(shape, variant)
-      const area = getSectionArea(section)
-      const center = section.reduce(
-        (sum, point, index) => {
-          const next = section[(index + 1) % section.length]
-          const cross = point.y * next.z - next.y * point.z
+      const heap = createHeap([tilted(stand(shape, 3, 4, 0, variant), 0.3)])
+      const point = { x: 3.5, y: 4.2 }
+      const body = heap.getTopBodyAt(point) as Readonly<ToyBody>
+      const visible = { ...body.pose.point }
+      const grip = { ...point, z: heap.getSurfaceHeightAt(point) }
 
-          return { y: sum.y + (point.y + next.y) * cross, z: sum.z + (point.z + next.z) * cross }
-        },
-        { y: 0, z: 0 }
-      )
+      heap.lift(point, grip)
+      heap.advance(0, grip)
 
-      expect(Math.abs(center.y / (6 * area))).toBeLessThan(1e-9)
-      expect(Math.abs(center.z / (6 * area))).toBeLessThan(1e-9)
+      expect(body.pose.point.x).toBeCloseTo(visible.x, 12)
+      expect(body.pose.point.y).toBeCloseTo(visible.y, 12)
+      expect(body.pose.point.z).toBeCloseTo(visible.z, 12)
+      expect(body.pose.angle).toBe(0.3)
+
+      for (let elapsed = 0; elapsed <= CLAW_GRAB_MS; elapsed += FRAME_MS) heap.advance(FRAME_MS, grip)
+
+      expect(body.pose.point.x).toBeCloseTo(grip.x, 9)
+      expect(body.pose.point.y).toBeCloseTo(grip.y, 9)
+      expect(body.pose.point.z).toBeCloseTo(visible.z, 9)
+      expect(body.pose.angle).toBeCloseTo(0, 9)
     }
   })
 
-  it('укладывает сечение в габарит многоугольника каталога с зазором TOY_INSET', () => {
-    for (const { shape, variant } of VARIANTS) {
-      const base = SHAPES[shape].variants[variant].section
-      const width = Math.max(...base.map(({ y }) => y)) - Math.min(...base.map(({ y }) => y))
-      const height = Math.max(...base.map(({ z }) => z)) - Math.min(...base.map(({ z }) => z))
-      const section = getSection(shape, variant)
+  it('при уменьшенном движении ставит игрушку под клешню за один кадр', () => {
+    const heap = createHeap([tilted(stand('bar2', 3, 4, 0), 0.3)])
+    const point = { x: 3.5, y: 4.2 }
+    const body = heap.getTopBodyAt(point) as Readonly<ToyBody>
+    const grip = { ...point, z: heap.getSurfaceHeightAt(point) }
 
-      expect(Math.max(...section.map(({ y }) => y)) - Math.min(...section.map(({ y }) => y))).toBeLessThanOrEqual(
-        width * TOY_INSET + 1e-9
-      )
-      expect(Math.max(...section.map(({ z }) => z)) - Math.min(...section.map(({ z }) => z))).toBeLessThanOrEqual(
-        height * TOY_INSET + 1e-9
-      )
-    }
+    vi.stubGlobal('matchMedia', () => ({ matches: true }))
+    heap.lift(point, grip)
+    heap.advance(FRAME_MS, grip)
+
+    expect(body.pose.point.y).toBeCloseTo(grip.y, 12)
+    expect(body.pose.angle).toBeCloseTo(0, 12)
+  })
+
+  it('снижает шанс захвата у тяжёлой игрушки и у игрушки под грузом, но не у игрушки с соседом сбоку', () => {
+    const halfWidth = (shape: ShapeKey) => getSectionExtent(getSection(shape, 0)).halfWidth
+    const alone = stand('square4', 1, 1.5, 0)
+    const loaded = stand('square4', 5, 1.5, 0)
+    const buried = stand('square4', 1, 5, 0)
+    const flanked = stand('square4', 5, 5, 0)
+    const light = stand('single', 3, 3.5, 0)
+    const heavy = stand('cube8', 3, 6.5, 0)
+    const buriedRider = stand('single', 1, 5, topOf(buried))
+    // Нагрузка до первого шага физики: движок не знает контактов между телами, которые уснули при восстановлении
+    const heap = createHeap([
+      alone,
+      loaded,
+      stand('single', 5, 1.5, topOf(loaded)),
+      buried,
+      buriedRider,
+      stand('single', 1, 5, topOf(buriedRider)),
+      flanked,
+      stand('single', 5, 5 + halfWidth('square4') + halfWidth('single') + 0.01, 0),
+      light,
+      heavy,
+    ])
+    // Груз лежит в ближнем срезе: шанс нижней игрушки берётся над её дальним срезом, где груза нет
+    const chanceOf = (body: HeapSnapshotBody) => heap.getGrabChance({ x: body.slab + 1.5, y: body.y })
+
+    expect(heap.getGrabChance(above(light))).toBeGreaterThan(chanceOf(alone))
+    expect(chanceOf(alone)).toBeGreaterThan(heap.getGrabChance(above(heavy)))
+    expect(chanceOf(alone)).toBeGreaterThan(chanceOf(loaded))
+    expect(chanceOf(loaded)).toBeGreaterThan(chanceOf(buried))
+    expect(chanceOf(flanked)).toBe(chanceOf(alone))
+    expect(heap.getGrabChance({ x: 3.5, y: 0.5 })).toBe(0)
   })
 })
 
-describe('getPrismOutline', () => {
-  it('накрывает сечение на ближней и дальней границе глубины при любом крене', () => {
-    for (const { shape, variant } of VARIANTS) {
-      const section = getSection(shape, variant)
-      const {depth} = SHAPES[shape].variants[variant]
+describe('куча: прожатие', () => {
+  const cube = stand('cube8', 3, 4, 0)
+  const ball = stand('single', 3, 4, topOf(cube))
 
-      for (const angle of [0, 0.7, 2.4, -1.3]) {
-        const outline = getPrismOutline(section, depth, angle)
-        const cos = Math.cos(angle)
-        const sin = Math.sin(angle)
+  it('толкает игрушку под клешнёй: куча выходит из покоя и снова приходит в него целой', () => {
+    const heap = createHeap([cube, ball])
 
-        for (const x of [(-depth * TOY_INSET) / 2, (depth * TOY_INSET) / 2]) {
-          for (const { y, z } of section) {
-            const point: ScreenPoint = worldToScreen({ x, y: y * cos - z * sin, z: y * sin + z * cos })
+    heap.press(above(ball))
 
-            expect(isInside(outline, point)).toBe(true)
-          }
-        }
-      }
-    }
+    expect(heap.settled).toBe(false)
+
+    settle(heap)
+    expectSoundHeap(heap)
+  })
+
+  it('не толкает игрушку при уменьшенном движении', () => {
+    const heap = createHeap([cube, ball])
+
+    vi.stubGlobal('matchMedia', () => ({ matches: true }))
+    heap.press(above(ball))
+    heap.advance(FRAME_MS, REST_GRIP)
+
+    expect(heap.settled).toBe(true)
+    expect(heap.takeSnapshot()).toEqual([cube, ball])
   })
 })
 
-describe('isHeapSnapshot', () => {
-  const body = { shape: 'cube8', variant: 0, slab: 3, y: 4, z: 0.9, angle: 0.3, color: 0xffa24b }
-  const snapshot = { version: HEAP_SNAPSHOT_VERSION, collected: 3, bodies: [body] }
-  const withBody = (patch: Record<string, unknown>) => ({ ...snapshot, bodies: [{ ...body, ...patch }] })
+describe('куча: отпускание', () => {
+  it('переносит игрушку в срезы под клешнёй и не выпускает её за куб', () => {
+    const ball = stand('single', 3, 2, 0)
+    const cube = stand('cube8', 3, 5.5, 0)
+    const heap = createHeap([ball, cube])
+    const ballId = liftToRest(heap, above(ball))
 
-  it('принимает снимок своей версии', () => {
-    expect(isHeapSnapshot(snapshot)).toBe(true)
-    expect(isHeapSnapshot({ ...snapshot, bodies: [] })).toBe(true)
+    heap.release({ x: 6.4, y: 2, z: CLAW_REST_HEIGHT })
+
+    const cubeId = liftToRest(heap, above(cube))
+
+    // Куб занимает два среза: у дальней стенки он встаёт в два последних
+    heap.release({ x: GRID_SIZE - 0.1, y: 5.5, z: CLAW_REST_HEIGHT })
+    settle(heap)
+
+    expect(findBody(heap, ballId)).toMatchObject({ slab: 6, state: ToyState.free, pose: { point: { x: 6.5 } } })
+    expect(findBody(heap, cubeId)).toMatchObject({ slab: 6, state: ToyState.free, pose: { point: { x: 7 } } })
+    expect(heap.isHolding).toBe(false)
+    expectSoundHeap(heap)
   })
 
-  it('отбрасывает чужую версию, мусор и незнакомую форму', () => {
-    expect(isHeapSnapshot({ ...snapshot, version: HEAP_SNAPSHOT_VERSION - 1 })).toBe(false)
-    expect(isHeapSnapshot(undefined)).toBe(false)
-    expect(isHeapSnapshot('heap')).toBe(false)
-    expect(isHeapSnapshot(withBody({ shape: 'pyramid' }))).toBe(false)
-    expect(isHeapSnapshot(withBody({ shape: 'ell3' }))).toBe(false)
-    expect(isHeapSnapshot(withBody({ shape: 'toString' }))).toBe(false)
+  it('поднимает игрушку, отпущенную внутри другой, до свободного места', () => {
+    const cubeBody = stand('cube8', 3, 4, 0)
+    const heap = createHeap([cubeBody, stand('single', 6, 2, 0)])
+    const [cube, ball] = [...heap.getBodies()]
+    const point = { x: 6.5, y: 2 }
+    const grip = { ...point, z: heap.getSurfaceHeightAt(point) }
+
+    heap.lift(point, grip)
+    heap.advance(CLAW_GRAB_MS, grip)
+    heap.release({ x: 3.5, y: 4, z: cubeBody.z })
+
+    expect(polygonsOverlap(sectionOf(ball), sectionOf(cube), 0.05)).toBe(false)
+
+    settle(heap)
+    expectSoundHeap(heap)
+  })
+})
+
+describe('куча: лоток', () => {
+  it('засчитывает доставленную игрушку призом один раз и убирает её из кучи', () => {
+    const heap = createHeap([stand('cube8', 4, 3, 0), stand('single', 5, 6, 0)])
+    const id = liftToRest(heap, { x: 5.5, y: 6 })
+    const { shape, color } = findBody(heap, id)
+
+    heap.dropIntoTray({ ...TRAY_CENTER, z: CLAW_REST_HEIGHT })
+    settle(heap)
+
+    expect(heap.prizeCount).toBe(1)
+    expect(heap.takePrize()).toEqual({ shape, color })
+    expect(heap.prizeCount).toBe(0)
+    expect([...heap.getBodies()].map((body) => body.shape)).toEqual(['cube8'])
   })
 
-  it('отбрасывает положение вне каталога и срез, из которого игрушка выходит за куб', () => {
-    expect(isHeapSnapshot(withBody({ variant: 1 }))).toBe(false)
-    expect(isHeapSnapshot(withBody({ variant: 0.5 }))).toBe(false)
-    expect(isHeapSnapshot(withBody({ slab: GRID_SIZE - 1 }))).toBe(false)
-    expect(isHeapSnapshot(withBody({ slab: -1 }))).toBe(false)
+  it('засчитывает игрушку, упавшую в шахту лотка без помощи клешни', () => {
+    const heap = createHeap([stand('single', 5, 4, 0)])
+
+    liftToRest(heap, { x: 5.5, y: 4 })
+    heap.release({ ...TRAY_CENTER, z: 4 })
+    settle(heap)
+
+    expect(heap.prizeCount).toBe(1)
+    expect([...heap.getBodies()]).toHaveLength(0)
+  })
+})
+
+describe('куча: снимок', () => {
+  /** Цикл клешни над кучей: игрушку из середины переносят в другое место и ждут покоя. */
+  const shuffle = (heap: Heap): HeapSnapshotBody[] => {
+    expect(liftToRest(heap, { x: 3.5, y: 4 })).toBeDefined()
+    heap.release({ x: 5.5, y: 3, z: CLAW_REST_HEIGHT })
+    settle(heap)
+
+    return heap.takeSnapshot()
+  }
+
+  it('переживает круг снимок — восстановление — снимок после движения кучи', () => {
+    const snapshot = shuffle(createHeap(getPouredHeap(1)))
+
+    expect(createHeap(snapshot).takeSnapshot()).toEqual(snapshot)
   })
 
-  it.each([NaN, Infinity, -0.5, GRID_SIZE + 0.5])('отбрасывает координату %s', (value) => {
-    expect(isHeapSnapshot(withBody({ y: value }))).toBe(false)
-    expect(isHeapSnapshot(withBody({ z: value === GRID_SIZE + 0.5 ? CUBE_HEIGHT + 0.5 : value }))).toBe(false)
+  it('повторяет физику кучи, заново восстановленной из того же снимка', () => {
+    const snapshot = getPouredHeap(3)
+    const heap = createHeap(snapshot)
+    const first = shuffle(heap)
+
+    heap.restore(snapshot)
+
+    expect(shuffle(heap)).toEqual(first)
+  })
+
+  it('не снимает кучу, пока игрушка в клешне или падает после отпускания', () => {
+    const heap = createHeap([stand('cube8', 3, 4, 0), stand('single', 6, 2, 0)])
+
+    liftToRest(heap, { x: 6.5, y: 2 })
+
+    expect(() => heap.takeSnapshot()).toThrow('Heap is not settled')
+
+    heap.release({ x: 3.5, y: 4, z: CLAW_REST_HEIGHT })
+
+    expect(() => heap.takeSnapshot()).toThrow('Heap is not settled')
+
+    settle(heap)
+
+    expect(() => heap.takeSnapshot()).not.toThrow()
+  })
+
+  it('не выдаёт повторно id игрушек после нового восстановления', () => {
+    const heap = createHeap([stand('single', 1, 1, 0), stand('bar2', 4, 4, 0)])
+    const first = new Set([...heap.getBodies()].map(({ id }) => id))
+
+    heap.restore([stand('cube8', 3, 3, 0), stand('triangle', 6, 6, 0)])
+
+    expect([...heap.getBodies()].some(({ id }) => first.has(id))).toBe(false)
+  })
+})
+
+describe('куча: видимая поза', () => {
+  it('сдвигает падающую игрушку на каждом кадре 120 Гц, а не через кадр', () => {
+    const heap = createHeap([stand('single', 3, 4, 0)])
+    const id = liftToRest(heap, { x: 3.5, y: 4 })
+    const heights: number[] = []
+
+    heap.release({ x: 3.5, y: 4, z: CLAW_REST_HEIGHT })
+
+    for (let frame = 0; frame < 20; frame++) {
+      heap.advance(1000 / 120, REST_GRIP)
+      heights.push(findBody(heap, id).pose.point.z)
+    }
+
+    // Видимая поза идёт между двумя последними шагами физики, поэтому первые два кадра показывают позу отпускания
+    for (let frame = 2; frame < heights.length; frame++) expect(heights[frame]).toBeLessThan(heights[frame - 1])
+  })
+
+  it('ведёт крен между шагами по кратчайшей дуге, в том числе через ±π', () => {
+    const from = { y: 1, z: 2, angle: Math.PI - 0.1 }
+    const to = { y: 3, z: 4, angle: -Math.PI + 0.1 }
+    const middle = lerpPose(from, to, 0.5)
+
+    expect(middle).toMatchObject({ y: 2, z: 3 })
+    expect(Math.cos(middle.angle)).toBeCloseTo(-1, 12)
+    expect(Math.cos(lerpPose(from, to, 1).angle - to.angle)).toBeCloseTo(1, 12)
+  })
+})
+
+describe('куча: уменьшенное движение', () => {
+  it('приходит в покой за один кадр после отпускания', () => {
+    const heap = createHeap([stand('cube8', 3, 4, 0), stand('single', 6, 2, 0)])
+
+    vi.stubGlobal('matchMedia', () => ({ matches: true }))
+    liftToRest(heap, { x: 6.5, y: 2 })
+    heap.release({ x: 3.5, y: 4, z: CLAW_REST_HEIGHT })
+    heap.advance(FRAME_MS, REST_GRIP)
+
+    expect(heap.settled).toBe(true)
   })
 })

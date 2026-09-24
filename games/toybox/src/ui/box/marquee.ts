@@ -65,9 +65,4 @@ export class Marquee extends Container {
   setMessage(message: string): void {
     this.message.text = message
   }
-
-  /** Текст, выведенный на табло. */
-  getMessage(): string {
-    return this.message.text
-  }
 }

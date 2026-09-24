@@ -40,11 +40,6 @@ export class MarqueeController extends LiveContainer {
     })
   }
 
-  /** Текст, который табло показывает сейчас. */
-  getMessage(): string {
-    return this.view.getMessage()
-  }
-
   override destroy(options?: DestroyOptions): void {
     if (this.destroyed) return
 
