@@ -6,6 +6,7 @@
     "test": {
       "inputs": [
         "$TURBO_DEFAULT$",
+        "!**/CLAUDE.md",
         "$TURBO_ROOT$/vitest.shared.ts",
         "$TURBO_ROOT$/.env",
         "$TURBO_ROOT$/packages/reels/tests/setup/**"
@@ -31,7 +32,8 @@
         "$TURBO_ROOT$/web/src/pages/slot/**",
         "$TURBO_ROOT$/web/public/*",
         "$TURBO_ROOT$/web/public/games/slot/**",
-        "!$TURBO_ROOT$/web/**/.DS_Store"
+        "!$TURBO_ROOT$/web/**/.DS_Store",
+        "!$TURBO_ROOT$/web/**/CLAUDE.md"
       ]
     }
   }

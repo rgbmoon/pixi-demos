@@ -19,6 +19,7 @@
         "$TURBO_ROOT$/web/public/*",
         "$TURBO_ROOT$/web/public/games/toybox/**",
         "!$TURBO_ROOT$/web/**/.DS_Store",
+        "!$TURBO_ROOT$/web/**/CLAUDE.md",
       ],
     },
   },
