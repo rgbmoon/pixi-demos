@@ -1,0 +1,80 @@
+[
+  {
+    "date": "2026-09-26",
+    "tool": "unzoom_image",
+    "params": {
+      "image_url": "https://raw.githubusercontent.com/rgbmoon/pixi-demos/main/web/public/games/toybox/toy-box.webp",
+      "quantize": 0
+    },
+    "seed": null,
+    "id": "32db1d80-61af-403b-ae85-84a295612d9c",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/32db1d80-61af-403b-ae85-84a295612d9c/download"
+    ],
+    "cost": 0.1,
+    "picked": [
+      "card-unzoomed.png"
+    ],
+    "rejected": [],
+    "note": "Карточка 1536×1024 → 254×169, 65 цветов."
+  },
+  {
+    "date": "2026-09-26",
+    "tool": "reduce_colors",
+    "params": {
+      "image_urls": [
+        "https://api.pixellab.ai/mcp/images/32db1d80-61af-403b-ae85-84a295612d9c/download"
+      ],
+      "num_colors": 16
+    },
+    "seed": null,
+    "id": "6b30d0af-8eed-47da-bdb3-8aaebddca0de",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/6b30d0af-8eed-47da-bdb3-8aaebddca0de/download"
+    ],
+    "cost": 0.1,
+    "picked": [],
+    "rejected": [],
+    "note": "Базовые цвета карточки по светлоте: #0a073c, #200e63, #2f1172, #41107a, #311e86, #5a0f83, #7c0f6f, #790e88, #543cad, #950e85, #a80e7c, #8259c4, #e41e95, #b37fd3, #ef65ee, #f98197."
+  },
+  {
+    "date": "2026-09-26",
+    "tool": "reduce_colors",
+    "params": {
+      "image_urls": [
+        "https://api.pixellab.ai/mcp/images/32db1d80-61af-403b-ae85-84a295612d9c/download"
+      ],
+      "palette_image_base64": "iVBORw0KGgoAAAANSUhEUgAAAAUAAAAKCAYAAAB8OZQwAAAA3UlEQVR42gHSAC3/AAgGM/8gDmT/MCCK/0gzoP9aQr//ADMHTP97CG//pQ57//Ehn//5f5b/ACsqRP9MSGn/dGuR/6CQtP/wze//AF05Fv+QYB//vYsx/925Zv/05az/AD4jNv9tP1T/nl9u/8iHjP/ptrH/AC8+Uv9EZH3/XY2n/4Ozxv+y2eH/ABw0Iv9AWDP/bnxA/56gYf/OxpH/AC4ZFv9OLib/cUo5/45sVf+pkHn/AF9baP+Nfof/t6OY/9bJtP/v6NL/ADMIFv9bFiL/hywv/6xTRv/Ihmz/cU50Mvzbp3AAAAAASUVORK5CYII="
+    },
+    "seed": null,
+    "id": "c0cacb2b-274d-4ca8-b58a-b313f39db581",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/c0cacb2b-274d-4ca8-b58a-b313f39db581/download"
+    ],
+    "cost": 0.1,
+    "picked": [],
+    "rejected": [
+      "palette.png версии 1"
+    ],
+    "note": "Ревью первой версии палитры: в неоновой рампе не было фиолетового низа стены, 40% карточки перешло в полосу indigo[3]. Тёмные ступени неоновой рампы заменены цветами #41107a и #790e88."
+  },
+  {
+    "date": "2026-09-26",
+    "tool": "reduce_colors",
+    "params": {
+      "image_urls": [
+        "https://api.pixellab.ai/mcp/images/32db1d80-61af-403b-ae85-84a295612d9c/download"
+      ],
+      "palette_image_base64": "iVBORw0KGgoAAAANSUhEUgAAAAUAAAAKCAYAAAB8OZQwAAAA3UlEQVR42gHSAC3/AAgGM/8gDmT/MCCK/0gzoP9aQr//AEEQev95Doj/pQ57//Ehn//5f5b/ACsqRP9MSGn/dGuR/6CQtP/wze//AF05Fv+QYB//vYsx/925Zv/05az/AD4jNv9tP1T/nl9u/8iHjP/ptrH/AC8+Uv9EZH3/XY2n/4Ozxv+y2eH/ABw0Iv9AWDP/bnxA/56gYf/OxpH/AC4ZFv9OLib/cUo5/45sVf+pkHn/AF9baP+Nfof/t6OY/9bJtP/v6NL/ADMIFv9bFiL/hywv/6xTRv/Ihmz/uDV0lPXSEdMAAAAASUVORK5CYII="
+    },
+    "seed": null,
+    "id": "99b86f87-7eca-47d2-87b9-c2aa82913357",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/99b86f87-7eca-47d2-87b9-c2aa82913357/download"
+    ],
+    "cost": 0.1,
+    "picked": [],
+    "rejected": [],
+    "note": "Ревью палитры: карточка, приведённая к palette.png."
+  }
+]
