@@ -1,10 +1,12 @@
 import {
+  ART_PIXEL,
   CABINET_BOTTOM_Z,
   CABINET_FRONT_PLANE,
   CABINET_FRONT_X,
   CABINET_TOP_Z,
   CUBE_HEIGHT,
   GRID_SIZE,
+  MACHINE_CANVAS_SHARE,
   MACHINE_MARGIN,
   MARQUEE_TOP_Z,
   PRIZE_HATCH_SIZE,
@@ -136,21 +138,23 @@ export const getPrizeHatchOutline = (): ScreenPoint[] =>
 export const getMachineBounds = (): ScreenRect =>
   getBounds([...getCabinetOutlines(), ...getMarqueeOutlines()].flat().map((point) => worldToScreen(point)))
 
-/** Вписывает корпус в область `width × height` одним масштабом с отступом `MACHINE_MARGIN` и центрирует его. */
-export const getMachineLayout = (width: number, height: number): MachineLayout => {
+/**
+ * Вписывает корпус с отступом `MACHINE_MARGIN` в долю `MACHINE_CANVAS_SHARE` области `width × height` и центрирует.
+ * Пиксель арта занимает целое число пикселей рендера, позиция кратна пикселю рендера: иначе пиксели арта
+ * получают разную ширину.
+ */
+export const getMachineLayout = (width: number, height: number, resolution: number): MachineLayout => {
   const { left, right, top, bottom } = getMachineBounds()
-  const scale = Math.min(width / (right - left + 2 * MACHINE_MARGIN), height / (bottom - top + 2 * MACHINE_MARGIN))
+  const fitted =
+    MACHINE_CANVAS_SHARE *
+    Math.min(width / (right - left + 2 * MACHINE_MARGIN), height / (bottom - top + 2 * MACHINE_MARGIN))
+  // Пикселей рендера на пиксель арта: не меньше одного, даже если автомат не помещается
+  const renderPixels = Math.max(1, Math.floor(fitted * ART_PIXEL * resolution))
+  const scale = renderPixels / (ART_PIXEL * resolution)
 
   return {
     scale,
-    x: width / 2 - ((left + right) / 2) * scale,
-    y: height / 2 - ((top + bottom) / 2) * scale,
+    x: Math.round((width / 2 - ((left + right) / 2) * scale) * resolution) / resolution,
+    y: Math.round((height / 2 - ((top + bottom) / 2) * scale) * resolution) / resolution,
   }
-}
-
-/** Пропорции корпуса вместе с отступом: по ним хост строит канвас шире `CANVAS_FILL_MAX_WIDTH`. */
-export const getMachineAspectRatio = (): number => {
-  const { left, right, top, bottom } = getMachineBounds()
-
-  return (right - left + 2 * MACHINE_MARGIN) / (bottom - top + 2 * MACHINE_MARGIN)
 }

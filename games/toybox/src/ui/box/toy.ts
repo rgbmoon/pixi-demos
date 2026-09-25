@@ -2,7 +2,7 @@ import { Container, Graphics } from 'pixi.js'
 
 import type { ShapeKey, WorldPoint } from '#src/types'
 import type { ToyShapes } from '#src/ui/box/toy-shapes'
-import { worldToScreen } from '#src/utils/projection'
+import { snapToArtPixel, worldToScreen } from '#src/utils/projection'
 import { getAngleStep } from '#src/utils/shapes'
 
 /**
@@ -45,7 +45,7 @@ export class Toy extends Container {
 
   /** Ставит центр в мировую точку и поворачивает силуэт на крен. */
   setPose(point: WorldPoint, angle: number): void {
-    const screen = worldToScreen(point)
+    const screen = snapToArtPixel(worldToScreen(point))
     const step = getAngleStep(angle)
 
     this.position.set(screen.x, screen.y)

@@ -46,7 +46,7 @@ export class GameRoot {
 
     const { width, height } = this.app.screen
 
-    this.scene.layout(width, height)
+    this.scene.layout(width, height, this.app.renderer.resolution)
   }
 
   /**
@@ -99,7 +99,7 @@ export class GameRoot {
         background: PALETTE.background,
         width,
         height,
-        resolution: Math.min(window.devicePixelRatio || 1, MAX_RESOLUTION),
+        resolution: Math.min(window.devicePixelRatio || 1, this.canvasConfig.maxResolution ?? MAX_RESOLUTION),
         autoDensity: true,
         roundPixels: this.canvasConfig.roundPixels,
       })

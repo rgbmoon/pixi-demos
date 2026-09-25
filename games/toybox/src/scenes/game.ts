@@ -12,12 +12,14 @@ import type { KeyboardController } from '#src/controllers/keyboard'
 import type { PersistenceController } from '#src/controllers/persistence'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import { Cabinet } from '#src/ui/box/cabinet'
+import { Backdrop } from '#src/ui/room/backdrop'
 import { getMachineLayout } from '#src/utils/machine-geometry'
 import { worldToScreen } from '#src/utils/projection'
 
-/** Сцена: корпус автомата вписывается в канвас одним масштабом и центрируется. */
+/** Сцена: корпус автомата вписывается в канвас целым масштабом и центрируется, фон закрывает весь канвас. */
 @injectable()
 export class GameScene extends Container {
+  private readonly backdrop = new Backdrop()
   private readonly machine = new Container()
 
   constructor(
@@ -47,13 +49,18 @@ export class GameScene extends Container {
     }
 
     this.machine.addChild(cube, new Cabinet(), joystick, drop, marquee, prizeOutput, reset)
-    this.addChild(this.machine, keyboard, persistence)
+    this.addChild(this.backdrop, this.machine, keyboard, persistence)
   }
 
-  layout(width: number, height: number): void {
-    const { scale, x, y } = getMachineLayout(width, height)
+  layout(width: number, height: number, resolution: number): void {
+    const { scale, x, y } = getMachineLayout(width, height, resolution)
 
-    this.machine.scale.set(scale)
-    this.machine.position.set(x, y)
+    // Фон в масштабе и позиции автомата: сетка пикселей арта у них общая
+    for (const layer of [this.backdrop, this.machine]) {
+      layer.scale.set(scale)
+      layer.position.set(x, y)
+    }
+
+    this.backdrop.cover({ left: -x / scale, top: -y / scale, right: (width - x) / scale, bottom: (height - y) / scale })
   }
 }

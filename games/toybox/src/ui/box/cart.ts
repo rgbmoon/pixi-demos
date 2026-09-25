@@ -2,7 +2,7 @@ import { Container, Graphics } from 'pixi.js'
 
 import { CART_SIZE, LINE_THICKNESS } from '#src/constants'
 import type { WorldPoint } from '#src/types'
-import { worldToScreen } from '#src/utils/projection'
+import { snapToArtPixel, worldToScreen } from '#src/utils/projection'
 import { PALETTE } from '@pixi-demos/core/palette'
 
 /**
@@ -25,7 +25,7 @@ export class Cart extends Container {
 
   /** Ставит каретку в точку мира. */
   setWorld(point: WorldPoint): void {
-    const { x, y } = worldToScreen(point)
+    const { x, y } = snapToArtPixel(worldToScreen(point))
 
     this.position.set(x, y)
   }

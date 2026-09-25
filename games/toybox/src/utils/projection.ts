@@ -1,4 +1,12 @@
-import { AXIS_X, AXIS_Y, CELL_SIZE, CONTROL_OUTLINE_STEPS, JOYSTICK_DEADZONE, UNIT_HEIGHT } from '#src/constants'
+import {
+  ART_PIXEL,
+  AXIS_X,
+  AXIS_Y,
+  CELL_SIZE,
+  CONTROL_OUTLINE_STEPS,
+  JOYSTICK_DEADZONE,
+  UNIT_HEIGHT,
+} from '#src/constants'
 import type { GroundPoint, ScreenPoint, WorldPlane, WorldPoint } from '#src/types'
 
 /** Определитель осей проекции: он же множитель обратного перевода. */
@@ -11,6 +19,12 @@ const AXES_DETERMINANT = AXIS_X.x * AXIS_Y.y - AXIS_X.y * AXIS_Y.x
 export const worldToScreen = ({ x, y, z }: WorldPoint): ScreenPoint => ({
   x: x * AXIS_X.x + y * AXIS_Y.x,
   y: x * AXIS_X.y + y * AXIS_Y.y - z * UNIT_HEIGHT,
+})
+
+/** Округляет экранную точку до пикселя арта: пиксели движущегося объекта совпадают с сеткой пикселей корпуса. */
+export const snapToArtPixel = ({ x, y }: ScreenPoint): ScreenPoint => ({
+  x: Math.round(x / ART_PIXEL) * ART_PIXEL,
+  y: Math.round(y / ART_PIXEL) * ART_PIXEL,
 })
 
 /**

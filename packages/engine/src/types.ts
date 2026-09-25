@@ -61,16 +61,20 @@ export type SpinePoolConfig = {
 
 /** Пропорции макета игры: по ним хост считает размер канваса. */
 export type CanvasConfig = {
-  aspectRatio: number
+  /** Пропорции макета; без них канвас всегда занимает контейнер целиком. */
+  aspectRatio?: number
   /** Ширина контейнера, до которой канвас занимает его целиком, без учёта пропорций макета. */
-  fillMaxWidth: number
+  fillMaxWidth?: number
+  /** Потолок плотности канваса; по умолчанию `MAX_RESOLUTION`. */
+  maxResolution?: number
   /** Округление вершин до целых пикселей рендера. */
   roundPixels?: boolean
 }
 
 /** Сцена глазами хоста: контейнер, который умеет разложиться под размер канваса. */
 export interface SceneLike extends Container {
-  layout(width: number, height: number): void
+  /** Раскладывает сцену под канвас `width × height` в CSS-пикселях; `resolution` — пикселей рендера на CSS-пиксель. */
+  layout(width: number, height: number, resolution: number): void
 }
 
 /** Размер канваса в CSS-пикселях: пересчитывается на каждое изменение размеров контейнера. */

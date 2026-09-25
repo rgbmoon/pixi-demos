@@ -1,7 +1,7 @@
 import { type GroundPoint, PhaseName, type ScreenPoint, type WorldPlane, type WorldPoint } from './types'
 
-/** Ширина контейнера, до которой канвас занимает его целиком. */
-export const CANVAS_FILL_MAX_WIDTH = 640
+/** Потолок плотности канваса: на экранах до DPR 3 пиксель рендера совпадает с пикселем экрана. */
+export const CANVAS_MAX_RESOLUTION = 3
 
 /** Фаза, с которой автомат начинает петлю после запуска. */
 export const INITIAL_PHASE: PhaseName = PhaseName.booting
@@ -53,6 +53,10 @@ export const CABINET_BOTTOM_Z = -8.875
 export const MARQUEE_TOP_Z = CUBE_HEIGHT + 1
 /** Отступ корпуса от края канваса в единицах сцены: одна ячейка. */
 export const MACHINE_MARGIN = CELL_SIZE
+/** Доля канваса, в которую вписывается автомат с отступами; меньше единицы — автомат меньше на экране. */
+export const MACHINE_CANVAS_SHARE = 1
+/** Заливка фона вокруг автомата: самая тёмная ступень рампы `indigo` мастер-палитры. */
+export const BACKGROUND_COLOR = '#080633'
 
 /** Плоскость наклонной панели управления. */
 export const CONTROL_PANEL_PLANE: WorldPlane = {

@@ -9,7 +9,7 @@ import { bindEngine, bindSceneNode } from '@pixi-demos/engine/bindings'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 
 import { ClawRig } from './claw/claw-rig'
-import { CANVAS_FILL_MAX_WIDTH, HEAP_DB_NAME, HEAP_SNAPSHOT_KEY, HEAP_STORE_NAME, INITIAL_PHASE } from './constants'
+import { CANVAS_MAX_RESOLUTION, HEAP_DB_NAME, HEAP_SNAPSHOT_KEY, HEAP_STORE_NAME, INITIAL_PHASE } from './constants'
 import { CubeController } from './controllers/box/cube'
 import { MarqueeController } from './controllers/box/marquee'
 import { PrizeOutputController } from './controllers/box/prize-output'
@@ -33,7 +33,6 @@ import { GameScene } from './scenes/game'
 import { ToyboxStore } from './stores/toybox'
 import { TOYBOX_TOKENS } from './tokens'
 import { type HeapSnapshot, PhaseName } from './types'
-import { getMachineAspectRatio } from './utils/machine-geometry'
 
 export const bindFlow = (container: Container): void => {
   container.bind(TOYBOX_TOKENS.ToyboxStore).to(ToyboxStore)
@@ -64,11 +63,7 @@ export const bindFlow = (container: Container): void => {
 const bindScene = (container: Container): void => {
   container
     .bind(ENGINE_TOKENS.CanvasConfig)
-    .toDynamicValue(() => ({
-      aspectRatio: getMachineAspectRatio(),
-      fillMaxWidth: CANVAS_FILL_MAX_WIDTH,
-      roundPixels: true,
-    }))
+    .toDynamicValue(() => ({ maxResolution: CANVAS_MAX_RESOLUTION, roundPixels: true }))
 
   bindSceneNode(container, ENGINE_TOKENS.Scene, GameScene)
   bindSceneNode(container, TOYBOX_TOKENS.CubeController, CubeController)
