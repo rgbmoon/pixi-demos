@@ -7,7 +7,7 @@ import {
   JOYSTICK_DEADZONE,
   UNIT_HEIGHT,
 } from '#src/constants'
-import type { GroundPoint, ScreenPoint, WorldPlane, WorldPoint } from '#src/types'
+import type { GroundPoint, PlaneShear, ScreenPoint, WorldPlane, WorldPoint } from '#src/types'
 
 /** Определитель осей проекции: он же множитель обратного перевода. */
 const AXES_DETERMINANT = AXIS_X.x * AXIS_Y.y - AXIS_X.y * AXIS_Y.x
@@ -73,6 +73,17 @@ export const projectPlaneOffset = (plane: WorldPlane, horizontal: number, vertic
     y: plane.horizontal.y * horizontalScale + plane.vertical.y * verticalScale,
     z: plane.horizontal.z * horizontalScale + plane.vertical.z * verticalScale,
   })
+}
+
+/**
+ * Наклон растра плоскости: рисунок грани рисуется прямоугольным, а в проекции игры его столбцы и строки сдвигаются
+ * на эти доли пикселя за пиксель. По нему сборка ассетов переводит рисунок грани в проекцию.
+ */
+export const getPlaneShear = (plane: WorldPlane): PlaneShear => {
+  const horizontal = projectPlaneOffset(plane, CELL_SIZE, 0)
+  const vertical = projectPlaneOffset(plane, 0, CELL_SIZE)
+
+  return { column: horizontal.y / horizontal.x, row: vertical.x / vertical.y }
 }
 
 /** Возвращает локальные координаты экранного смещения в мировой плоскости. */

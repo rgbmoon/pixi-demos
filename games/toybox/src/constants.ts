@@ -68,6 +68,11 @@ export const CABINET_FRONT_PLANE: WorldPlane = {
   horizontal: { x: 0, y: -1, z: 0 },
   vertical: { x: 0, y: 0, z: -1 },
 }
+/** Боковая вертикальная плоскость тумбы и табло: горизонталь уходит вглубь. */
+export const CABINET_SIDE_PLANE: WorldPlane = {
+  horizontal: { x: 1, y: 0, z: 0 },
+  vertical: { x: 0, y: 0, z: -1 },
+}
 
 /** Центры встроенных органов управления в координатах мира. */
 export const JOYSTICK_CENTER: WorldPoint = { x: CABINET_FRONT_X / 2, y: 2, z: CABINET_TOP_Z / 2 }

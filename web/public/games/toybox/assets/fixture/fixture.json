@@ -1,0 +1,66 @@
+{
+  "frames": {
+    "dot-1.png": {
+      "frame": {
+        "x": 2,
+        "y": 2,
+        "w": 8,
+        "h": 8
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 8,
+        "h": 8
+      },
+      "sourceSize": {
+        "w": 8,
+        "h": 8
+      }
+    },
+    "dot-0.png": {
+      "frame": {
+        "x": 12,
+        "y": 2,
+        "w": 4,
+        "h": 4
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 4,
+        "h": 4
+      },
+      "sourceSize": {
+        "w": 8,
+        "h": 8
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    }
+  },
+  "animations": {
+    "dot": [
+      "dot-0.png",
+      "dot-1.png"
+    ]
+  },
+  "meta": {
+    "app": "http://github.com/pixijs/assetpack",
+    "version": "1.0",
+    "image": "fixture.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 18,
+      "h": 12
+    },
+    "scale": 1,
+    "related_multi_packs": []
+  }
+}

@@ -1,13 +1,23 @@
 packages:
   - packages/*
   - games/*
+  - tools/*
   - web
 
 # postinstall этих пакетов не запускается. msw копирует файл service worker в каталоги из поля
 # `msw.workerDirectory`, в проекте этого поля нет. unrs-resolver проверяет, что пакет
-# `@unrs/resolver-binding-<платформа>` установлен; pnpm устанавливает его из optionalDependencies
+# `@unrs/resolver-binding-<платформа>` установлен; pnpm устанавливает его из optionalDependencies.
+# sharp собирает libvips из исходников, только если найден системный libvips; готовые бинарники
+# pnpm устанавливает пакетами `@img/sharp-<платформа>`; бинарник esbuild — так же пакетом
+# `@esbuild/<платформа>`. ffmpeg и cpu-features приходят с AssetPack для сжатия аудио и GPU-текстур,
+# сборка ассетов их не использует
 ignoredBuiltDependencies:
+  - '@ffmpeg-installer/darwin-arm64'
+  - '@ffmpeg-installer/linux-x64'
+  - cpu-features
+  - esbuild
   - msw
+  - sharp
   - unrs-resolver
 
 # Версии зависимостей, общих для нескольких пакетов. У всех пакетов одна версия библиотеки,

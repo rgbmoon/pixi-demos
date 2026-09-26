@@ -3,11 +3,9 @@ import type { Container } from 'inversify'
 import type { GameModule } from '@pixi-demos/core/types'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 
+import { preloadGameAssets } from './assets'
 import { bindToybox } from './bindings'
 import { TOYBOX_TOKENS } from './tokens'
-
-/** У игры пока нет растровых ассетов для загрузки. */
-const preload = async (): Promise<void> => {}
 
 /**
  * Поднимает игру внутри элемента: граф собран, остаётся показать канвас и дождаться готовности —
@@ -23,7 +21,7 @@ const start = async (container: Container, element: HTMLElement, signal: AbortSi
 
 /** Контракт toybox: единственный модуль пакета, который импортирует страница игры. */
 export const toyboxGame: GameModule = {
-  preload,
+  preload: preloadGameAssets,
   bind: bindToybox,
   start,
 }

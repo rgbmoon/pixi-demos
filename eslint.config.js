@@ -153,6 +153,17 @@ const packageBoundaries = [
       NO_PIXI_RUNTIME,
     ],
   }),
+  // Пайпы сборки ассетов работают в Node; знания игры приходят конфигом сборки
+  boundary(['tools/*/src/**/*.ts'], {
+    patterns: [
+      {
+        group: ['@pixi-demos/*', '@pixi-demos/*/**'],
+        message: 'Инструмент сборки не импортирует пакеты монорепо: знания игры приходят конфигом.',
+      },
+      NO_PIXI,
+      NO_REACT,
+    ],
+  }),
 ]
 
 // Уровни внутри игры: вниз импортировать можно, вверх — только `import type`.
@@ -284,9 +295,13 @@ export default [
       'import-x/resolver-next': [
         createTypeScriptImportResolver({
           noWarnOnMultipleProjects: true,
-          project: ['tsconfig.json', 'packages/*/tsconfig*.json', 'games/*/tsconfig*.json', 'web/tsconfig*.json'].map(
-            (glob) => `${import.meta.dirname}/${glob}`
-          ),
+          project: [
+            'tsconfig.json',
+            'packages/*/tsconfig*.json',
+            'games/*/tsconfig*.json',
+            'tools/*/tsconfig*.json',
+            'web/tsconfig*.json',
+          ].map((glob) => `${import.meta.dirname}/${glob}`),
         }),
       ],
     },
@@ -358,6 +373,7 @@ export default [
       '**/e2e/**/*.ts',
       '**/vitest.config.ts',
       '**/playwright.config.ts',
+      '**/assetpack.config.ts',
       'vitest.shared.ts',
       'playwright.shared.ts',
     ],
@@ -371,6 +387,13 @@ export default [
       // Промис без await и без обработки — ошибка; осознанный fire-and-forget помечается void
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-misused-promises': 'error',
+    },
+  },
+  {
+    // Сборка ассетов идёт в Node: пакеты инструментов и конфиги сборки игр
+    files: ['tools/**/*.ts', '**/assetpack.config.ts'],
+    languageOptions: {
+      globals: globals.node,
     },
   },
   ...packageBoundaries,
