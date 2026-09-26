@@ -12,7 +12,10 @@
   "scripts": {
     "lint": "eslint --quiet --fix .",
     "lint:ci": "eslint --quiet .",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@esotericsoftware/spine-pixi-v8": "catalog:",
@@ -24,6 +27,9 @@
     "reflect-metadata": "catalog:"
   },
   "devDependencies": {
-    "vite": "catalog:"
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
   }
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { MACHINE_MARGIN, TOY_ANGLE_STEP, TRAY_CENTER } from '#src/constants'
+import { ART_PIXEL, MACHINE_CANVAS_SHARE, MACHINE_MARGIN, TOY_ANGLE_STEP, TRAY_CENTER } from '#src/constants'
 import { TRAY_EXIT_Z } from '#src/heap/constants'
 import { SHAPE_KEYS } from '#src/toys'
 import type { ScreenPoint } from '#src/types'
@@ -8,11 +8,16 @@ import { getCabinetOutlines, getMachineBounds, getMachineLayout } from '#src/uti
 import { worldToScreen } from '#src/utils/projection'
 import { getShapeOutline, getVariantCount } from '#src/utils/shapes'
 
-/** Размеры канваса: телефон, планшет и десктопный бокс. */
-const CANVAS_SIZES = [
-  [390, 780],
-  [768, 960],
-  [385, 736],
+/**
+ * Канвасы: ширина и высота области под шапкой страницы в CSS-пикселях и плотность рендера. Десктоп 1920×1080,
+ * ноутбук 1440×900 при DPR 2, телефон 393×852 при DPR 3 и окно браузера на экране 1920×1080 с масштабом
+ * системы 125 %. Нечётная ширина телефона и дробная плотность сдвигают центр канваса с пикселя рендера.
+ */
+const CANVASES = [
+  [1920, 1016, 1],
+  [1440, 836, 2],
+  [393, 788, 3],
+  [1536, 666, 1.25],
 ] as const
 
 /** Сколько положений крена проверяется на полный оборот игрушки. */
@@ -36,9 +41,9 @@ const isInside = (polygon: readonly ScreenPoint[], { x, y }: ScreenPoint): boole
 }
 
 /** Края автомата на канвасе: отступы слева, справа, сверху и снизу. */
-const getMargins = (width: number, height: number): number[] => {
+const getMargins = (width: number, height: number, resolution: number): number[] => {
   const bounds = getMachineBounds()
-  const layout = getMachineLayout(width, height)
+  const layout = getMachineLayout(width, height, resolution)
 
   return [
     layout.x + bounds.left * layout.scale,
@@ -49,20 +54,46 @@ const getMargins = (width: number, height: number): number[] => {
 }
 
 describe('корпус автомата', () => {
-  it('ставит автомат в центр канваса', () => {
-    for (const [width, height] of CANVAS_SIZES) {
-      const [left, right, top, bottom] = getMargins(width, height)
+  it('отдаёт пикселю арта целое число пикселей рендера и ставит автомат на пиксель рендера', () => {
+    for (const [width, height, resolution] of CANVASES) {
+      const { scale, x, y } = getMachineLayout(width, height, resolution)
 
-      expect(left).toBeCloseTo(right)
-      expect(top).toBeCloseTo(bottom)
+      for (const renderPixels of [scale * ART_PIXEL * resolution, x * resolution, y * resolution]) {
+        expect(renderPixels).toBeCloseTo(Math.round(renderPixels))
+      }
+    }
+  })
+
+  it('берёт наибольший целый масштаб, при котором автомат с отступами помещается в свою долю канваса', () => {
+    const { left, right, top, bottom } = getMachineBounds()
+
+    for (const [width, height, resolution] of CANVASES) {
+      // Следующий шаг: на один пиксель рендера больше на пиксель арта
+      const larger = getMachineLayout(width, height, resolution).scale + 1 / (ART_PIXEL * resolution)
+      const fits =
+        (right - left + 2 * MACHINE_MARGIN) * larger <= width * MACHINE_CANVAS_SHARE &&
+        (bottom - top + 2 * MACHINE_MARGIN) * larger <= height * MACHINE_CANVAS_SHARE
+
+      expect(fits).toBe(false)
+    }
+  })
+
+  it('ставит автомат в центр канваса с точностью до пикселя рендера', () => {
+    for (const [width, height, resolution] of CANVASES) {
+      const [left, right, top, bottom] = getMargins(width, height, resolution)
+
+      expect(Math.abs(left - right)).toBeLessThanOrEqual(1 / resolution + 1e-6)
+      expect(Math.abs(top - bottom)).toBeLessThanOrEqual(1 / resolution + 1e-6)
     }
   })
 
   it('оставляет вокруг автомата не меньше одной ячейки', () => {
-    for (const [width, height] of CANVAS_SIZES) {
-      const { scale } = getMachineLayout(width, height)
+    for (const [width, height, resolution] of CANVASES) {
+      const { scale } = getMachineLayout(width, height, resolution)
 
-      for (const margin of getMargins(width, height)) expect(margin).toBeGreaterThanOrEqual(MACHINE_MARGIN * scale - 1e-6)
+      for (const margin of getMargins(width, height, resolution)) {
+        expect(margin).toBeGreaterThanOrEqual(MACHINE_MARGIN * scale - 1e-6)
+      }
     }
   })
 

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-import { CUBE_HEIGHT, FIELD_CENTER, JOYSTICK_CENTER } from '#src/constants'
+import { CANVAS_MAX_RESOLUTION, CUBE_HEIGHT, FIELD_CENTER, JOYSTICK_CENTER } from '#src/constants'
 import { getMachineLayout } from '#src/utils/machine-geometry'
 import { worldToScreen } from '#src/utils/projection'
 
@@ -19,7 +19,9 @@ test.describe('цикл клешни', () => {
 
     expect(box).not.toBeNull()
 
-    const layout = getMachineLayout(box?.width ?? 0, box?.height ?? 0)
+    // Плотность рендера та же, что хост передаёт в app.init
+    const resolution = Math.min(await page.evaluate(() => window.devicePixelRatio), CANVAS_MAX_RESOLUTION)
+    const layout = getMachineLayout(box?.width ?? 0, box?.height ?? 0, resolution)
     const joystick = worldToScreen(JOYSTICK_CENTER)
     const pointerX = (box?.x ?? 0) + layout.x + joystick.x * layout.scale
     const pointerY = (box?.y ?? 0) + layout.y + joystick.y * layout.scale

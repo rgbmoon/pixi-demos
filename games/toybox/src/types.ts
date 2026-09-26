@@ -43,6 +43,15 @@ export type WorldPlane = {
   readonly vertical: WorldPoint
 }
 
+/**
+ * Наклон растра плоскости в проекции: сдвиг столбца по вертикали на пиксель ширины и строки по горизонтали
+ * на пиксель высоты.
+ */
+export type PlaneShear = {
+  readonly column: number
+  readonly row: number
+}
+
 /** Масштаб и начало координат корпуса на канвасе. */
 export type MachineLayout = {
   readonly scale: number

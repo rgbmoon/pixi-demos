@@ -2,7 +2,7 @@ import { Container, Graphics } from 'pixi.js'
 
 import { LINE_THICKNESS } from '#src/constants'
 import type { ScreenPoint, WorldPoint } from '#src/types'
-import { worldToScreen } from '#src/utils/projection'
+import { snapToArtPixel, worldToScreen } from '#src/utils/projection'
 import { PALETTE } from '@pixi-demos/core/palette'
 
 /** Трос между мировыми точками каретки и клешни. */
@@ -20,8 +20,8 @@ export class Rope extends Container {
 
   /** Перетягивает трос между точками мира; отрезок, совпадающий с нарисованным, не перерисовывается. */
   setSpan(from: WorldPoint, to: WorldPoint): void {
-    const top = worldToScreen(from)
-    const bottom = worldToScreen(to)
+    const top = snapToArtPixel(worldToScreen(from))
+    const bottom = snapToArtPixel(worldToScreen(to))
 
     if (Rope.isSame(this.top, top) && Rope.isSame(this.bottom, bottom)) return
 

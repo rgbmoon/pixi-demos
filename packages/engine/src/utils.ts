@@ -38,14 +38,15 @@ export const connectDevtools = async (app: Application | null): Promise<void> =>
 
 /**
  * Размер канваса: до `fillMaxWidth` канвас занимает всю доступную область, выше — бокс
- * с пропорциями макета во всю её высоту. Пропорции канваса учитывает `layout` сцены.
+ * с пропорциями макета во всю её высоту. Без пропорций макета канвас всегда занимает всю область.
+ * Пропорции канваса учитывает `layout` сцены.
  */
 export const getCanvasSize = (
   availableWidth: number,
   availableHeight: number,
-  { aspectRatio, fillMaxWidth }: CanvasConfig
+  { aspectRatio, fillMaxWidth = 0 }: CanvasConfig
 ): CanvasSize => {
-  if (availableWidth <= fillMaxWidth) {
+  if (aspectRatio === undefined || availableWidth <= fillMaxWidth) {
     return { width: availableWidth, height: availableHeight }
   }
 

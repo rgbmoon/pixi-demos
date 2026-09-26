@@ -58,6 +58,7 @@ React Compiler включён для JSX-файлов
 | `pnpm coverage`                      | vitest с покрытием (v8), по пакетам                                            |
 | `pnpm e2e`                           | сборка с моками, затем Playwright всех пакетов со спеками                      |
 | `pnpm e2e --filter=@pixi-demos/slot` | то же для одной игры                                                           |
+| `pnpm assets`                        | сборка атласов и шрифтов игр из их `art/` (AssetPack); результат коммитится    |
 
 Задачи пакетов запускает Turborepo ([turbo.jsonc](turbo.jsonc)) и кэширует по хэшу входов: задача с
 прежними входами повторно не выполняется. Задача без скрипта `transit` включает в хэш исходники
@@ -101,9 +102,9 @@ Husky `pre-commit` запускает `pnpm lint`; тесты и E2E гоняе�
 
 ### Слои и направление импортов
 
-Каждая папка в `packages/`, `games/` и `web/` — **workspace-пакет** со своим `package.json`,
-зависимостями и тестами. Пакеты разделены по рантайму: чистый TS, zod, React, PIXI. Новые пакеты
-добавляются в `games/`; приложение в репозитории одно.
+Каждая папка в `packages/`, `games/`, `tools/` и `web/` — **workspace-пакет** со своим `package.json`,
+зависимостями и тестами. Пакеты разделены по рантайму: чистый TS, zod, React, PIXI, Node. Новые пакеты
+добавляются в `games/`, пакеты сборки — в `tools/`; приложение в репозитории одно.
 
 ```
 packages/
@@ -111,7 +112,7 @@ packages/
                        palette, easing, random, storage и idb-storage, tokens
   net/                 транспорт WS и его биндинг, конверт, msw-хелпер; без PIXI и React
   engine/              PIXI-рантайм: хост, тикер, пул скелетов, skeleton/, синтезатор audio/
-                       и базы сцены — LiveContainer и SpineAnimation
+                       и базы сцены — LiveContainer, SpineAnimation и FrameAnimation
   reels/               модель рил-машины — самостоятельная библиотека без зависимостей
   reels-pixi-adapter/  PIXI-адаптер рил-машины
 games/
@@ -121,6 +122,8 @@ games/
   toybox/              автомат с игрушками: bindings, claw/ heap/ stores/ phases/ scenes/ + листовые
                        tokens, types, constants, events, toys, utils; ui/ и controllers/ внутри разбиты
                        по зонам сцены: box/ и hud/, вне зон — controllers/persistence.ts и keyboard.ts
+tools/
+  asset-pipes/         сборка ассетов в Node: пайпы AssetPack и класс сборки AssetBuild
 web/                   приложение
   src/main.tsx         вход; сюда же подключён styles/index.css
   src/app/             composition root: контейнеры, биндинги, роутер, провайдеры
@@ -145,7 +148,9 @@ web/                   приложение
   engine              →  core;                          запрещён react
   reels               →  ничего;                        независимая библиотека, запрещены pixi.js и react
   reels-pixi-adapter  →  reels;                         pixi.js — peerDependency
-  games/*             →  core, net, engine, reels, reels-pixi-adapter;  никогда друг в друга
+  games/*             →  core, net, engine, reels, reels-pixi-adapter;  никогда друг в друга;
+                         конфиг сборки ассетов (assetpack.config.ts) — ещё asset-pipes
+  tools/asset-pipes   →  ничего;                        Node, запрещены pixi.js и react
   web: components     →  core, net;                     PIXI только динамическим import()
   web: pages/*        →  всё; из игры — только её контракт
   web: app            →  всё, кроме games (пакет игры импортируют только её страница и агрегатор моков)

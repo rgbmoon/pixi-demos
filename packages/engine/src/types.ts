@@ -1,4 +1,4 @@
-import type { Container } from 'pixi.js'
+import type { Container, Texture } from 'pixi.js'
 
 import type { StubSkeletonData } from '#src/skeleton/types'
 
@@ -13,6 +13,15 @@ export type ShakeOptions = {
 export type ProgressTweenOptions = {
   readonly durationMs: number
   readonly apply: (progress: number) => void
+}
+
+/**
+ * Последовательность покадровой анимации: кадры из `animations` атласа и длительность каждого кадра, мс.
+ * Длительности лежат в константах игры, чтобы тайминг правился без пересборки атласа.
+ */
+export type FrameSequence = {
+  readonly frames: readonly Texture[]
+  readonly durations: readonly number[]
 }
 
 /**
@@ -61,16 +70,20 @@ export type SpinePoolConfig = {
 
 /** Пропорции макета игры: по ним хост считает размер канваса. */
 export type CanvasConfig = {
-  aspectRatio: number
+  /** Пропорции макета; без них канвас всегда занимает контейнер целиком. */
+  aspectRatio?: number
   /** Ширина контейнера, до которой канвас занимает его целиком, без учёта пропорций макета. */
-  fillMaxWidth: number
+  fillMaxWidth?: number
+  /** Потолок плотности канваса; по умолчанию `MAX_RESOLUTION`. */
+  maxResolution?: number
   /** Округление вершин до целых пикселей рендера. */
   roundPixels?: boolean
 }
 
 /** Сцена глазами хоста: контейнер, который умеет разложиться под размер канваса. */
 export interface SceneLike extends Container {
-  layout(width: number, height: number): void
+  /** Раскладывает сцену под канвас `width × height` в CSS-пикселях; `resolution` — пикселей рендера на CSS-пиксель. */
+  layout(width: number, height: number, resolution: number): void
 }
 
 /** Размер канваса в CSS-пикселях: пересчитывается на каждое изменение размеров контейнера. */

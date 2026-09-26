@@ -4,7 +4,7 @@ import { CLAW_RADIUS } from '#src/constants'
 import type { WorldPoint } from '#src/types'
 import { Cart } from '#src/ui/box/cart'
 import { Rope } from '#src/ui/box/rope'
-import { worldToScreen } from '#src/utils/projection'
+import { snapToArtPixel, worldToScreen } from '#src/utils/projection'
 import { PALETTE } from '@pixi-demos/core/palette'
 
 /**
@@ -23,7 +23,7 @@ export class Claw extends Container {
 
   /** Ставит каретку в точку `cart`, клешню — в точку захвата `grip` с отклонением маятника и соединяет их тросом. */
   setPose(cart: WorldPoint, grip: WorldPoint): void {
-    const { x, y } = worldToScreen(grip)
+    const { x, y } = snapToArtPixel(worldToScreen(grip))
 
     this.cart.setWorld(cart)
     this.rope.setSpan(cart, grip)
