@@ -112,7 +112,7 @@ packages/
                        palette, easing, random, storage и idb-storage, tokens
   net/                 транспорт WS и его биндинг, конверт, msw-хелпер; без PIXI и React
   engine/              PIXI-рантайм: хост, тикер, пул скелетов, skeleton/, синтезатор audio/
-                       и базы сцены — LiveContainer и SpineAnimation
+                       и базы сцены — LiveContainer, SpineAnimation и FrameAnimation
   reels/               модель рил-машины — самостоятельная библиотека без зависимостей
   reels-pixi-adapter/  PIXI-адаптер рил-машины
 games/

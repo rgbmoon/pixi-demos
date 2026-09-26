@@ -1,4 +1,4 @@
-import type { Container } from 'pixi.js'
+import type { Container, Texture } from 'pixi.js'
 
 import type { StubSkeletonData } from '#src/skeleton/types'
 
@@ -13,6 +13,15 @@ export type ShakeOptions = {
 export type ProgressTweenOptions = {
   readonly durationMs: number
   readonly apply: (progress: number) => void
+}
+
+/**
+ * Последовательность покадровой анимации: кадры из `animations` атласа и длительность каждого кадра, мс.
+ * Длительности лежат в константах игры, чтобы тайминг правился без пересборки атласа.
+ */
+export type FrameSequence = {
+  readonly frames: readonly Texture[]
+  readonly durations: readonly number[]
 }
 
 /**
