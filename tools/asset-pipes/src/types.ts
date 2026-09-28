@@ -85,12 +85,32 @@ export type FaceLayout = {
   readonly decals?: readonly DecalPlacement[]
 }
 
-/** Параметры пятна света из файла `<имя>{light}.json`; ступени рампы — от тусклой к яркой. */
+/** Размер прямоугольника в пикселях. */
+export type RasterSize = {
+  readonly width: number
+  readonly height: number
+}
+
+/** Радиусы угасания света по горизонтали и отдельно вверх и вниз. */
+export type LightSideRadius = {
+  readonly x: number
+  readonly top: number
+  readonly bottom: number
+}
+
+/** Радиусы угасания света: общий, по осям или по сторонам. */
+export type LightRadius = number | RasterPoint | LightSideRadius
+
+/**
+ * Параметры пятна света из файла `<имя>{light}.json`; ступени рампы — от тусклой к яркой. Источник `source` —
+ * прямоугольник с центром в `center`: свет угасает от его края, без источника — от центра.
+ */
 export type LightSpot = {
   readonly width: number
   readonly height: number
   readonly center?: RasterPoint
-  readonly radius: number | RasterPoint
+  readonly source?: RasterSize
+  readonly radius: LightRadius
   readonly ramp: string
   readonly steps: readonly [number, number]
   readonly alpha?: number

@@ -10,19 +10,20 @@ import type { JoystickController } from '#src/controllers/hud/joystick'
 import type { ResetButtonController } from '#src/controllers/hud/reset-button'
 import type { KeyboardController } from '#src/controllers/keyboard'
 import type { PersistenceController } from '#src/controllers/persistence'
+import type { RoomController } from '#src/controllers/room/room'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import { Cabinet } from '#src/ui/box/cabinet'
-import { Backdrop } from '#src/ui/room/backdrop'
 import { getMachineLayout } from '#src/utils/machine-geometry'
 import { worldToScreen } from '#src/utils/projection'
 
 /** Сцена: корпус автомата вписывается в канвас целым масштабом и центрируется, фон закрывает весь канвас. */
 @injectable()
 export class GameScene extends Container {
-  private readonly backdrop = new Backdrop()
+  private readonly room: RoomController
   private readonly machine = new Container()
 
   constructor(
+    @inject(TOYBOX_TOKENS.RoomController) room: RoomController,
     @inject(TOYBOX_TOKENS.CubeController) cube: CubeController,
     @inject(TOYBOX_TOKENS.JoystickController) joystick: JoystickController,
     @inject(TOYBOX_TOKENS.DropButtonController) drop: DropButtonController,
@@ -33,6 +34,8 @@ export class GameScene extends Container {
     @inject(TOYBOX_TOKENS.PersistenceController) persistence: PersistenceController
   ) {
     super()
+
+    this.room = room
 
     // Точки установки постоянны в координатах корпуса, поэтому от размера канваса не зависят
     const placements = [
@@ -49,18 +52,18 @@ export class GameScene extends Container {
     }
 
     this.machine.addChild(cube, new Cabinet(), joystick, drop, marquee, prizeOutput, reset)
-    this.addChild(this.backdrop, this.machine, keyboard, persistence)
+    this.addChild(room, this.machine, keyboard, persistence)
   }
 
   layout(width: number, height: number, resolution: number): void {
     const { scale, x, y } = getMachineLayout(width, height, resolution)
 
     // Фон в масштабе и позиции автомата: сетка пикселей арта у них общая
-    for (const layer of [this.backdrop, this.machine]) {
+    for (const layer of [this.room, this.machine]) {
       layer.scale.set(scale)
       layer.position.set(x, y)
     }
 
-    this.backdrop.cover({ left: -x / scale, top: -y / scale, right: (width - x) / scale, bottom: (height - y) / scale })
+    this.room.cover({ left: -x / scale, top: -y / scale, right: (width - x) / scale, bottom: (height - y) / scale })
   }
 }

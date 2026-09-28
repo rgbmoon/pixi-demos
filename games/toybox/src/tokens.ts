@@ -12,6 +12,7 @@ import type { JoystickController } from './controllers/hud/joystick'
 import type { ResetButtonController } from './controllers/hud/reset-button'
 import type { KeyboardController } from './controllers/keyboard'
 import type { PersistenceController } from './controllers/persistence'
+import type { RoomController } from './controllers/room/room'
 import type { GameEvents } from './events'
 import type { Heap } from './heap/heap'
 import type { ToyboxStore } from './stores/toybox'
@@ -31,4 +32,5 @@ export const TOYBOX_TOKENS = {
   ResetButtonController: Symbol('ResetButtonController') as ServiceIdentifier<ResetButtonController>,
   KeyboardController: Symbol('KeyboardController') as ServiceIdentifier<KeyboardController>,
   PersistenceController: Symbol('PersistenceController') as ServiceIdentifier<PersistenceController>,
+  RoomController: Symbol('RoomController') as ServiceIdentifier<RoomController>,
 } as const

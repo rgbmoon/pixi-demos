@@ -121,7 +121,7 @@ games/
                        внутри разбиты по зонам сцены: hud/ и reels/
   toybox/              автомат с игрушками: bindings, claw/ heap/ stores/ phases/ scenes/ + листовые
                        tokens, types, constants, events, toys, utils; ui/ и controllers/ внутри разбиты
-                       по зонам сцены: box/ и hud/, вне зон — controllers/persistence.ts и keyboard.ts
+                       по зонам сцены: box/, hud/ и room/, вне зон — controllers/persistence.ts и keyboard.ts
 tools/
   asset-pipes/         сборка ассетов в Node: пайпы AssetPack и класс сборки AssetBuild
 web/                   приложение

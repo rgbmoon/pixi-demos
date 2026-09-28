@@ -18,6 +18,7 @@ import { JoystickController } from './controllers/hud/joystick'
 import { ResetButtonController } from './controllers/hud/reset-button'
 import { KeyboardController } from './controllers/keyboard'
 import { PersistenceController } from './controllers/persistence'
+import { RoomController } from './controllers/room/room'
 import type { GameEvents } from './events'
 import { Heap } from './heap/heap'
 import { AscendingPhase } from './phases/ascending'
@@ -66,6 +67,7 @@ const bindScene = (container: Container): void => {
     .toDynamicValue(() => ({ maxResolution: CANVAS_MAX_RESOLUTION, roundPixels: true }))
 
   bindSceneNode(container, ENGINE_TOKENS.Scene, GameScene)
+  bindSceneNode(container, TOYBOX_TOKENS.RoomController, RoomController)
   bindSceneNode(container, TOYBOX_TOKENS.CubeController, CubeController)
   bindSceneNode(container, TOYBOX_TOKENS.MarqueeController, MarqueeController)
   bindSceneNode(container, TOYBOX_TOKENS.PrizeOutputController, PrizeOutputController)

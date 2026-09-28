@@ -144,6 +144,29 @@ export type DepthItem = {
   readonly key: number
 }
 
+/** Размер кадра в пикселях арта. */
+export type FrameSize = {
+  readonly width: number
+  readonly height: number
+}
+
+/** Пылинка фона: место в пикселях арта, скорость в пикселях арта за секунду, возраст и срок жизни в мс. */
+export type DustMote = {
+  x: number
+  y: number
+  vx: number
+  vy: number
+  age: number
+  life: number
+}
+
+/** Декаль фона: номер варианта и левый верхний угол в пикселях арта. */
+export type DecalPlacement = {
+  readonly variant: number
+  readonly x: number
+  readonly y: number
+}
+
 /** Рамка на экране, выровненная по осям. */
 export type ScreenRect = {
   readonly left: number

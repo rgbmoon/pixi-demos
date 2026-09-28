@@ -1,4 +1,11 @@
-import { type GroundPoint, PhaseName, type ScreenPoint, type WorldPlane, type WorldPoint } from './types'
+import {
+  type FrameSize,
+  type GroundPoint,
+  PhaseName,
+  type ScreenPoint,
+  type WorldPlane,
+  type WorldPoint,
+} from './types'
 
 /** Потолок плотности канваса: на экранах до DPR 3 пиксель рендера совпадает с пикселем экрана. */
 export const CANVAS_MAX_RESOLUTION = 3
@@ -55,8 +62,40 @@ export const MARQUEE_TOP_Z = CUBE_HEIGHT + 1
 export const MACHINE_MARGIN = CELL_SIZE
 /** Доля канваса, в которую вписывается автомат с отступами; меньше единицы — автомат меньше на экране. */
 export const MACHINE_CANVAS_SHARE = 1
-/** Заливка фона вокруг автомата: самая тёмная ступень рампы `indigo` мастер-палитры. */
-export const BACKGROUND_COLOR = '#080633'
+
+// Фон
+/**
+ * Стена зала за автоматом: по её основанию идёт линия плинтуса. Ячейка глубины поднимает точку на экране на 2 px арта,
+ * поэтому между задним углом тумбы и плинтусом видно 2 × (WALL_X − GRID_SIZE) px пола.
+ */
+export const WALL_X = GRID_SIZE + 8
+/**
+ * Сторона блока раскладки декалей стены в пикселях арта: в блоке не больше одной декали, поэтому декали разнесены
+ * по стене равномерно.
+ */
+export const DECAL_BLOCK_SIZE = 128
+/** Доля блоков стены, в которых лежит декаль. */
+export const DECAL_BLOCK_SHARE = 0.75
+/** Длительности кадров пульса обоев, мс: узор задерживается в тёмной и светлой фазе и быстро переходит между ними. */
+export const WALLPAPER_PULSE_MS = [600, 150, 150, 150, 600, 150, 150, 150]
+/** Шаг сдвига рисунка ковра на пиксель арта, мс: рисунок проходит тайл за 48 шагов. */
+export const CARPET_DRIFT_STEP_MS = 200
+/** Середина стеклянного куба: от неё светит ореол на стене, вокруг неё летают пылинки. */
+export const GLOW_SOURCE_CENTER: WorldPoint = { x: GRID_SIZE / 2, y: GRID_SIZE / 2, z: CUBE_HEIGHT / 2 }
+/** Пылинки в свете куба: число, область вокруг середины куба в пикселях арта, срок жизни, скорость. */
+export const DUST_COUNT = 24
+export const DUST_AREA: FrameSize = { width: 368, height: 150 }
+export const DUST_MIN_LIFE_MS = 4000
+export const DUST_MAX_LIFE_MS = 8000
+/** Наибольшая скорость пылинки, пикселей арта в секунду: оседание быстрее бокового дрейфа. */
+export const DUST_FALL_SPEED = 4
+export const DUST_DRIFT_SPEED = 2
+/** Цвет пылинки — светлая ступень рампы `neon`; свет пылинки складывается с фоном. */
+export const DUST_COLOR = '#f97f96'
+/** Сид генератора пылинок: их полёт не тратит `Math.random` игры. */
+export const DUST_SEED = 7
+/** Центр тени автомата: середина основания тумбы. */
+export const SHADOW_CENTER: WorldPoint = { x: (CABINET_FRONT_X + GRID_SIZE) / 2, y: GRID_SIZE / 2, z: CABINET_BOTTOM_Z }
 
 /** Плоскость наклонной панели управления. */
 export const CONTROL_PANEL_PLANE: WorldPlane = {

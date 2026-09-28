@@ -6,10 +6,28 @@ import { Assets, type Spritesheet } from 'pixi.js'
 
 const ASSETS_DIR = '/games/toybox/assets'
 
+/** Алиас атласа фона в кэше Assets. */
+export const ROOM_ATLAS = 'room'
+
+/** Последовательности атласа фона: кадры `<имя>-N` упаковщик собирает в `animations.<имя>`. */
+export const ROOM_SEQUENCES = {
+  /** Варианты декалей стены. */
+  decals: 'decal',
+  /** Кадры пульса обоев. */
+  wallpaper: 'wallpaper',
+} as const
+
 /** Атласы игры: алиас в кэше Assets → URL JSON атласа. */
 export const ATLASES = {
-  // TODO заменить первым атласом арта в Т4: фикстура проверяет сборку и загрузку
-  fixture: `${ASSETS_DIR}/fixture/fixture.json`,
+  [ROOM_ATLAS]: `${ASSETS_DIR}/room/room.json`,
+} as const
+
+/** Кадры атласа фона: ключи текстур в кэше Assets. */
+export const ROOM_FRAMES = {
+  wainscot: 'wainscot.png',
+  carpet: 'carpet.png',
+  wallGlow: 'glow.png',
+  shadow: 'shadow.png',
 } as const
 
 /**
