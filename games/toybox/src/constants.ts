@@ -16,8 +16,10 @@ export const INITIAL_PHASE: PhaseName = PhaseName.booting
 // Масштаб арта и проекция
 /** Пиксель исходного арта в единицах сцены. */
 export const ART_PIXEL = 4
+/** Сторона ячейки в пикселях арта. */
+export const ART_CELL = 16
 /** Сторона ячейки в единицах сцены; в исходном арте это 16 пикселей. */
-export const CELL_SIZE = 16 * ART_PIXEL
+export const CELL_SIZE = ART_CELL * ART_PIXEL
 /** Толщина линий арта: один пиксель. */
 export const LINE_THICKNESS = ART_PIXEL
 /** Экранный шаг на ячейку вдоль оси x: она уходит вглубь сцены, наклон 1:1. */
@@ -56,8 +58,19 @@ export const CABINET_FRONT_X = -3
 export const CABINET_TOP_Z = -1
 /** Нижняя грань тумбы: при ней высота автомата на экране равна 1264 единицам сцены. */
 export const CABINET_BOTTOM_Z = -8.875
-/** Верх табло на одну ячейку выше стеклянного бокса. */
-export const MARQUEE_TOP_Z = CUBE_HEIGHT + 1
+/** Верх табло на полторы ячейки выше стеклянного бокса: 24 px арта под строку текста и ряд ламп. */
+export const MARQUEE_TOP_Z = CUBE_HEIGHT + 1.5
+/** Ширина плашки кнопки сброса у правого края табло в ячейках; экран табло занимает остальную ширину. */
+export const RESET_PLATE_WIDTH = 1.5
+/** Отступ экрана табло от верха табло и от его боковых краёв, px арта. */
+export const MARQUEE_SCREEN_TOP = 2
+export const MARQUEE_SCREEN_SIDE = 4
+/** Высота экрана табло, px арта: рама, строка текста и фаска. */
+export const MARQUEE_SCREEN_HEIGHT = 14
+/** Число гнёзд ламп в ряду под экраном табло. */
+export const MARQUEE_LAMP_COUNT = 8
+/** Ширина стойки куба, px арта: стойка лежит внутри силуэта куба. */
+export const PILLAR_WIDTH = 4
 /** Отступ корпуса от края канваса в единицах сцены: одна ячейка. */
 export const MACHINE_MARGIN = CELL_SIZE
 /** Доля канваса, в которую вписывается автомат с отступами; меньше единицы — автомат меньше на экране. */
@@ -107,11 +120,6 @@ export const CABINET_FRONT_PLANE: WorldPlane = {
   horizontal: { x: 0, y: -1, z: 0 },
   vertical: { x: 0, y: 0, z: -1 },
 }
-/** Боковая вертикальная плоскость тумбы и табло: горизонталь уходит вглубь. */
-export const CABINET_SIDE_PLANE: WorldPlane = {
-  horizontal: { x: 1, y: 0, z: 0 },
-  vertical: { x: 0, y: 0, z: -1 },
-}
 
 /** Центры встроенных органов управления в координатах мира. */
 export const JOYSTICK_CENTER: WorldPoint = { x: CABINET_FRONT_X / 2, y: 2, z: CABINET_TOP_Z / 2 }
@@ -122,11 +130,16 @@ export const PRIZE_HATCH_CENTER: WorldPoint = {
   z: (CABINET_TOP_Z + CABINET_BOTTOM_Z) / 2,
 }
 export const RESET_BUTTON_CENTER: WorldPoint = {
-  x: CABINET_FRONT_X,
-  y: 1,
-  z: CABINET_BOTTOM_Z + 1,
+  x: 0,
+  y: RESET_PLATE_WIDTH / 2,
+  z: (CUBE_HEIGHT + MARQUEE_TOP_Z) / 2,
 }
-export const MARQUEE_TEXT_CENTER: WorldPoint = { x: 0, y: GRID_SIZE / 2, z: CUBE_HEIGHT + 0.5 }
+/** Центр строки текста: середина экрана табло. */
+export const MARQUEE_TEXT_CENTER: WorldPoint = {
+  x: 0,
+  y: (GRID_SIZE + RESET_PLATE_WIDTH) / 2,
+  z: MARQUEE_TOP_Z - (MARQUEE_SCREEN_TOP + MARQUEE_SCREEN_HEIGHT / 2) / ART_CELL,
+}
 
 // Клешня
 /** Доля хода на разгон и на торможение у движений автомата: тросик набирает скорость коротко. */
@@ -200,8 +213,8 @@ export const JOYSTICK_HIT_RADIUS = 96
 export const BUTTON_SIZE_UNITS = 96
 /** Прозрачность заливки кнопки. */
 export const BUTTON_FILL_ALPHA = 0.2
-/** Сторона кнопки сброса в единицах сцены: меньше кнопки опускания. */
-export const RESET_BUTTON_SIZE_UNITS = 88
+/** Сторона кнопки сброса в единицах сцены: 16 px арта, кнопка помещается на плашке табло. */
+export const RESET_BUTTON_SIZE_UNITS = 64
 /** Начало и конец дуги круговой стрелки на кнопке сброса, радианы. */
 export const RESET_ARC_START = -Math.PI * 0.35
 export const RESET_ARC_END = Math.PI * 1.15
@@ -238,8 +251,6 @@ export const PRIZE_OPEN_HOLD_MS = 600
 export const PRIZE_TAKE_MS = 450
 
 // Табло
-/** Прозрачность заливки табло. */
-export const MARQUEE_FILL_ALPHA = 0.35
 /** Шрифт текстов сцены: своих ассетов у игры нет, берётся системный гротеск. */
 export const HUD_FONT_FAMILY = 'Arial, Helvetica, sans-serif'
 /** Время временных сообщений на табло. */

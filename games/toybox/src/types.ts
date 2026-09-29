@@ -43,15 +43,6 @@ export type WorldPlane = {
   readonly vertical: WorldPoint
 }
 
-/**
- * Наклон растра плоскости в проекции: сдвиг столбца по вертикали на пиксель ширины и строки по горизонтали
- * на пиксель высоты.
- */
-export type PlaneShear = {
-  readonly column: number
-  readonly row: number
-}
-
 /** Масштаб и начало координат корпуса на канвасе. */
 export type MachineLayout = {
   readonly scale: number
@@ -148,6 +139,23 @@ export type DepthItem = {
 export type FrameSize = {
   readonly width: number
   readonly height: number
+}
+
+/** Грань корпуса в мире: левый верхний угол рисунка, конец его верхнего края и конец левого края. */
+export type FaceCorners = {
+  readonly origin: WorldPoint
+  readonly right: WorldPoint
+  readonly down: WorldPoint
+}
+
+/** Аффинная матрица кадра грани в единицах сцены: столбцы — шаг пикселя кадра вправо и вниз, затем начало. */
+export type FaceMatrix = {
+  readonly a: number
+  readonly b: number
+  readonly c: number
+  readonly d: number
+  readonly tx: number
+  readonly ty: number
 }
 
 /** Пылинка фона: место в пикселях арта, скорость в пикселях арта за секунду, возраст и срок жизни в мс. */

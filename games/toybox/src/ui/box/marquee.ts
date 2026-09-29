@@ -1,14 +1,9 @@
-import { Container, Graphics, Matrix, Text } from 'pixi.js'
+import { Container, Matrix, Text } from 'pixi.js'
 
-import {
-  CABINET_FRONT_PLANE,
-  CELL_SIZE,
-  HUD_FONT_FAMILY,
-  LINE_THICKNESS,
-  MARQUEE_FILL_ALPHA,
-  MARQUEE_TEXT_CENTER,
-} from '#src/constants'
-import { getMarqueeOutlines } from '#src/utils/machine-geometry'
+import { CABINET_FRAMES } from '#src/assets'
+import { CABINET_FRONT_PLANE, CELL_SIZE, HUD_FONT_FAMILY, MARQUEE_TEXT_CENTER } from '#src/constants'
+import { Face } from '#src/ui/box/face'
+import { getCabinetFaces } from '#src/utils/machine-geometry'
 import { projectPlaneOffset, worldToScreen } from '#src/utils/projection'
 import { PALETTE } from '@pixi-demos/core/palette'
 
@@ -22,14 +17,7 @@ export class Marquee extends Container {
   constructor() {
     super()
 
-    const outline = new Graphics()
-
-    for (const face of getMarqueeOutlines()) {
-      outline
-        .poly(face.map((point) => worldToScreen(point)))
-        .fill({ color: PALETTE.accent, alpha: MARQUEE_FILL_ALPHA })
-        .stroke({ color: PALETTE.primary, width: LINE_THICKNESS })
-    }
+    const faces = getCabinetFaces()
 
     this.message = new Text({
       text: 'WELCOME',
@@ -58,7 +46,13 @@ export class Marquee extends Container {
       )
     )
 
-    this.addChild(outline, this.message)
+    this.addChild(
+      new Face(CABINET_FRAMES.marqueeRoof, faces.marqueeRoof),
+      new Face(CABINET_FRAMES.marqueeSide, faces.marqueeSide),
+      new Face(CABINET_FRAMES.marqueeFront, faces.marqueeFront),
+      new Face(CABINET_FRAMES.marqueeScreen, faces.marqueeScreen),
+      this.message
+    )
   }
 
   /** Выводит текст на переднюю грань табло. */

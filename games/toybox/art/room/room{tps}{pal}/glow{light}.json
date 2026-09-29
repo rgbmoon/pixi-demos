@@ -1,1 +1,1 @@
-{ "width": 368, "height": 277, "center": { "x": 184, "y": 91 }, "source": { "width": 144, "height": 40 }, "radius": { "x": 112, "top": 71, "bottom": 166 }, "ramp": "neon", "steps": [0, 2], "alpha": 0.35 }
+{ "width": 368, "height": 285, "center": { "x": 184, "y": 99 }, "source": { "width": 144, "height": 40 }, "radius": { "x": 112, "top": 79, "bottom": 166 }, "ramp": "neon", "steps": [0, 2], "alpha": 0.35 }

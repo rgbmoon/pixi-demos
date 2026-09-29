@@ -1,0 +1,348 @@
+[
+  {
+    "date": "2026-09-28",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "front view of a claw crane arcade machine: marquee sign box with a row of lamp sockets and a separate round button plate on the right, empty glass window framed by metal corner posts, sloped control panel, lower cabinet with a dark prize hatch, coin slot, vent grille, dark plinth with short feet, faded dusty pink painted sheet metal, chipped paint, scratches, rust spots, dents, grime, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, purple and magenta neon accents, crisp pixel art, clean pixel clusters, flat orthographic front view, no perspective, no text, no letters, no logos",
+      "width": 128,
+      "height": 296,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "medium detail",
+      "no_background": true,
+      "init_image": "art/cabinet/raw/sketch-a-296.png",
+      "init_image_strength": 90,
+      "seed": 5101,
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 5101,
+    "id": "c2b1e8e3-6033-4ed3-8b9b-661f33bdc821",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/c2b1e8e3-6033-4ed3-8b9b-661f33bdc821/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "raw/facade-a90.png"
+    ],
+    "note": "Образец стиля фасада, раунд 1. no_background: true — модель приняла однотонную заливку корпуса за фон: у A корпус стал прозрачным, вырез стекла залит серым; износ почти не нарисован. Эскиз дополнен 2 прозрачными строками снизу: pixflux требует стороны, кратные 4 (128×294 → 128×296). Сырые файлы raw/ удалены 29.09.2026: результат — в аккаунте PixelLab по id (get_image выдаёт свежую ссылку); эскизы sketch*.png были только локальными; пути raw/… в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-28",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "front view of a claw crane arcade machine: marquee sign box with a row of lamp sockets and a separate round button plate on the right, empty glass window framed by metal corner posts, sloped control panel, lower cabinet with a dark prize hatch, coin slot, vent grille, dark plinth with short feet, faded dusty pink painted sheet metal, chipped paint, scratches, rust spots, dents, grime, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, purple and magenta neon accents, crisp pixel art, clean pixel clusters, flat orthographic front view, no perspective, no text, no letters, no logos",
+      "width": 128,
+      "height": 296,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "medium detail",
+      "no_background": true,
+      "init_image": "art/cabinet/raw/sketch-a-296.png",
+      "init_image_strength": 150,
+      "seed": 5101,
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 5101,
+    "id": "3b5aebc2-72b5-4223-8efe-bdce393a2de3",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/3b5aebc2-72b5-4223-8efe-bdce393a2de3/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "raw/facade-a150.png"
+    ],
+    "note": "Образец стиля фасада, раунд 1. no_background: true — модель приняла однотонную заливку корпуса за фон: у A корпус стал прозрачным, вырез стекла залит серым; износ почти не нарисован. Эскиз дополнен 2 прозрачными строками снизу: pixflux требует стороны, кратные 4 (128×294 → 128×296). Сырые файлы raw/ удалены 29.09.2026: результат — в аккаунте PixelLab по id (get_image выдаёт свежую ссылку); эскизы sketch*.png были только локальными; пути raw/… в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-28",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "front view of a claw crane arcade machine: marquee sign box with a row of lamp sockets and a separate round button plate on the right, empty glass window framed by metal corner posts, sloped control panel, lower cabinet with a dark prize hatch, coin slot, vent grille, dark plinth with short feet, dark grey painted sheet metal with magenta neon trim, chipped paint, scratches, rust spots, dents, grime, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, purple and magenta neon accents, crisp pixel art, clean pixel clusters, flat orthographic front view, no perspective, no text, no letters, no logos",
+      "width": 128,
+      "height": 296,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "medium detail",
+      "no_background": true,
+      "init_image": "art/cabinet/raw/sketch-b-296.png",
+      "init_image_strength": 90,
+      "seed": 5101,
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 5101,
+    "id": "d72ba7d7-4384-45d0-a9b3-72077fc202a5",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/d72ba7d7-4384-45d0-a9b3-72077fc202a5/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "raw/facade-b90.png"
+    ],
+    "note": "Образец стиля фасада, раунд 1. no_background: true — модель приняла однотонную заливку корпуса за фон: у A корпус стал прозрачным, вырез стекла залит серым; износ почти не нарисован. Эскиз дополнен 2 прозрачными строками снизу: pixflux требует стороны, кратные 4 (128×294 → 128×296). Сырые файлы raw/ удалены 29.09.2026: результат — в аккаунте PixelLab по id (get_image выдаёт свежую ссылку); эскизы sketch*.png были только локальными; пути raw/… в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-28",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "front view of a claw crane arcade machine: marquee sign box with a row of lamp sockets and a separate round button plate on the right, empty glass window framed by metal corner posts, sloped control panel, lower cabinet with a dark prize hatch, coin slot, vent grille, dark plinth with short feet, dark grey painted sheet metal with magenta neon trim, chipped paint, scratches, rust spots, dents, grime, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, purple and magenta neon accents, crisp pixel art, clean pixel clusters, flat orthographic front view, no perspective, no text, no letters, no logos",
+      "width": 128,
+      "height": 296,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "medium detail",
+      "no_background": true,
+      "init_image": "art/cabinet/raw/sketch-b-296.png",
+      "init_image_strength": 150,
+      "seed": 5101,
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 5101,
+    "id": "5ab1985e-e35d-4989-a306-78d8f588108d",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/5ab1985e-e35d-4989-a306-78d8f588108d/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "raw/facade-b150.png"
+    ],
+    "note": "Образец стиля фасада, раунд 1. no_background: true — модель приняла однотонную заливку корпуса за фон: у A корпус стал прозрачным, вырез стекла залит серым; износ почти не нарисован. Эскиз дополнен 2 прозрачными строками снизу: pixflux требует стороны, кратные 4 (128×294 → 128×296). Сырые файлы raw/ удалены 29.09.2026: результат — в аккаунте PixelLab по id (get_image выдаёт свежую ссылку); эскизы sketch*.png были только локальными; пути raw/… в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-28",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "front view of a claw crane arcade machine: marquee sign box with a row of lamp sockets and a separate round button plate on the right, dark empty glass window framed by metal corner posts, sloped control panel, lower cabinet with a dark prize hatch, coin slot, vent grille, dark plinth with short feet, faded dusty pink painted sheet metal, chipped paint, scratches, rust spots, dents, grime, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, purple and magenta neon accents, crisp pixel art, clean pixel clusters, flat orthographic front view, no perspective, no text, no letters, no logos",
+      "width": 128,
+      "height": 296,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "highly detailed",
+      "no_background": false,
+      "init_image": "art/cabinet/raw/sketch2-a-296.png",
+      "init_image_strength": 110,
+      "seed": 5101,
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 5101,
+    "id": "9615d675-fbf8-43ba-9476-2e797a9f4dac",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/9615d675-fbf8-43ba-9476-2e797a9f4dac/download"
+    ],
+    "cost": 1,
+    "picked": [
+      "raw/facade2-a110.png"
+    ],
+    "rejected": [],
+    "note": "Образец стиля фасада, раунд 2: стекло в эскизе залито indigo[1], просвет у ножек — red[0], на корпус скриптом нанесены сколы, царапины, ржавчина и грязь у низа; фон непрозрачный. На ревью Сергея. Экран табло сделан по образцу этого варианта: широкий утопленный экран (решение Сергея 28.09.2026). Сырые файлы raw/ удалены 29.09.2026: результат — в аккаунте PixelLab по id (get_image выдаёт свежую ссылку); эскизы sketch*.png были только локальными; пути raw/… в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-28",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "front view of a claw crane arcade machine: marquee sign box with a row of lamp sockets and a separate round button plate on the right, dark empty glass window framed by metal corner posts, sloped control panel, lower cabinet with a dark prize hatch, coin slot, vent grille, dark plinth with short feet, faded dusty pink painted sheet metal, chipped paint, scratches, rust spots, dents, grime, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, purple and magenta neon accents, crisp pixel art, clean pixel clusters, flat orthographic front view, no perspective, no text, no letters, no logos",
+      "width": 128,
+      "height": 296,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "highly detailed",
+      "no_background": false,
+      "init_image": "art/cabinet/raw/sketch2-a-296.png",
+      "init_image_strength": 60,
+      "seed": 5101,
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 5101,
+    "id": "d6e47a38-6050-44ad-a5bf-f9b6a7989b60",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/d6e47a38-6050-44ad-a5bf-f9b6a7989b60/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [],
+    "note": "Образец стиля фасада, раунд 2: стекло в эскизе залито indigo[1], просвет у ножек — red[0], на корпус скриптом нанесены сколы, царапины, ржавчина и грязь у низа; фон непрозрачный. На ревью Сергея. Сырые файлы raw/ удалены 29.09.2026: результат — в аккаунте PixelLab по id (get_image выдаёт свежую ссылку); эскизы sketch*.png были только локальными; пути raw/… в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-28",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "front view of a claw crane arcade machine: marquee sign box with a row of lamp sockets and a separate round button plate on the right, dark empty glass window framed by metal corner posts, sloped control panel, lower cabinet with a dark prize hatch, coin slot, vent grille, dark plinth with short feet, dark grey painted sheet metal with magenta neon trim, chipped paint, scratches, rust spots, dents, grime, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, purple and magenta neon accents, crisp pixel art, clean pixel clusters, flat orthographic front view, no perspective, no text, no letters, no logos",
+      "width": 128,
+      "height": 296,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "highly detailed",
+      "no_background": false,
+      "init_image": "art/cabinet/raw/sketch2-b-296.png",
+      "init_image_strength": 110,
+      "seed": 5101,
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 5101,
+    "id": "8ef8b97b-3413-4049-a28b-2dc4abc9dfa4",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/8ef8b97b-3413-4049-a28b-2dc4abc9dfa4/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [],
+    "note": "Образец стиля фасада, раунд 2: стекло в эскизе залито indigo[1], просвет у ножек — red[0], на корпус скриптом нанесены сколы, царапины, ржавчина и грязь у низа; фон непрозрачный. На ревью Сергея. Сырые файлы raw/ удалены 29.09.2026: результат — в аккаунте PixelLab по id (get_image выдаёт свежую ссылку); эскизы sketch*.png были только локальными; пути raw/… в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-28",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "front view of a claw crane arcade machine: marquee sign box with a row of lamp sockets and a separate round button plate on the right, dark empty glass window framed by metal corner posts, sloped control panel, lower cabinet with a dark prize hatch, coin slot, vent grille, dark plinth with short feet, dark grey painted sheet metal with magenta neon trim, chipped paint, scratches, rust spots, dents, grime, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, purple and magenta neon accents, crisp pixel art, clean pixel clusters, flat orthographic front view, no perspective, no text, no letters, no logos",
+      "width": 128,
+      "height": 296,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "highly detailed",
+      "no_background": false,
+      "init_image": "art/cabinet/raw/sketch2-b-296.png",
+      "init_image_strength": 60,
+      "seed": 5101,
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 5101,
+    "id": "748a469e-878e-422f-a1e4-365e3b825def",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/748a469e-878e-422f-a1e4-365e3b825def/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [],
+    "note": "Образец стиля фасада, раунд 2: стекло в эскизе залито indigo[1], просвет у ножек — red[0], на корпус скриптом нанесены сколы, царапины, ржавчина и грязь у низа; фон непрозрачный. На ревью Сергея. Сырые файлы raw/ удалены 29.09.2026: результат — в аккаунте PixelLab по id (get_image выдаёт свежую ссылку); эскизы sketch*.png были только локальными; пути raw/… в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-28",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "front view of a claw crane arcade machine: marquee sign box with a row of lamp sockets and a separate round button plate on the right, dark empty glass window framed by metal corner posts, sloped control panel, lower cabinet with a dark prize hatch, coin slot, vent grille, dark plinth with short feet, faded dusty pink painted sheet metal, slightly worn paint, a few small chips and scratches, light grime, dark neglected motel game room, dim light, muted desaturated colors, purple and magenta neon accents, crisp pixel art, clean pixel clusters, flat orthographic front view, no perspective, no text, no letters, no logos",
+      "width": 128,
+      "height": 296,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "highly detailed",
+      "no_background": false,
+      "init_image": "art/cabinet/raw/sketch3-a-296.png",
+      "init_image_strength": 60,
+      "seed": 5101,
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 5101,
+    "id": "9f02d8a4-e8c8-49ad-82f4-8fb363e4aed6",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/9f02d8a4-e8c8-49ad-82f4-8fb363e4aed6/download"
+    ],
+    "cost": 1,
+    "picked": [
+      "raw/facade3-a60-s5101.png"
+    ],
+    "rejected": [],
+    "note": "Образец стиля фасада, раунд 3: по решению Сергея стиль A·60 с износом как у A·110. Износ на эскизе втрое реже (15 сколов, 5 царапин, 4 потёка, грязь у низа вдвое слабее), в промпте — лёгкий износ. Кандидат в образец: износ близок к A·110, болты и дверца как у A·60. На ревью. Выбран Сергеем 28.09.2026 образцом стиля корпуса. Сырые файлы raw/ удалены 29.09.2026: результат — в аккаунте PixelLab по id (get_image выдаёт свежую ссылку); эскизы sketch*.png были только локальными; пути raw/… в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-28",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "front view of a claw crane arcade machine: marquee sign box with a row of lamp sockets and a separate round button plate on the right, dark empty glass window framed by metal corner posts, sloped control panel, lower cabinet with a dark prize hatch, coin slot, vent grille, dark plinth with short feet, faded dusty pink painted sheet metal, slightly worn paint, a few small chips and scratches, light grime, dark neglected motel game room, dim light, muted desaturated colors, purple and magenta neon accents, crisp pixel art, clean pixel clusters, flat orthographic front view, no perspective, no text, no letters, no logos",
+      "width": 128,
+      "height": 296,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "highly detailed",
+      "no_background": false,
+      "init_image": "art/cabinet/raw/sketch3-a-296.png",
+      "init_image_strength": 60,
+      "seed": 5102,
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 5102,
+    "id": "cbd3ba25-6691-463a-955d-d3daf785de08",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/cbd3ba25-6691-463a-955d-d3daf785de08/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "raw/facade3-a60-s5102.png"
+    ],
+    "note": "Образец стиля фасада, раунд 3: по решению Сергея стиль A·60 с износом как у A·110. Износ на эскизе втрое реже (15 сколов, 5 царапин, 4 потёка, грязь у низа вдвое слабее), в промпте — лёгкий износ. Ушёл от эскиза: крупное окно на всю тумбу, синий шум по краям. Сырые файлы raw/ удалены 29.09.2026: результат — в аккаунте PixelLab по id (get_image выдаёт свежую ссылку); эскизы sketch*.png были только локальными; пути raw/… в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-28",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "front view of a claw crane arcade machine: marquee sign box with a row of lamp sockets and a separate round button plate on the right, dark empty glass window framed by metal corner posts, sloped control panel, lower cabinet with a dark prize hatch, coin slot, vent grille, dark plinth with short feet, faded dusty pink painted sheet metal, slightly worn paint, a few small chips and scratches, light grime, dark neglected motel game room, dim light, muted desaturated colors, purple and magenta neon accents, crisp pixel art, clean pixel clusters, flat orthographic front view, no perspective, no text, no letters, no logos",
+      "width": 128,
+      "height": 296,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "highly detailed",
+      "no_background": false,
+      "init_image": "art/cabinet/raw/sketch3-a-296.png",
+      "init_image_strength": 75,
+      "seed": 5101,
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 5101,
+    "id": "9cb63525-e316-4a69-95d0-96575765e162",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/9cb63525-e316-4a69-95d0-96575765e162/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "raw/facade3-a75-s5101.png"
+    ],
+    "note": "Образец стиля фасада, раунд 3: по решению Сергея стиль A·60 с износом как у A·110. Износ на эскизе втрое реже (15 сколов, 5 царапин, 4 потёка, грязь у низа вдвое слабее), в промпте — лёгкий износ. Износ лёгкий, детали грубее, чем у сида 5101 при силе 60. Сырые файлы raw/ удалены 29.09.2026: результат — в аккаунте PixelLab по id (get_image выдаёт свежую ссылку); эскизы sketch*.png были только локальными; пути raw/… в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-29",
+    "tool": "script",
+    "seed": 5101,
+    "id": null,
+    "urls": [],
+    "cost": 0,
+    "params": {
+      "source": "raw/facade3-a60-s5101.png (id 9f02d8a4-e8c8-49ad-82f4-8fb363e4aed6)",
+      "cuts": {
+        "cabinet-front/bill-slot": "x97 y172 23×12; pink[2] → прозрачный, bone[4] → metal[4], bone[3] → metal[3]",
+        "cabinet-front/coin-plate": "x103 y210 12×37; pink[2] → прозрачный, bone[4] → metal[4]"
+      },
+      "scheme": "основа фасадов pink[2], боковин pink[1], крыши и панели pink[3]; силуэт автомата — pink[0]; выпуклый общий край — блик pink[4] на более светлой грани (передний край и правый край крыши и панели); канавки, шов планки и тень над цоколем — на ступень темнее основы грани; крапины — ступень темнее, редкие сколы — ступень светлее, редкая ржавчина brown[1]; металл: рама metal[0], тело metal[2], блик metal[3–4]; bone в кромках не используется",
+      "built": "фасад тумбы: планка 20 строк и шов, канавки через 2 px от краёв, болты 2×3 и винты 2×2 — декали; цоколь indigo[0] 6 строк и ножки 6×4 metal с просветом; табло: гнёзда ламп 5×5, перегородка 1 px, плашка кнопки сброса metal 23×20; экран табло: рама metal[0], освещённые нижняя и правая стенки indigo[2], строка тени pink[1]; стойки: передние pink[0,3,2,0], задние pink[0,2,1,0]; заливки бесшовны по построению — крапины переносятся через край тайла"
+    },
+    "picked": [
+      "cabinet{tps}{pal}/*{compose}/"
+    ],
+    "rejected": [],
+    "note": "Детали набора для compose собраны скриптом по единой схеме кромок (решение Сергея 29.09.2026: корпус не должен читаться собранным из частей), генераций 0. Скрипт в репозитории не хранится: вырезки и правила записаны здесь. Раскладки граней — getFaceLayouts в assetpack.config.ts. Сырые файлы raw/ удалены 29.09.2026: результат — в аккаунте PixelLab по id (get_image выдаёт свежую ссылку); эскизы sketch*.png были только локальными; пути raw/… в этой записи — историческая справка."
+  }
+]

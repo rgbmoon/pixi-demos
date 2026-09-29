@@ -7,7 +7,15 @@ import {
   JOYSTICK_DEADZONE,
   UNIT_HEIGHT,
 } from '#src/constants'
-import type { GroundPoint, PlaneShear, ScreenPoint, WorldPlane, WorldPoint } from '#src/types'
+import type {
+  FaceCorners,
+  FaceMatrix,
+  FrameSize,
+  GroundPoint,
+  ScreenPoint,
+  WorldPlane,
+  WorldPoint,
+} from '#src/types'
 
 /** Определитель осей проекции: он же множитель обратного перевода. */
 const AXES_DETERMINANT = AXIS_X.x * AXIS_Y.y - AXIS_X.y * AXIS_Y.x
@@ -75,17 +83,6 @@ export const projectPlaneOffset = (plane: WorldPlane, horizontal: number, vertic
   })
 }
 
-/**
- * Наклон растра плоскости: рисунок грани рисуется прямоугольным, а в проекции игры его столбцы и строки сдвигаются
- * на эти доли пикселя за пиксель. По нему сборка ассетов переводит рисунок грани в проекцию.
- */
-export const getPlaneShear = (plane: WorldPlane): PlaneShear => {
-  const horizontal = projectPlaneOffset(plane, CELL_SIZE, 0)
-  const vertical = projectPlaneOffset(plane, 0, CELL_SIZE)
-
-  return { column: horizontal.y / horizontal.x, row: vertical.x / vertical.y }
-}
-
 /** Возвращает локальные координаты экранного смещения в мировой плоскости. */
 export const screenToPlaneOffset = (plane: WorldPlane, point: ScreenPoint): ScreenPoint => {
   const horizontal = projectPlaneOffset(plane, CELL_SIZE, 0)
@@ -136,3 +133,40 @@ export const getProjectedPlaneRectangle = (plane: WorldPlane, width: number, hei
     projectPlaneOffset(plane, -halfWidth, halfHeight),
   ]
 }
+
+/** Размер кадра грани в пикселях арта: экранный сдвиг верхнего края по горизонтали и левого края по вертикали. */
+export const getFaceSize = ({ origin, right, down }: FaceCorners): FrameSize => {
+  const start = worldToScreen(origin)
+
+  return {
+    width: Math.round(Math.abs(worldToScreen(right).x - start.x) / ART_PIXEL),
+    height: Math.round(Math.abs(worldToScreen(down).y - start.y) / ART_PIXEL),
+  }
+}
+
+/**
+ * Матрица кадра грани: пиксель плоского кадра переходит на грань в мире. Наклон плоскости применяется при рендере,
+ * поэтому ступень наклонной границы равна пикселю рендера.
+ */
+export const getFaceMatrix = ({ origin, right, down }: FaceCorners, { width, height }: FrameSize): FaceMatrix => {
+  const start = worldToScreen(origin)
+  const end = worldToScreen(right)
+  const bottom = worldToScreen(down)
+
+  return {
+    a: (end.x - start.x) / width,
+    b: (end.y - start.y) / width,
+    c: (bottom.x - start.x) / height,
+    d: (bottom.y - start.y) / height,
+    tx: start.x,
+    ty: start.y,
+  }
+}
+
+/** Четыре угла грани в мире в порядке обхода: четвёртый угол достраивается по трём заданным. */
+export const getFaceQuad = ({ origin, right, down }: FaceCorners): WorldPoint[] => [
+  origin,
+  right,
+  { x: right.x + down.x - origin.x, y: right.y + down.y - origin.y, z: right.z + down.z - origin.z },
+  down,
+]

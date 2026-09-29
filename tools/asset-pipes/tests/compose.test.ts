@@ -35,4 +35,21 @@ describe('пайп compose', () => {
       expect(rows[height - 2].slice(-3, -1)).toBe('dd')
     }
   })
+
+  it('вырезает силуэт прозрачными пикселями кромок и углов, прозрачное в декали оставляет заливку', () => {
+    const parts = new Map<string, RasterImage>([
+      [FACE_PARTS.fill, fromRows(['f'], LEGEND)],
+      [FACE_PARTS.edgeBottom, fromRows(['b', '.'], LEGEND)],
+      [FACE_PARTS.cornerBottomLeft, fromRows(['bb', 'c.'], LEGEND)],
+      [FACE_PARTS.cornerBottomRight, fromRows(['bb', '.c'], LEGEND)],
+      ['stain', fromRows(['d.'], LEGEND)],
+    ])
+
+    const rows = toRows(
+      composeFace(parts, { width: 6, height: 3, decals: [{ name: 'stain', corner: 'top-left', x: 1, y: 0 }] }),
+      LEGEND
+    )
+
+    expect(rows).toEqual(['fdffff', 'bbbbbb', 'c....c'])
+  })
 })

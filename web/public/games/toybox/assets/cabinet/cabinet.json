@@ -1,0 +1,237 @@
+{
+  "frames": {
+    "pillar-front-right.png": {
+      "frame": {
+        "x": 2,
+        "y": 2,
+        "w": 4,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 4,
+        "h": 128
+      }
+    },
+    "pillar-front-left.png": {
+      "frame": {
+        "x": 8,
+        "y": 2,
+        "w": 4,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 4,
+        "h": 128
+      }
+    },
+    "pillar-back-right.png": {
+      "frame": {
+        "x": 14,
+        "y": 2,
+        "w": 4,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 4,
+        "h": 128
+      }
+    },
+    "pillar-back-left.png": {
+      "frame": {
+        "x": 20,
+        "y": 2,
+        "w": 4,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 4,
+        "h": 128
+      }
+    },
+    "panel.png": {
+      "frame": {
+        "x": 26,
+        "y": 2,
+        "w": 128,
+        "h": 22
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 22
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 22
+      }
+    },
+    "marquee-side.png": {
+      "frame": {
+        "x": 26,
+        "y": 26,
+        "w": 16,
+        "h": 24
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 24
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 24
+      }
+    },
+    "marquee-screen.png": {
+      "frame": {
+        "x": 44,
+        "y": 26,
+        "w": 96,
+        "h": 15
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 96,
+        "h": 15
+      },
+      "sourceSize": {
+        "w": 96,
+        "h": 15
+      }
+    },
+    "marquee-roof.png": {
+      "frame": {
+        "x": 26,
+        "y": 52,
+        "w": 128,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 16
+      }
+    },
+    "marquee-front.png": {
+      "frame": {
+        "x": 26,
+        "y": 70,
+        "w": 128,
+        "h": 24
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 24
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 24
+      }
+    },
+    "cabinet-side.png": {
+      "frame": {
+        "x": 2,
+        "y": 132,
+        "w": 22,
+        "h": 142
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 22,
+        "h": 142
+      },
+      "sourceSize": {
+        "w": 22,
+        "h": 142
+      }
+    },
+    "cabinet-front.png": {
+      "frame": {
+        "x": 26,
+        "y": 96,
+        "w": 128,
+        "h": 126
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 126
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 126
+      }
+    }
+  },
+  "animations": {},
+  "meta": {
+    "app": "http://github.com/pixijs/assetpack",
+    "version": "1.0",
+    "image": "cabinet.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 156,
+      "h": 276
+    },
+    "scale": 1,
+    "related_multi_packs": []
+  }
+}

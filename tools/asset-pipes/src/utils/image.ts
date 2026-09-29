@@ -54,6 +54,23 @@ export const setColor = (image: RasterImage, x: number, y: number, color: number
 export const isOpaque = (image: RasterImage, x: number, y: number): boolean =>
   x >= 0 && y >= 0 && x < image.width && y < image.height && image.data[getOffset(image, x, y) + 3] > 0
 
+/** Копирует все пиксели `source` в `target` со сдвигом: прозрачный пиксель стирает пиксель под собой. */
+export const copyImage = (target: RasterImage, source: RasterImage, dx: number, dy: number): void => {
+  for (let y = 0; y < source.height; y++) {
+    for (let x = 0; x < source.width; x++) {
+      const tx = x + dx
+      const ty = y + dy
+
+      if (tx < 0 || ty < 0 || tx >= target.width || ty >= target.height) continue
+
+      target.data.set(
+        source.data.subarray(getOffset(source, x, y), getOffset(source, x, y) + 4),
+        getOffset(target, tx, ty)
+      )
+    }
+  }
+}
+
 /** Копирует непрозрачные пиксели `source` в `target` со сдвигом; пиксели за границей `target` отбрасываются. */
 export const drawImage = (target: RasterImage, source: RasterImage, dx: number, dy: number): void => {
   for (let y = 0; y < source.height; y++) {

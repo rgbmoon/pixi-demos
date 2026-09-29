@@ -1,19 +1,21 @@
-import { Graphics } from 'pixi.js'
+import { Container } from 'pixi.js'
 
-import { LINE_THICKNESS } from '#src/constants'
-import { getCabinetOutlines } from '#src/utils/machine-geometry'
-import { worldToScreen } from '#src/utils/projection'
-import { PALETTE } from '@pixi-demos/core/palette'
+import { CABINET_FRAMES } from '#src/assets'
+import { Face } from '#src/ui/box/face'
+import { getCabinetFaces } from '#src/utils/machine-geometry'
 
-/** Неподвижный корпус: фронтальная грань, правая боковина и наклонная панель управления. */
-export class Cabinet extends Graphics {
+/** Неподвижный корпус: фасад тумбы, правая боковина и наклонная панель управления. */
+export class Cabinet extends Container {
   constructor() {
     super()
 
-    for (const face of getCabinetOutlines()) {
-      this.poly(face.map((point) => worldToScreen(point)))
-        .fill(PALETTE.background)
-        .stroke({ color: PALETTE.primary, width: LINE_THICKNESS })
-    }
+    const faces = getCabinetFaces()
+
+    // Боковина лежит под панелью: её угол над наклоном панели закрывает панель
+    this.addChild(
+      new Face(CABINET_FRAMES.cabinetSide, faces.cabinetSide),
+      new Face(CABINET_FRAMES.cabinetFront, faces.cabinetFront),
+      new Face(CABINET_FRAMES.panel, faces.panel)
+    )
   }
 }

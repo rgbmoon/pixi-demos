@@ -59,15 +59,6 @@ export type FrameMeta = {
   borders?: FrameBorders
 }
 
-/**
- * Наклон растра грани в проекции игры: сдвиг столбца по вертикали на пиксель ширины и строки по горизонтали
- * на пиксель высоты.
- */
-export type ShearSlopes = {
-  readonly column: number
-  readonly row: number
-}
-
 export type FaceCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
 
 /** Декаль грани: имя детали, угол грани и отступ от него внутрь грани в пикселях. */
@@ -181,8 +172,6 @@ export type AssetBuildOptions = {
   readonly targetPalette?: Palette
   /** Раскладки граней по имени папки `{compose}`. */
   readonly faces?: Readonly<Record<string, FaceLayout>>
-  /** Наклоны граней по значению тега `{face=…}`. */
-  readonly projections?: Readonly<Record<string, ShearSlopes>>
   /** Цвет контура подсветки. */
   readonly outlineColor: string
   /** Каталог превью атласов и тайлов для ревью; без него превью не пишутся. */

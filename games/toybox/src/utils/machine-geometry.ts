@@ -1,4 +1,5 @@
 import {
+  ART_CELL,
   ART_PIXEL,
   CABINET_BOTTOM_Z,
   CABINET_FRONT_PLANE,
@@ -8,13 +9,19 @@ import {
   GRID_SIZE,
   MACHINE_CANVAS_SHARE,
   MACHINE_MARGIN,
+  MARQUEE_LAMP_COUNT,
+  MARQUEE_SCREEN_HEIGHT,
+  MARQUEE_SCREEN_SIDE,
+  MARQUEE_SCREEN_TOP,
   MARQUEE_TOP_Z,
+  PILLAR_WIDTH,
   PRIZE_HATCH_SIZE,
+  RESET_PLATE_WIDTH,
   TRAY_ORIGIN,
   TRAY_SIZE,
   TRAY_WALL_HEIGHT,
 } from '#src/constants'
-import type { GroundPoint, MachineLayout, ScreenPoint, ScreenRect, WorldPoint } from '#src/types'
+import type { FaceCorners, GroundPoint, MachineLayout, ScreenPoint, ScreenRect, WorldPoint } from '#src/types'
 
 import { getBounds } from './geometry'
 import { clamp } from './math'
@@ -158,3 +165,78 @@ export const getMachineLayout = (width: number, height: number, resolution: numb
     y: Math.round((height / 2 - ((top + bottom) / 2) * scale) * resolution) / resolution,
   }
 }
+
+/** Ширина экрана табло, px арта: между левым краем табло и плашкой кнопки сброса с отступами по бокам. */
+const getMarqueeScreenWidth = (): number => (GRID_SIZE - RESET_PLATE_WIDTH) * ART_CELL - 2 * MARQUEE_SCREEN_SIDE
+
+/**
+ * Грани корпуса и табло: углы рисунка каждой грани в мире. Боковина тумбы начинается от высоты пола бокса: её угол
+ * над наклоном панели закрывает панель. В грань экрана табло входит строка тени под его рамой.
+ */
+export const getCabinetFaces = () => {
+  const screenLeft = GRID_SIZE - MARQUEE_SCREEN_SIDE / ART_CELL
+  const screenTop = MARQUEE_TOP_Z - MARQUEE_SCREEN_TOP / ART_CELL
+  const screenBottom = screenTop - (MARQUEE_SCREEN_HEIGHT + 1) / ART_CELL
+
+  return {
+    cabinetFront: {
+      origin: { x: CABINET_FRONT_X, y: GRID_SIZE, z: CABINET_TOP_Z },
+      right: { x: CABINET_FRONT_X, y: 0, z: CABINET_TOP_Z },
+      down: { x: CABINET_FRONT_X, y: GRID_SIZE, z: CABINET_BOTTOM_Z },
+    },
+    cabinetSide: {
+      origin: { x: CABINET_FRONT_X, y: 0, z: 0 },
+      right: { x: GRID_SIZE, y: 0, z: 0 },
+      down: { x: CABINET_FRONT_X, y: 0, z: CABINET_BOTTOM_Z },
+    },
+    panel: {
+      origin: { x: 0, y: GRID_SIZE, z: 0 },
+      right: { x: 0, y: 0, z: 0 },
+      down: { x: CABINET_FRONT_X, y: GRID_SIZE, z: CABINET_TOP_Z },
+    },
+    marqueeFront: {
+      origin: { x: 0, y: GRID_SIZE, z: MARQUEE_TOP_Z },
+      right: { x: 0, y: 0, z: MARQUEE_TOP_Z },
+      down: { x: 0, y: GRID_SIZE, z: CUBE_HEIGHT },
+    },
+    marqueeScreen: {
+      origin: { x: 0, y: screenLeft, z: screenTop },
+      right: { x: 0, y: screenLeft - getMarqueeScreenWidth() / ART_CELL, z: screenTop },
+      down: { x: 0, y: screenLeft, z: screenBottom },
+    },
+    marqueeSide: {
+      origin: { x: 0, y: 0, z: MARQUEE_TOP_Z },
+      right: { x: GRID_SIZE, y: 0, z: MARQUEE_TOP_Z },
+      down: { x: 0, y: 0, z: CUBE_HEIGHT },
+    },
+    marqueeRoof: {
+      origin: { x: GRID_SIZE, y: GRID_SIZE, z: MARQUEE_TOP_Z },
+      right: { x: GRID_SIZE, y: 0, z: MARQUEE_TOP_Z },
+      down: { x: 0, y: GRID_SIZE, z: MARQUEE_TOP_Z },
+    },
+  } as const satisfies Record<string, FaceCorners>
+}
+
+/** Передние грани четырёх стоек куба: полосы шириной PILLAR_WIDTH от углов внутрь силуэта куба. */
+export const getPillarFaces = () => {
+  const inset = PILLAR_WIDTH / ART_CELL
+  const post = (x: number, left: number, right: number): FaceCorners => ({
+    origin: { x, y: left, z: CUBE_HEIGHT },
+    right: { x, y: right, z: CUBE_HEIGHT },
+    down: { x, y: left, z: 0 },
+  })
+
+  return {
+    frontLeft: post(0, GRID_SIZE, GRID_SIZE - inset),
+    frontRight: post(0, inset, 0),
+    backLeft: post(GRID_SIZE, GRID_SIZE, GRID_SIZE - inset),
+    backRight: post(GRID_SIZE, inset, 0),
+  } as const satisfies Record<string, FaceCorners>
+}
+
+/** Центры гнёзд ламп под экраном табло, px арта от левого края табло: гнёзда делят ширину экрана поровну. */
+export const getMarqueeLampCenters = (): number[] =>
+  Array.from(
+    { length: MARQUEE_LAMP_COUNT },
+    (_, index) => MARQUEE_SCREEN_SIDE + ((index + 0.5) * getMarqueeScreenWidth()) / MARQUEE_LAMP_COUNT
+  )

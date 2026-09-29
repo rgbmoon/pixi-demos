@@ -1,8 +1,9 @@
 import { inject, injectable } from 'inversify'
 import type { DestroyOptions, Ticker } from 'pixi.js'
 
+import { PILLAR_FRAMES } from '#src/assets'
 import type { ClawRig } from '#src/claw/claw-rig'
-import { CLAW_RADIUS, CUBE_HEIGHT, UNIT_HEIGHT } from '#src/constants'
+import { CLAW_RADIUS, UNIT_HEIGHT } from '#src/constants'
 import type { Heap } from '#src/heap/heap'
 import type { ToyBody } from '#src/heap/types'
 import type { ToyboxStore } from '#src/stores/toybox'
@@ -10,23 +11,22 @@ import { TOYBOX_TOKENS } from '#src/tokens'
 import type { ToyId, WorldPoint } from '#src/types'
 import { Claw } from '#src/ui/box/claw'
 import { DepthLayer } from '#src/ui/box/depth-layer'
+import { Face } from '#src/ui/box/face'
 import { Floor } from '#src/ui/box/floor'
-import { Frame } from '#src/ui/box/frame'
-import { Pillar } from '#src/ui/box/pillar'
 import { Toy } from '#src/ui/box/toy'
 import { ToyShapes } from '#src/ui/box/toy-shapes'
 import { TrayWall } from '#src/ui/box/tray-wall'
 import { getPlaneDepthItem, getPointDepthItem, getToyDepthItem } from '#src/utils/depth'
-import { getFaceOutline, getTrayWallOutlines } from '#src/utils/machine-geometry'
-import { worldToScreen } from '#src/utils/projection'
+import { getPillarFaces, getTrayWallOutlines } from '#src/utils/machine-geometry'
+import { getFaceQuad, worldToScreen } from '#src/utils/projection'
 import { getAngleStep } from '#src/utils/shapes'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 import { LiveContainer } from '@pixi-demos/engine/live-container'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 
 /**
- * Стеклянный куб автомата. Пол и верхняя грань лежат под слоем `DepthLayer`, в слое — игрушки, клешня в сборе,
- * вертикальные рёбра и стенки лотка; их порядок наложения задаёт попарное сравнение по глубине.
+ * Стеклянный куб автомата. Пол лежит под слоем `DepthLayer`, в слое — игрушки, клешня в сборе, стойки и стенки
+ * лотка; их порядок наложения задаёт попарное сравнение по глубине. Верх куба закрывает табло.
  *
  * Каждый кадр контроллер продвигает модели клешни и кучи, переносит их позы в View-компоненты одним проходом
  * и сортирует слой.
@@ -61,13 +61,15 @@ export class CubeController extends LiveContainer {
       this.layer.place(new TrayWall(outline), { x: 0, y: 0 }, 0, () => getPlaneDepthItem(outline))
     }
 
-    for (const corner of getFaceOutline(0)) {
-      this.layer.place(new Pillar(corner), { x: 0, y: 0 }, 0, () =>
-        getPlaneDepthItem([corner, { ...corner, z: CUBE_HEIGHT }])
-      )
+    const pillars = getPillarFaces()
+
+    for (const key of Object.keys(PILLAR_FRAMES) as (keyof typeof PILLAR_FRAMES)[]) {
+      const quad = getFaceQuad(pillars[key])
+
+      this.layer.place(new Face(PILLAR_FRAMES[key], pillars[key]), { x: 0, y: 0 }, 0, () => getPlaneDepthItem(quad))
     }
 
-    this.addChild(new Floor(), new Frame(), this.layer)
+    this.addChild(new Floor(), this.layer)
 
     this.ticker.add(this.step)
   }
