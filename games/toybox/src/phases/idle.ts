@@ -1,6 +1,7 @@
 import { inject, injectable } from 'inversify'
 
 import type { GameEvents } from '#src/events'
+import type { FloorPile } from '#src/heap/floor-pile'
 import type { Heap } from '#src/heap/heap'
 import { pourHeap } from '#src/heap/utils'
 import type { ToyboxStore } from '#src/stores/toybox'
@@ -19,15 +20,18 @@ export class IdlePhase implements Phase<PhaseName> {
 
   private readonly emitter: GameEmitter<GameEvents>
   private readonly heap: Heap
+  private readonly floorPile: FloorPile
   private readonly toyboxStore: ToyboxStore
 
   constructor(
     @inject(TOYBOX_TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>,
     @inject(TOYBOX_TOKENS.Heap) heap: Heap,
+    @inject(TOYBOX_TOKENS.FloorPile) floorPile: FloorPile,
     @inject(TOYBOX_TOKENS.ToyboxStore) toyboxStore: ToyboxStore
   ) {
     this.emitter = emitter
     this.heap = heap
+    this.floorPile = floorPile
     this.toyboxStore = toyboxStore
   }
 
@@ -43,13 +47,14 @@ export class IdlePhase implements Phase<PhaseName> {
     return PhaseName.descending
   }
 
-  /** Новая игра: куча насыпается заново, счёт обнуляется. */
+  /** Новая игра: куча насыпается заново, пол пустеет, счёт обнуляется. */
   private reset(): void {
     if (!this.toyboxStore.canReset) return
 
     this.heap.restore(pourHeap(Math.random))
+    this.floorPile.restore([])
     this.toyboxStore.applyCollected(0)
-    this.toyboxStore.publishCheckpoint(this.heap.takeSnapshot())
+    this.toyboxStore.publishCheckpoint(this.heap.takeSnapshot(), this.floorPile.takeSnapshot())
     this.emitter.emit('heap:reset')
   }
 }

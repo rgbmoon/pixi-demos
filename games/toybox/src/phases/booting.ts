@@ -1,6 +1,7 @@
 import { inject, injectable } from 'inversify'
 
 import type { GameEvents } from '#src/events'
+import type { FloorPile } from '#src/heap/floor-pile'
 import type { Heap } from '#src/heap/heap'
 import { isHeapSnapshot, pourHeap } from '#src/heap/utils'
 import type { ToyboxStore } from '#src/stores/toybox'
@@ -11,8 +12,8 @@ import type { Phase } from '@pixi-demos/core/fsm/types'
 import type { IdbStorage } from '@pixi-demos/core/idb-storage'
 
 /**
- * Стартовая фаза: восстанавливает кучу из хранилища, а при отсутствии совместимого снимка создаёт
- * новую. Дальше объявляет игру готовой и переводит автомат в покой.
+ * Стартовая фаза: восстанавливает кучу и игрушки на полу из хранилища, а при отсутствии совместимого снимка создаёт
+ * новую кучу с пустым полом. Дальше объявляет игру готовой и переводит автомат в покой.
  */
 @injectable()
 export class BootingPhase implements Phase<PhaseName> {
@@ -20,17 +21,20 @@ export class BootingPhase implements Phase<PhaseName> {
 
   private readonly emitter: GameEmitter<GameEvents>
   private readonly heap: Heap
+  private readonly floorPile: FloorPile
   private readonly toyboxStore: ToyboxStore
   private readonly storage: IdbStorage<HeapSnapshot>
 
   constructor(
     @inject(TOYBOX_TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>,
     @inject(TOYBOX_TOKENS.Heap) heap: Heap,
+    @inject(TOYBOX_TOKENS.FloorPile) floorPile: FloorPile,
     @inject(TOYBOX_TOKENS.ToyboxStore) toyboxStore: ToyboxStore,
     @inject(TOYBOX_TOKENS.HeapStorage) storage: IdbStorage<HeapSnapshot>
   ) {
     this.emitter = emitter
     this.heap = heap
+    this.floorPile = floorPile
     this.toyboxStore = toyboxStore
     this.storage = storage
   }
@@ -42,8 +46,9 @@ export class BootingPhase implements Phase<PhaseName> {
     const snapshot = isHeapSnapshot(stored) ? stored : undefined
 
     this.heap.restore(snapshot?.bodies ?? pourHeap(Math.random))
+    this.floorPile.restore(snapshot?.floor ?? [])
     this.toyboxStore.applyCollected(snapshot?.collected ?? 0)
-    this.toyboxStore.publishCheckpoint(this.heap.takeSnapshot())
+    this.toyboxStore.publishCheckpoint(this.heap.takeSnapshot(), this.floorPile.takeSnapshot())
     this.emitter.emit('game:booted')
 
     return PhaseName.idle

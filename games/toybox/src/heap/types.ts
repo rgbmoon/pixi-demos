@@ -43,3 +43,28 @@ export type SurfaceHit = {
   id: ToyId | undefined
   z: number
 }
+
+/** Неподвижный прямоугольник мира в плоскости `(y, z)`: центр, размеры и срезы, с игрушками которых он сталкивается. */
+export type StaticBox = {
+  readonly y: number
+  readonly z: number
+  readonly width: number
+  readonly height: number
+  readonly mask: number
+}
+
+/** Статика мира кучи: пол и стенки. */
+export type WorldStatics = {
+  readonly boxes: readonly StaticBox[]
+  /** Граница срезов со стенкой, в которую упирается только игрушка, занимающая срезы по обе стороны от неё. */
+  readonly spanEdge?: number
+}
+
+/** Пределы игрушки в снимке: число срезов и рамка центра в плоскости `(y, z)`. */
+export type SnapshotBounds = {
+  readonly slabs: number
+  readonly minY: number
+  readonly maxY: number
+  readonly minZ: number
+  readonly maxZ: number
+}

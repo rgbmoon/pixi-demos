@@ -36,6 +36,7 @@ test.describe('куча между заходами', () => {
     const fresh = await readSavedSnapshot(page)
 
     expect(fresh?.collected).toBe(0)
+    expect(fresh?.floor).toEqual([])
     expect(fresh).not.toEqual(initial)
 
     // Новая куча переживает перезаход так же, как прежняя

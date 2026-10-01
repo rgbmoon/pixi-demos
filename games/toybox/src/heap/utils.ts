@@ -1,4 +1,15 @@
-import { CUBE_HEIGHT, GRID_SIZE, HEAP_SNAPSHOT_VERSION, TRAY_ORIGIN, TRAY_SIZE } from '#src/constants'
+import {
+  CABINET_BOTTOM_Z,
+  CUBE_HEIGHT,
+  FLOOR_PILE_DEPTH,
+  FLOOR_PILE_WIDTH,
+  GRID_SIZE,
+  HEAP_SNAPSHOT_VERSION,
+  MARQUEE_TOP_Z,
+  TRAY_ORIGIN,
+  TRAY_SIZE,
+  TRAY_WALL_HEIGHT,
+} from '#src/constants'
 import { SHAPE_KEYS, SHAPES } from '#src/toys'
 import type { GroundPoint, HeapSnapshot, HeapSnapshotBody, ShapeKey, ToyId, ToyPose } from '#src/types'
 import { clamp, lerp } from '#src/utils/math'
@@ -6,6 +17,7 @@ import { getDepthCenter, getSection, getSectionExtent, getVariant, getVariantCou
 import type { Random } from '@pixi-demos/core/types'
 
 import {
+  COLLISION_FAR_SPAN,
   DOME_CENTER_HEIGHT,
   DOME_EDGE_HEIGHT,
   DOME_FALLOFF_MAX,
@@ -24,9 +36,92 @@ import {
   TOY_LIGHTNESS_SPREAD,
   TOY_ROOT_COLOR,
   TRAY_EXIT_Z,
+  TRAY_WALL_THICKNESS,
+  WALL_THICKNESS,
 } from './constants'
 import { HeapWorld } from './heap-world'
-import type { DomeProfile } from './types'
+import type { DomeProfile, SnapshotBounds, StaticBox, WorldStatics } from './types'
+
+/** Край полосы пола справа от тумбы по оси `y`: полоса стоит серединой под серединой куба. */
+const getFloorPileRight = (): number => (GRID_SIZE - FLOOR_PILE_WIDTH) / 2
+
+/**
+ * Статика куба: пол, стенки и лоток. Пол перед шахтой лотка лежит во всех срезах, над шахтой — только в срезах за
+ * лотком. Стенки стоят снаружи куба.
+ */
+export const getCubeStatics = (): WorldStatics => {
+  const allSlabs = (1 << GRID_SIZE) - 1
+  const traySlabs = ((1 << TRAY_SIZE) - 1) << TRAY_ORIGIN.x
+  const wallHeight = CUBE_HEIGHT - TRAY_EXIT_Z + WALL_THICKNESS
+  const wallCenter = (CUBE_HEIGHT + TRAY_EXIT_Z - WALL_THICKNESS) / 2
+  const trayWallHeight = TRAY_WALL_HEIGHT - TRAY_EXIT_Z + WALL_THICKNESS
+  const box = (width: number, height: number, y: number, z: number, mask: number): StaticBox => ({
+    y,
+    z,
+    width,
+    height,
+    mask,
+  })
+
+  return {
+    boxes: [
+      box(TRAY_ORIGIN.y, WALL_THICKNESS, TRAY_ORIGIN.y / 2, -WALL_THICKNESS / 2, allSlabs),
+      box(
+        GRID_SIZE - TRAY_ORIGIN.y,
+        WALL_THICKNESS,
+        (GRID_SIZE + TRAY_ORIGIN.y) / 2,
+        -WALL_THICKNESS / 2,
+        allSlabs & ~traySlabs
+      ),
+      box(WALL_THICKNESS, wallHeight, -WALL_THICKNESS / 2, wallCenter, allSlabs),
+      box(WALL_THICKNESS, wallHeight, GRID_SIZE + WALL_THICKNESS / 2, wallCenter, allSlabs),
+      box(
+        TRAY_WALL_THICKNESS,
+        trayWallHeight,
+        TRAY_ORIGIN.y,
+        (TRAY_WALL_HEIGHT + TRAY_EXIT_Z - WALL_THICKNESS) / 2,
+        traySlabs
+      ),
+      // Дальняя стенка лотка стоит на границе срезов: в неё упирается только игрушка, занимающая оба
+      box(
+        GRID_SIZE - TRAY_ORIGIN.y,
+        TRAY_WALL_HEIGHT,
+        (GRID_SIZE + TRAY_ORIGIN.y) / 2,
+        TRAY_WALL_HEIGHT / 2,
+        COLLISION_FAR_SPAN
+      ),
+    ],
+    spanEdge: TRAY_ORIGIN.x + TRAY_SIZE,
+  }
+}
+
+/** Статика пола перед автоматом: пол зала и невидимые стенки по краям полосы с выигранными игрушками. */
+export const getFloorStatics = (): WorldStatics => {
+  const slabs = (1 << FLOOR_PILE_DEPTH) - 1
+  const right = getFloorPileRight()
+  const wallHeight = MARQUEE_TOP_Z - CABINET_BOTTOM_Z
+  const wallCenter = CABINET_BOTTOM_Z + wallHeight / 2
+
+  return {
+    boxes: [
+      {
+        y: right + FLOOR_PILE_WIDTH / 2,
+        z: CABINET_BOTTOM_Z - WALL_THICKNESS / 2,
+        width: FLOOR_PILE_WIDTH + 2 * WALL_THICKNESS,
+        height: WALL_THICKNESS,
+        mask: slabs,
+      },
+      { y: right - WALL_THICKNESS / 2, z: wallCenter, width: WALL_THICKNESS, height: wallHeight, mask: slabs },
+      {
+        y: right + FLOOR_PILE_WIDTH + WALL_THICKNESS / 2,
+        z: wallCenter,
+        width: WALL_THICKNESS,
+        height: wallHeight,
+        mask: slabs,
+      },
+    ],
+  }
+}
 
 /** Форма для наполнения: выбор с весами `fillWeight`. */
 const pickShape = (random: Random): ShapeKey => {
@@ -107,7 +202,7 @@ const shiftColor = (base: string, random: Random): number => {
  */
 export const pourHeap = (random: Random): HeapSnapshotBody[] => {
   // Новый мир на каждое насыпание: повторно использованный мир planck теряет детерминизм
-  const world = new HeapWorld()
+  const world = new HeapWorld(getCubeStatics())
   const toys = new Map<ToyId, HeapSnapshotBody>()
   const dome = planDome(random)
   let volume = 0
@@ -181,8 +276,19 @@ export const pourHeap = (random: Random): HeapSnapshotBody[] => {
   return [...toys].map(([id, toy]) => ({ ...toy, ...world.getPose(id) }))
 }
 
-/** Предел числа игрушек в снимке: куча столько не вмещает, больший список — мусор. */
-const MAX_BODIES = GRID_SIZE * GRID_SIZE * CUBE_HEIGHT
+/** Пределы игрушек кучи в кубе: куча столько не вмещает, больший список — мусор. */
+const CUBE_BOUNDS: SnapshotBounds = { slabs: GRID_SIZE, minY: 0, maxY: GRID_SIZE, minZ: 0, maxZ: CUBE_HEIGHT }
+const MAX_CUBE_BODIES = GRID_SIZE * GRID_SIZE * CUBE_HEIGHT
+
+/** Пределы игрушек на полу: полоса пола до высоты табло. */
+const FLOOR_BOUNDS: SnapshotBounds = {
+  slabs: FLOOR_PILE_DEPTH,
+  minY: getFloorPileRight(),
+  maxY: getFloorPileRight() + FLOOR_PILE_WIDTH,
+  minZ: CABINET_BOTTOM_Z,
+  maxZ: MARQUEE_TOP_Z,
+}
+const MAX_FLOOR_BODIES = FLOOR_PILE_DEPTH * FLOOR_PILE_WIDTH * (MARQUEE_TOP_Z - CABINET_BOTTOM_Z)
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
 const isInteger = (value: unknown, min: number, max: number): value is number =>
@@ -191,7 +297,7 @@ const isNumberIn = (value: unknown, min: number, max: number): value is number =
   typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max
 const isShapeKey = (value: unknown): value is ShapeKey => typeof value === 'string' && Object.hasOwn(SHAPES, value)
 
-const isSnapshotBody = (value: unknown): value is HeapSnapshotBody => {
+const isSnapshotBody = (value: unknown, { slabs, minY, maxY, minZ, maxZ }: SnapshotBounds): value is HeapSnapshotBody => {
   if (!isRecord(value)) return false
 
   const { shape, variant, slab, y, z, angle, color } = value
@@ -203,22 +309,24 @@ const isSnapshotBody = (value: unknown): value is HeapSnapshotBody => {
   if (!isInteger(variant, 0, variants.length - 1)) return false
 
   return (
-    isInteger(slab, 0, GRID_SIZE - variants[variant].depth) &&
-    isNumberIn(y, 0, GRID_SIZE) &&
-    isNumberIn(z, 0, CUBE_HEIGHT) &&
+    isInteger(slab, 0, slabs - variants[variant].depth) &&
+    isNumberIn(y, minY, maxY) &&
+    isNumberIn(z, minZ, maxZ) &&
     isNumberIn(angle, -Number.MAX_VALUE, Number.MAX_VALUE) &&
     isInteger(color, 0, 0xffffff)
   )
 }
 
-/** Проверяет весь снимок до загрузки: версию, схему и диапазоны каждой игрушки. */
+const isSnapshotBodies = (value: unknown, bounds: SnapshotBounds, max: number): value is HeapSnapshotBody[] =>
+  Array.isArray(value) && value.length <= max && value.every((body) => isSnapshotBody(body, bounds))
+
+/** Проверяет весь снимок до загрузки: версию, схему и диапазоны каждой игрушки в кубе и на полу. */
 export const isHeapSnapshot = (value: unknown): value is HeapSnapshot =>
   isRecord(value) &&
   value.version === HEAP_SNAPSHOT_VERSION &&
   isInteger(value.collected, 0, Number.MAX_SAFE_INTEGER) &&
-  Array.isArray(value.bodies) &&
-  value.bodies.length <= MAX_BODIES &&
-  value.bodies.every(isSnapshotBody)
+  isSnapshotBodies(value.bodies, CUBE_BOUNDS, MAX_CUBE_BODIES) &&
+  isSnapshotBodies(value.floor, FLOOR_BOUNDS, MAX_FLOOR_BODIES)
 
 /**
  * Поза между двумя шагами физики на доле `share` пути от `from` к `to`. Крен идёт по кратчайшей дуге:

@@ -1,13 +1,6 @@
 import { Container, type DestroyOptions, Graphics } from 'pixi.js'
 
-import {
-  CABINET_FRONT_PLANE,
-  LINE_THICKNESS,
-  PRIZE_DOOR_INSET,
-  PRIZE_HATCH_SIZE,
-  PRIZE_SCALE,
-  PRIZE_TAKE_GROWTH,
-} from '#src/constants'
+import { CABINET_FRONT_PLANE, LINE_THICKNESS, PRIZE_DOOR_INSET, PRIZE_HATCH_SIZE } from '#src/constants'
 import type { ToyAppearance } from '#src/types'
 import { getPrizeHatchOutline } from '#src/utils/machine-geometry'
 import { getProjectedPlaneRectangle, projectPlaneOffset } from '#src/utils/projection'
@@ -50,8 +43,6 @@ export class PrizeOutput extends Container {
   /** Ставит выигранную игрушку за закрытую дверцу. */
   show(appearance: ToyAppearance): void {
     this.prize.setAppearance(appearance.shape, 0, appearance.color)
-    this.prize.scale.set(PRIZE_SCALE)
-    this.prize.alpha = 1
     this.prize.visible = true
     this.setDoorProgress(0)
   }
@@ -63,16 +54,14 @@ export class PrizeOutput extends Container {
     this.door.position.set(x, y)
   }
 
-  /** Растворяет игрушку с небольшим увеличением: 0 — начало получения, 1 — игрушка забрана. */
-  setTakeProgress(progress: number): void {
-    this.prize.alpha = 1 - progress
-    this.prize.scale.set(PRIZE_SCALE + progress * PRIZE_TAKE_GROWTH)
+  /** Убирает игрушку из окна, дверца остаётся в прежнем положении. */
+  eject(): void {
+    this.prize.visible = false
   }
 
   /** Прячет игрушку и закрывает дверцу. */
   hide(): void {
     this.prize.visible = false
-    this.prize.alpha = 1
     this.setDoorProgress(0)
   }
 

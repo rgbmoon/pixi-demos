@@ -3,6 +3,7 @@ import { expect, inject } from 'vitest'
 import { CLAW_REST_HEIGHT } from '#src/claw/constants'
 import { CLAW_GRAB_MS, FIELD_CENTER, GRID_SIZE } from '#src/constants'
 import { Heap } from '#src/heap/heap'
+import type { ToyPile } from '#src/heap/toy-pile'
 import { type ToyBody, ToyState } from '#src/heap/types'
 import type { GroundPoint, HeapSnapshotBody, ShapeKey, ToyId, WorldPoint } from '#src/types'
 import { polygonsOverlap } from '#src/utils/geometry'
@@ -75,9 +76,19 @@ export const findBody = (heap: Heap, id: ToyId | undefined): Readonly<ToyBody> =
   return body
 }
 
-/** Проверяет то, что верно про любую кучу в покое: позы конечны, игрушки в кубе и не пересекаются. */
-export const expectSoundHeap = (heap: Heap): void => {
-  const bodies = [...heap.getBodies()].filter((body) => body.state === ToyState.free)
+/** Рамка, в которой лежит куча: края по оси `y` и высота пола. */
+export type PileBounds = {
+  readonly minY: number
+  readonly maxY: number
+  readonly floor: number
+}
+
+/** Рамка кучи в кубе. */
+const CUBE_BOUNDS: PileBounds = { minY: 0, maxY: GRID_SIZE, floor: 0 }
+
+/** Проверяет то, что верно про любую кучу в покое: позы конечны, игрушки в своей рамке и не пересекаются. */
+export const expectSoundHeap = (pile: ToyPile, { minY, maxY, floor }: PileBounds = CUBE_BOUNDS): void => {
+  const bodies = [...pile.getBodies()].filter((body) => body.state === ToyState.free)
 
   for (const body of bodies) {
     const { point, angle } = body.pose
@@ -85,9 +96,9 @@ export const expectSoundHeap = (heap: Heap): void => {
     expect([point.x, point.y, point.z, angle].every(Number.isFinite)).toBe(true)
 
     for (const { x: y, y: z } of sectionOf(body)) {
-      expect(y).toBeGreaterThan(-OVERLAP_TOLERANCE)
-      expect(y).toBeLessThan(GRID_SIZE + OVERLAP_TOLERANCE)
-      expect(z).toBeGreaterThan(-OVERLAP_TOLERANCE)
+      expect(y).toBeGreaterThan(minY - OVERLAP_TOLERANCE)
+      expect(y).toBeLessThan(maxY + OVERLAP_TOLERANCE)
+      expect(z).toBeGreaterThan(floor - OVERLAP_TOLERANCE)
     }
   }
 

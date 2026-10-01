@@ -75,7 +75,7 @@ describe('цикл клешни', () => {
     expect(cycle.rig.getGripPoint()).toEqual({ ...FIELD_CENTER, z: CLAW_REST_HEIGHT })
   })
 
-  it('доносит игрушку до лотка: выдаёт приз, пополняет счёт, возвращает клешню и публикует снимок', async () => {
+  it('доносит игрушку до лотка: приз выпадает на пол, счёт растёт, клешня возвращается, снимок публикуется', async () => {
     cycle = await startCycle({ bodies: SCENE })
     cycle.rolls.push(getGrabRolls(cycle).hit, SLIP_MISS, FUMBLE_MISS)
 
@@ -85,15 +85,18 @@ describe('цикл клешни', () => {
     expect(getGrabHeight(cycle)).toBeCloseTo(topOf(ball), 6)
     // Счёт растёт перед показом приза, а табло узнаёт о получении до того, как дверца закроется
     expect(cycle.prizes).toEqual([{ shape: 'single', color: ball.color, collected: 1 }])
-    expect(cycle.presentation).toEqual(['show', 'open', 'take', 'prize:taken', 'close', 'hide'])
+    expect(cycle.presentation).toEqual(['show', 'open', 'eject', 'prize:taken', 'close', 'hide'])
     expect(cycle.store.collected).toBe(1)
     expect(getShapes(cycle)).toEqual(['cube8', 'triangle'])
+    // Приз лежит в покое на полу перед автоматом
+    expect(cycle.floorPile.takeSnapshot()).toMatchObject([{ shape: 'single', color: ball.color }])
     expect(cycle.rig.getCartPoint()).toMatchObject(FIELD_CENTER)
     expect(cycle.rig.getGripPoint().z).toBe(CLAW_REST_HEIGHT)
     expect(cycle.store.checkpoint).toEqual({
       version: HEAP_SNAPSHOT_VERSION,
       collected: 1,
       bodies: cycle.heap.takeSnapshot(),
+      floor: cycle.floorPile.takeSnapshot(),
     })
   })
 
@@ -103,6 +106,7 @@ describe('цикл клешни', () => {
 
     expect(await cycle.playRound()).toEqual(EMPTY_HANDED)
     expect(cycle.prizes).toEqual([])
+    expect(cycle.floorPile.takeSnapshot()).toEqual([])
     expect(cycle.store.collected).toBe(0)
     expect(getShapes(cycle)).toEqual(['cube8', 'single', 'triangle'])
     expectSoundHeap(cycle.heap)
@@ -189,6 +193,7 @@ describe('цикл клешни', () => {
     ])
     expect(cycle.store.collected).toBe(2)
     expect(getShapes(cycle)).toEqual(['square4'])
+    expect(cycle.floorPile.takeSnapshot().map(({ color }) => color)).toEqual([rider.color, base.color])
   })
 
   it('игнорирует опускание посреди цикла и принимает следующее после покоя', async () => {
@@ -211,7 +216,7 @@ describe('цикл клешни', () => {
     expect(current.phases.filter((phase) => phase === PhaseName.descending)).toHaveLength(2)
   })
 
-  it('проходит серию раундов по насыпанной куче: куча цела, счёт равен выданным призам', async () => {
+  it('проходит серию раундов по насыпанной куче: куча цела, на полу столько игрушек, сколько выдано призов', async () => {
     const random = createRandom(3)
 
     cycle = await startCycle({ bodies: getPouredHeap(7), random })
@@ -222,7 +227,9 @@ describe('цикл клешни', () => {
 
       expectSoundHeap(cycle.heap)
       expect(cycle.store.collected).toBe(cycle.prizes.length)
+      expect(cycle.floorPile.takeSnapshot()).toHaveLength(cycle.prizes.length)
       expect(cycle.store.checkpoint?.bodies).toEqual(cycle.heap.takeSnapshot())
+      expect(cycle.store.checkpoint?.floor).toEqual(cycle.floorPile.takeSnapshot())
     }
   })
 

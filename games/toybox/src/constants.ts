@@ -177,7 +177,7 @@ export const LIFT_SLIP_MAX_SHARE = 0.85
 
 // Снимок кучи
 /** Версия снимка кучи: не сошлась — снимок игнорируется и куча складывается заново. */
-export const HEAP_SNAPSHOT_VERSION = 3
+export const HEAP_SNAPSHOT_VERSION = 4
 /** Адрес снимка кучи в IndexedDB. */
 export const HEAP_DB_NAME = 'toybox'
 export const HEAP_STORE_NAME = 'heap'
@@ -248,15 +248,16 @@ export const KEYBOARD_DROP_CODES = ['Enter', 'Space'] as const
 export const PRIZE_HATCH_SIZE = CELL_SIZE * 2
 /** Отступ дверцы от контура окна. */
 export const PRIZE_DOOR_INSET = 8
-/** Масштаб игрушки в окне выдачи. */
-export const PRIZE_SCALE = 0.8
-/** Прирост масштаба игрушки к концу получения. */
-export const PRIZE_TAKE_GROWTH = 0.12
-/** Этапы выдачи приза после выхода игрушки из внутреннего лотка. */
+/** Этапы выдачи приза после выхода игрушки из внутреннего лотка: пауза за закрытой дверцей, ход дверцы, выдержка в открытом окне. */
 export const PRIZE_PAUSE_MS = 300
 export const PRIZE_DOOR_MS = 250
 export const PRIZE_OPEN_HOLD_MS = 600
-export const PRIZE_TAKE_MS = 450
+
+// Пол перед автоматом
+/** Глубина полосы пола с выигранными игрушками перед фасадом тумбы, в срезах: как у куба. */
+export const FLOOR_PILE_DEPTH = GRID_SIZE
+/** Ширина полосы пола в ячейках: вдвое шире куба, середина полосы — под серединой куба. */
+export const FLOOR_PILE_WIDTH = GRID_SIZE * 2
 
 // Табло
 /** Шрифт текстов сцены: своих ассетов у игры нет, берётся системный гротеск. */

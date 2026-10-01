@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify'
 import type { DestroyOptions } from 'pixi.js'
 
-import { PRIZE_DOOR_MS, PRIZE_TAKE_MS } from '#src/constants'
+import { PRIZE_DOOR_MS } from '#src/constants'
 import type { ToyAppearance } from '#src/types'
 import { PrizeOutput } from '#src/ui/box/prize-output'
 import { createAbortError } from '@pixi-demos/core/errors/utils'
@@ -38,13 +38,9 @@ export class PrizeOutputController extends LiveContainer {
     )
   }
 
-  /** Проигрывает визуальное получение приза. */
-  async take(signal: AbortSignal): Promise<void> {
-    await tweenProgress(
-      this.ticker,
-      { durationMs: PRIZE_TAKE_MS, apply: (value) => this.view.setTakeProgress(value) },
-      AbortSignal.any([signal, this.life.signal])
-    )
+  /** Убирает приз из окна: игрушка выпала на пол, дверца остаётся открытой. */
+  eject(): void {
+    this.view.eject()
   }
 
   /** Закрывает дверцу до конца или отмены. */

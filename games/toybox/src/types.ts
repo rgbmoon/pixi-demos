@@ -110,11 +110,12 @@ export type HeapSnapshotBody = {
   color: number
 }
 
-/** Снимок кучи для хранилища: позы покоя без скоростей. */
+/** Снимок для хранилища: позы покоя кучи в кубе и игрушек на полу, без скоростей. */
 export type HeapSnapshot = {
   version: number
   collected: number
   bodies: HeapSnapshotBody[]
+  floor: HeapSnapshotBody[]
 }
 
 /**

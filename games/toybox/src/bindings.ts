@@ -11,6 +11,7 @@ import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 import { ClawRig } from './claw/claw-rig'
 import { CANVAS_MAX_RESOLUTION, HEAP_DB_NAME, HEAP_SNAPSHOT_KEY, HEAP_STORE_NAME, INITIAL_PHASE } from './constants'
 import { CubeController } from './controllers/box/cube'
+import { FloorPileController } from './controllers/box/floor-pile'
 import { MarqueeController } from './controllers/box/marquee'
 import { PrizeOutputController } from './controllers/box/prize-output'
 import { DropButtonController } from './controllers/hud/drop-button'
@@ -20,6 +21,7 @@ import { KeyboardController } from './controllers/keyboard'
 import { PersistenceController } from './controllers/persistence'
 import { RoomController } from './controllers/room/room'
 import type { GameEvents } from './events'
+import { FloorPile } from './heap/floor-pile'
 import { Heap } from './heap/heap'
 import { AscendingPhase } from './phases/ascending'
 import { BootingPhase } from './phases/booting'
@@ -38,6 +40,7 @@ import { type HeapSnapshot, PhaseName } from './types'
 export const bindFlow = (container: Container): void => {
   container.bind(TOYBOX_TOKENS.ToyboxStore).to(ToyboxStore)
   container.bind(TOYBOX_TOKENS.Heap).to(Heap)
+  container.bind(TOYBOX_TOKENS.FloorPile).to(FloorPile)
   container.bind(TOYBOX_TOKENS.ClawRig).to(ClawRig)
   container
     .bind(TOYBOX_TOKENS.HeapStorage)
@@ -71,6 +74,7 @@ const bindScene = (container: Container): void => {
   bindSceneNode(container, TOYBOX_TOKENS.CubeController, CubeController)
   bindSceneNode(container, TOYBOX_TOKENS.MarqueeController, MarqueeController)
   bindSceneNode(container, TOYBOX_TOKENS.PrizeOutputController, PrizeOutputController)
+  bindSceneNode(container, TOYBOX_TOKENS.FloorPileController, FloorPileController)
   bindSceneNode(container, TOYBOX_TOKENS.JoystickController, JoystickController)
   bindSceneNode(container, TOYBOX_TOKENS.DropButtonController, DropButtonController)
   bindSceneNode(container, TOYBOX_TOKENS.ResetButtonController, ResetButtonController)

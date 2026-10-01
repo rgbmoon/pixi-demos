@@ -3,6 +3,7 @@ import { Container } from 'pixi.js'
 
 import { DROP_BUTTON_CENTER, JOYSTICK_CENTER, PRIZE_HATCH_CENTER, RESET_BUTTON_CENTER } from '#src/constants'
 import type { CubeController } from '#src/controllers/box/cube'
+import type { FloorPileController } from '#src/controllers/box/floor-pile'
 import type { MarqueeController } from '#src/controllers/box/marquee'
 import type { PrizeOutputController } from '#src/controllers/box/prize-output'
 import type { DropButtonController } from '#src/controllers/hud/drop-button'
@@ -29,6 +30,7 @@ export class GameScene extends Container {
     @inject(TOYBOX_TOKENS.DropButtonController) drop: DropButtonController,
     @inject(TOYBOX_TOKENS.MarqueeController) marquee: MarqueeController,
     @inject(TOYBOX_TOKENS.PrizeOutputController) prizeOutput: PrizeOutputController,
+    @inject(TOYBOX_TOKENS.FloorPileController) floorPile: FloorPileController,
     @inject(TOYBOX_TOKENS.ResetButtonController) reset: ResetButtonController,
     @inject(TOYBOX_TOKENS.KeyboardController) keyboard: KeyboardController,
     @inject(TOYBOX_TOKENS.PersistenceController) persistence: PersistenceController
@@ -51,7 +53,8 @@ export class GameScene extends Container {
       controller.position.set(x, y)
     }
 
-    this.machine.addChild(cube, new Cabinet(), joystick, drop, marquee, prizeOutput, reset)
+    // Игрушки на полу ближе к игроку, чем корпус, и выпадают из окна выдачи перед ним
+    this.machine.addChild(cube, new Cabinet(), joystick, drop, marquee, prizeOutput, floorPile, reset)
     this.addChild(room, this.machine, keyboard, persistence)
   }
 

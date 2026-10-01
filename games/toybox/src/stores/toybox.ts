@@ -82,9 +82,9 @@ export class ToyboxStore {
     this.collected += 1
   }
 
-  /** Публикует после завершения цикла снимок из поз покоя кучи и текущего счёта. */
-  @action publishCheckpoint(bodies: HeapSnapshotBody[]): void {
-    this.checkpoint = { version: HEAP_SNAPSHOT_VERSION, collected: this.collected, bodies }
+  /** Публикует после завершения цикла снимок из поз покоя кучи в кубе, игрушек на полу и текущего счёта. */
+  @action publishCheckpoint(bodies: HeapSnapshotBody[], floor: HeapSnapshotBody[]): void {
+    this.checkpoint = { version: HEAP_SNAPSHOT_VERSION, collected: this.collected, bodies, floor }
   }
 
   /** Поднимает счётчик из снимка: его зовёт стартовая фаза после восстановления кучи. */
