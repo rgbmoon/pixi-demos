@@ -1,18 +1,22 @@
 // @vitest-environment jsdom
-import type { FederatedPointerEvent } from 'pixi.js'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { Assets, type FederatedPointerEvent, Texture } from 'pixi.js'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { HUD_ATLAS, HUD_FRAMES, HUD_SEQUENCES } from '#src/assets'
 import { ClawRig } from '#src/claw/claw-rig'
 import { CONTROL_PANEL_PLANE, JOYSTICK_DEADZONE, JOYSTICK_RADIUS } from '#src/constants'
+import { DropButtonController } from '#src/controllers/hud/drop-button'
 import { JoystickController } from '#src/controllers/hud/joystick'
 import { KeyboardController } from '#src/controllers/keyboard'
 import type { GameEvents } from '#src/events'
 import { ToyboxStore } from '#src/stores/toybox'
 import { PhaseName, type ScreenPoint } from '#src/types'
+import { DropButton } from '#src/ui/hud/drop-button'
 import { Joystick } from '#src/ui/hud/joystick'
 import { projectPlaneOffset, worldToScreen } from '#src/utils/projection'
 import { GameEmitter } from '@pixi-demos/core/events/game-emitter'
 import { KeyboardInput } from '@pixi-demos/core/keyboard-input'
+import { GameTicker } from '@pixi-demos/engine/game-ticker'
 
 /** Шаг кадра при 60 fps. */
 const FRAME_MS = 1000 / 60
@@ -23,18 +27,27 @@ const FULL_TILT = 400
 type Controls = {
   store: ToyboxStore
   joystick: Joystick
+  drop: DropButton
   requests: () => number
   destroy: () => void
 }
 
-/** Собирает управление в покое: клавиатуру и джойстик над одним стором. */
+/** Кадры атласа органов управления: тест атласы не грузит. */
+const HUD_TEXTURES = Object.values(HUD_FRAMES).flatMap((frame) =>
+  typeof frame === 'string' ? [frame] : Object.values(frame)
+)
+
+/** Собирает управление в покое: клавиатуру, джойстик и кнопку Drop над одним стором. */
 const createControls = (): Controls => {
   const store = new ToyboxStore()
   const emitter = new GameEmitter<GameEvents>()
   const input = new KeyboardInput(window)
+  const ticker = new GameTicker()
   const keyboard = new KeyboardController(input, store, emitter)
-  const joystickController = new JoystickController(store)
+  const joystickController = new JoystickController(ticker, store)
+  const dropController = new DropButtonController(ticker, store, emitter)
   const joystick = joystickController.children.find((child) => child instanceof Joystick) as Joystick
+  const drop = dropController.children.find((child) => child instanceof DropButton) as DropButton
   const requested = vi.fn()
 
   store.setPhase(PhaseName.idle)
@@ -43,9 +56,11 @@ const createControls = (): Controls => {
   return {
     store,
     joystick,
+    drop,
     requests: () => requested.mock.calls.length,
     destroy: () => {
       joystickController.destroy({ children: true })
+      dropController.destroy({ children: true })
       keyboard.destroy({ children: true })
       input.dispose()
     },
@@ -91,9 +106,22 @@ const release = (code: string): void => {
 describe('управление', () => {
   let controls: Controls | undefined
 
+  beforeEach(() => {
+    for (const frame of HUD_TEXTURES) Assets.cache.set(frame, Texture.WHITE)
+    Assets.cache.set(HUD_ATLAS, {
+      animations: Object.fromEntries(
+        Object.values(HUD_SEQUENCES).map((name) => [name, [Texture.WHITE, Texture.WHITE]])
+      ),
+    })
+  })
+
   afterEach(() => {
     controls?.destroy()
     controls = undefined
+    localStorage.clear()
+
+    for (const frame of HUD_TEXTURES) Assets.cache.remove(frame)
+    Assets.cache.remove(HUD_ATLAS)
   })
 
   it('ведёт каретку по экрану туда, куда тянут ручку джойстика', () => {
@@ -188,5 +216,34 @@ describe('управление', () => {
     controls.store.setPhase(PhaseName.idle)
 
     expect(getCartShift(controls.store)).toEqual({ x: 0, y: 0 })
+  })
+
+  it('показывает стрелки тура в покое до первого касания управления и не возвращает их после перезагрузки', () => {
+    const touches: ((controls: Controls) => void)[] = [
+      (current) => tilt(current.joystick, { x: FULL_TILT, y: 0 }),
+      (current) => current.drop.emit('pointertap', {} as FederatedPointerEvent),
+      () => press('ArrowLeft'),
+    ]
+
+    for (const touch of touches) {
+      localStorage.clear()
+      controls = createControls()
+
+      expect(controls.store.isTourShown).toBe(true)
+
+      touch(controls)
+
+      expect(controls.store.isTourShown).toBe(false)
+
+      // Перезагрузка страницы: новый стор читает флаг из localStorage
+      const reloaded = new ToyboxStore()
+
+      reloaded.setPhase(PhaseName.idle)
+
+      expect(reloaded.isTourShown).toBe(false)
+
+      controls.destroy()
+      controls = undefined
+    }
   })
 })

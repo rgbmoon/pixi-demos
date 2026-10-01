@@ -1,9 +1,10 @@
 import { injectable } from 'inversify'
 import { action, computed, makeObservable, observable } from 'mobx'
 
-import { HEAP_SNAPSHOT_VERSION, INITIAL_PHASE } from '#src/constants'
+import { HEAP_SNAPSHOT_VERSION, INITIAL_PHASE, TOUR_STORAGE_KEY } from '#src/constants'
 import { type GroundPoint, type HeapSnapshot, type HeapSnapshotBody, PhaseName, type ScreenPoint } from '#src/types'
 import { toGroundDirection } from '#src/utils/projection'
+import { readStoredFlag, writeStoredFlag } from '@pixi-demos/core/storage'
 
 /** Состояние фазы, управления и количества доставленных игрушек. */
 @injectable()
@@ -24,6 +25,25 @@ export class ToyboxStore {
 
   /** Последний завершённый цикл, единственный источник для сохранения. */
   @observable.ref checkpoint: HeapSnapshot | undefined = undefined
+
+  /**
+   * Игрок прошёл тур по управлению: хоть раз тронул джойстик, Drop или клавиши. Переживает перезагрузку через
+   * localStorage.
+   */
+  @observable isTourDone = readStoredFlag(TOUR_STORAGE_KEY, false)
+
+  /** Стрелки тура видны в покое, пока игрок не тронул управление. */
+  @computed get isTourShown(): boolean {
+    return this.isIdle && !this.isTourDone
+  }
+
+  /** Отмечает тур пройденным при первом касании управления. */
+  @action completeTour(): void {
+    if (this.isTourDone) return
+
+    this.isTourDone = true
+    writeStoredFlag(TOUR_STORAGE_KEY, true)
+  }
 
   @observable.ref private keyboard: ScreenPoint = { x: 0, y: 0 }
   @observable.ref private joystick: ScreenPoint = { x: 0, y: 0 }

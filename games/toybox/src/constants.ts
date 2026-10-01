@@ -204,36 +204,38 @@ export const DEPTH_SORT_STEP = 1
 // Органы управления
 /** Доля хода ручки, ниже которой джойстик не трогает клешню. */
 export const JOYSTICK_DEADZONE = 0.3
-/** Радиус подложки джойстика: диаметр совпадает с кнопкой Drop. */
+/** Радиус хода ручки в плоскости панели: жест до этого радиуса задаёт силу отклонения. */
 export const JOYSTICK_RADIUS = 48
-/** Радиус ручки джойстика. */
-export const JOYSTICK_KNOB_RADIUS = 32
-/** Прозрачность заливки подложки джойстика. */
-export const JOYSTICK_FILL_ALPHA = 0.16
-/** Толщина стойки ручки джойстика. */
-export const JOYSTICK_STEM_THICKNESS = 16
 /** Радиус крупной невидимой области захвата джойстика. */
 export const JOYSTICK_HIT_RADIUS = 96
+/** Длина стержня от центра основания до центра шара по нормали к панели, px арта: над пыльником видно 6 px. */
+export const JOYSTICK_STICK_LENGTH = 16
+/** Высота пыльника над панелью, px арта: из его верха выходит стержень. */
+export const JOYSTICK_BOOT_HEIGHT = 4
+/** Наибольший ход шара в плоскости панели, px арта: ручка отклоняется на угол около 25°. */
+export const JOYSTICK_TILT = 5
 
 /** Сторона подложки кнопки в единицах сцены. */
 export const BUTTON_SIZE_UNITS = 96
-/** Прозрачность заливки кнопки. */
-export const BUTTON_FILL_ALPHA = 0.2
 /** Сторона кнопки сброса в единицах сцены: 16 px арта, кнопка помещается на плашке табло. */
 export const RESET_BUTTON_SIZE_UNITS = 64
-/** Начало и конец дуги круговой стрелки на кнопке сброса, радианы. */
-export const RESET_ARC_START = -Math.PI * 0.35
-export const RESET_ARC_END = Math.PI * 1.15
-/** Размер наконечника стрелки в долях радиуса дуги. */
-export const RESET_HEAD_RATIO = 0.42
 /** Имя кнопки сброса в слое доступности. */
 export const RESET_BUTTON_LABEL = 'Reset the heap'
-/** Прозрачность погашенного элемента управления. */
-export const DISABLED_ALPHA = 0.4
-/** Доля подложки, которую занимает иконка. */
-export const ICON_RATIO = 0.4
 /** Дополнительный отступ невидимой области нажатия от контура. */
 export const CONTROL_HIT_PADDING = 16
+/**
+ * Цвет, на который умножается погашенный орган управления: затемнение на полступени рампы. Сдвиг на ступень темнит
+ * пиксели органов управления в среднем до 0.716 яркости, полступени — 0.858.
+ */
+export const DISABLED_TINT = 0xdbdbdb
+
+// Тур по управлению
+/** Ключ флага пройденного тура в localStorage. */
+export const TOUR_STORAGE_KEY = 'pixi-demos:toybox:tour-done'
+/** Длительности кадров стрелок тура, мс: стрелки отходят наружу и возвращаются. */
+export const TOUR_HINT_FRAME_MS = [400, 400] as const
+/** На сколько px арта нижний край кадра стрелки Drop поднят над центром кнопки: стрелка не заходит на купол. */
+export const TOUR_DROP_HINT_LIFT = 5
 /** Число точек для окружностей, лежащих на гранях корпуса. */
 export const CONTROL_OUTLINE_STEPS = 24
 

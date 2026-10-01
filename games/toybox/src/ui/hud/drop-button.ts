@@ -1,31 +1,16 @@
-import { Graphics } from 'pixi.js'
+import { Assets, Sprite, type Texture } from 'pixi.js'
 
-import { BUTTON_SIZE_UNITS, CONTROL_PANEL_PLANE, ICON_RATIO } from '#src/constants'
+import { HUD_FRAMES } from '#src/assets'
+import { ART_PIXEL, BUTTON_SIZE_UNITS, CONTROL_PANEL_PLANE } from '#src/constants'
 import type { ButtonOptions } from '#src/types'
 import { ControlButton } from '#src/ui/hud/control-button'
-import { projectPlaneOffset } from '#src/utils/projection'
-import { PALETTE } from '@pixi-demos/core/palette'
 
-/** Кнопка опускания клешни, спроецированная в плоскость панели управления. */
+/** Кнопка опускания клешни на панели управления: наклон панели заложен в рисунок кнопки. */
 export class DropButton extends ControlButton {
   constructor(options: ButtonOptions) {
-    super(options, CONTROL_PANEL_PLANE, BUTTON_SIZE_UNITS)
+    const face = new Sprite(Assets.get<Texture>(HUD_FRAMES.drop.normal))
 
-    this.addChild(this.createIcon())
-  }
-
-  private createIcon(): Graphics {
-    const size = (BUTTON_SIZE_UNITS * ICON_RATIO) / 2
-    const icon = new Graphics()
-
-    for (const offset of [-size * 0.7, size * 0.3]) {
-      icon.poly([
-        projectPlaneOffset(CONTROL_PANEL_PLANE, 0, offset + size * 0.7),
-        projectPlaneOffset(CONTROL_PANEL_PLANE, -size * 0.8, offset - size * 0.2),
-        projectPlaneOffset(CONTROL_PANEL_PLANE, size * 0.8, offset - size * 0.2),
-      ])
-    }
-
-    return icon.fill({ color: PALETTE.white })
+    face.scale.set(ART_PIXEL)
+    super(options, CONTROL_PANEL_PLANE, BUTTON_SIZE_UNITS, face, HUD_FRAMES.drop)
   }
 }

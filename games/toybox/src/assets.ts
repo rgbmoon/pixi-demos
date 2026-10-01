@@ -1,5 +1,7 @@
 import { Assets, type Spritesheet } from 'pixi.js'
 
+import type { ButtonFrames } from './types'
+
 // Единый манифест ассетов toybox: все URL в одном месте. Атласы и шрифты собирает `pnpm assets` из
 // `games/toybox/art/`; `preloadGameAssets` грузит их одним `Assets.load` до сборки сцены, классы читают их из
 // кэша синхронно (`Assets.get`).
@@ -26,12 +28,16 @@ export const BOX_ATLAS = 'box'
 /** Алиас атласа клешни в кэше Assets. */
 export const CLAW_ATLAS = 'claw'
 
+/** Алиас атласа органов управления в кэше Assets. */
+export const HUD_ATLAS = 'hud'
+
 /** Атласы игры: алиас в кэше Assets → URL JSON атласа. */
 export const ATLASES = {
   [ROOM_ATLAS]: `${ASSETS_DIR}/room/room.json`,
   [CABINET_ATLAS]: `${ASSETS_DIR}/cabinet/cabinet.json`,
   [BOX_ATLAS]: `${ASSETS_DIR}/box/box.json`,
   [CLAW_ATLAS]: `${ASSETS_DIR}/claw/claw.json`,
+  [HUD_ATLAS]: `${ASSETS_DIR}/hud/hud.json`,
 } as const
 
 /**
@@ -86,6 +92,27 @@ export const CLAW_FRAMES = {
 export const CLAW_SEQUENCES = {
   open: 'claw-open',
   closed: 'claw-closed',
+} as const
+
+/**
+ * Кадры атласа органов управления, нарисованные в экранной проекции: наклон панели у кнопки Drop и основания
+ * джойстика заложен в рисунок. Якорь Drop и основания — центр основания, шара и кнопки сброса — их центр.
+ */
+export const HUD_FRAMES = {
+  drop: { normal: 'drop.png', pressed: 'drop-pressed.png' },
+  reset: { normal: 'reset.png', pressed: 'reset-pressed.png' },
+  joystickBase: 'joystick-base.png',
+  joystickBall: 'joystick-ball.png',
+  joystickStick: 'joystick-stick.png',
+} as const satisfies Record<string, string | ButtonFrames>
+
+/**
+ * Последовательности атласа органов управления: стрелки тура одного рисунка. Стрелки джойстика стоят вокруг шара вдоль
+ * осей панели, якорь — центр основания; стрелка Drop висит над кнопкой, якорь — середина нижнего края кадра.
+ */
+export const HUD_SEQUENCES = {
+  tourJoystick: 'tour-joystick',
+  tourDrop: 'tour-drop',
 } as const
 
 /** Кадры атласа фона: ключи текстур в кэше Assets. */

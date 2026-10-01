@@ -189,6 +189,12 @@ export type ButtonOptions = {
   onTap: () => void
 }
 
+/** Кадры кнопки атласа органов управления: обычная и нажатая. */
+export type ButtonFrames = {
+  readonly normal: string
+  readonly pressed: string
+}
+
 export type JoystickOptions = {
   /** Экранное направление с длиной 0–1 для проверки мёртвой зоны; целевая скорость от длины не зависит. */
   onMove: (vector: ScreenPoint) => void

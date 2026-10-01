@@ -107,19 +107,20 @@ export const getProjectedPlaneCircle = (
     return projectPlaneOffset(plane, Math.cos(angle) * radius, Math.sin(angle) * radius)
   })
 
-/** Проецирует дугу, включая обе её крайние точки. */
-export const getProjectedPlaneArc = (
-  plane: WorldPlane,
-  radius: number,
-  start: number,
-  end: number,
-  steps = CONTROL_OUTLINE_STEPS
-): ScreenPoint[] =>
-  Array.from({ length: steps + 1 }, (_, step) => {
-    const angle = start + ((end - start) * step) / steps
+/**
+ * Экранное смещение точки, поднятой над мировой плоскостью на `length` единиц сцены по нормали. Нормаль смотрит на
+ * игрока: у панели — вверх, у фасада — вперёд.
+ */
+export const projectPlaneNormal = ({ horizontal, vertical }: WorldPlane, length: number): ScreenPoint => {
+  const normal = {
+    x: vertical.y * horizontal.z - vertical.z * horizontal.y,
+    y: vertical.z * horizontal.x - vertical.x * horizontal.z,
+    z: vertical.x * horizontal.y - vertical.y * horizontal.x,
+  }
+  const scale = length / CELL_SIZE / Math.hypot(normal.x, normal.y, normal.z)
 
-    return projectPlaneOffset(plane, Math.cos(angle) * radius, Math.sin(angle) * radius)
-  })
+  return worldToScreen({ x: normal.x * scale, y: normal.y * scale, z: normal.z * scale })
+}
 
 /** Прямоугольник с центром в начале координат мировой плоскости. */
 export const getProjectedPlaneRectangle = (plane: WorldPlane, width: number, height: number): ScreenPoint[] => {
