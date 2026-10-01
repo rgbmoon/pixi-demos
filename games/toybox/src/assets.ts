@@ -57,6 +57,7 @@ export const PILLAR_FRAMES = {
  * в `getCubeFaces`.
  */
 export const BOX_FRAMES = {
+  glass: 'glass.png',
   floor: 'floor.png',
   chute: 'chute.png',
   trayBack: 'tray-back.png',

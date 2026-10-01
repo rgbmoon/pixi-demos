@@ -25,7 +25,8 @@ import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 
 /**
  * Стеклянный куб автомата. Пол лежит под слоем `DepthLayer`, в слое — игрушки, клешня в сборе, стойки и стенки
- * лотка; их порядок наложения задаёт попарное сравнение по глубине. Верх куба закрывает табло.
+ * лотка; их порядок наложения задаёт попарное сравнение по глубине. Стекло фронта лежит над слоем, верх куба закрывает
+ * табло.
  *
  * Каждый кадр контроллер продвигает модели клешни и кучи, переносит их позы в View-компоненты одним проходом
  * и сортирует слой.
@@ -72,7 +73,7 @@ export class CubeController extends LiveContainer {
       this.layer.place(new Face(PILLAR_FRAMES[key], pillars[key]), { x: 0, y: 0 }, 0, () => getPlaneDepthItem(quad))
     }
 
-    this.addChild(new Floor(), this.layer)
+    this.addChild(new Floor(), this.layer, new Face(BOX_FRAMES.glass, cube.glass))
 
     this.ticker.add(this.step)
   }

@@ -190,15 +190,21 @@ export const getPillarFaces = () => {
 }
 
 /**
- * Внутренние грани куба: углы рисунка каждой грани в мире. Проём лотка лежит на полу, стенки лотка отгораживают его
- * от куба.
+ * Грани куба: углы рисунка каждой грани в мире. Проём лотка лежит на полу, стенки лотка отгораживают его от куба.
+ * Стекло фронта занимает проём между передними стойками.
  */
 export const getCubeFaces = () => {
   const { x, y } = TRAY_ORIGIN
   const trayFar = x + TRAY_SIZE
   const trayLeft = y + TRAY_SIZE
+  const inset = PILLAR_WIDTH / ART_CELL
 
   return {
+    glass: {
+      origin: { x: 0, y: GRID_SIZE - inset, z: CUBE_HEIGHT },
+      right: { x: 0, y: inset, z: CUBE_HEIGHT },
+      down: { x: 0, y: GRID_SIZE - inset, z: 0 },
+    },
     floor: {
       origin: { x: GRID_SIZE, y: GRID_SIZE, z: 0 },
       right: { x: GRID_SIZE, y: 0, z: 0 },
