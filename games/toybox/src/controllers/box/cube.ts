@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify'
 import type { DestroyOptions, Ticker } from 'pixi.js'
 
-import { PILLAR_FRAMES } from '#src/assets'
+import { BOX_FRAMES, PILLAR_FRAMES } from '#src/assets'
 import type { ClawRig } from '#src/claw/claw-rig'
 import { CLAW_RADIUS, UNIT_HEIGHT } from '#src/constants'
 import type { Heap } from '#src/heap/heap'
@@ -15,9 +15,8 @@ import { Face } from '#src/ui/box/face'
 import { Floor } from '#src/ui/box/floor'
 import { Toy } from '#src/ui/box/toy'
 import { ToyShapes } from '#src/ui/box/toy-shapes'
-import { TrayWall } from '#src/ui/box/tray-wall'
 import { getPlaneDepthItem, getPointDepthItem, getToyDepthItem } from '#src/utils/depth'
-import { getPillarFaces, getTrayWallOutlines } from '#src/utils/machine-geometry'
+import { getCubeFaces, getPillarFaces } from '#src/utils/machine-geometry'
 import { getFaceQuad, worldToScreen } from '#src/utils/projection'
 import { getAngleStep } from '#src/utils/shapes'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
@@ -57,8 +56,12 @@ export class CubeController extends LiveContainer {
     this.rig = rig
 
     // Детали куба неподвижны: предмет сортировки каждой строится один раз
-    for (const outline of getTrayWallOutlines()) {
-      this.layer.place(new TrayWall(outline), { x: 0, y: 0 }, 0, () => getPlaneDepthItem(outline))
+    const cube = getCubeFaces()
+
+    for (const key of ['trayBack', 'traySide'] as const) {
+      const quad = getFaceQuad(cube[key])
+
+      this.layer.place(new Face(BOX_FRAMES[key], cube[key]), { x: 0, y: 0 }, 0, () => getPlaneDepthItem(quad))
     }
 
     const pillars = getPillarFaces()

@@ -35,51 +35,6 @@ export const clampToField = ({ x, y }: GroundPoint, margin = 0): GroundPoint => 
   y: clamp(y, margin, GRID_SIZE - margin),
 })
 
-/** Контур грани куба на высоте `z`: четыре угла в порядке обхода. */
-export const getFaceOutline = (z: number): WorldPoint[] => [
-  { x: 0, y: 0, z },
-  { x: GRID_SIZE, y: 0, z },
-  { x: GRID_SIZE, y: GRID_SIZE, z },
-  { x: 0, y: GRID_SIZE, z },
-]
-
-/** Контур лотка на полу: четыре угла его квадранта в порядке обхода. */
-export const getTrayOutline = (): WorldPoint[] => {
-  const { x, y } = TRAY_ORIGIN
-
-  return [
-    { x, y, z: 0 },
-    { x: x + TRAY_SIZE, y, z: 0 },
-    { x: x + TRAY_SIZE, y: y + TRAY_SIZE, z: 0 },
-    { x, y: y + TRAY_SIZE, z: 0 },
-  ]
-}
-
-/**
- * Контуры двух граней, которыми лоток отгорожен от куба. Двух других граней у него нет —
- * там лоток прилегает к стенкам самого куба.
- */
-export const getTrayWallOutlines = (): WorldPoint[][] => {
-  const { x, y } = TRAY_ORIGIN
-  const far = x + TRAY_SIZE
-  const top = TRAY_WALL_HEIGHT
-
-  return [
-    [
-      { x: far, y, z: 0 },
-      { x: far, y: y + TRAY_SIZE, z: 0 },
-      { x: far, y: y + TRAY_SIZE, z: top },
-      { x: far, y, z: top },
-    ],
-    [
-      { x, y, z: 0 },
-      { x: far, y, z: 0 },
-      { x: far, y, z: top },
-      { x, y, z: top },
-    ],
-  ]
-}
-
 /** Контуры наклонной панели, передней грани и правой боковины тумбы. */
 export const getCabinetOutlines = (): WorldPoint[][] => [
   [
@@ -231,6 +186,39 @@ export const getPillarFaces = () => {
     frontRight: post(0, inset, 0),
     backLeft: post(GRID_SIZE, GRID_SIZE, GRID_SIZE - inset),
     backRight: post(GRID_SIZE, inset, 0),
+  } as const satisfies Record<string, FaceCorners>
+}
+
+/**
+ * Внутренние грани куба: углы рисунка каждой грани в мире. Проём лотка лежит на полу, стенки лотка отгораживают его
+ * от куба.
+ */
+export const getCubeFaces = () => {
+  const { x, y } = TRAY_ORIGIN
+  const trayFar = x + TRAY_SIZE
+  const trayLeft = y + TRAY_SIZE
+
+  return {
+    floor: {
+      origin: { x: GRID_SIZE, y: GRID_SIZE, z: 0 },
+      right: { x: GRID_SIZE, y: 0, z: 0 },
+      down: { x: 0, y: GRID_SIZE, z: 0 },
+    },
+    chute: {
+      origin: { x: trayFar, y: trayLeft, z: 0 },
+      right: { x: trayFar, y, z: 0 },
+      down: { x, y: trayLeft, z: 0 },
+    },
+    trayBack: {
+      origin: { x: trayFar, y: trayLeft, z: TRAY_WALL_HEIGHT },
+      right: { x: trayFar, y, z: TRAY_WALL_HEIGHT },
+      down: { x: trayFar, y: trayLeft, z: 0 },
+    },
+    traySide: {
+      origin: { x, y, z: TRAY_WALL_HEIGHT },
+      right: { x: trayFar, y, z: TRAY_WALL_HEIGHT },
+      down: { x, y, z: 0 },
+    },
   } as const satisfies Record<string, FaceCorners>
 }
 

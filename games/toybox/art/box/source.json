@@ -1,0 +1,110 @@
+[
+  {
+    "date": "2026-09-30",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "button tufted quilted vinyl wall panel, diamond stitching with small buttons, dark indigo blue vinyl, cracked and scuffed vinyl, a small tear with foam stuffing, dark stains, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, purple and magenta neon accents, crisp pixel art, clean pixel clusters, flat orthographic front view, no perspective, no text, no letters, no logos",
+      "width": 128,
+      "height": 128,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "highly detailed",
+      "no_background": false,
+      "init_image": "art/box/raw/sketch-a.png",
+      "init_image_strength": 110,
+      "seed": 6101,
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 6101,
+    "id": "f693ea3d-85ac-468e-bbf3-aff3e87efd07",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/f693ea3d-85ac-468e-bbf3-aff3e87efd07/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "raw/sample-a.png"
+    ],
+    "note": "Вариант A, индиго: эскиз indigo[0–3], стёжка сохранилась, подушки со светом слева сверху; модель добавила серые квадратные нашивки по стене, износа нет. Эскиз — ромбы стёжки 16×16 с пуговицами 2×2, шов на ступень темнее основы, подушка — выпуклость со светом сверху, износ скриптом: разрыв с поролоном bone[2–3], две трещины, два пятна. Тайл задней стенки — самый частый цвет образца в каждой позиции периода 16 × 16. 30.09.2026 решение Сергея: задней стенки, LED-планки и света в кубе нет — сквозь заднюю и левую стороны куба видна стена зала; образец не используется. Сырые файлы raw/ удалены 30.09.2026: результат — в аккаунте PixelLab по id (get_image выдаёт свежую ссылку); эскизы sketch-*.png были только локальными; пути raw/… в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-30",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "button tufted quilted vinyl wall panel, diamond stitching with small buttons, dark purple vinyl, cracked and scuffed vinyl, a small tear with foam stuffing, dark stains, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, purple and magenta neon accents, crisp pixel art, clean pixel clusters, flat orthographic front view, no perspective, no text, no letters, no logos",
+      "width": 128,
+      "height": 128,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "highly detailed",
+      "no_background": false,
+      "init_image": "art/box/raw/sketch-b.png",
+      "init_image_strength": 110,
+      "seed": 6101,
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 6101,
+    "id": "a9d99910-6397-4d00-96d4-0ef47de7d156",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/a9d99910-6397-4d00-96d4-0ef47de7d156/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "raw/sample-b.png"
+    ],
+    "note": "Вариант B, фиолетовый: эскиз neon[0–1] с тенями indigo[0–1]; стёжка сохранилась, пуговицы — светлые точки neon[3–4], износа нет. Эскиз — ромбы стёжки 16×16 с пуговицами 2×2, шов на ступень темнее основы, подушка — выпуклость со светом сверху, износ скриптом: разрыв с поролоном bone[2–3], две трещины, два пятна. Тайл задней стенки — самый частый цвет образца в каждой позиции периода 16 × 16. 30.09.2026 решение Сергея: задней стенки, LED-планки и света в кубе нет — сквозь заднюю и левую стороны куба видна стена зала; образец не используется. Сырые файлы raw/ удалены 30.09.2026: результат — в аккаунте PixelLab по id (get_image выдаёт свежую ссылку); эскизы sketch-*.png были только локальными; пути raw/… в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-30",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "button tufted quilted vinyl wall panel, diamond stitching with small buttons, dark burgundy vinyl, cracked and scuffed vinyl, a small tear with foam stuffing, dark stains, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, purple and magenta neon accents, crisp pixel art, clean pixel clusters, flat orthographic front view, no perspective, no text, no letters, no logos",
+      "width": 128,
+      "height": 128,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "highly detailed",
+      "no_background": false,
+      "init_image": "art/box/raw/sketch-c.png",
+      "init_image_strength": 110,
+      "seed": 6101,
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 6101,
+    "id": "acbab1da-dc9c-4d7f-aaeb-c5ca6e0b2d2a",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/acbab1da-dc9c-4d7f-aaeb-c5ca6e0b2d2a/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "raw/sample-c.png"
+    ],
+    "note": "Вариант C, бордовый: эскиз red[0–3]; подушки круглее, чем на эскизе, на пересечениях швов точки neon[2], износа нет. Эскиз — ромбы стёжки 16×16 с пуговицами 2×2, шов на ступень темнее основы, подушка — выпуклость со светом сверху, износ скриптом: разрыв с поролоном bone[2–3], две трещины, два пятна. Тайл задней стенки — самый частый цвет образца в каждой позиции периода 16 × 16. 30.09.2026 решение Сергея: задней стенки, LED-планки и света в кубе нет — сквозь заднюю и левую стороны куба видна стена зала; образец не используется. Сырые файлы raw/ удалены 30.09.2026: результат — в аккаунте PixelLab по id (get_image выдаёт свежую ссылку); эскизы sketch-*.png были только локальными; пути raw/… в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-30",
+    "tool": "script",
+    "seed": null,
+    "id": null,
+    "urls": [],
+    "cost": 0,
+    "params": {
+      "floor": "ковролин: тайл 16×16, основа indigo[1], крапины indigo[0] и blue[0] по 14 % (вариант blue: основа blue[0], крапины indigo[1] и blue[1]); шум — хэш координат пикселя с сидом 11, тайл бесшовный по построению",
+      "chute": "проём лотка 32×4: дальний борт metal[2], стенка шахты metal[0], пустота indigo[0]; боковые борта metal[1]",
+      "tray": "акрил {alpha}: дымка bone[3] альфа 64, борт — строка bone[4] альфа 204 и строка bone[3] альфа 128, ребро у стыка стенок bone[4] альфа 128, царапины bone[4] альфа 128 — декали scratch 5×5"
+    },
+    "picked": [
+      "box{tps}{pal}/*{compose}/"
+    ],
+    "rejected": [],
+    "note": "Детали атласа box собраны скриптом, генераций 0. Скрипт в репозитории не хранится: правила записаны здесь. Раскладки граней — getFaceLayouts в assetpack.config.ts, углы граней — getCubeFaces. Цвет пола — на ревью Сергея."
+  }
+]

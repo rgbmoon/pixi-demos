@@ -44,12 +44,6 @@ export const TRAY_CENTER: GroundPoint = { x: TRAY_ORIGIN.x + TRAY_SIZE / 2, y: T
 export const FIELD_CENTER: GroundPoint = { x: GRID_SIZE / 2, y: GRID_SIZE / 2 }
 /** Высота стенок лотка: ниже верха кучи, поэтому игрушка через них переваливается. */
 export const TRAY_WALL_HEIGHT = 2
-/** Прозрачность линий сетки: ими каркас отличается от рёбер. */
-export const GRID_ALPHA = 0.35
-/** Прозрачность заливки лотка. */
-export const TRAY_ALPHA = 0.35
-/** Прозрачность заливки стенки лотка. */
-export const TRAY_WALL_FILL_ALPHA = 0.8
 
 // Корпус
 /** Передний край панели выступает к игроку на три ячейки. */

@@ -20,10 +20,14 @@ export const ROOM_SEQUENCES = {
 /** Алиас атласа корпуса в кэше Assets. */
 export const CABINET_ATLAS = 'cabinet'
 
+/** Алиас атласа внутренностей куба в кэше Assets. */
+export const BOX_ATLAS = 'box'
+
 /** Атласы игры: алиас в кэше Assets → URL JSON атласа. */
 export const ATLASES = {
   [ROOM_ATLAS]: `${ASSETS_DIR}/room/room.json`,
   [CABINET_ATLAS]: `${ASSETS_DIR}/cabinet/cabinet.json`,
+  [BOX_ATLAS]: `${ASSETS_DIR}/box/box.json`,
 } as const
 
 /**
@@ -46,6 +50,17 @@ export const PILLAR_FRAMES = {
   frontRight: 'pillar-front-right.png',
   backLeft: 'pillar-back-left.png',
   backRight: 'pillar-back-right.png',
+} as const
+
+/**
+ * Кадры атласа внутренностей куба: плоские рисунки граней, собранные пайпом `compose`. Ключ совпадает с ключом грани
+ * в `getCubeFaces`.
+ */
+export const BOX_FRAMES = {
+  floor: 'floor.png',
+  chute: 'chute.png',
+  trayBack: 'tray-back.png',
+  traySide: 'tray-side.png',
 } as const
 
 /** Кадры атласа фона: ключи текстур в кэше Assets. */

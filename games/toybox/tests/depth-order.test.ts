@@ -6,8 +6,8 @@ import { CUBE_HEIGHT, GRID_SIZE } from '#src/constants'
 import type { DepthItem, PlaneVector, ScreenPoint, ShapeKey, WorldPoint } from '#src/types'
 import { DepthLayer } from '#src/ui/box/depth-layer'
 import { getDepthRelation, getPlaneDepthItem, getPointDepthItem, getToyDepthItem, orderByDepth } from '#src/utils/depth'
-import { getFaceOutline, getTrayWallOutlines } from '#src/utils/machine-geometry'
-import { getViewRay, screenToGround, worldToScreen } from '#src/utils/projection'
+import { getCubeFaces } from '#src/utils/machine-geometry'
+import { getFaceQuad, getViewRay, screenToGround, worldToScreen } from '#src/utils/projection'
 import { getDepthCenter, getVariant } from '#src/utils/shapes'
 
 import { getPouredHeap } from './setup/heap'
@@ -202,8 +202,7 @@ describe('порядок наложения', () => {
   })
 
   it('прячет за дальней стенкой лотка то, что лежит за ней, и показывает перед ней игрушку в шахте', () => {
-    const [far] = getTrayWallOutlines()
-    const wall = getPlaneDepthItem(far)
+    const wall = getPlaneDepthItem(getFaceQuad(getCubeFaces().trayBack))
     const behind = toy('single', 2, 7, 0.5)
     const falling = toy('single', 1, 7, 0.8)
 
@@ -213,7 +212,8 @@ describe('порядок наложения', () => {
 
   it('проводит ребро ближнего угла куба перед игрушкой, а ребро дальнего — за ней', () => {
     const edge = (corner: WorldPoint) => getPlaneDepthItem([corner, { ...corner, z: CUBE_HEIGHT }])
-    const [near, , far] = getFaceOutline(0).map(edge)
+    const near = edge({ x: 0, y: 0, z: 0 })
+    const far = edge({ x: GRID_SIZE, y: GRID_SIZE, z: 0 })
 
     expect(getDepthRelation(near, toy('single', 0, 0.45, 1))).toBeGreaterThan(0)
     expect(getDepthRelation(far, toy('single', GRID_SIZE - 1, GRID_SIZE - 0.45, 1))).toBeLessThan(0)

@@ -1,9 +1,9 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 
-import { CABINET_FRAMES, PILLAR_FRAMES } from '#src/assets'
+import { BOX_FRAMES, CABINET_FRAMES, PILLAR_FRAMES } from '#src/assets'
 import { ART_CELL, RESET_PLATE_WIDTH } from '#src/constants'
-import { getCabinetFaces, getMarqueeLampCenters, getPillarFaces } from '#src/utils/machine-geometry'
+import { getCabinetFaces, getCubeFaces, getMarqueeLampCenters, getPillarFaces } from '#src/utils/machine-geometry'
 import { getFaceSize } from '#src/utils/projection'
 import { AssetBuild } from '@pixi-demos/asset-pipes/asset-build'
 import type { DecalPlacement, FaceLayout, Palette } from '@pixi-demos/asset-pipes/types'
@@ -43,10 +43,19 @@ const CABINET_DECALS: Partial<Record<keyof typeof CABINET_FRAMES, DecalPlacement
   ],
 }
 
+// Декали внутренних граней куба: отступы от угла грани в пикселях арта
+const BOX_DECALS: Partial<Record<keyof typeof BOX_FRAMES, DecalPlacement[]>> = {
+  trayBack: [
+    { name: 'scratch', corner: 'top-left', x: 5, y: 7 },
+    { name: 'scratch', corner: 'bottom-right', x: 6, y: 4 },
+  ],
+}
+
 /** Раскладки граней для `compose`: размеры считаются из геометрии автомата, поэтому смена размеров не требует арта. */
 const getFaceLayouts = (): Record<string, FaceLayout> => {
   const cabinet = getCabinetFaces()
   const pillars = getPillarFaces()
+  const box = getCubeFaces()
   const name = (frame: string): string => path.basename(frame, '.png')
 
   return Object.fromEntries([
@@ -57,6 +66,10 @@ const getFaceLayouts = (): Record<string, FaceLayout> => {
     ...(Object.keys(PILLAR_FRAMES) as (keyof typeof PILLAR_FRAMES)[]).map((key) => [
       name(PILLAR_FRAMES[key]),
       getFaceSize(pillars[key]),
+    ]),
+    ...(Object.keys(BOX_FRAMES) as (keyof typeof BOX_FRAMES)[]).map((key) => [
+      name(BOX_FRAMES[key]),
+      { ...getFaceSize(box[key]), decals: BOX_DECALS[key] },
     ]),
   ])
 }
