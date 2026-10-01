@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from 'vitest'
+import { Assets, Texture } from 'pixi.js'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import { CLAW_ATLAS, CLAW_FRAMES, CLAW_SEQUENCES } from '#src/assets'
 import { ClawRig } from '#src/claw/claw-rig'
 import { CLAW_GRAB_MS, FIELD_CENTER, TRAY_CENTER } from '#src/constants'
 import { CubeController } from '#src/controllers/box/cube'
@@ -14,6 +16,19 @@ import { createHeap, stand } from './setup/heap'
 const FRAME_MS = 100
 
 describe('кадр куба', () => {
+  // Тест атласы не грузит, а клешне нужны кадры поворота, поз и текстура троса
+  beforeEach(() => {
+    for (const frame of Object.values(CLAW_FRAMES)) Assets.cache.set(frame, Texture.WHITE)
+    Assets.cache.set(CLAW_ATLAS, {
+      animations: { [CLAW_SEQUENCES.open]: [Texture.WHITE], [CLAW_SEQUENCES.closed]: [Texture.WHITE] },
+    })
+  })
+
+  afterEach(() => {
+    for (const frame of Object.values(CLAW_FRAMES)) Assets.cache.remove(frame)
+    Assets.cache.remove(CLAW_ATLAS)
+  })
+
   it('ведёт игрушку в клешне в том же кадре, что клешню, и доставляет её центр точно над лотком', async () => {
     const ticker = new GameTicker()
     const rig = new ClawRig()

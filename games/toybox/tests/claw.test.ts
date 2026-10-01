@@ -127,11 +127,11 @@ describe('клешня: ход по вводу игрока', () => {
 })
 
 describe('клешня: качание на тросе', () => {
-  /** Клешня у ближней стенки: впереди полный ход через поле. */
+  /** Клешня у ближней стенки с местом на отклонение к ней: впереди полный ход через поле. */
   const createRigAtWall = async (): Promise<ClawRig> => {
     const rig = new ClawRig()
 
-    await finish(rig, rig.moveTo({ x: CART_SIZE / 2, y: FIELD_CENTER.y }))
+    await finish(rig, rig.moveTo({ x: CART_SIZE / 2 + SWAY_MAX_OFFSET, y: FIELD_CENTER.y }))
     drive(rig, STILL, SETTLE_FRAMES)
 
     return rig
@@ -214,6 +214,20 @@ describe('клешня: качание на тросе', () => {
     await tracked
 
     expect(peak).toBeLessThanOrEqual(SWAY_MAX_OFFSET)
+  })
+
+  it('не выводит клешню за стенку куба, когда каретка с разгона упирается в стенку', () => {
+    const rig = new ClawRig()
+    let farthest = 0
+
+    for (let frame = 0; frame < 180; frame++) {
+      drive(rig, frame < 90 ? FORWARD : STILL, 1)
+      farthest = Math.max(farthest, rig.getGripPoint().x)
+    }
+
+    expect(rig.getCartPoint().x).toBe(GRID_SIZE - CART_SIZE / 2)
+    expect(farthest).toBeLessThanOrEqual(GRID_SIZE - CART_SIZE / 2)
+    expect(getSwing(rig)).toEqual({ x: 0, y: 0 })
   })
 })
 
@@ -310,6 +324,20 @@ describe('клешня: потеря игрушки на ходу', () => {
     expect(drops[0].grip).toEqual(drops[0].current)
     expect(drops[0].cart.x).toBeCloseTo(from.x + (target.x - from.x) * 0.31, 12)
     expect(drops[0].cart.y).toBeCloseTo(from.y + (target.y - from.y) * 0.31, 12)
+  })
+
+  it('остаётся сжатой после потери игрушки на ходу и разжимается только по команде над лотком', async () => {
+    const rig = new ClawRig()
+    const closed: boolean[] = []
+
+    await finish(rig, rig.grab(new AbortController().signal))
+    await finish(rig, rig.ascend({ share: 0.5, onDrop: () => closed.push(rig.isClosed) }))
+    await finish(rig, rig.carryTo(TRAY_CENTER, { share: 0.5, onDrop: () => closed.push(rig.isClosed) }))
+    closed.push(rig.isClosed)
+    rig.open()
+    closed.push(rig.isClosed)
+
+    expect(closed).toEqual([true, true, true, false])
   })
 
   it('роняет игрушку над кубом: дальше порога от места захвата и до входа в лоток', () => {

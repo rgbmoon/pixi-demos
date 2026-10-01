@@ -14,9 +14,11 @@ export const MIN_TRAVEL_MS = 1
 
 // Высота клешни
 /** Длина троса в покое, в ячейках. */
-export const ROPE_REST_LENGTH = 1.5
+export const ROPE_REST_LENGTH = 2
 /** Высота клешни в покое: с неё начинается спуск и на неё же она возвращается. */
 export const CLAW_REST_HEIGHT = CUBE_HEIGHT - ROPE_REST_LENGTH
+/** На сколько кончики пальцев свисают под точкой захвата, в ячейках: ниже этой высоты клешня не опускается. */
+export const CLAW_REACH = 0.75
 /** Длительность опускания клешни до пола, мс. */
 export const CLAW_DROP_MS = 1400
 /** Длительность подъёма клешни к верхней грани, мс. */

@@ -23,11 +23,15 @@ export const CABINET_ATLAS = 'cabinet'
 /** Алиас атласа внутренностей куба в кэше Assets. */
 export const BOX_ATLAS = 'box'
 
+/** Алиас атласа клешни в кэше Assets. */
+export const CLAW_ATLAS = 'claw'
+
 /** Атласы игры: алиас в кэше Assets → URL JSON атласа. */
 export const ATLASES = {
   [ROOM_ATLAS]: `${ASSETS_DIR}/room/room.json`,
   [CABINET_ATLAS]: `${ASSETS_DIR}/cabinet/cabinet.json`,
   [BOX_ATLAS]: `${ASSETS_DIR}/box/box.json`,
+  [CLAW_ATLAS]: `${ASSETS_DIR}/claw/claw.json`,
 } as const
 
 /**
@@ -62,6 +66,26 @@ export const BOX_FRAMES = {
   chute: 'chute.png',
   trayBack: 'tray-back.png',
   traySide: 'tray-side.png',
+} as const
+
+/**
+ * Кадры атласа клешни: трос — бесшовный по вертикали тайл, остальные — промежуточные позы захвата и разжатия: замах
+ * шире раскрытой, треть и две трети смыкания. Якорь поз — точка крепления троса.
+ */
+export const CLAW_FRAMES = {
+  rope: 'rope.png',
+  wide: 'claw-wide.png',
+  third: 'claw-third.png',
+  twoThirds: 'claw-two-thirds.png',
+} as const
+
+/**
+ * Последовательности атласа клешни: кадры поворота RotSprite раскрытой и сжатой клешни с шагом `CLAW_TILT_STEP` от
+ * наклона влево до наклона вправо, кадр без наклона посередине. Якорь кадра — точка крепления троса.
+ */
+export const CLAW_SEQUENCES = {
+  open: 'claw-open',
+  closed: 'claw-closed',
 } as const
 
 /** Кадры атласа фона: ключи текстур в кэше Assets. */

@@ -1,0 +1,274 @@
+[
+  {
+    "date": "2026-10-01",
+    "tool": "create_1_direction_object",
+    "params": {
+      "description": "three-prong claw machine grabber, open claw hanging from a steel cable, left prong, right prong and a back prong behind the hub, front view, worn steel, scratches, rust spots, grime, selective outline, medium shading, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, purple and magenta neon accents, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "name": "toybox claw",
+      "view": "sidescroller",
+      "style_images": [
+        "art/claw/raw/style-corner.png",
+        "art/claw/raw/style-plate.png"
+      ],
+      "item_descriptions": [
+        "small compact open three-prong claw machine grabber, narrow, about half of the image wide, left, right and back prongs, worn steel, rust spots, front view",
+        "small compact open three-prong claw machine grabber, narrow, about half of the image wide, left, right and back prongs, worn steel, rust spots, front view",
+        "small compact open three-prong claw machine grabber, narrow, about half of the image wide, left, right and back prongs, worn steel, rust spots, front view",
+        "small compact open three-prong claw machine grabber, narrow, about half of the image wide, left, right and back prongs, worn steel, rust spots, front view",
+        "small compact open three-prong claw machine grabber, narrow, about half of the image wide, left, right and back prongs, worn steel, rust spots, front view",
+        "small compact open three-prong claw machine grabber, narrow, about half of the image wide, left, right and back prongs, worn steel, rust spots, front view",
+        "small compact open three-prong claw machine grabber, narrow, about half of the image wide, left, right and back prongs, worn steel, rust spots, front view",
+        "small compact open three-prong claw machine grabber, narrow, about half of the image wide, left, right and back prongs, worn steel, rust spots, front view",
+        "small compact open three-prong claw machine grabber, narrow, about half of the image wide, left, right and back prongs, worn steel, rust spots, front view",
+        "small compact open three-prong claw machine grabber, narrow, about half of the image wide, left, right and back prongs, worn steel, rust spots, front view",
+        "open three-prong claw machine grabber, about two thirds of the image wide, left, right and back prongs, worn steel, scratches, front view",
+        "open three-prong claw machine grabber, about two thirds of the image wide, left, right and back prongs, worn steel, scratches, front view",
+        "open three-prong claw machine grabber, about two thirds of the image wide, left, right and back prongs, worn steel, scratches, front view",
+        "open three-prong claw machine grabber, about two thirds of the image wide, left, right and back prongs, worn steel, scratches, front view",
+        "open three-prong claw machine grabber, about two thirds of the image wide, left, right and back prongs, worn steel, scratches, front view",
+        "open three-prong claw machine grabber, about two thirds of the image wide, left, right and back prongs, worn steel, scratches, front view",
+        "open three-prong claw machine grabber, about two thirds of the image wide, left, right and back prongs, worn steel, scratches, front view",
+        "open three-prong claw machine grabber, about two thirds of the image wide, left, right and back prongs, worn steel, scratches, front view",
+        "open three-prong claw machine grabber, about two thirds of the image wide, left, right and back prongs, worn steel, scratches, front view",
+        "open three-prong claw machine grabber, about two thirds of the image wide, left, right and back prongs, worn steel, scratches, front view",
+        "wide open three-prong claw machine grabber, prongs spread across almost the full image width, left, right and back prongs, worn steel, grime, front view",
+        "wide open three-prong claw machine grabber, prongs spread across almost the full image width, left, right and back prongs, worn steel, grime, front view",
+        "wide open three-prong claw machine grabber, prongs spread across almost the full image width, left, right and back prongs, worn steel, grime, front view",
+        "wide open three-prong claw machine grabber, prongs spread across almost the full image width, left, right and back prongs, worn steel, grime, front view",
+        "wide open three-prong claw machine grabber, prongs spread across almost the full image width, left, right and back prongs, worn steel, grime, front view",
+        "wide open three-prong claw machine grabber, prongs spread across almost the full image width, left, right and back prongs, worn steel, grime, front view",
+        "wide open three-prong claw machine grabber, prongs spread across almost the full image width, left, right and back prongs, worn steel, grime, front view",
+        "wide open three-prong claw machine grabber, prongs spread across almost the full image width, left, right and back prongs, worn steel, grime, front view",
+        "wide open three-prong claw machine grabber, prongs spread across almost the full image width, left, right and back prongs, worn steel, grime, front view",
+        "wide open three-prong claw machine grabber, prongs spread across almost the full image width, left, right and back prongs, worn steel, grime, front view"
+      ]
+    },
+    "seed": null,
+    "id": "8506c355-86c9-43a6-9532-c694b721b247",
+    "urls": [
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/8506c355-86c9-43a6-9532-c694b721b247/rotations/frame_<0–63>.png"
+    ],
+    "cost": 20,
+    "picked": [],
+    "rejected": [
+      "все 64 кандидата"
+    ],
+    "note": "Пачка 64 кандидата 32×32. Образцы стиля: style-corner — кроп атласа корпуса 32×32 (верхний правый угол фасада тумбы с купюроприёмником и болтами), style-plate — деталь plate.png плашки кнопки сброса 23×20; оба палитровыми PNG. Ширина рисунка кандидатов 16–30 px; описания размеров ширину почти не задают: узкие (16–18) — индексы 0–15, 24 px — 18, 24, 26, 27, 30, 31. Цвета: ахроматичные пиксели (C < 0.03 в OKLab) раскладываются по светлоте в рампу metal, остальные — ближайший цвет палитры: ближайший цвет всей палитры дробил серый металл в бурые тона bone и brown. Огрызок троса над ступицей срезается. На ревью в сцене — 7, 14 (16 px), 4, 11 (18 px), 18, 27 (24 px). 01.10.2026 решение Сергея: пачка отклонена — клешни читаются инопланетными (купола, черепа), нужна клешня настоящего автомата, минималистичная; размеры те же. В сцене побывал также 36 (купол, 26 px). 01.10.2026 в конце задачи пачка удалена из аккаунта PixelLab (dismiss_review): кандидаты не сохранились."
+  },
+  {
+    "date": "2026-10-01",
+    "tool": "script",
+    "params": {
+      "generator": "эскиз клешни: зажим троса 4×2, цилиндр корпуса, кольцо шарниров на 2 px шире корпуса, боковые пальцы 2 px — диагональ наружу, вертикаль, кончик загнут внутрь на 2 px; задний палец по оси, 0,6 длины бокового, в тени",
+      "widths": {
+        "16": {
+          "hub": 6,
+          "body": 6,
+          "finger": 8
+        },
+        "20": {
+          "hub": 6,
+          "body": 8,
+          "finger": 9
+        },
+        "24": {
+          "hub": 8,
+          "body": 9,
+          "finger": 11
+        }
+      },
+      "colors": "рампа metal: цилиндр 2-3-2-1 слева направо, блик metal[4] одной точкой, левый палец 3/1, правый 2/1, задний 1/0"
+    },
+    "seed": null,
+    "id": null,
+    "urls": [],
+    "cost": 0,
+    "picked": [],
+    "rejected": [],
+    "note": "Эскизы трёх ширин 16, 20, 24 px. Ширина чётная: ось клешни лежит на границе пикселей, иначе якорь кадра и трос встают на полпикселя. Трос — тайл 2×8 (Сергей: в полтора раза тоньше 3×8), канавка косой «/», metal[0–3]."
+  },
+  {
+    "date": "2026-10-01",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "simple arcade claw machine crane claw, small steel cylinder housing with a cable clamp on top, three thin bent steel wire prongs with tips curled inward, minimalist realistic design, worn steel, light scratches, a few small rust spots, front view, dim light, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 32,
+      "height": 32,
+      "no_background": true,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "medium detail",
+      "seed": 8101,
+      "init_image": "art/claw/raw/sketch-24.png",
+      "init_image_strength": 100,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 8101,
+    "id": "ef909df5-92b6-4d02-8bdb-86e4a8c1a081",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/ef909df5-92b6-4d02-8bdb-86e4a8c1a081/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "raw/pf-100.png"
+    ],
+    "note": "Вариант B по эскизу 24 px (решение Сергея). Полная палитра: клешня в индиго и неоне, форма развалилась в треножник. Приведение — серое по светлоте в рампу metal. Сырые файлы raw/ удалены 01.10.2026: результат — в аккаунте PixelLab по id (get_image выдаёт свежую ссылку); эскиз sketch-24.png и palette-metal.png были только локальными, пути raw/… — историческая справка."
+  },
+  {
+    "date": "2026-10-01",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "simple arcade claw machine crane claw, small steel cylinder housing with a cable clamp on top, three thin bent steel wire prongs with tips curled inward, minimalist realistic design, worn steel, light scratches, a few small rust spots, front view, dim light, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 32,
+      "height": 32,
+      "no_background": true,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "medium detail",
+      "seed": 8101,
+      "init_image": "art/claw/raw/sketch-24.png",
+      "init_image_strength": 175,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 8101,
+    "id": "d968185a-339d-4f1c-87a3-6d824fc5388b",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/d968185a-339d-4f1c-87a3-6d824fc5388b/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "raw/pf-175.png"
+    ],
+    "note": "Вариант B по эскизу 24 px (решение Сергея). Полная палитра: корпус голубой, пальцы тонкие, пурпурные пятна. Приведение — серое по светлоте в рампу metal. Сырые файлы raw/ удалены 01.10.2026: результат — в аккаунте PixelLab по id (get_image выдаёт свежую ссылку); эскиз sketch-24.png и palette-metal.png были только локальными, пути raw/… — историческая справка."
+  },
+  {
+    "date": "2026-10-01",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "simple arcade claw machine crane claw, small steel cylinder housing with a cable clamp on top, three thin bent steel wire prongs with tips curled inward, minimalist realistic design, worn steel, light scratches, a few small rust spots, front view, dim light, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 32,
+      "height": 32,
+      "no_background": true,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "medium detail",
+      "seed": 8101,
+      "init_image": "art/claw/raw/sketch-24.png",
+      "init_image_strength": 250,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 8101,
+    "id": "51bd6b71-f8e8-4622-857d-c029712a2b3e",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/51bd6b71-f8e8-4622-857d-c029712a2b3e/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "raw/pf-250.png"
+    ],
+    "note": "Вариант B по эскизу 24 px (решение Сергея). Полная палитра: корпус в синих пятнах, кончики пальцев розовые. Приведение — серое по светлоте в рампу metal. Сырые файлы raw/ удалены 01.10.2026: результат — в аккаунте PixelLab по id (get_image выдаёт свежую ссылку); эскиз sketch-24.png и palette-metal.png были только локальными, пути raw/… — историческая справка."
+  },
+  {
+    "date": "2026-10-01",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "simple arcade claw machine crane claw, small steel cylinder housing with a cable clamp on top, three thin bent steel wire prongs with tips curled inward, minimalist realistic design, worn steel, light scratches, a few small rust spots, front view, dim light, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 32,
+      "height": 32,
+      "no_background": true,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "medium detail",
+      "seed": 8101,
+      "init_image": "art/claw/raw/sketch-24.png",
+      "init_image_strength": 300,
+      "color_image": "art/claw/raw/palette-metal.png"
+    },
+    "seed": 8101,
+    "id": "3b3f617f-8d40-4978-9908-d33306b4de18",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/3b3f617f-8d40-4978-9908-d33306b4de18/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [],
+    "note": "Вариант B по эскизу 24 px (решение Сергея). Палитра metal + brown[2] + red[2]: форма эскиза сохранилась, на корпусе царапины и потёртости, кончики пальцев скруглены. Приведение — серое по светлоте в рампу metal. Сырые файлы raw/ удалены 01.10.2026: результат — в аккаунте PixelLab по id (get_image выдаёт свежую ссылку); эскиз sketch-24.png и palette-metal.png были только локальными, пути raw/… — историческая справка."
+  },
+  {
+    "date": "2026-10-01",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "simple arcade claw machine crane claw, small steel cylinder housing with a cable clamp on top, three thin bent steel wire prongs with tips curled inward, minimalist realistic design, worn steel, light scratches, a few small rust spots, front view, dim light, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 32,
+      "height": 32,
+      "no_background": true,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "medium detail",
+      "seed": 8101,
+      "init_image": "art/claw/raw/sketch-24.png",
+      "init_image_strength": 400,
+      "color_image": "art/claw/raw/palette-metal.png"
+    },
+    "seed": 8101,
+    "id": "9b74fd5e-7600-4775-9ac9-7390c063eed1",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/9b74fd5e-7600-4775-9ac9-7390c063eed1/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [],
+    "note": "Вариант B по эскизу 24 px (решение Сергея). Палитра metal + brown[2] + red[2]: почти эскиз, зажим конусом, лёгкий износ корпуса. Приведение — серое по светлоте в рампу metal. Сырые файлы raw/ удалены 01.10.2026: результат — в аккаунте PixelLab по id (get_image выдаёт свежую ссылку); эскиз sketch-24.png и palette-metal.png были только локальными, пути raw/… — историческая справка."
+  },
+  {
+    "date": "2026-10-01",
+    "tool": "script",
+    "params": {
+      "source": "вариант pixflux 400 (9b74fd5e-7600-4775-9ac9-7390c063eed1) после приведения к рампе metal",
+      "split": "корпус — строки 0–14 и задний палец (столбцы 15–16 ниже кольца); левый палец — столбцы < 15, правый — > 16, строки от 15",
+      "hinges": {
+        "left": {
+          "x": 11,
+          "y": 15
+        },
+        "right": {
+          "x": 21,
+          "y": 15
+        }
+      },
+      "closedDegrees": 34,
+      "poses": {
+        "open": 0,
+        "wide": -0.15,
+        "third": 0.3333333333333333,
+        "two-thirds": 0.6666666666666666,
+        "closed": 1
+      },
+      "rotation": "RotSprite утилитой asset-pipes: левый палец против часовой стрелки, правый по ней, доля позы × угол смыкания"
+    },
+    "seed": null,
+    "id": null,
+    "urls": [],
+    "cost": 0,
+    "picked": [
+      "claw-open",
+      "claw-wide",
+      "claw-third",
+      "claw-two-thirds",
+      "claw-closed"
+    ],
+    "rejected": [
+      "угол смыкания 37° — кончики заходят друг за друга",
+      "32° — разрыв у изгиба"
+    ],
+    "note": "Позы захвата: корпус и задний палец неизменны во всех кадрах, поэтому кадры не мерцают; боковые пальцы поворачиваются вокруг шарниров. Раскрытая и сжатая — с тегом {rot=180}{arc=10}, промежуточные — отвесные кадры. Опорная точка всех кадров — верх зажима (16, 1)."
+  }
+]

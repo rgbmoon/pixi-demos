@@ -28,6 +28,20 @@ export const scale2x = (image: RasterImage): RasterImage => {
   return result
 }
 
+/**
+ * Углы кадров поворота, градусы: шаг `360 / count` на полный оборот от 0°. С дугой `arc` — только кадры в пределах
+ * ±`arc` по порядку от −`arc` до +`arc`, кадр без поворота стоит в середине.
+ */
+export const getRotationAngles = (count: number, arc?: number): number[] => {
+  const step = 360 / count
+
+  if (arc === undefined) return Array.from({ length: count }, (_, frame) => frame * step)
+
+  const side = Math.floor(arc / step + 1e-9)
+
+  return Array.from({ length: 2 * side + 1 }, (_, frame) => (frame - side) * step)
+}
+
 /** Растр, увеличенный для RotSprite: три прохода Scale2x. */
 export const upscaleForRotation = (image: RasterImage): RasterImage => scale2x(scale2x(scale2x(image)))
 

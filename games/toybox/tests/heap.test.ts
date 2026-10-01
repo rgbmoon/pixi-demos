@@ -1,14 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { CLAW_REST_HEIGHT } from '#src/claw/constants'
-import { CLAW_GRAB_MS, GRID_SIZE, TRAY_CENTER } from '#src/constants'
+import { CART_SIZE, CLAW_GRAB_MS, GRID_SIZE, TRAY_CENTER } from '#src/constants'
 import type { Heap } from '#src/heap/heap'
 import { type ToyBody, ToyState } from '#src/heap/types'
 import { lerpPose, pourHeap } from '#src/heap/utils'
 import { SHAPE_KEYS } from '#src/toys'
 import type { GroundPoint, HeapSnapshotBody, PlaneVector, ShapeKey } from '#src/types'
 import { polygonsOverlap } from '#src/utils/geometry'
-import { getSection, getSectionExtent, getVariantCount } from '#src/utils/shapes'
+import { clampToField } from '#src/utils/machine-geometry'
+import { getSection, getSectionExtent, getVariant, getVariantCount } from '#src/utils/shapes'
 import { createRandom } from '@pixi-demos/core/random'
 
 import {
@@ -120,6 +121,28 @@ describe('куча: захват', () => {
     const heap = createHeap([cube, pillow, ball])
 
     expect(heap.getTopBodyAt({ x: 3.5, y: 4 })?.shape).toBe('single')
+  })
+
+  it('находит игрушку любой формы в углу куба из крайнего положения каретки', () => {
+    // Угол над лотком занят шахтой: игрушка там не лежит
+    const corners = [
+      { front: true, left: false },
+      { front: false, left: false },
+      { front: false, left: true },
+    ]
+
+    for (const { shape, variant } of VARIANTS) {
+      const { depth } = getVariant(shape, variant)
+      const { halfWidth } = getSectionExtent(getSection(shape, variant))
+
+      for (const { front, left } of corners) {
+        const body = stand(shape, front ? 0 : GRID_SIZE - depth, left ? GRID_SIZE - halfWidth : halfWidth, 0, variant)
+        const heap = createHeap([body])
+        const cart = clampToField({ x: front ? 0 : GRID_SIZE, y: left ? GRID_SIZE : 0 }, CART_SIZE / 2)
+
+        expect(heap.getTopBodyAt(cart), `${shape}#${variant} front=${front} left=${left}`).toBeDefined()
+      }
+    }
   })
 
   it('роняет игрушку, лежавшую на поднятой', () => {

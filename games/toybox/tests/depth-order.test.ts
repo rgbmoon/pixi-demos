@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { CUBE_HEIGHT, GRID_SIZE } from '#src/constants'
 import type { DepthItem, PlaneVector, ScreenPoint, ShapeKey, WorldPoint } from '#src/types'
 import { DepthLayer } from '#src/ui/box/depth-layer'
-import { getDepthRelation, getPlaneDepthItem, getPointDepthItem, getToyDepthItem, orderByDepth } from '#src/utils/depth'
+import { getClawDepthItem, getDepthRelation, getPlaneDepthItem, getToyDepthItem, orderByDepth } from '#src/utils/depth'
 import { getCubeFaces } from '#src/utils/machine-geometry'
 import { getFaceQuad, getViewRay, screenToGround, worldToScreen } from '#src/utils/projection'
 import { getDepthCenter, getVariant } from '#src/utils/shapes'
@@ -220,10 +220,21 @@ describe('порядок наложения', () => {
   })
 
   it('рисует клешню над игрушкой, на которую она опускается, и прячет её за игрушкой ближнего среза', () => {
+    // Силуэт клешни — квадрат 24 px арта вокруг точки захвата
+    const clawAt = (grip: WorldPoint) => {
+      const { x, y } = worldToScreen(grip)
+
+      return getClawDepthItem(grip, [
+        { x: x - 48, y: y - 48 },
+        { x: x + 48, y: y - 48 },
+        { x: x + 48, y: y + 48 },
+        { x: x - 48, y: y + 48 },
+      ])
+    }
     const below = toy('cube8', 3, 4, 0.9)
-    const claw = getPointDepthItem({ x: 4, y: 4, z: 2 }, 16, 0.25)
+    const claw = clawAt({ x: 4, y: 4, z: 2 })
     const front = toy('cube8', 0, 4, 1.8)
-    const distant = getPointDepthItem({ x: 6.5, y: 4, z: 1.5 }, 16, 0.25)
+    const distant = clawAt({ x: 6.5, y: 4, z: 1.5 })
 
     expect(getDepthRelation(claw, below)).toBeGreaterThan(0)
     expect(getDepthRelation(front, distant)).toBeGreaterThan(0)

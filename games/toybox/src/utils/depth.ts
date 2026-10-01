@@ -1,4 +1,4 @@
-import { DEPTH_OVERLAP_TOLERANCE, TOY_INSET } from '#src/constants'
+import { CLAW_HUB_HALF_WIDTH, DEPTH_OVERLAP_TOLERANCE, TOY_INSET } from '#src/constants'
 import type { DepthItem, PlaneVector, ScreenPoint, ShapeKey, WorldPoint } from '#src/types'
 
 import { getAxes, getBounds, getConvexHull, getSeparation, projectPolygon } from './geometry'
@@ -158,21 +158,20 @@ export const getPlaneDepthItem = (points: readonly WorldPoint[]): DepthItem => {
   )
 }
 
-/** Предмет сортировки для точки мира: клешня. `radius` — полусторона на экране, `sectionRadius` — в клетках. */
-export const getPointDepthItem = (point: WorldPoint, radius: number, sectionRadius: number): DepthItem => {
-  const center = worldToScreen(point)
-  const square = (cx: number, cy: number, half: number): PlaneVector[] => [
-    { x: cx - half, y: cy - half },
-    { x: cx + half, y: cy - half },
-    { x: cx + half, y: cy + half },
-    { x: cx - half, y: cy + half },
-  ]
-
-  return createItem(
-    point.x,
-    point.x,
-    square(point.y, point.z, sectionRadius),
-    square(center.x, center.y, radius),
-    getDepthOrder(point)
+/**
+ * Предмет сортировки для клешни: сечение — квадрат корпуса над точкой захвата, поэтому игрушку в захвате и игрушку
+ * под собой клешня закрывает; силуэт — рамка её рисунка на экране.
+ */
+export const getClawDepthItem = (grip: WorldPoint, outline: readonly ScreenPoint[]): DepthItem =>
+  createItem(
+    grip.x,
+    grip.x,
+    [
+      { x: grip.y - CLAW_HUB_HALF_WIDTH, y: grip.z },
+      { x: grip.y + CLAW_HUB_HALF_WIDTH, y: grip.z },
+      { x: grip.y + CLAW_HUB_HALF_WIDTH, y: grip.z + 2 * CLAW_HUB_HALF_WIDTH },
+      { x: grip.y - CLAW_HUB_HALF_WIDTH, y: grip.z + 2 * CLAW_HUB_HALF_WIDTH },
+    ],
+    outline,
+    getDepthOrder(grip)
   )
-}

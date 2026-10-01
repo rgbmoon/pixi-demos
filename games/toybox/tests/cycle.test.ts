@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { CLAW_REST_HEIGHT } from '#src/claw/constants'
+import { CLAW_REACH, CLAW_REST_HEIGHT } from '#src/claw/constants'
 import {
   FIELD_CENTER,
   FUMBLE_CHANCE,
@@ -108,12 +108,12 @@ describe('цикл клешни', () => {
     expectSoundHeap(cycle.heap)
   })
 
-  it('над пустым местом садится на пол и не берёт ничего даже на удачном броске', async () => {
+  it('над пустым местом опускается пальцами до пола и не берёт ничего даже на удачном броске', async () => {
     cycle = await startCycle({ bodies: [triangle] })
     cycle.rolls.push(0)
 
     expect(await cycle.playRound()).toEqual(EMPTY_HANDED)
-    expect(getGrabHeight(cycle)).toBe(0)
+    expect(getGrabHeight(cycle)).toBe(CLAW_REACH)
     expect(cycle.store.collected).toBe(0)
   })
 

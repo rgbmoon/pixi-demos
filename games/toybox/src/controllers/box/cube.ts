@@ -3,7 +3,6 @@ import type { DestroyOptions, Ticker } from 'pixi.js'
 
 import { BOX_FRAMES, PILLAR_FRAMES } from '#src/assets'
 import type { ClawRig } from '#src/claw/claw-rig'
-import { CLAW_RADIUS, UNIT_HEIGHT } from '#src/constants'
 import type { Heap } from '#src/heap/heap'
 import type { ToyBody } from '#src/heap/types'
 import type { ToyboxStore } from '#src/stores/toybox'
@@ -15,7 +14,7 @@ import { Face } from '#src/ui/box/face'
 import { Floor } from '#src/ui/box/floor'
 import { Toy } from '#src/ui/box/toy'
 import { ToyShapes } from '#src/ui/box/toy-shapes'
-import { getPlaneDepthItem, getPointDepthItem, getToyDepthItem } from '#src/utils/depth'
+import { getClawDepthItem, getPlaneDepthItem, getToyDepthItem } from '#src/utils/depth'
 import { getCubeFaces, getPillarFaces } from '#src/utils/machine-geometry'
 import { getFaceQuad, worldToScreen } from '#src/utils/projection'
 import { getAngleStep } from '#src/utils/shapes'
@@ -38,7 +37,9 @@ export class CubeController extends LiveContainer {
   private readonly toyboxStore: ToyboxStore
   private readonly rig: ClawRig
   private readonly layer = new DepthLayer()
-  private readonly claw = new Claw()
+  private readonly claw: Claw
+  /** Сжата ли клешня на экране: смену состояния модели контроллер проигрывает анимацией. */
+  private isClawClosed = false
   private readonly shapes = new ToyShapes()
   private readonly toys = new Map<ToyId, Toy>()
   private readonly seen = new Set<ToyId>()
@@ -55,6 +56,7 @@ export class CubeController extends LiveContainer {
     this.heap = heap
     this.toyboxStore = toyboxStore
     this.rig = rig
+    this.claw = new Claw(ticker)
 
     // Детали куба неподвижны: предмет сортировки каждой строится один раз
     const cube = getCubeFaces()
@@ -123,12 +125,19 @@ export class CubeController extends LiveContainer {
     if (this.seen.size !== this.toys.size) this.removeGone()
   }
 
-  /** Ставит клешню в сборе в точки модели; предмет сортировки сборки — точка захвата. */
+  /**
+   * Ставит клешню в сборе в точки модели и проигрывает сжатие и разжатие клешни; предмет сортировки сборки — корпус
+   * клешни над точкой захвата.
+   */
   private syncClaw(grip: WorldPoint): void {
+    if (this.rig.isClosed !== this.isClawClosed) {
+      this.isClawClosed = this.rig.isClosed
+      if (this.isClawClosed) this.claw.grip()
+      else this.claw.release()
+    }
+
     this.claw.setPose(this.rig.getCartPoint(), grip)
-    this.layer.place(this.claw, worldToScreen(grip), 0, () =>
-      getPointDepthItem(grip, CLAW_RADIUS, CLAW_RADIUS / UNIT_HEIGHT)
-    )
+    this.layer.place(this.claw, worldToScreen(grip), 0, () => getClawDepthItem(grip, this.claw.getOutline()))
   }
 
   private addToy(body: Readonly<ToyBody>): Toy {

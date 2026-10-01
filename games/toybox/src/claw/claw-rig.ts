@@ -1,9 +1,9 @@
 import { injectable } from 'inversify'
 
-import { CART_SIZE, CLAW_GRAB_MS, CLAW_RAMP_SHARE, CUBE_HEIGHT, FIELD_CENTER } from '#src/constants'
+import { CART_SIZE, CLAW_GRAB_MS, CLAW_RAMP_SHARE, CUBE_HEIGHT, FIELD_CENTER, GRID_SIZE } from '#src/constants'
 import type { ClawDrop, GroundPoint, WorldPoint } from '#src/types'
 import { clampToField } from '#src/utils/machine-geometry'
-import { lerp } from '#src/utils/math'
+import { clamp, lerp } from '#src/utils/math'
 import { isReducedMotion } from '@pixi-demos/core/accessibility'
 import { easeTrapezoid, easeTrapezoidInverse } from '@pixi-demos/core/easing'
 import { createAbortError } from '@pixi-demos/core/errors/utils'
@@ -12,6 +12,7 @@ import {
   CLAW_DROP_MS,
   CLAW_LIFT_MS,
   CLAW_MAX_SPEED,
+  CLAW_REACH,
   CLAW_REST_HEIGHT,
   CLAW_TRAVEL_SPEED,
   MIN_TRAVEL_MS,
@@ -38,6 +39,7 @@ export class ClawRig {
   /** Предыдущее положение каретки для расчёта скорости, вызывающей качание клешни. */
   private previous: GroundPoint = FIELD_CENTER
   private motion?: ClawMotion
+  private closed = false
 
   /** Мировая точка каретки на потолке; качание клешни её не изменяет. */
   getCartPoint(): WorldPoint {
@@ -53,6 +55,11 @@ export class ClawRig {
     }
   }
 
+  /** Сжата ли клешня: захват её сжимает, разжимает только отпускание над лотком, но не потеря игрушки на ходу. */
+  get isClosed(): boolean {
+    return this.closed
+  }
+
   /** Ведёт каретку к точке поля, сохраняя высоту клешни. */
   async moveTo(target: GroundPoint, signal?: AbortSignal): Promise<void> {
     await this.tween({ ...target, z: this.clawHeight }, this.getTravelMs(target), signal)
@@ -63,14 +70,22 @@ export class ClawRig {
     await this.tween({ ...target, z: this.clawHeight }, this.getTravelMs(target), signal, { drop, settleSwing: true })
   }
 
-  /** Проигрывает захват на месте за `CLAW_GRAB_MS`. */
+  /** Сжимает клешню и проигрывает захват на месте за `CLAW_GRAB_MS`. */
   async grab(signal: AbortSignal): Promise<void> {
+    this.closed = true
     await this.tween({ ...this.cartPosition, z: this.clawHeight }, CLAW_GRAB_MS, signal)
   }
 
-  /** Опускает клешню до высоты `toZ` */
+  /** Разжимает клешню. */
+  open(): void {
+    this.closed = false
+  }
+
+  /** Опускает клешню до высоты `toZ`, но не ниже `CLAW_REACH`: кончики пальцев не уходят под пол. */
   async descend(toZ: number, signal?: AbortSignal): Promise<void> {
-    await this.tween({ ...this.cartPosition, z: toZ }, this.getLiftDuration(toZ, CLAW_DROP_MS), signal)
+    const z = Math.max(toZ, CLAW_REACH)
+
+    await this.tween({ ...this.cartPosition, z }, this.getLiftDuration(z, CLAW_DROP_MS), signal)
   }
 
   /** Поднимает клешню к каретке; заданное действие выполняется на доле пути `share`. */
@@ -149,7 +164,14 @@ export class ClawRig {
     const x = this.advanceAxis(this.swing.x, velocity.x, deltaMs)
     const y = this.advanceAxis(this.swing.y, velocity.y, deltaMs)
 
-    this.swing = { x, y }
+    this.swing = { x: this.stopAtWall(x, this.cartPosition.x), y: this.stopAtWall(y, this.cartPosition.y) }
+  }
+
+  /** Не даёт клешне выйти за стенку куба: отклонение упирается в стенку, скорость качания гасится. */
+  private stopAtWall(state: SpringState, cart: number): SpringState {
+    const value = clamp(state.value, CART_SIZE / 2 - cart, GRID_SIZE - CART_SIZE / 2 - cart)
+
+    return value === state.value ? state : { value, velocity: 0 }
   }
 
   /** Шаг одной оси маятника: цель тем дальше против хода, чем быстрее идёт каретка. */
