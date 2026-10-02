@@ -2,6 +2,7 @@ import {
   type FrameSize,
   type GroundPoint,
   PhaseName,
+  PrizeLight,
   type ScreenPoint,
   type WorldPlane,
   type WorldPoint,
@@ -34,12 +35,12 @@ export const UNIT_HEIGHT = CELL_SIZE
 export const GRID_SIZE = 8
 /** Высота стеклянного бокса в ячейках. */
 export const CUBE_HEIGHT = 8
-/** Сторона лотка в ячейках. */
-export const TRAY_SIZE = 2
+/** Размеры лотка по осям поля в ячейках: глубина `x` — целое число срезов кучи, ширина `y` идёт вдоль фасада. */
+export const TRAY_SIZE: GroundPoint = { x: 3, y: 2.5 }
 /** Угол лотка на полу с наименьшими координатами: лоток стоит в левом углу фронтальной грани. */
-export const TRAY_ORIGIN: GroundPoint = { x: 0, y: GRID_SIZE - TRAY_SIZE }
+export const TRAY_ORIGIN: GroundPoint = { x: 0, y: GRID_SIZE - TRAY_SIZE.y }
 /** Точка, над которой клешня отпускает игрушку. */
-export const TRAY_CENTER: GroundPoint = { x: TRAY_ORIGIN.x + TRAY_SIZE / 2, y: TRAY_ORIGIN.y + TRAY_SIZE / 2 }
+export const TRAY_CENTER: GroundPoint = { x: TRAY_ORIGIN.x + TRAY_SIZE.x / 2, y: TRAY_ORIGIN.y + TRAY_SIZE.y / 2 }
 /** Точка, над которой клешня стоит в покое. */
 export const FIELD_CENTER: GroundPoint = { x: GRID_SIZE / 2, y: GRID_SIZE / 2 }
 /** Высота стенок лотка: ниже верха кучи, поэтому игрушка через них переваливается. */
@@ -144,8 +145,10 @@ export const CLAW_GRIP_FRAME_MS = [70, 20, 20, 50, 40] as const
 export const CLAW_GRAB_MS = CLAW_GRIP_FRAME_MS.reduce((sum, ms) => sum + ms, 0)
 /** Длительности кадров разжатия, мс: клешня раскрывается медленнее, чем сжимается. */
 export const CLAW_RELEASE_FRAME_MS = [80, 80, 80] as const
+/** Длительность разжатия, мс: клешня уходит от лотка, только когда раскрылась полностью. */
+export const CLAW_RELEASE_MS = CLAW_RELEASE_FRAME_MS.reduce((sum, ms) => sum + ms, 0)
 /** Ширина раскрытой клешни, px арта. */
-export const CLAW_ART_WIDTH = 24
+export const CLAW_ART_WIDTH = 28
 /** Сторона каретки в ячейках равна ширине клешни: каретка и клешня на тросе упираются в стенки куба краем клешни. */
 export const CART_SIZE = CLAW_ART_WIDTH / ART_CELL
 /** Расстояние от точки крепления троса до точки захвата по оси клешни, px арта. */
@@ -177,7 +180,7 @@ export const LIFT_SLIP_MAX_SHARE = 0.85
 
 // Снимок кучи
 /** Версия снимка кучи: не сошлась — снимок игнорируется и куча складывается заново. */
-export const HEAP_SNAPSHOT_VERSION = 4
+export const HEAP_SNAPSHOT_VERSION = 5
 /** Адрес снимка кучи в IndexedDB. */
 export const HEAP_DB_NAME = 'toybox'
 export const HEAP_STORE_NAME = 'heap'
@@ -244,14 +247,66 @@ export const KEYBOARD_ARROW_CODES = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'Arro
 export const KEYBOARD_DROP_CODES = ['Enter', 'Space'] as const
 
 // Выдача приза
-/** Размер окна выдачи на передней грани тумбы. */
-export const PRIZE_HATCH_SIZE = CELL_SIZE * 2
-/** Отступ дверцы от контура окна. */
-export const PRIZE_DOOR_INSET = 8
-/** Этапы выдачи приза после выхода игрушки из внутреннего лотка: пауза за закрытой дверцей, ход дверцы, выдержка в открытом окне. */
+/** Сторона окна выдачи на передней грани тумбы, в ячейках. */
+export const PRIZE_HATCH_SIZE = 3
+/** Глубина ниши за окном выдачи, в ячейках: задняя стенка ниши на экране сдвинута на 8 px арта вправо и вверх. */
+export const PRIZE_NICHE_DEPTH = 4
+/** Ширина металлического обода вокруг окна выдачи, px арта. */
+export const PRIZE_RIM_WIDTH = 4
+/** Точка на полу ниши под центром окна, посередине глубины: на ней стоит приз, отсюда он выпадает на пол. */
+export const PRIZE_NICHE_FLOOR: WorldPoint = {
+  x: PRIZE_HATCH_CENTER.x + PRIZE_NICHE_DEPTH / 2,
+  y: PRIZE_HATCH_CENTER.y,
+  z: PRIZE_HATCH_CENTER.z - PRIZE_HATCH_SIZE / 2,
+}
+/**
+ * Этапы выдачи приза после выхода игрушки из внутреннего лотка: пауза за закрытой шторкой, выдержка в открытом окне,
+ * пауза между выпадением игрушки и закрытием шторки.
+ */
 export const PRIZE_PAUSE_MS = 300
-export const PRIZE_DOOR_MS = 250
-export const PRIZE_OPEN_HOLD_MS = 600
+export const PRIZE_OPEN_HOLD_MS = 2000
+export const PRIZE_EJECT_HOLD_MS = 600
+/** Длительности кадров открытия шторки, мс. */
+export const PRIZE_DOOR_OPEN_MS = [50, 50, 50, 40, 60]
+/** Длительности кадров открытия заевшей шторки, мс: на втором кадре хода шторка застревает. */
+export const PRIZE_DOOR_JAM_MS = [50, 150, 50, 40, 60]
+/** Вероятность, что шторка заест при открытии. */
+export const PRIZE_DOOR_JAM_CHANCE = 0.1
+/** Длительности кадров закрытия шторки, мс: шторка захлопывается. */
+export const PRIZE_DOOR_CLOSE_MS = [30, 30, 30, 30, 30]
+/** Вероятность, что свет в нише загорится с перебоями и будет мерцать; иначе он сразу горит ровно. */
+export const PRIZE_LIGHT_FLICKER_CHANCE = 0.1
+/** Включение света в нише: кадр света и его длительность, мс. Ниша остаётся тёмной, затем свет загорается ровно. */
+export const PRIZE_LIGHT_SWITCH: readonly (readonly [PrizeLight, number])[] = [
+  [PrizeLight.off, 250],
+  [PrizeLight.on, 50],
+]
+/** Розжиг света в нише: кадр света и его длительность, мс. Свет загорается с перебоями. */
+export const PRIZE_LIGHT_IGNITION: readonly (readonly [PrizeLight, number])[] = [
+  [PrizeLight.off, 120],
+  [PrizeLight.dim, 60],
+  [PrizeLight.off, 90],
+  [PrizeLight.dim, 50],
+  [PrizeLight.off, 40],
+  [PrizeLight.on, 80],
+]
+/** Мерцание горящего света по кругу: первый кадр горит, поэтому при уменьшенном движении свет горит ровно. */
+export const PRIZE_LIGHT_FLICKER: readonly (readonly [PrizeLight, number])[] = [
+  [PrizeLight.on, 600],
+  [PrizeLight.dim, 60],
+  [PrizeLight.on, 500],
+  [PrizeLight.off, 50],
+  [PrizeLight.on, 80],
+  [PrizeLight.off, 40],
+  [PrizeLight.on, 900],
+  [PrizeLight.dim, 120],
+]
+/** Тинт приза при каждом кадре света: в тёмной нише игрушка почти не видна. */
+export const PRIZE_LIGHT_TINT: Readonly<Record<PrizeLight, number>> = {
+  [PrizeLight.off]: 0x3a3048,
+  [PrizeLight.dim]: 0x9a8a90,
+  [PrizeLight.on]: 0xffffff,
+}
 
 // Пол перед автоматом
 /** Глубина полосы пола с выигранными игрушками перед фасадом тумбы, в срезах: как у куба. */

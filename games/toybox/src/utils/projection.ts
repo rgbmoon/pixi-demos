@@ -122,19 +122,6 @@ export const projectPlaneNormal = ({ horizontal, vertical }: WorldPlane, length:
   return worldToScreen({ x: normal.x * scale, y: normal.y * scale, z: normal.z * scale })
 }
 
-/** Прямоугольник с центром в начале координат мировой плоскости. */
-export const getProjectedPlaneRectangle = (plane: WorldPlane, width: number, height: number): ScreenPoint[] => {
-  const halfWidth = width / 2
-  const halfHeight = height / 2
-
-  return [
-    projectPlaneOffset(plane, -halfWidth, -halfHeight),
-    projectPlaneOffset(plane, halfWidth, -halfHeight),
-    projectPlaneOffset(plane, halfWidth, halfHeight),
-    projectPlaneOffset(plane, -halfWidth, halfHeight),
-  ]
-}
-
 /** Размер кадра грани в пикселях арта: экранный сдвиг верхнего края по горизонтали и левого края по вертикали. */
 export const getFaceSize = ({ origin, right, down }: FaceCorners): FrameSize => {
   const start = worldToScreen(origin)

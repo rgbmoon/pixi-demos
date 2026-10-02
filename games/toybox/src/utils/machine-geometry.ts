@@ -2,7 +2,6 @@ import {
   ART_CELL,
   ART_PIXEL,
   CABINET_BOTTOM_Z,
-  CABINET_FRONT_PLANE,
   CABINET_FRONT_X,
   CABINET_TOP_Z,
   CUBE_HEIGHT,
@@ -15,17 +14,19 @@ import {
   MARQUEE_SCREEN_TOP,
   MARQUEE_TOP_Z,
   PILLAR_WIDTH,
+  PRIZE_HATCH_CENTER,
   PRIZE_HATCH_SIZE,
+  PRIZE_RIM_WIDTH,
   RESET_PLATE_WIDTH,
   TRAY_ORIGIN,
   TRAY_SIZE,
   TRAY_WALL_HEIGHT,
 } from '#src/constants'
-import type { FaceCorners, GroundPoint, MachineLayout, ScreenPoint, ScreenRect, WorldPoint } from '#src/types'
+import type { FaceCorners, GroundPoint, MachineLayout, ScreenRect, WorldPoint } from '#src/types'
 
 import { getBounds } from './geometry'
 import { clamp } from './math'
-import { getProjectedPlaneRectangle, worldToScreen } from './projection'
+import { worldToScreen } from './projection'
 
 /**
  * Удерживает точку в пределах поля.
@@ -91,10 +92,6 @@ export const getMarqueeOutlines = (): WorldPoint[][] => [
     { x: 0, y: GRID_SIZE, z: MARQUEE_TOP_Z },
   ],
 ]
-
-/** Контур окна выдачи относительно его центра на передней грани. */
-export const getPrizeHatchOutline = (): ScreenPoint[] =>
-  getProjectedPlaneRectangle(CABINET_FRONT_PLANE, PRIZE_HATCH_SIZE, PRIZE_HATCH_SIZE)
 
 /** Экранные границы автомата по контурам тумбы и табло; стеклянный бокс и органы управления лежат внутри них. */
 export const getMachineBounds = (): ScreenRect =>
@@ -195,8 +192,8 @@ export const getPillarFaces = () => {
  */
 export const getCubeFaces = () => {
   const { x, y } = TRAY_ORIGIN
-  const trayFar = x + TRAY_SIZE
-  const trayLeft = y + TRAY_SIZE
+  const trayFar = x + TRAY_SIZE.x
+  const trayLeft = y + TRAY_SIZE.y
   const inset = PILLAR_WIDTH / ART_CELL
 
   return {
@@ -225,6 +222,22 @@ export const getCubeFaces = () => {
       right: { x: trayFar, y, z: TRAY_WALL_HEIGHT },
       down: { x, y, z: 0 },
     },
+  } as const satisfies Record<string, FaceCorners>
+}
+
+/** Грани окна выдачи на фасаде тумбы: проём, в котором лежат ниша и шторка, и обод вокруг проёма. */
+export const getPrizeHatchFaces = () => {
+  const { x, y, z } = PRIZE_HATCH_CENTER
+  const square = (half: number): FaceCorners => ({
+    origin: { x, y: y + half, z: z + half },
+    right: { x, y: y - half, z: z + half },
+    down: { x, y: y + half, z: z - half },
+  })
+  const opening = PRIZE_HATCH_SIZE / 2
+
+  return {
+    opening: square(opening),
+    rim: square(opening + PRIZE_RIM_WIDTH / ART_CELL),
   } as const satisfies Record<string, FaceCorners>
 }
 

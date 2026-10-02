@@ -1,13 +1,30 @@
 import { injectable } from 'inversify'
 
-import { CABINET_FRONT_X, FLOOR_PILE_DEPTH, PRIZE_HATCH_CENTER } from '#src/constants'
+import { CABINET_BOTTOM_Z, CABINET_FRONT_X, FLOOR_PILE_DEPTH, PRIZE_NICHE_FLOOR } from '#src/constants'
 import type { HeapSnapshotBody, ToyAppearance, ToyId } from '#src/types'
 import { lerp } from '#src/utils/math'
-import { getDepthCenter, getSection, getSectionExtent, getVariant, getWeight } from '#src/utils/shapes'
+import {
+  getDepthCenter,
+  getPrizeSeat,
+  getSection,
+  getSectionExtent,
+  getVariant,
+  getWeight,
+  placeSection,
+} from '#src/utils/shapes'
 import { isReducedMotion } from '@pixi-demos/core/accessibility'
 import type { Random } from '@pixi-demos/core/types'
 
-import { FLOOR_DROP_SIDE_SPEED, FLOOR_DROP_SPEED, FLOOR_DROP_SPIN_OFFSET, FLOOR_EJECT_MS } from './constants'
+import {
+  FLOOR_DROP_SIDE_SPEED,
+  FLOOR_DROP_SPEED,
+  FLOOR_DROP_SPIN_OFFSET,
+  FLOOR_EJECT_MS,
+  FLOOR_NUDGE_AXIS_TOLERANCE,
+  FLOOR_NUDGE_REACH,
+  FLOOR_NUDGE_REST_TOLERANCE,
+  FLOOR_NUDGE_SPEED,
+} from './constants'
 import { ToyPile } from './toy-pile'
 import { getFloorStatics } from './utils'
 
@@ -39,7 +56,7 @@ export class FloorPile extends ToyPile {
     const variant = 0
     const { depth } = getVariant(shape, variant)
     const slab = Math.floor(random() * (FLOOR_PILE_DEPTH - depth + 1))
-    const { x, y, z } = PRIZE_HATCH_CENTER
+    const { x, y, z } = getPrizeSeat(shape, variant)
     const body = this.create(shape, variant, slab, { y, z, angle: 0 }, color, true)
     const { halfWidth } = getSectionExtent(getSection(shape, variant))
     const weight = getWeight(shape)
@@ -55,13 +72,39 @@ export class FloorPile extends ToyPile {
     this.touch()
   }
 
+  /**
+   * Роняет стопку под окном выдачи: игрушки на других игрушках получают у верха толчок вбок от оси окна. Игрушки на
+   * полу толчок не двигает; игрушке на оси сторону задаёт бросок; при уменьшенном движении толчка нет.
+   */
+  nudge(random: Random): void {
+    if (isReducedMotion()) return
+
+    for (const body of this.bodies.values()) {
+      const { y, z } = body.pose.point
+      const offset = y - PRIZE_NICHE_FLOOR.y
+      const heights = placeSection(getSection(body.shape, body.variant), { y, z, angle: body.pose.angle }).map(
+        (point) => point.z
+      )
+      const isOnFloor = Math.min(...heights) < CABINET_BOTTOM_Z + FLOOR_NUDGE_REST_TOLERANCE
+
+      if (isOnFloor || Math.abs(offset) > FLOOR_NUDGE_REACH) continue
+
+      const side = Math.abs(offset) < FLOOR_NUDGE_AXIS_TOLERANCE ? (random() < 0.5 ? -1 : 1) : Math.sign(offset)
+      // Масса тела равна весу игрушки, поэтому импульс — вес, умноженный на скорость
+      const impulse = side * FLOOR_NUDGE_SPEED * getWeight(body.shape)
+
+      this.world.push(body.id, { y: impulse, z: 0 }, { y, z: Math.max(...heights) })
+    }
+    this.touch()
+  }
+
   /** Кадровый шаг пола: ведёт выпавшие игрушки от фасада к их срезам и продвигает физику. */
   advance(deltaMs: number): void {
     for (const [id, flight] of this.flights) {
       const body = this.bodies.get(id)
 
       flight.elapsedMs = isReducedMotion() ? FLOOR_EJECT_MS : Math.min(flight.elapsedMs + deltaMs, FLOOR_EJECT_MS)
-      if (body) body.pose.point.x = lerp(PRIZE_HATCH_CENTER.x, flight.target, flight.elapsedMs / FLOOR_EJECT_MS)
+      if (body) body.pose.point.x = lerp(PRIZE_NICHE_FLOOR.x, flight.target, flight.elapsedMs / FLOOR_EJECT_MS)
       if (!body || flight.elapsedMs === FLOOR_EJECT_MS) this.flights.delete(id)
     }
 

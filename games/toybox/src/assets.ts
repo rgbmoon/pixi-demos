@@ -1,6 +1,6 @@
 import { Assets, type Spritesheet } from 'pixi.js'
 
-import type { ButtonFrames } from './types'
+import type { ButtonFrames, PrizeLight } from './types'
 
 // Единый манифест ассетов toybox: все URL в одном месте. Атласы и шрифты собирает `pnpm assets` из
 // `games/toybox/art/`; `preloadGameAssets` грузит их одним `Assets.load` до сборки сцены, классы читают их из
@@ -31,6 +31,9 @@ export const CLAW_ATLAS = 'claw'
 /** Алиас атласа органов управления в кэше Assets. */
 export const HUD_ATLAS = 'hud'
 
+/** Алиас атласа окна выдачи в кэше Assets. */
+export const HATCH_ATLAS = 'hatch'
+
 /** Атласы игры: алиас в кэше Assets → URL JSON атласа. */
 export const ATLASES = {
   [ROOM_ATLAS]: `${ASSETS_DIR}/room/room.json`,
@@ -38,6 +41,7 @@ export const ATLASES = {
   [BOX_ATLAS]: `${ASSETS_DIR}/box/box.json`,
   [CLAW_ATLAS]: `${ASSETS_DIR}/claw/claw.json`,
   [HUD_ATLAS]: `${ASSETS_DIR}/hud/hud.json`,
+  [HATCH_ATLAS]: `${ASSETS_DIR}/hatch/hatch.json`,
 } as const
 
 /**
@@ -113,6 +117,20 @@ export const HUD_FRAMES = {
 export const HUD_SEQUENCES = {
   tourJoystick: 'tour-joystick',
   tourDrop: 'tour-drop',
+} as const
+
+/**
+ * Кадры атласа окна выдачи, плоские рисунки в плоскости фасада: обод с прозрачным проёмом и ниша при каждом состоянии
+ * света. Углы кадров в мире — `getPrizeHatchFaces`.
+ */
+export const HATCH_FRAMES = {
+  rim: 'rim.png',
+  niche: { off: 'niche-off.png', dim: 'niche-dim.png', on: 'niche-on.png' },
+} as const satisfies { rim: string; niche: Record<PrizeLight, string> }
+
+/** Последовательности атласа окна выдачи: видимая в проёме часть шторки от закрытой до открытой. */
+export const HATCH_SEQUENCES = {
+  door: 'door',
 } as const
 
 /** Кадры атласа фона: ключи текстур в кэше Assets. */

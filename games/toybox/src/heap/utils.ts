@@ -51,7 +51,7 @@ const getFloorPileRight = (): number => (GRID_SIZE - FLOOR_PILE_WIDTH) / 2
  */
 export const getCubeStatics = (): WorldStatics => {
   const allSlabs = (1 << GRID_SIZE) - 1
-  const traySlabs = ((1 << TRAY_SIZE) - 1) << TRAY_ORIGIN.x
+  const traySlabs = ((1 << TRAY_SIZE.x) - 1) << TRAY_ORIGIN.x
   const wallHeight = CUBE_HEIGHT - TRAY_EXIT_Z + WALL_THICKNESS
   const wallCenter = (CUBE_HEIGHT + TRAY_EXIT_Z - WALL_THICKNESS) / 2
   const trayWallHeight = TRAY_WALL_HEIGHT - TRAY_EXIT_Z + WALL_THICKNESS
@@ -91,7 +91,7 @@ export const getCubeStatics = (): WorldStatics => {
         COLLISION_FAR_SPAN
       ),
     ],
-    spanEdge: TRAY_ORIGIN.x + TRAY_SIZE,
+    spanEdge: TRAY_ORIGIN.x + TRAY_SIZE.x,
   }
 }
 
@@ -233,7 +233,7 @@ export const pourHeap = (random: Random): HeapSnapshotBody[] => {
     for (let candidate = 0; candidate < FILL_CANDIDATES; candidate++) {
       const slab = Math.floor(random() * (GRID_SIZE - depth + 1))
       // Над шахтой лотка игрушка не появляется: там нет пола
-      const right = slab < TRAY_ORIGIN.x + TRAY_SIZE ? TRAY_ORIGIN.y : GRID_SIZE
+      const right = slab < TRAY_ORIGIN.x + TRAY_SIZE.x ? TRAY_ORIGIN.y : GRID_SIZE
       const y = halfWidth + random() * (right - 2 * halfWidth)
       const surface = Math.max(
         world.castDown(y - halfWidth, slab, depth).z,

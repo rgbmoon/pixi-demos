@@ -3,12 +3,15 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import { CLAW_REACH, CLAW_REST_HEIGHT } from '#src/claw/constants'
 import {
+  CABINET_BOTTOM_Z,
+  CLAW_RELEASE_MS,
   FIELD_CENTER,
   FUMBLE_CHANCE,
   FUMBLE_START_CLEARANCE,
   GRID_SIZE,
   HEAP_SNAPSHOT_VERSION,
   LIFT_FUMBLE_CHANCE,
+  PRIZE_NICHE_FLOOR,
   TRAY_ORIGIN,
   TRAY_SIZE,
 } from '#src/constants'
@@ -16,7 +19,7 @@ import { type GroundPoint, type HeapSnapshotBody, PhaseName } from '#src/types'
 import { createRandom } from '@pixi-demos/core/random'
 
 import { type Cycle, getGrabRolls, startCycle } from './setup/cycle'
-import { expectSoundHeap, getPouredHeap, stand, topOf } from './setup/heap'
+import { expectSoundHeap, FRAME_MS, getPouredHeap, sectionOf, stand, topOf } from './setup/heap'
 
 /** Броски, на которых клешня роняет игрушку по дороге и доносит её. */
 const FUMBLE_HIT = FUMBLE_CHANCE / 2
@@ -42,6 +45,9 @@ const EMPTY_HANDED = DELIVERY.filter((phase) => phase !== PhaseName.presenting)
 /** Игрушка снимка своего цвета: по цвету приз отличается от соседей той же формы. */
 const paint = (body: HeapSnapshotBody, color: number): HeapSnapshotBody => ({ ...body, color })
 
+/** Цвет игрушек стопки на полу: по нему они отличаются от выпавшего приза. */
+const STACK_COLOR = 0x22aa22
+
 /** Под кареткой в покое стоит куб с мячом наверху, в стороне — треугольник. */
 const cube = paint(stand('cube8', 3, FIELD_CENTER.y, 0), 0x3366ff)
 const ball = paint(stand('single', 4, FIELD_CENTER.y, topOf(cube)), 0xff3366)
@@ -58,7 +64,7 @@ const getGrabHeight = (cycle: Cycle): number | undefined =>
 const getDistance = (from: GroundPoint, to: GroundPoint): number => Math.hypot(to.x - from.x, to.y - from.y)
 
 const isOverTray = ({ x, y }: GroundPoint): boolean =>
-  x >= TRAY_ORIGIN.x && x <= TRAY_ORIGIN.x + TRAY_SIZE && y >= TRAY_ORIGIN.y && y <= TRAY_ORIGIN.y + TRAY_SIZE
+  x >= TRAY_ORIGIN.x && x <= TRAY_ORIGIN.x + TRAY_SIZE.x && y >= TRAY_ORIGIN.y && y <= TRAY_ORIGIN.y + TRAY_SIZE.y
 
 describe('цикл клешни', () => {
   let cycle: Cycle | undefined
@@ -100,6 +106,22 @@ describe('цикл клешни', () => {
     })
   })
 
+  it('открывает шторку с толчком: стопка игрушек под окном выдачи рассыпается', async () => {
+    const base = paint(stand('cube8', 0, PRIZE_NICHE_FLOOR.y, CABINET_BOTTOM_Z), STACK_COLOR)
+    const middle = paint(stand('cube8', 0, PRIZE_NICHE_FLOOR.y, topOf(base)), STACK_COLOR)
+    const top = paint(stand('cube8', 0, PRIZE_NICHE_FLOOR.y, topOf(middle)), STACK_COLOR)
+
+    cycle = await startCycle({ bodies: SCENE, floor: [base, middle, top] })
+    cycle.rolls.push(getGrabRolls(cycle).hit, SLIP_MISS, FUMBLE_MISS)
+
+    expect(await cycle.playRound()).toEqual(DELIVERY)
+
+    const stack = [...cycle.floorPile.getBodies()].filter(({ color }) => color === STACK_COLOR)
+
+    expect(stack).toHaveLength(3)
+    expect(Math.max(...stack.flatMap((body) => sectionOf(body).map(({ y }) => y)))).toBeLessThan(topOf(middle))
+  })
+
   it('на промахе не берёт игрушку и едет к лотку пустой', async () => {
     cycle = await startCycle({ bodies: SCENE })
     cycle.rolls.push(getGrabRolls(cycle).miss)
@@ -110,6 +132,19 @@ describe('цикл клешни', () => {
     expect(cycle.store.collected).toBe(0)
     expect(getShapes(cycle)).toEqual(['cube8', 'single', 'triangle'])
     expectSoundHeap(cycle.heap)
+  })
+
+  it('пустая клешня уходит от лотка только после полного разжатия', async () => {
+    cycle = await startCycle({ bodies: SCENE })
+    cycle.rolls.push(getGrabRolls(cycle).miss)
+    await cycle.playRound()
+
+    const { frames } = cycle
+    const opened = frames.findIndex(({ phase, closed }) => phase === PhaseName.releasing && !closed)
+    const left = frames.findIndex((frame, index) => index > opened && getDistance(frame.cart, frames[opened].cart) > 0)
+
+    expect(isOverTray(frames[opened].cart)).toBe(true)
+    expect((left - opened) * FRAME_MS).toBeGreaterThanOrEqual(CLAW_RELEASE_MS)
   })
 
   it('над пустым местом опускается пальцами до пола и не берёт ничего даже на удачном броске', async () => {
@@ -167,13 +202,13 @@ describe('цикл клешни', () => {
 
   it('выдаёт по очереди все игрушки, дошедшие до лотка за цикл', async () => {
     // Куб лежит на подушке у стенки лотка, мяч на кубе свешивается над шахтой: без куба мяч падает в лоток
-    const pillow = stand('square4', 0, 5, 0)
-    const base = paint(stand('cube8', 0, 5, topOf(pillow)), 0x3366ff)
-    const rider = paint(stand('single', 1, 6.2, topOf(base)), 0xff3366)
+    const pillow = stand('square4', 0, TRAY_ORIGIN.y - 1, 0)
+    const base = paint(stand('cube8', 0, TRAY_ORIGIN.y - 1, topOf(pillow)), 0x3366ff)
+    const rider = paint(stand('single', 1, TRAY_ORIGIN.y + 0.2, topOf(base)), 0xff3366)
 
     cycle = await startCycle({ bodies: [pillow, base, rider] })
 
-    await cycle.moveCart({ x: 1, y: 4.4 })
+    await cycle.moveCart({ x: 1, y: TRAY_ORIGIN.y - 1.6 })
     cycle.rolls.push(getGrabRolls(cycle).hit, SLIP_MISS, FUMBLE_MISS)
 
     expect(await cycle.playRound()).toEqual([

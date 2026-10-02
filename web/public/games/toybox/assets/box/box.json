@@ -4,7 +4,7 @@
       "frame": {
         "x": 2,
         "y": 2,
-        "w": 4,
+        "w": 6,
         "h": 32
       },
       "rotated": false,
@@ -12,19 +12,19 @@
       "spriteSourceSize": {
         "x": 0,
         "y": 0,
-        "w": 4,
+        "w": 6,
         "h": 32
       },
       "sourceSize": {
-        "w": 4,
+        "w": 6,
         "h": 32
       }
     },
     "tray-back.png": {
       "frame": {
-        "x": 8,
+        "x": 10,
         "y": 2,
-        "w": 32,
+        "w": 40,
         "h": 32
       },
       "rotated": false,
@@ -32,11 +32,11 @@
       "spriteSourceSize": {
         "x": 0,
         "y": 0,
-        "w": 32,
+        "w": 40,
         "h": 32
       },
       "sourceSize": {
-        "w": 32,
+        "w": 40,
         "h": 32
       }
     },
@@ -82,22 +82,22 @@
     },
     "chute.png": {
       "frame": {
-        "x": 42,
+        "x": 52,
         "y": 20,
-        "w": 32,
-        "h": 4
+        "w": 40,
+        "h": 6
       },
       "rotated": false,
       "trimmed": false,
       "spriteSourceSize": {
         "x": 0,
         "y": 0,
-        "w": 32,
-        "h": 4
+        "w": 40,
+        "h": 6
       },
       "sourceSize": {
-        "w": 32,
-        "h": 4
+        "w": 40,
+        "h": 6
       }
     }
   },

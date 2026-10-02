@@ -26,8 +26,7 @@ const CABINET_DECALS: Partial<Record<keyof typeof CABINET_FRAMES, DecalPlacement
     ]),
     { name: 'screw', corner: 'bottom-left', x: 5, y: 13 },
     { name: 'screw', corner: 'bottom-right', x: 5, y: 13 },
-    { name: 'bill-slot', corner: 'top-right', x: 8, y: 5 },
-    { name: 'coin-plate', corner: 'top-right', x: 13, y: 43 },
+    { name: 'coin-slot', corner: 'top-right', x: 10, y: 4 },
   ],
   marqueeFront: [
     ...getMarqueeLampCenters().map(

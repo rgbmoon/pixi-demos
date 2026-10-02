@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify'
 import { Container } from 'pixi.js'
 
-import { DROP_BUTTON_CENTER, JOYSTICK_CENTER, PRIZE_HATCH_CENTER, RESET_BUTTON_CENTER } from '#src/constants'
+import { DROP_BUTTON_CENTER, JOYSTICK_CENTER, RESET_BUTTON_CENTER } from '#src/constants'
 import type { CubeController } from '#src/controllers/box/cube'
 import type { FloorPileController } from '#src/controllers/box/floor-pile'
 import type { MarqueeController } from '#src/controllers/box/marquee'
@@ -41,7 +41,6 @@ export class GameScene extends Container {
 
     // Точки установки постоянны в координатах корпуса, поэтому от размера канваса не зависят
     const placements = [
-      [prizeOutput, PRIZE_HATCH_CENTER],
       [reset, RESET_BUTTON_CENTER],
       [joystick, JOYSTICK_CENTER],
       [drop, DROP_BUTTON_CENTER],

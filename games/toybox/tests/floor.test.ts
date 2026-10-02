@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { CABINET_BOTTOM_Z, CABINET_FRONT_X, FLOOR_PILE_DEPTH, FLOOR_PILE_WIDTH, GRID_SIZE } from '#src/constants'
+import {
+  CABINET_BOTTOM_Z,
+  CABINET_FRONT_X,
+  FLOOR_PILE_DEPTH,
+  FLOOR_PILE_WIDTH,
+  GRID_SIZE,
+  PRIZE_NICHE_FLOOR,
+} from '#src/constants'
 import { FloorPile } from '#src/heap/floor-pile'
 import { SHAPE_KEYS } from '#src/toys'
 import type { HeapSnapshotBody, ToyAppearance } from '#src/types'
@@ -8,7 +15,7 @@ import { getVariant } from '#src/utils/shapes'
 import { createRandom } from '@pixi-demos/core/random'
 import type { Random } from '@pixi-demos/core/types'
 
-import { expectSoundHeap, FRAME_MS, type PileBounds, sectionOf } from './setup/heap'
+import { expectSoundHeap, FRAME_MS, type PileBounds, sectionOf, stand, topOf } from './setup/heap'
 
 /** Предохранитель: пол, который не успокоился за столько кадров, считается зациклившимся. */
 const MAX_FRAMES = 10_000
@@ -37,11 +44,12 @@ const settle = (pile: FloorPile): void => {
 }
 
 /**
- * Роняет `count` призов подряд в темпе показа и ждёт покоя: формы идут по кругу каталога, срезы и толчки задаёт
- * генератор.
+ * Роняет `count` призов подряд в темпе показа и ждёт покоя: перед каждым призом пол получает толчок открытия шторки,
+ * формы идут по кругу каталога, срезы и толчки задаёт генератор.
  */
 const dropSeries = (pile: FloorPile, count: number, random: Random): HeapSnapshotBody[] => {
   for (let prize = 0; prize < count; prize++) {
+    pile.nudge(random)
     pile.drop({ shape: SHAPE_KEYS[prize % SHAPE_KEYS.length], color: prize }, random)
 
     for (let frame = 0; frame < PRESENTATION_FRAMES; frame++) pile.advance(FRAME_MS)
@@ -93,6 +101,61 @@ describe('пол: выпадение приза', () => {
     pile.advance(FRAME_MS)
 
     expect(pile.settled).toBe(true)
+  })
+})
+
+describe('пол: толчок при открытии шторки', () => {
+  /** Стопка из трёх кубов на оси окна выдачи в одном срезе. */
+  const getStack = (): HeapSnapshotBody[] => {
+    const base = stand('cube8', 0, PRIZE_NICHE_FLOOR.y, CABINET_BOTTOM_Z)
+    const middle = stand('cube8', 0, PRIZE_NICHE_FLOOR.y, topOf(base))
+
+    return [base, middle, stand('cube8', 0, PRIZE_NICHE_FLOOR.y, topOf(middle))]
+  }
+
+  it('роняет стопку под окном выдачи', () => {
+    const pile = new FloorPile()
+    const stack = getStack()
+
+    pile.restore(stack)
+    pile.nudge(() => 0.5)
+    settle(pile)
+
+    const top = Math.max(...[...pile.getBodies()].flatMap((body) => sectionOf(body).map(({ y }) => y)))
+
+    expect(top).toBeLessThan(topOf(stack[1]))
+    expectSoundHeap(pile, FLOOR_BOUNDS)
+  })
+
+  it('не двигает игрушки, лежащие на полу под окном', () => {
+    const pile = new FloorPile()
+
+    pile.restore([
+      stand('cube8', 0, PRIZE_NICHE_FLOOR.y - 2, CABINET_BOTTOM_Z),
+      stand('single', 2, PRIZE_NICHE_FLOOR.y, CABINET_BOTTOM_Z),
+      stand('bar2', 4, PRIZE_NICHE_FLOOR.y + 2, CABINET_BOTTOM_Z),
+    ])
+
+    const before = pile.takeSnapshot()
+
+    pile.nudge(() => 0.5)
+    settle(pile)
+
+    expect(pile.takeSnapshot()).toEqual(before)
+  })
+
+  it('при уменьшенном движении не толкает пол', () => {
+    const pile = new FloorPile()
+
+    vi.stubGlobal('matchMedia', () => ({ matches: true }))
+    pile.restore(getStack())
+
+    const before = pile.takeSnapshot()
+
+    pile.nudge(() => 0.5)
+    pile.advance(FRAME_MS)
+
+    expect(pile.takeSnapshot()).toEqual(before)
   })
 })
 

@@ -74,7 +74,7 @@ const finish = async (rig: ClawRig, motion: Promise<void>, direction = STILL): P
 
 /** Лежит ли точка пола над лотком. */
 const isOverTray = ({ x, y }: GroundPoint): boolean =>
-  x >= TRAY_ORIGIN.x && x <= TRAY_ORIGIN.x + TRAY_SIZE && y >= TRAY_ORIGIN.y && y <= TRAY_ORIGIN.y + TRAY_SIZE
+  x >= TRAY_ORIGIN.x && x <= TRAY_ORIGIN.x + TRAY_SIZE.x && y >= TRAY_ORIGIN.y && y <= TRAY_ORIGIN.y + TRAY_SIZE.y
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -295,7 +295,7 @@ describe('клешня: потеря игрушки на ходу', () => {
     const rig = new ClawRig()
     const drops: { grip: WorldPoint; current: WorldPoint }[] = []
 
-    await finish(rig, rig.descend(1))
+    await finish(rig, rig.descend(2))
 
     const slip: ClawDrop = { share: 0.3, onDrop: (grip) => drops.push({ grip, current: rig.getGripPoint() }) }
 
@@ -303,7 +303,7 @@ describe('клешня: потеря игрушки на ходу', () => {
 
     expect(drops).toHaveLength(1)
     expect(drops[0].grip).toEqual(drops[0].current)
-    expect(drops[0].grip.z).toBeCloseTo(1 + (CLAW_REST_HEIGHT - 1) * 0.3, 12)
+    expect(drops[0].grip.z).toBeCloseTo(2 + (CLAW_REST_HEIGHT - 2) * 0.3, 12)
   })
 
   it.each([false, true])('роняет игрушку на заданной доле пути каретки; уменьшенное движение: %s', async (reduced) => {

@@ -1,6 +1,6 @@
 import { inject, injectable } from 'inversify'
 
-import { PRIZE_OPEN_HOLD_MS, PRIZE_PAUSE_MS } from '#src/constants'
+import { PRIZE_EJECT_HOLD_MS, PRIZE_OPEN_HOLD_MS, PRIZE_PAUSE_MS } from '#src/constants'
 import type { PrizeOutputController } from '#src/controllers/box/prize-output'
 import type { GameEvents } from '#src/events'
 import type { FloorPile } from '#src/heap/floor-pile'
@@ -54,12 +54,15 @@ export class PresentingPhase implements Phase<PhaseName> {
     this.output.show(prize)
     try {
       await this.ticker.waitTicks(PRIZE_PAUSE_MS, signal)
+      // Шторка открывается с толчком: стопка под окном рассыпается и освобождает место призу
+      this.floorPile.nudge(Math.random)
       await this.output.open(signal)
       await this.ticker.waitTicks(PRIZE_OPEN_HOLD_MS, signal)
       // Игрушка выпадает из окна: дальше её ведёт модель пола, табло узнаёт о получении в этот же момент
       this.output.eject()
       this.floorPile.drop(prize, Math.random)
       this.emitter.emit('prize:taken')
+      await this.ticker.waitTicks(PRIZE_EJECT_HOLD_MS, signal)
       await this.output.close(signal)
     } finally {
       this.output.hide()

@@ -1,6 +1,6 @@
-import { CORNER_EDGE_SHARE, TOY_ANGLE_STEP, TOY_INSET } from '#src/constants'
+import { CORNER_EDGE_SHARE, PRIZE_NICHE_FLOOR, TOY_ANGLE_STEP, TOY_INSET } from '#src/constants'
 import { SHAPES } from '#src/toys'
-import type { PlaneVector, ScreenPoint, SectionPoint, ShapeKey, ShapeVariant, ToyPose } from '#src/types'
+import type { PlaneVector, ScreenPoint, SectionPoint, ShapeKey, ShapeVariant, ToyPose, WorldPoint } from '#src/types'
 
 import { getConvexHull } from './geometry'
 import { worldToScreen } from './projection'
@@ -90,6 +90,13 @@ export const getSectionExtent = (section: readonly SectionPoint[]): { halfWidth:
   halfWidth: Math.max(...section.map(({ y }) => Math.abs(y))),
   halfHeight: Math.max(...section.map(({ z }) => Math.abs(z))),
 })
+
+/** Центр приза без крена, стоящего на полу ниши окна выдачи. */
+export const getPrizeSeat = (shape: ShapeKey, variant: number): WorldPoint => {
+  const bottom = Math.min(...getSection(shape, variant).map(({ z }) => z))
+
+  return { ...PRIZE_NICHE_FLOOR, z: PRIZE_NICHE_FLOOR.z - bottom }
+}
 
 /** Сечение, повёрнутое на крен позы и перенесённое в её центр. */
 export const placeSection = (section: readonly SectionPoint[], { y, z, angle }: ToyPose): SectionPoint[] => {

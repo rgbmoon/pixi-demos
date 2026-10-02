@@ -12,6 +12,15 @@ export const PhaseName = {
 
 export type PhaseName = (typeof PhaseName)[keyof typeof PhaseName]
 
+/** Состояние света в нише окна выдачи. */
+export const PrizeLight = {
+  off: 'off',
+  dim: 'dim',
+  on: 'on',
+} as const
+
+export type PrizeLight = (typeof PrizeLight)[keyof typeof PrizeLight]
+
 /** Точка мира: `x` и `y` — оси сетки в ячейках, `z` — высота над полом. */
 export type WorldPoint = {
   x: number

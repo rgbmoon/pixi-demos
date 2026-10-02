@@ -156,7 +156,8 @@ export class FrameAnimation<TCarrier extends Sprite | TilingSprite = Sprite> ext
     return durations.length - 1
   }
 
-  private applyFrame(texture: Texture | undefined): void {
+  /** Ставит носителю кадр; наследник переопределяет метод, чтобы менять вместе с кадром свои объекты. */
+  protected applyFrame(texture: Texture | undefined): void {
     if (!texture || this.destroyed) return
 
     this.carrier.texture = texture

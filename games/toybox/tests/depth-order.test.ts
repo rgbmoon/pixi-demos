@@ -2,7 +2,7 @@
 import { Container } from 'pixi.js'
 import { describe, expect, it } from 'vitest'
 
-import { CUBE_HEIGHT, GRID_SIZE } from '#src/constants'
+import { CUBE_HEIGHT, GRID_SIZE, TRAY_ORIGIN, TRAY_SIZE } from '#src/constants'
 import type { DepthItem, PlaneVector, ScreenPoint, ShapeKey, WorldPoint } from '#src/types'
 import { DepthLayer } from '#src/ui/box/depth-layer'
 import { getClawDepthItem, getDepthRelation, getPlaneDepthItem, getToyDepthItem, orderByDepth } from '#src/utils/depth'
@@ -203,8 +203,8 @@ describe('порядок наложения', () => {
 
   it('прячет за дальней стенкой лотка то, что лежит за ней, и показывает перед ней игрушку в шахте', () => {
     const wall = getPlaneDepthItem(getFaceQuad(getCubeFaces().trayBack))
-    const behind = toy('single', 2, 7, 0.5)
-    const falling = toy('single', 1, 7, 0.8)
+    const behind = toy('single', TRAY_ORIGIN.x + TRAY_SIZE.x, 7, 0.5)
+    const falling = toy('single', TRAY_ORIGIN.x + TRAY_SIZE.x - 1, 7, 0.8)
 
     expect(getDepthRelation(wall, behind)).toBeGreaterThan(0)
     expect(getDepthRelation(falling, wall)).toBeGreaterThan(0)

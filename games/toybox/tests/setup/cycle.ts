@@ -55,6 +55,7 @@ export type CycleFrame = {
   readonly cart: WorldPoint
   readonly grip: WorldPoint
   readonly holding: boolean
+  readonly closed: boolean
 }
 
 /** Потеря игрушки на ходу: фаза и точки клешни в момент, когда она разжалась. */
@@ -192,7 +193,13 @@ export const createCycle = (options: CycleOptions = {}): Cycle => {
     rig.advance(current.deltaMS, store.direction)
     heap.advance(current.deltaMS, rig.getGripPoint())
     floorPile.advance(current.deltaMS)
-    frames.push({ phase: store.phase, cart: rig.getCartPoint(), grip: rig.getGripPoint(), holding: heap.isHolding })
+    frames.push({
+      phase: store.phase,
+      cart: rig.getCartPoint(),
+      grip: rig.getGripPoint(),
+      holding: heap.isHolding,
+      closed: rig.isClosed,
+    })
   })
 
   let time = 0
