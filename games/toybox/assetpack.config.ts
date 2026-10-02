@@ -2,8 +2,8 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 
 import { BOX_FRAMES, CABINET_FRAMES, PILLAR_FRAMES } from '#src/assets'
-import { ART_CELL, RESET_PLATE_WIDTH } from '#src/constants'
-import { getCabinetFaces, getCubeFaces, getMarqueeLampCenters, getPillarFaces } from '#src/utils/machine-geometry'
+import { ART_CELL, MARQUEE_LAMP_BOTTOM, RESET_PLATE_WIDTH } from '#src/constants'
+import { getCabinetFaces, getCubeFaces, getMarqueeLampLefts, getPillarFaces } from '#src/utils/machine-geometry'
 import { getFaceSize } from '#src/utils/projection'
 import { AssetBuild } from '@pixi-demos/asset-pipes/asset-build'
 import type { DecalPlacement, FaceLayout, Palette } from '@pixi-demos/asset-pipes/types'
@@ -12,9 +12,6 @@ import type { DecalPlacement, FaceLayout, Palette } from '@pixi-demos/asset-pipe
 // и Node со стрипом типов их не находит
 const root = import.meta.dirname
 const palette = JSON.parse(await readFile(path.join(root, 'art/palette/palette.json'), 'utf8')) as Palette
-
-/** Ширина гнезда лампы на табло, px арта. */
-const SOCKET_WIDTH = 5
 
 // Декали граней корпуса: отступы от угла грани в пикселях арта
 const CABINET_DECALS: Partial<Record<keyof typeof CABINET_FRAMES, DecalPlacement[]>> = {
@@ -29,13 +26,8 @@ const CABINET_DECALS: Partial<Record<keyof typeof CABINET_FRAMES, DecalPlacement
     { name: 'coin-slot', corner: 'top-right', x: 10, y: 4 },
   ],
   marqueeFront: [
-    ...getMarqueeLampCenters().map(
-      (center): DecalPlacement => ({
-        name: 'socket',
-        corner: 'bottom-left',
-        x: Math.round(center - SOCKET_WIDTH / 2),
-        y: 2,
-      })
+    ...getMarqueeLampLefts().map(
+      (left): DecalPlacement => ({ name: 'socket', corner: 'bottom-left', x: left, y: MARQUEE_LAMP_BOTTOM })
     ),
     { name: 'divider', corner: 'top-right', x: RESET_PLATE_WIDTH * ART_CELL + 1, y: 2 },
     { name: 'plate', corner: 'top-right', x: 1, y: 2 },

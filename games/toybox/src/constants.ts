@@ -1,6 +1,9 @@
 import {
   type FrameSize,
   type GroundPoint,
+  LampColor,
+  LampLight,
+  type LightStep,
   PhaseName,
   PrizeLight,
   type ScreenPoint,
@@ -64,6 +67,9 @@ export const MARQUEE_SCREEN_SIDE = 4
 export const MARQUEE_SCREEN_HEIGHT = 14
 /** Число гнёзд ламп в ряду под экраном табло. */
 export const MARQUEE_LAMP_COUNT = 8
+/** Сторона гнезда лампы и его отступ от нижнего края табло, px арта. */
+export const MARQUEE_LAMP_SIZE = 5
+export const MARQUEE_LAMP_BOTTOM = 2
 /** Ширина стойки куба, px арта: стойка лежит внутри силуэта куба. */
 export const PILLAR_WIDTH = 4
 /** Отступ корпуса от края канваса в единицах сцены: одна ячейка. */
@@ -102,6 +108,19 @@ export const DUST_DRIFT_SPEED = 2
 export const DUST_COLOR = '#f97f96'
 /** Сид генератора пылинок: их полёт не тратит `Math.random` игры. */
 export const DUST_SEED = 7
+/** Пауза ровного света ореола стены между мерцаниями, мс. */
+export const WALL_GLOW_MIN_PAUSE_MS = 40000
+export const WALL_GLOW_MAX_PAUSE_MS = 90000
+/** Провалы мерцания ореола стены: до полнакала и до темноты. */
+export const WALL_GLOW_DIPS: readonly LampLight[] = [LampLight.dim, LampLight.off]
+/** Прозрачность ореола стены при каждом состоянии света: в провале ореол тускнеет, но не гаснет. */
+export const WALL_GLOW_ALPHA: Readonly<Record<LampLight, number>> = {
+  [LampLight.off]: 0.45,
+  [LampLight.dim]: 0.75,
+  [LampLight.on]: 1,
+}
+/** Сид генератора мерцания ореола стены: мерцание не тратит `Math.random` игры. */
+export const WALL_GLOW_SEED = 13
 /** Центр тени автомата: середина основания тумбы. */
 export const SHADOW_CENTER: WorldPoint = { x: (CABINET_FRONT_X + GRID_SIZE) / 2, y: GRID_SIZE / 2, z: CABINET_BOTTOM_Z }
 
@@ -180,7 +199,7 @@ export const LIFT_SLIP_MAX_SHARE = 0.85
 
 // Снимок кучи
 /** Версия снимка кучи: не сошлась — снимок игнорируется и куча складывается заново. */
-export const HEAP_SNAPSHOT_VERSION = 5
+export const HEAP_SNAPSHOT_VERSION = 6
 /** Адрес снимка кучи в IndexedDB. */
 export const HEAP_DB_NAME = 'toybox'
 export const HEAP_STORE_NAME = 'heap'
@@ -314,7 +333,40 @@ export const FLOOR_PILE_DEPTH = GRID_SIZE
 /** Ширина полосы пола в ячейках: вдвое шире куба, середина полосы — под серединой куба. */
 export const FLOOR_PILE_WIDTH = GRID_SIZE * 2
 
+// Мерцание света
+/** Наибольшее число провалов света за одно мерцание. */
+export const FLICKER_MAX_DIPS = 3
+/** Длительность провала света и возврата к ровному свету, мс. */
+export const FLICKER_MIN_DIP_MS = 30
+export const FLICKER_MAX_DIP_MS = 90
+export const FLICKER_MIN_RETURN_MS = 30
+export const FLICKER_MAX_RETURN_MS = 120
+
 // Табло
+/** Розжиг лампы табло: лампа загорается с перебоями. */
+export const LAMP_IGNITION: readonly LightStep[] = [
+  [LampLight.off, 60],
+  [LampLight.dim, 40],
+  [LampLight.off, 90],
+  [LampLight.on, 50],
+  [LampLight.off, 40],
+  [LampLight.on, 60],
+]
+/** Пауза ровного света лампы между мерцаниями, мс: лампа мерцает раз в пару минут. */
+export const LAMP_MIN_PAUSE_MS = 90000
+export const LAMP_MAX_PAUSE_MS = 150000
+/** Провалы мерцания лампы: только до полнакала, горящая лампа не гаснет. */
+export const LAMP_DIPS: readonly LampLight[] = [LampLight.dim]
+/** Прозрачность ореола лампы при каждом состоянии света. */
+export const LAMP_HALO_ALPHA: Readonly<Record<LampLight, number>> = {
+  [LampLight.off]: 0,
+  [LampLight.dim]: 0.5,
+  [LampLight.on]: 1,
+}
+/** Цвет ламп выигранных игрушек. */
+export const LAMP_PRIZE_COLOR: LampColor = LampColor.yellow
+/** Сид генератора мерцания ламп: мерцание не тратит `Math.random` игры. */
+export const LAMP_FLICKER_SEED = 11
 /** Шрифт текстов сцены: своих ассетов у игры нет, берётся системный гротеск. */
 export const HUD_FONT_FAMILY = 'Arial, Helvetica, sans-serif'
 /** Время временных сообщений на табло. */

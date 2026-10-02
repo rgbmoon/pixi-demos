@@ -1,6 +1,6 @@
 import { Assets, type Spritesheet } from 'pixi.js'
 
-import type { ButtonFrames, PrizeLight } from './types'
+import type { ButtonFrames, LampColor, PrizeLight } from './types'
 
 // Единый манифест ассетов toybox: все URL в одном месте. Атласы и шрифты собирает `pnpm assets` из
 // `games/toybox/art/`; `preloadGameAssets` грузит их одним `Assets.load` до сборки сцены, классы читают их из
@@ -57,6 +57,19 @@ export const CABINET_FRAMES = {
   marqueeSide: 'marquee-side.png',
   marqueeRoof: 'marquee-roof.png',
 } as const
+
+/**
+ * Кадры лампы табло в атласе корпуса: погашенная лампа общая, у каждого цвета — полнакала, полный свет и ореол. Якорь
+ * кадров — центр лампы.
+ */
+export const LAMP_FRAMES = {
+  off: 'lamp-off.png',
+  colors: {
+    yellow: { dim: 'lamp-yellow-dim.png', on: 'lamp-yellow-on.png', halo: 'lamp-halo-yellow.png' },
+    magenta: { dim: 'lamp-magenta-dim.png', on: 'lamp-magenta-on.png', halo: 'lamp-halo-magenta.png' },
+    red: { dim: 'lamp-red-dim.png', on: 'lamp-red-on.png', halo: 'lamp-halo-red.png' },
+  },
+} as const satisfies { off: string; colors: Record<LampColor, { dim: string; on: string; halo: string }> }
 
 /** Кадры стоек куба: ключ совпадает с ключом стойки в `getPillarFaces`. */
 export const PILLAR_FRAMES = {

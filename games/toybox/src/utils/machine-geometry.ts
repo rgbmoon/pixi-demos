@@ -8,7 +8,9 @@ import {
   GRID_SIZE,
   MACHINE_CANVAS_SHARE,
   MACHINE_MARGIN,
+  MARQUEE_LAMP_BOTTOM,
   MARQUEE_LAMP_COUNT,
+  MARQUEE_LAMP_SIZE,
   MARQUEE_SCREEN_HEIGHT,
   MARQUEE_SCREEN_SIDE,
   MARQUEE_SCREEN_TOP,
@@ -241,9 +243,18 @@ export const getPrizeHatchFaces = () => {
   } as const satisfies Record<string, FaceCorners>
 }
 
-/** Центры гнёзд ламп под экраном табло, px арта от левого края табло: гнёзда делят ширину экрана поровну. */
-export const getMarqueeLampCenters = (): number[] =>
-  Array.from(
-    { length: MARQUEE_LAMP_COUNT },
-    (_, index) => MARQUEE_SCREEN_SIDE + ((index + 0.5) * getMarqueeScreenWidth()) / MARQUEE_LAMP_COUNT
+/** Левые края гнёзд ламп под экраном табло, px арта от левого края табло: гнёзда делят ширину экрана поровну. */
+export const getMarqueeLampLefts = (): number[] =>
+  Array.from({ length: MARQUEE_LAMP_COUNT }, (_, index) =>
+    Math.round(
+      MARQUEE_SCREEN_SIDE + ((index + 0.5) * getMarqueeScreenWidth()) / MARQUEE_LAMP_COUNT - MARQUEE_LAMP_SIZE / 2
+    )
   )
+
+/** Центры гнёзд ламп на фасаде табло в мире. */
+export const getMarqueeLampCenters = (): WorldPoint[] =>
+  getMarqueeLampLefts().map((left) => ({
+    x: 0,
+    y: GRID_SIZE - (left + MARQUEE_LAMP_SIZE / 2) / ART_CELL,
+    z: CUBE_HEIGHT + (MARQUEE_LAMP_BOTTOM + MARQUEE_LAMP_SIZE / 2) / ART_CELL,
+  }))

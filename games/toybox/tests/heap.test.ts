@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { CLAW_REST_HEIGHT } from '#src/claw/constants'
-import { CART_SIZE, CLAW_GRAB_MS, GRID_SIZE, TRAY_CENTER } from '#src/constants'
+import { CART_SIZE, CLAW_GRAB_MS, GRID_SIZE, MARQUEE_LAMP_COUNT, TRAY_CENTER } from '#src/constants'
 import type { Heap } from '#src/heap/heap'
 import { type ToyBody, ToyState } from '#src/heap/types'
 import { lerpPose, pourHeap } from '#src/heap/utils'
@@ -65,6 +65,12 @@ describe('куча: наполнение', () => {
     const shapes = new Set(SAMPLE_SEEDS.flatMap((seed) => getPouredHeap(seed).map(({ shape }) => shape)))
 
     expect([...shapes].sort()).toEqual([...SHAPE_KEYS].sort())
+  })
+
+  it('отмечает лампой табло столько игрушек, сколько ламп на табло', () => {
+    for (const seed of SAMPLE_SEEDS) {
+      expect(getPouredHeap(seed).filter(({ hasLamp }) => hasLamp)).toHaveLength(MARQUEE_LAMP_COUNT)
+    }
   })
 
   it('держит игрушки внутри куба, над полом и без взаимных пересечений', () => {

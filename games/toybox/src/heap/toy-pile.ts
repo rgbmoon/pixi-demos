@@ -1,4 +1,4 @@
-import type { HeapSnapshotBody, ShapeKey, ToyId, ToyPose } from '#src/types'
+import type { HeapSnapshotBody, ToyId, ToyPose } from '#src/types'
 import { getSection, getVariant, getWeight } from '#src/utils/shapes'
 import { isReducedMotion } from '@pixi-demos/core/accessibility'
 
@@ -40,9 +40,7 @@ export abstract class ToyPile {
     // `nextId` не обнуляется: id игрушки уникален на всё время жизни модели. Рендер держит по нему
     // View-компоненты; повторный id связал бы новую игрушку с прежними геометрией и цветом, что вызовет визуальные баги.
 
-    for (const { shape, variant, slab, y, z, angle, color } of bodies) {
-      this.create(shape, variant, slab, { y, z, angle }, color, false)
-    }
+    for (const body of bodies) this.create(body, false)
   }
 
   /** Все игрушки кучи: их перебирает рендер. */
@@ -59,7 +57,7 @@ export abstract class ToyPile {
   takeSnapshot(): HeapSnapshotBody[] {
     if (!this.settled) throw new Error('Heap is not settled')
 
-    return [...this.bodies.values()].map(({ shape, variant, slab, pose, color }) => ({
+    return [...this.bodies.values()].map(({ shape, variant, slab, pose, color, hasLamp }) => ({
       shape,
       variant,
       slab,
@@ -67,6 +65,7 @@ export abstract class ToyPile {
       z: pose.point.z,
       angle: pose.angle,
       color,
+      hasLamp,
     }))
   }
 
@@ -78,11 +77,7 @@ export abstract class ToyPile {
 
   /** Добавляет игрушку в срезы от `slab`: спящей в позе покоя или падающей. */
   protected create(
-    shape: ShapeKey,
-    variant: number,
-    slab: number,
-    pose: ToyPose,
-    color: number,
+    { shape, variant, slab, y, z, angle, color, hasLamp }: Readonly<HeapSnapshotBody>,
     awake: boolean
   ): ToyBody {
     this.nextId += 1
@@ -93,13 +88,14 @@ export abstract class ToyPile {
       shape,
       variant,
       color,
+      hasLamp,
       slab,
-      pose: { point: { x: this.getDepthX(slab, depth), y: pose.y, z: pose.z }, angle: pose.angle },
+      pose: { point: { x: this.getDepthX(slab, depth), y, z }, angle },
       state: ToyState.free,
     }
 
     this.bodies.set(body.id, body)
-    this.world.add(body.id, getSection(shape, variant), getWeight(shape), slab, depth, pose, awake)
+    this.world.add(body.id, getSection(shape, variant), getWeight(shape), slab, depth, { y, z, angle }, awake)
 
     return body
   }

@@ -1,7 +1,7 @@
 import { injectable } from 'inversify'
 
 import { CLAW_GRAB_MS, CLAW_RAMP_SHARE, CUBE_HEIGHT, GRID_SIZE } from '#src/constants'
-import type { GroundPoint, HeapSnapshotBody, ToyAppearance, ToyId, ToyPose, WorldPoint } from '#src/types'
+import type { GroundPoint, HeapSnapshotBody, Prize, ToyId, ToyPose, WorldPoint } from '#src/types'
 import { getSeparation, polygonsOverlap, projectPolygon } from '#src/utils/geometry'
 import { clamp } from '#src/utils/math'
 import { getDepthCenter, getSection, getVariant, getWeight, placeSection, toPlane } from '#src/utils/shapes'
@@ -30,7 +30,7 @@ import { getCubeStatics } from './utils'
  */
 @injectable()
 export class Heap extends ToyPile {
-  private readonly prizes: ToyAppearance[] = []
+  private readonly prizes: Prize[] = []
   private carried?: ToyBody
   private initialGripOffset: WorldPoint = { x: 0, y: 0, z: 0 }
   private initialAngle = 0
@@ -89,7 +89,7 @@ export class Heap extends ToyPile {
   }
 
   /** Забирает из очереди следующий приз. */
-  takePrize(): ToyAppearance | undefined {
+  takePrize(): Prize | undefined {
     return this.prizes.shift()
   }
 
@@ -192,7 +192,7 @@ export class Heap extends ToyPile {
     if (pose.z > TRAY_EXIT_Z) return
 
     this.remove(body.id)
-    this.prizes.push({ shape: body.shape, color: body.color })
+    this.prizes.push({ shape: body.shape, color: body.color, hasLamp: body.hasLamp })
   }
 
   /**

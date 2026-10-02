@@ -9,6 +9,7 @@ import { Decals } from '#src/ui/room/decals'
 import { Dust } from '#src/ui/room/dust'
 import { Glow } from '#src/ui/room/glow'
 import { Wainscot } from '#src/ui/room/wainscot'
+import { WallGlow } from '#src/ui/room/wall-glow'
 import { Wallpaper } from '#src/ui/room/wallpaper'
 import { getPlinthY, toArtPoint, toArtRect } from '#src/utils/room'
 import { isReducedMotion } from '@pixi-demos/core/accessibility'
@@ -17,8 +18,8 @@ import { LiveContainer } from '@pixi-demos/engine/live-container'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 
 /**
- * Фон зала за автоматом: стена с обоями и декалями, панель с плинтусом и ковёр до краёв канваса, свет стеклянного куба
- * на стене с пылинками, тень автомата.
+ * Фон зала за автоматом: стена с обоями и декалями, панель с плинтусом и ковёр до краёв канваса, мерцающий свет
+ * стеклянного куба на стене с пылинками, тень автомата.
  */
 @injectable()
 export class RoomController extends LiveContainer {
@@ -29,6 +30,7 @@ export class RoomController extends LiveContainer {
   private readonly wainscot: Wainscot
   private readonly carpet: Carpet
   private readonly dust: Dust
+  private readonly glow = new WallGlow(ROOM_FRAMES.wallGlow)
 
   constructor(@inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker) {
     super()
@@ -39,11 +41,9 @@ export class RoomController extends LiveContainer {
     this.carpet = new Carpet(ticker)
 
     const source = toArtPoint(GLOW_SOURCE_CENTER)
-    // Свет складывается с фоном: узор под пятном остаётся виден и светлеет
-    const glow = new Glow(ROOM_FRAMES.wallGlow, 'add')
     const shadow = new Glow(ROOM_FRAMES.shadow, 'normal')
 
-    glow.position.copyFrom(source)
+    this.glow.position.copyFrom(source)
     shadow.position.copyFrom(toArtPoint(SHADOW_CENTER))
     this.dust = new Dust({
       left: source.x - DUST_AREA.width / 2,
@@ -54,10 +54,10 @@ export class RoomController extends LiveContainer {
 
     // Ореол стены лежит под ковром: ковёр обрезает его по линии плинтуса
     this.layers.scale.set(ART_PIXEL)
-    this.layers.addChild(this.wallpaper, this.decals, this.wainscot, glow, this.dust, this.carpet, shadow)
+    this.layers.addChild(this.wallpaper, this.decals, this.wainscot, this.glow, this.dust, this.carpet, shadow)
     this.addChild(this.layers)
 
-    // Пылинки — декоративное движение: при уменьшенном движении их нет
+    // Пылинки и мерцание — декоративное движение: при уменьшенном движении пылинок нет, ореол светит ровно
     if (isReducedMotion()) this.dust.visible = false
     else this.ticker.add(this.step)
   }
@@ -83,5 +83,6 @@ export class RoomController extends LiveContainer {
 
   private step = (ticker: Ticker): void => {
     this.dust.advance(ticker.deltaMS)
+    this.glow.advance(ticker.deltaMS)
   }
 }

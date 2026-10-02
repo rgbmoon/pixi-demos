@@ -25,6 +25,7 @@ export type ToyBody = {
   readonly shape: ShapeKey
   readonly variant: number
   readonly color: number
+  readonly hasLamp?: boolean
   /** Ближний срез глубины; игрушка занимает срезы от него на глубину своего положения. */
   slab: number
   /** Центр игрушки в мировых координатах и крен. */

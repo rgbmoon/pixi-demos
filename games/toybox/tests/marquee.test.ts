@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { RESET_MS, WELCOME_MS } from '#src/constants'
+import { CABINET_BOTTOM_Z, RESET_MS, WELCOME_MS } from '#src/constants'
 import { MarqueeController } from '#src/controllers/box/marquee'
 import type { GameEvents } from '#src/events'
+import { FloorPile } from '#src/heap/floor-pile'
 import { ToyboxStore } from '#src/stores/toybox'
 import { Marquee } from '#src/ui/box/marquee'
 import { GameEmitter } from '@pixi-demos/core/events/game-emitter'
@@ -14,9 +15,12 @@ const FRAME_MS = 1000 / 60
 
 type Board = {
   store: ToyboxStore
+  floorPile: FloorPile
   emitter: GameEmitter<GameEvents>
   /** Последний текст, выведенный на табло. */
   message: () => string | undefined
+  /** Число горящих ламп по последнему вызову табло. */
+  litLamps: () => number | undefined
   /** Крутит кадры игры `ms` миллисекунд. */
   wait: (ms: number) => Promise<void>
   destroy: () => void
@@ -24,18 +28,22 @@ type Board = {
 
 const createBoard = (): Board => {
   const setMessage = vi.spyOn(Marquee.prototype, 'setMessage')
+  const setLitLamps = vi.spyOn(Marquee.prototype, 'setLitLamps')
   const ticker = new GameTicker()
   const store = new ToyboxStore()
+  const floorPile = new FloorPile()
   const emitter = new GameEmitter<GameEvents>()
-  const marquee = new MarqueeController(ticker, store, emitter)
+  const marquee = new MarqueeController(ticker, store, floorPile, emitter)
   let time = 0
 
   ticker.update(time)
 
   return {
     store,
+    floorPile,
     emitter,
     message: () => setMessage.mock.lastCall?.[0],
+    litLamps: () => setLitLamps.mock.lastCall?.[0],
     wait: async (ms) => {
       for (let passed = 0; passed < ms; passed += FRAME_MS) {
         time += FRAME_MS
@@ -118,5 +126,45 @@ describe('табло', () => {
     await board.wait(RESET_MS)
 
     expect(board.message()).toBe('TOYS 0')
+  })
+
+  it('зажигает по лампе на каждую выигранную игрушку с лампой и гасит лампы при сбросе', () => {
+    board = createBoard()
+    board.emitter.emit('game:booted')
+
+    expect(board.litLamps()).toBe(0)
+
+    board.floorPile.drop({ shape: 'single', color: 0x3366ff, hasLamp: true }, () => 0.5)
+    board.emitter.emit('prize:taken')
+
+    expect(board.litLamps()).toBe(1)
+
+    // Игрушка без лампы новую лампу не зажигает
+    board.floorPile.drop({ shape: 'bar2', color: 0x3366ff }, () => 0.5)
+    board.emitter.emit('prize:taken')
+    board.floorPile.drop({ shape: 'cube8', color: 0x3366ff, hasLamp: true }, () => 0.5)
+    board.emitter.emit('prize:taken')
+
+    expect(board.litLamps()).toBe(2)
+
+    // Сброс чистит пол раньше, чем табло узнаёт о нём
+    board.floorPile.restore([])
+    board.emitter.emit('heap:reset')
+
+    expect(board.litLamps()).toBe(0)
+  })
+
+  it('после загрузки зажигает лампы по игрушкам с лампой, лежащим на полу', () => {
+    const toy = { shape: 'single', variant: 0, slab: 0, y: 4, z: CABINET_BOTTOM_Z + 0.5, angle: 0, color: 0x3366ff } as const
+
+    board = createBoard()
+    board.floorPile.restore([
+      { ...toy, hasLamp: true },
+      { ...toy, y: 6 },
+      { ...toy, y: 2, hasLamp: true },
+    ])
+    board.emitter.emit('game:booted')
+
+    expect(board.litLamps()).toBe(2)
   })
 })

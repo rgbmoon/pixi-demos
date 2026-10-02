@@ -1,7 +1,7 @@
 import { injectable } from 'inversify'
 
 import { CABINET_BOTTOM_Z, CABINET_FRONT_X, FLOOR_PILE_DEPTH, PRIZE_NICHE_FLOOR } from '#src/constants'
-import type { HeapSnapshotBody, ToyAppearance, ToyId } from '#src/types'
+import type { HeapSnapshotBody, Prize, ToyId } from '#src/types'
 import { lerp } from '#src/utils/math'
 import {
   getDepthCenter,
@@ -52,12 +52,12 @@ export class FloorPile extends ToyPile {
    * Роняет приз из окна выдачи: игрушка получает толчок вниз и вбок и летит вперёд в случайные срезы пола.
    * Падая, она расталкивает игрушки, которые уже лежат на полу.
    */
-  drop({ shape, color }: ToyAppearance, random: Random): void {
+  drop({ shape, color, hasLamp }: Prize, random: Random): void {
     const variant = 0
     const { depth } = getVariant(shape, variant)
     const slab = Math.floor(random() * (FLOOR_PILE_DEPTH - depth + 1))
     const { x, y, z } = getPrizeSeat(shape, variant)
-    const body = this.create(shape, variant, slab, { y, z, angle: 0 }, color, true)
+    const body = this.create({ shape, variant, slab, y, z, angle: 0, color, hasLamp }, true)
     const { halfWidth } = getSectionExtent(getSection(shape, variant))
     const weight = getWeight(shape)
 

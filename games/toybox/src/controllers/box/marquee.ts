@@ -3,6 +3,7 @@ import type { DestroyOptions } from 'pixi.js'
 
 import { RESET_MS, WELCOME_MS } from '#src/constants'
 import type { GameEvents } from '#src/events'
+import type { FloorPile } from '#src/heap/floor-pile'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import { Marquee } from '#src/ui/box/marquee'
@@ -12,31 +13,42 @@ import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 import { LiveContainer } from '@pixi-demos/engine/live-container'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 
-/** Управляет сообщениями табло */
+/** Управляет сообщениями табло и лампами: на каждую игрушку с лампой на полу горит лампа, слева направо. */
 @injectable()
 export class MarqueeController extends LiveContainer {
-  private readonly view = new Marquee()
+  private readonly view: Marquee
   private readonly life = new AbortController()
   private readonly ticker: GameTicker
   private readonly toyboxStore: ToyboxStore
+  private readonly floorPile: FloorPile
   private revision = 0
 
   constructor(
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
     @inject(TOYBOX_TOKENS.ToyboxStore) toyboxStore: ToyboxStore,
+    @inject(TOYBOX_TOKENS.FloorPile) floorPile: FloorPile,
     @inject(TOYBOX_TOKENS.GameEmitter) emitter: GameEmitter<GameEvents>
   ) {
     super()
 
     this.ticker = ticker
     this.toyboxStore = toyboxStore
+    this.floorPile = floorPile
+    this.view = new Marquee(ticker)
 
     this.addChild(this.view)
-    this.listen(emitter, 'game:booted', () => void this.showTemporary('WELCOME', WELCOME_MS))
-    this.listen(emitter, 'heap:reset', () => void this.showTemporary('RESET', RESET_MS))
+    this.listen(emitter, 'game:booted', () => {
+      this.showLamps()
+      void this.showTemporary('WELCOME', WELCOME_MS)
+    })
+    this.listen(emitter, 'heap:reset', () => {
+      this.showLamps()
+      void this.showTemporary('RESET', RESET_MS)
+    })
     this.listen(emitter, 'prize:taken', () => {
       this.revision += 1
       this.showCount()
+      this.showLamps()
     })
   }
 
@@ -66,5 +78,16 @@ export class MarqueeController extends LiveContainer {
 
   private showCount(): void {
     this.view.setMessage(`TOYS ${this.toyboxStore.collected}`)
+  }
+
+  /** Зажигает по лампе на каждую специальную игрушку. */
+  private showLamps(): void {
+    let count = 0
+
+    for (const { hasLamp } of this.floorPile.getBodies()) {
+      if (hasLamp) count += 1
+    }
+
+    this.view.setLitLamps(count)
   }
 }

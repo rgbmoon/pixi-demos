@@ -124,6 +124,11 @@ describe('сессия', () => {
       expect(isHeapSnapshot(withBody({ slab: -1 }))).toBe(false)
     })
 
+    it('принимает отметку лампы табло и отбрасывает её не флагом', () => {
+      expect(isHeapSnapshot(withBody({ hasLamp: true }))).toBe(true)
+      expect(isHeapSnapshot(withBody({ hasLamp: 1 }))).toBe(false)
+    })
+
     it.each([NaN, Infinity, -0.5, GRID_SIZE + 0.5])('отбрасывает координату %s', (value) => {
       expect(isHeapSnapshot(withBody({ y: value }))).toBe(false)
       expect(isHeapSnapshot(withBody({ z: value === GRID_SIZE + 0.5 ? CUBE_HEIGHT + 0.5 : value }))).toBe(false)

@@ -5,6 +5,7 @@ import {
   FLOOR_PILE_WIDTH,
   GRID_SIZE,
   HEAP_SNAPSHOT_VERSION,
+  MARQUEE_LAMP_COUNT,
   MARQUEE_TOP_Z,
   TRAY_ORIGIN,
   TRAY_SIZE,
@@ -195,10 +196,26 @@ const shiftColor = (base: string, random: Random): number => {
   return (channel(0) << 16) | (channel(8) << 8) | channel(4)
 }
 
+/** Отмечает лампой табло `MARQUEE_LAMP_COUNT` случайных игрушек кучи. */
+const assignLamps = (bodies: HeapSnapshotBody[], random: Random): HeapSnapshotBody[] => {
+  const order = bodies.map((_, index) => index)
+
+  for (let marked = 0; marked < Math.min(MARQUEE_LAMP_COUNT, bodies.length); marked++) {
+    const pick = marked + Math.floor(random() * (order.length - marked))
+    const index = order[pick]
+
+    order[pick] = order[marked]
+    bodies[index].hasLamp = true
+  }
+
+  return bodies
+}
+
 /**
  * Насыпает купол во временном мире и отдаёт позы покоя. Каждая новая игрушка пробует несколько случайных мест
  * и встаёт туда, где верх кучи дальше всего ниже профиля купола. Между пачками появлений мир делает шаги,
  * в конце — до сна всех тел. Игрушка, опустившаяся в шахте лотка до `TRAY_EXIT_Z`, в кучу не попадает.
+ * Лампой табло отмечены случайные игрушки насыпанной кучи.
  */
 export const pourHeap = (random: Random): HeapSnapshotBody[] => {
   // Новый мир на каждое насыпание: повторно использованный мир planck теряет детерминизм
@@ -273,7 +290,10 @@ export const pourHeap = (random: Random): HeapSnapshotBody[] => {
   for (let step = 0; step < HEAP_SETTLE_MAX_STEPS && world.hasAwake(); step++) stepWorld()
 
   // Тела сдвинулись с мест появления: позы покоя отдаёт мир
-  return [...toys].map(([id, toy]) => ({ ...toy, ...world.getPose(id) }))
+  return assignLamps(
+    [...toys].map(([id, toy]) => ({ ...toy, ...world.getPose(id) })),
+    random
+  )
 }
 
 /** Пределы игрушек кучи в кубе: куча столько не вмещает, больший список — мусор. */
@@ -300,7 +320,7 @@ const isShapeKey = (value: unknown): value is ShapeKey => typeof value === 'stri
 const isSnapshotBody = (value: unknown, { slabs, minY, maxY, minZ, maxZ }: SnapshotBounds): value is HeapSnapshotBody => {
   if (!isRecord(value)) return false
 
-  const { shape, variant, slab, y, z, angle, color } = value
+  const { shape, variant, slab, y, z, angle, color, hasLamp } = value
 
   if (!isShapeKey(shape)) return false
 
@@ -313,7 +333,8 @@ const isSnapshotBody = (value: unknown, { slabs, minY, maxY, minZ, maxZ }: Snaps
     isNumberIn(y, minY, maxY) &&
     isNumberIn(z, minZ, maxZ) &&
     isNumberIn(angle, -Number.MAX_VALUE, Number.MAX_VALUE) &&
-    isInteger(color, 0, 0xffffff)
+    isInteger(color, 0, 0xffffff) &&
+    (hasLamp === undefined || typeof hasLamp === 'boolean')
   )
 }
 

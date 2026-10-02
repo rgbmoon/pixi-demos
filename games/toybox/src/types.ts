@@ -21,6 +21,27 @@ export const PrizeLight = {
 
 export type PrizeLight = (typeof PrizeLight)[keyof typeof PrizeLight]
 
+/** Состояние света лампы табло. */
+export const LampLight = {
+  off: 'off',
+  dim: 'dim',
+  on: 'on',
+} as const
+
+export type LampLight = (typeof LampLight)[keyof typeof LampLight]
+
+/** Цвет лампы табло: жёлтый — обычная работа, маджента — эффекты и механики, красный — в запасе. */
+export const LampColor = {
+  yellow: 'yellow',
+  magenta: 'magenta',
+  red: 'red',
+} as const
+
+export type LampColor = (typeof LampColor)[keyof typeof LampColor]
+
+/** Шаг мерцания: состояние света и его длительность, мс. */
+export type LightStep = readonly [LampLight, number]
+
 /** Точка мира: `x` и `y` — оси сетки в ячейках, `z` — высота над полом. */
 export type WorldPoint = {
   x: number
@@ -79,6 +100,11 @@ export type ToyAppearance = {
   readonly color: number
 }
 
+/** Выданная игрушка: внешний вид и отметка, что она зажигает лампу табло. */
+export type Prize = ToyAppearance & {
+  readonly hasLamp?: boolean
+}
+
 /** Точка плоскости сечения: `y` — ось поля вдоль фронтальной грани, `z` — высота. */
 export type SectionPoint = {
   y: number
@@ -108,7 +134,7 @@ export type ToyPose = {
   angle: number
 }
 
-/** Игрушка в снимке: форма, срезы и поза покоя. */
+/** Игрушка в снимке: форма, срезы, поза покоя и отметка лампы табло. */
 export type HeapSnapshotBody = {
   shape: ShapeKey
   variant: number
@@ -117,6 +143,8 @@ export type HeapSnapshotBody = {
   z: number
   angle: number
   color: number
+  /** Выигранная игрушка зажигает следующую лампу табло; у остальных игрушек поля нет. */
+  hasLamp?: boolean
 }
 
 /** Снимок для хранилища: позы покоя кучи в кубе и игрушек на полу, без скоростей. */

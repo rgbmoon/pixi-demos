@@ -15,7 +15,7 @@ import {
   type HeapSnapshot,
   type HeapSnapshotBody,
   PhaseName,
-  type ToyAppearance,
+  type Prize,
   type WorldPoint,
 } from '#src/types'
 import { bindFsm } from '@pixi-demos/core/bindings'
@@ -81,7 +81,7 @@ export type Cycle = {
   frames: CycleFrame[]
   drops: CycleDrop[]
   /** Показанные призы и счёт в момент показа. */
-  prizes: Array<ToyAppearance & { readonly collected: number }>
+  prizes: Array<Prize & { readonly collected: number }>
   /** Порядок презентации приза: методы окна выдачи и событие `prize:taken`. */
   presentation: string[]
   /** Записи в хранилище по порядку. */
@@ -155,7 +155,7 @@ export const createCycle = (options: CycleOptions = {}): Cycle => {
   const store = container.get(TOYBOX_TOKENS.ToyboxStore)
 
   container.bind(TOYBOX_TOKENS.PrizeOutputController).toConstantValue({
-    show: (appearance: ToyAppearance) => {
+    show: (appearance: Prize) => {
       prizes.push({ ...appearance, collected: store.collected })
       presentation.push('show')
     },

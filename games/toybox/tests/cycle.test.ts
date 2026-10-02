@@ -48,9 +48,9 @@ const paint = (body: HeapSnapshotBody, color: number): HeapSnapshotBody => ({ ..
 /** Цвет игрушек стопки на полу: по нему они отличаются от выпавшего приза. */
 const STACK_COLOR = 0x22aa22
 
-/** Под кареткой в покое стоит куб с мячом наверху, в стороне — треугольник. */
+/** Под кареткой в покое стоит куб с мячом наверху, в стороне — треугольник; мяч зажигает лампу табло. */
 const cube = paint(stand('cube8', 3, FIELD_CENTER.y, 0), 0x3366ff)
-const ball = paint(stand('single', 4, FIELD_CENTER.y, topOf(cube)), 0xff3366)
+const ball = { ...paint(stand('single', 4, FIELD_CENTER.y, topOf(cube)), 0xff3366), hasLamp: true }
 const triangle = paint(stand('triangle', 6, 2, 0), 0x33ff66)
 const SCENE = [cube, ball, triangle]
 
@@ -90,12 +90,12 @@ describe('цикл клешни', () => {
     // Клешня садится ровно на верх игрушки под кареткой
     expect(getGrabHeight(cycle)).toBeCloseTo(topOf(ball), 6)
     // Счёт растёт перед показом приза, а табло узнаёт о получении до того, как дверца закроется
-    expect(cycle.prizes).toEqual([{ shape: 'single', color: ball.color, collected: 1 }])
+    expect(cycle.prizes).toEqual([{ shape: 'single', color: ball.color, hasLamp: true, collected: 1 }])
     expect(cycle.presentation).toEqual(['show', 'open', 'eject', 'prize:taken', 'close', 'hide'])
     expect(cycle.store.collected).toBe(1)
     expect(getShapes(cycle)).toEqual(['cube8', 'triangle'])
-    // Приз лежит в покое на полу перед автоматом
-    expect(cycle.floorPile.takeSnapshot()).toMatchObject([{ shape: 'single', color: ball.color }])
+    // Приз лежит в покое на полу перед автоматом с отметкой лампы табло
+    expect(cycle.floorPile.takeSnapshot()).toMatchObject([{ shape: 'single', color: ball.color, hasLamp: true }])
     expect(cycle.rig.getCartPoint()).toMatchObject(FIELD_CENTER)
     expect(cycle.rig.getGripPoint().z).toBe(CLAW_REST_HEIGHT)
     expect(cycle.store.checkpoint).toEqual({
