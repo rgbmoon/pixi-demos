@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { Assets, type FederatedPointerEvent, Texture } from 'pixi.js'
+import { Assets, type Container, type FederatedPointerEvent, Texture } from 'pixi.js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { HUD_ATLAS, HUD_FRAMES, HUD_SEQUENCES } from '#src/assets'
@@ -7,16 +7,23 @@ import { ClawRig } from '#src/claw/claw-rig'
 import { CONTROL_PANEL_PLANE, JOYSTICK_DEADZONE, JOYSTICK_RADIUS } from '#src/constants'
 import { DropButtonController } from '#src/controllers/hud/drop-button'
 import { JoystickController } from '#src/controllers/hud/joystick'
+import { ResetButtonController } from '#src/controllers/hud/reset-button'
 import { KeyboardController } from '#src/controllers/keyboard'
 import type { GameEvents } from '#src/events'
+import { Heap } from '#src/heap/heap'
 import { ToyboxStore } from '#src/stores/toybox'
 import { PhaseName, type ScreenPoint } from '#src/types'
 import { DropButton } from '#src/ui/hud/drop-button'
 import { Joystick } from '#src/ui/hud/joystick'
+import { ResetButton } from '#src/ui/hud/reset-button'
+import { ResetConfirm } from '#src/ui/hud/reset-confirm'
+import { TourHint } from '#src/ui/hud/tour-hint'
 import { projectPlaneOffset, worldToScreen } from '#src/utils/projection'
 import { GameEmitter } from '@pixi-demos/core/events/game-emitter'
 import { KeyboardInput } from '@pixi-demos/core/keyboard-input'
 import { GameTicker } from '@pixi-demos/engine/game-ticker'
+
+import { getPouredHeap } from './setup/heap'
 
 /** Шаг кадра при 60 fps. */
 const FRAME_MS = 1000 / 60
@@ -26,9 +33,17 @@ const FULL_TILT = 400
 
 type Controls = {
   store: ToyboxStore
+  heap: Heap
+  emitter: GameEmitter<GameEvents>
   joystick: Joystick
   drop: DropButton
+  reset: ResetButton
+  dialog: ResetConfirm
+  /** Стрелка над кнопкой сброса. */
+  resetHint: TourHint
   requests: () => number
+  /** Сколько раз сброс кучи ушёл наверх. */
+  resets: () => number
   destroy: () => void
 }
 
@@ -37,7 +52,7 @@ const HUD_TEXTURES = Object.values(HUD_FRAMES).flatMap((frame) =>
   typeof frame === 'string' ? [frame] : Object.values(frame)
 )
 
-/** Собирает управление в покое: клавиатуру, джойстик и кнопку Drop над одним стором. */
+/** Собирает управление в покое: клавиатуру, джойстик, кнопки Drop и сброса над одним стором и пустой кучей. */
 const createControls = (): Controls => {
   const store = new ToyboxStore()
   const emitter = new GameEmitter<GameEvents>()
@@ -46,21 +61,32 @@ const createControls = (): Controls => {
   const keyboard = new KeyboardController(input, store, emitter)
   const joystickController = new JoystickController(ticker, store)
   const dropController = new DropButtonController(ticker, store, emitter)
+  const heap = new Heap()
+  const resetController = new ResetButtonController(ticker, store, heap, input, emitter)
   const joystick = joystickController.children.find((child) => child instanceof Joystick) as Joystick
   const drop = dropController.children.find((child) => child instanceof DropButton) as DropButton
   const requested = vi.fn()
+  const resetRequested = vi.fn()
 
   store.setPhase(PhaseName.idle)
   emitter.on('ui:dropRequested', requested)
+  emitter.on('ui:resetRequested', resetRequested)
 
   return {
     store,
+    heap,
+    emitter,
     joystick,
     drop,
+    reset: resetController.children.find((child) => child instanceof ResetButton) as ResetButton,
+    dialog: resetController.children.find((child) => child instanceof ResetConfirm) as ResetConfirm,
+    resetHint: resetController.children.find((child) => child instanceof TourHint) as TourHint,
     requests: () => requested.mock.calls.length,
+    resets: () => resetRequested.mock.calls.length,
     destroy: () => {
       joystickController.destroy({ children: true })
       dropController.destroy({ children: true })
+      resetController.destroy({ children: true })
       keyboard.destroy({ children: true })
       input.dispose()
     },
@@ -245,5 +271,71 @@ describe('управление', () => {
       controls.destroy()
       controls = undefined
     }
+  })
+
+  it('сбрасывает кучу только после подтверждения: крестик, Escape и повторное нажатие сброса отменяют диалог', () => {
+    controls = createControls()
+
+    const tap = (target: Container): void => {
+      target.emit('pointertap', {} as FederatedPointerEvent)
+    }
+    const cancels: ((current: Controls) => void)[] = [
+      (current) => tap(current.dialog.cancel),
+      () => {
+        press('Escape')
+        release('Escape')
+      },
+      (current) => tap(current.reset),
+    ]
+
+    for (const cancel of cancels) {
+      tap(controls.reset)
+
+      // Открытый диалог гасит управление
+      expect(controls.store.isResetConfirmOpen).toBe(true)
+      expect(controls.store.canDrop).toBe(false)
+
+      cancel(controls)
+
+      expect(controls.store.isResetConfirmOpen).toBe(false)
+      expect(controls.store.canDrop).toBe(true)
+    }
+
+    expect(controls.resets()).toBe(0)
+
+    tap(controls.reset)
+    tap(controls.dialog.confirm)
+
+    expect(controls.resets()).toBe(1)
+    expect(controls.store.isResetConfirmOpen).toBe(false)
+  })
+
+  it('подтверждает сброс отпусканием Enter, и тот же Enter не опускает клешню', () => {
+    controls = createControls()
+    controls.reset.emit('pointertap', {} as FederatedPointerEvent)
+    press('Enter')
+
+    expect(controls.resets()).toBe(0)
+
+    release('Enter')
+
+    expect(controls.resets()).toBe(1)
+    expect(controls.requests()).toBe(0)
+  })
+
+  it('показывает стрелку к кнопке сброса, пока куча в кубе пуста и управление доступно', () => {
+    controls = createControls()
+
+    expect(controls.resetHint.visible).toBe(true)
+
+    controls.reset.emit('pointertap', {} as FederatedPointerEvent)
+
+    expect(controls.resetHint.visible).toBe(false)
+
+    controls.store.closeResetConfirm()
+    controls.heap.restore(getPouredHeap(7))
+    controls.emitter.emit('heap:reset')
+
+    expect(controls.resetHint.visible).toBe(false)
   })
 })

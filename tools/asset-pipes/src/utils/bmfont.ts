@@ -7,7 +7,16 @@ import {
   GLYPH_CURVE_STEPS,
   GLYPH_EDGE_EPSILON,
 } from '#src/constants'
-import type { BitmapFontData, BitmapFontPage, BitmapGlyph, FontSpec, RasterImage, RasterPoint, Rgb } from '#src/types'
+import type {
+  BitmapFontData,
+  BitmapFontPage,
+  BitmapGlyph,
+  FontSpec,
+  FontStyle,
+  RasterImage,
+  RasterPoint,
+  Rgb,
+} from '#src/types'
 
 import { createImage, drawImage, getOffset } from './image'
 import { isRecord } from './json'
@@ -77,19 +86,52 @@ const isInside = (segments: readonly Segment[], point: RasterPoint): boolean => 
   return winding !== 0
 }
 
+/** Проверяет цвета шрифта или его стиля; при ошибке сообщает поле. */
+const parseFontStyle = (value: Record<string, unknown>): FontStyle => {
+  const { color, outline } = value
+
+  if (color !== undefined && typeof color !== 'string') throw new Error('Font color must be #rrggbb')
+  if (outline !== undefined && typeof outline !== 'string') throw new Error('Font outline must be #rrggbb')
+
+  return { color, outline }
+}
+
 /** Проверяет параметры шрифта из `font.json`; при ошибке сообщает поле. */
 export const parseFontSpec = (value: unknown): FontSpec => {
   if (!isRecord(value)) throw new Error('Font spec must be an object')
 
-  const { size, chars, color, outline } = value
+  const { size, chars, styles } = value
 
   if (size !== undefined && (typeof size !== 'number' || size <= 0))
     throw new Error('Font size must be a positive number')
   if (chars !== undefined && typeof chars !== 'string') throw new Error('Font chars must be a string')
-  if (color !== undefined && typeof color !== 'string') throw new Error('Font color must be #rrggbb')
-  if (outline !== undefined && typeof outline !== 'string') throw new Error('Font outline must be #rrggbb')
+  if (styles !== undefined && !isRecord(styles)) throw new Error('Font styles must be an object')
 
-  return { size, chars, color, outline }
+  return {
+    size,
+    chars,
+    ...parseFontStyle(value),
+    styles:
+      styles &&
+      Object.fromEntries(
+        Object.entries(styles).map(([name, style]) => {
+          if (!isRecord(style)) throw new Error(`Font style "${name}" must be an object`)
+
+          return [name, parseFontStyle(style)]
+        })
+      ),
+  }
+}
+
+/** Перекрашивает непрозрачные пиксели растра в один цвет, прозрачность сохраняется. */
+export const recolorImage = (image: RasterImage, [red, green, blue]: Rgb): RasterImage => {
+  const result: RasterImage = { width: image.width, height: image.height, data: image.data.slice() }
+
+  for (let offset = 0; offset < result.data.length; offset += 4) {
+    if (result.data[offset + 3] > 0) result.data.set([red, green, blue], offset)
+  }
+
+  return result
 }
 
 /** Растеризует отрезки контура без сглаживания: пиксель закрашен, если его центр внутри контура. */

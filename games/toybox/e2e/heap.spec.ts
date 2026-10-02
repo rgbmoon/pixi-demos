@@ -31,6 +31,7 @@ test.describe('куча между заходами', () => {
     const played = await readSavedSnapshot(page)
 
     await page.getByRole('button', { name: 'Reset the heap', exact: true }).dispatchEvent('click')
+    await page.getByRole('button', { name: 'Confirm reset', exact: true }).dispatchEvent('click')
     await expect.poll(() => readSnapshot(page)).not.toEqual(played)
 
     const fresh = await readSavedSnapshot(page)

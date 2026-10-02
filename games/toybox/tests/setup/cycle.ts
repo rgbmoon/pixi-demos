@@ -162,6 +162,9 @@ export const createCycle = (options: CycleOptions = {}): Cycle => {
     open: async () => {
       presentation.push('open')
     },
+    speak: async (speech: string) => {
+      presentation.push(`speak:${speech}`)
+    },
     eject: () => {
       presentation.push('eject')
     },

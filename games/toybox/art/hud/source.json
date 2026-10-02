@@ -390,5 +390,73 @@
       "крест вдоль осей панели: стрелки по отдельности ровные, вместе крест кривой"
     ],
     "note": "Сергей: кнопка сброса не должна бросаться в глаза."
+  },
+  {
+    "date": "2026-10-02",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "comic speech bubble, rounded rectangle balloon with thin dark outline and light off-white fill, small triangular pointer tail beside it, flat 2D game UI, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "init_image": "эскиз скриптом 32×32: облако 24×24 (контур metal[0], заливка bone[4]), хвост 8×8, фон indigo[0]",
+      "init_image_strength": 150,
+      "color_image": "рампы bone и metal, indigo[0]",
+      "width": 32,
+      "height": 32,
+      "no_background": false,
+      "outline": "single color outline",
+      "shading": "flat shading",
+      "detail": "low detail",
+      "view": "side",
+      "seed": 1401
+    },
+    "seed": 1401,
+    "id": "24f282e0-422c-4c72-91b3-5ce040677785",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/24f282e0-422c-4c72-91b3-5ce040677785/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "bubble"
+    ],
+    "note": "Контур облака слился с фоном и пропал на трёх сторонах, снизу появилась серая тень, справа — лишний тёмный пиксель, хвост искажён. Нижняя кромка неоднородна для 9-slice."
+  },
+  {
+    "date": "2026-10-02",
+    "tool": "script",
+    "params": {
+      "generator": "Т14: облако диалога скриптом в цветах палитры",
+      "bubble": "24×24, бордеры 9-slice по 8 px; контур 1 px metal[0], заливка bone[4], скругление углов радиусом ~6 px",
+      "tail": "8×8, остриё вниз-влево; верхняя строка — заливка, она перекрывает контур облака; вниз-вправо и вверх — отражением спрайта"
+    },
+    "seed": null,
+    "id": null,
+    "urls": [],
+    "cost": 0,
+    "picked": [
+      "bubble",
+      "bubble-tail"
+    ],
+    "rejected": [],
+    "note": "Сергей выбрал эскиз скриптом: у pixflux силой 150 контур слился с фоном, снизу тень, хвост искажён."
+  },
+  {
+    "date": "2026-10-02",
+    "tool": "script",
+    "params": {
+      "generator": "Т13, ревью 1: кнопка сброса в цвет текста табло",
+      "reset": "колпачок warm[1] → red[3], блик warm[2] → red[4], тень и стрелка warm[0] → red[2]; кадры reset и reset-pressed, металлическое кольцо без изменений"
+    },
+    "seed": null,
+    "id": null,
+    "urls": [],
+    "cost": 0,
+    "picked": [
+      "reset",
+      "reset-pressed"
+    ],
+    "rejected": [
+      "плашка кнопки в red[3]: Сергей оставил её металлической"
+    ],
+    "note": "Сергей: заливка кнопки оранжевая вместо янтарной."
   }
 ]

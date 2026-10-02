@@ -1,7 +1,15 @@
 // @vitest-environment jsdom
+import { BitmapText, type Container } from 'pixi.js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { CABINET_BOTTOM_Z, RESET_MS, WELCOME_MS } from '#src/constants'
+import {
+  CABINET_BOTTOM_Z,
+  MARQUEE_SCREEN_FRAME,
+  MARQUEE_SCROLL_STEP_MS,
+  MARQUEE_TEXT_INSET,
+  RESET_MS,
+  WELCOME_MS,
+} from '#src/constants'
 import { MarqueeController } from '#src/controllers/box/marquee'
 import type { GameEvents } from '#src/events'
 import { FloorPile } from '#src/heap/floor-pile'
@@ -14,6 +22,7 @@ import { GameTicker } from '@pixi-demos/engine/game-ticker'
 const FRAME_MS = 1000 / 60
 
 type Board = {
+  view: Marquee
   store: ToyboxStore
   floorPile: FloorPile
   emitter: GameEmitter<GameEvents>
@@ -39,6 +48,7 @@ const createBoard = (): Board => {
   ticker.update(time)
 
   return {
+    view: marquee.children[0] as Marquee,
     store,
     floorPile,
     emitter,
@@ -167,4 +177,44 @@ describe('табло', () => {
 
     expect(board.litLamps()).toBe(2)
   })
+
+  it('ставит умещающийся текст неподвижно у левого края, а более широкий ведёт бегущей строкой по кругу', async () => {
+    board = createBoard()
+
+    const marquee = board.view
+    const text = findText(marquee)
+
+    if (!text) throw new Error('No marquee text')
+
+    marquee.setMessage('TOYS 3')
+    await board.wait(MARQUEE_SCROLL_STEP_MS * 4)
+
+    expect(text.x).toBe(MARQUEE_SCREEN_FRAME + MARQUEE_TEXT_INSET)
+
+    marquee.setMessage('A VERY LONG MESSAGE THAT DOES NOT FIT THE SCREEN')
+
+    const start = text.x
+
+    await board.wait(MARQUEE_SCROLL_STEP_MS * 10)
+
+    expect(text.x).toBeLessThan(start)
+    expect(start - text.x).toBeGreaterThanOrEqual(9)
+
+    // Строка целиком ушла за левый край и снова входит справа
+    await board.wait(MARQUEE_SCROLL_STEP_MS * (start + text.width))
+
+    expect(text.x).toBeGreaterThanOrEqual(start - 12)
+    expect(text.x).toBeLessThanOrEqual(start)
+  })
 })
+
+/** Текст табло среди потомков вида. */
+const findText = (root: Container): BitmapText | undefined => {
+  for (const child of root.children) {
+    const found = child instanceof BitmapText ? child : findText(child)
+
+    if (found) return found
+  }
+
+  return undefined
+}

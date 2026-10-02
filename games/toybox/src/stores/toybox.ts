@@ -32,9 +32,9 @@ export class ToyboxStore {
    */
   @observable isTourDone = readStoredFlag(TOUR_STORAGE_KEY, false)
 
-  /** Стрелки тура видны в покое, пока игрок не тронул управление. */
+  /** Стрелки тура видны, пока управление доступно и игрок его не тронул. */
   @computed get isTourShown(): boolean {
-    return this.isIdle && !this.isTourDone
+    return this.canDrop && !this.isTourDone
   }
 
   /** Отмечает тур пройденным при первом касании управления. */
@@ -63,14 +63,27 @@ export class ToyboxStore {
     this.joystick = vector
   }
 
-  /** Доступно ли опускание клешни: цикл идёт целиком, прервать его нечем. */
+  /** Доступно ли опускание клешни: цикл идёт целиком, прервать его нечем; открытый диалог сброса гасит управление. */
   @computed get canDrop(): boolean {
-    return this.isIdle
+    return this.isIdle && !this.isResetConfirmOpen
   }
 
   /** Доступен ли сброс кучи: новая игра начинается только из покоя. */
   @computed get canReset(): boolean {
     return this.isIdle
+  }
+
+  /** Открыт диалог подтверждения сброса. Пишет контроллер кнопки сброса. */
+  @observable isResetConfirmOpen = false
+
+  /** Открывает диалог подтверждения сброса, если сброс доступен. */
+  @action openResetConfirm(): void {
+    if (this.canReset) this.isResetConfirmOpen = true
+  }
+
+  /** Закрывает диалог подтверждения сброса. */
+  @action closeResetConfirm(): void {
+    this.isResetConfirmOpen = false
   }
 
   @action setPhase(phase: PhaseName) {

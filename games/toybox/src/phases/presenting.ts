@@ -1,6 +1,12 @@
 import { inject, injectable } from 'inversify'
 
-import { PRIZE_EJECT_HOLD_MS, PRIZE_OPEN_HOLD_MS, PRIZE_PAUSE_MS } from '#src/constants'
+import {
+  PRIZE_EJECT_HOLD_MS,
+  PRIZE_OPEN_HOLD_MS,
+  PRIZE_PAUSE_MS,
+  TOY_SPEECH_CHANCE,
+  TOY_SPEECH_READ_MS,
+} from '#src/constants'
 import type { PrizeOutputController } from '#src/controllers/box/prize-output'
 import type { GameEvents } from '#src/events'
 import type { FloorPile } from '#src/heap/floor-pile'
@@ -8,14 +14,15 @@ import type { Heap } from '#src/heap/heap'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import { PhaseName } from '#src/types'
+import { pickToySpeech } from '#src/utils/speech'
 import type { GameEmitter } from '@pixi-demos/core/events/game-emitter'
 import type { Phase } from '@pixi-demos/core/fsm/types'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 
 /**
- * Показывает следующий приз из очереди: открывает дверцу, и игрушка выпадает на пол перед автоматом. Возвращает себя,
- * пока очередь не пуста.
+ * Показывает следующий приз из очереди: открывает дверцу, часть призов произносит реплику, и игрушка выпадает на пол
+ * перед автоматом. Возвращает себя, пока очередь не пуста.
  */
 @injectable()
 export class PresentingPhase implements Phase<PhaseName> {
@@ -57,7 +64,15 @@ export class PresentingPhase implements Phase<PhaseName> {
       // Шторка открывается с толчком: стопка под окном рассыпается и освобождает место призу
       this.floorPile.nudge(Math.random)
       await this.output.open(signal)
-      await this.ticker.waitTicks(PRIZE_OPEN_HOLD_MS, signal)
+
+      // Часть призов произносит реплику: выдержку показа тогда задаёт реплика и время на её чтение
+      if (Math.random() < TOY_SPEECH_CHANCE) {
+        await this.output.speak(pickToySpeech(Math.random), signal)
+        await this.ticker.waitTicks(TOY_SPEECH_READ_MS, signal)
+      } else {
+        await this.ticker.waitTicks(PRIZE_OPEN_HOLD_MS, signal)
+      }
+
       // Игрушка выпадает из окна: дальше её ведёт модель пола, табло узнаёт о получении в этот же момент
       this.output.eject()
       this.floorPile.drop(prize, Math.random)

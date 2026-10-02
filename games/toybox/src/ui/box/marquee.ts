@@ -1,62 +1,61 @@
-import { Container, Matrix, Text } from 'pixi.js'
+import { BitmapText, Container, type DestroyOptions, Graphics, Matrix, type Ticker } from 'pixi.js'
 
-import { CABINET_FRAMES } from '#src/assets'
+import { CABINET_FRAMES, FONT_FAMILIES } from '#src/assets'
 import {
-  CABINET_FRONT_PLANE,
-  CELL_SIZE,
-  HUD_FONT_FAMILY,
   LAMP_FLICKER_SEED,
   LAMP_PRIZE_COLOR,
-  MARQUEE_TEXT_CENTER,
+  MARQUEE_SCREEN_FRAME,
+  MARQUEE_SCROLL_STEP_MS,
+  MARQUEE_TEXT_INSET,
+  MARQUEE_TEXT_ROWS,
+  PIXEL_FONT_SIZE,
 } from '#src/constants'
 import { Face } from '#src/ui/box/face'
 import { getCabinetFaces, getMarqueeLampCenters } from '#src/utils/machine-geometry'
-import { projectPlaneOffset, worldToScreen } from '#src/utils/projection'
-import { PALETTE } from '@pixi-demos/core/palette'
+import { getFaceMatrix, getFaceSize, worldToScreen } from '#src/utils/projection'
 import { createRandom } from '@pixi-demos/core/random'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 
 import { Lamp } from './lamp'
 
 /**
- * Крыша автомата с экраном для вывода текста и символов и рядом ламп
- * TODO сделать вывод текста бегущей строкой
+ * Крыша автомата с экраном для вывода текста и символов и рядом ламп. Текст стоит у левого края экрана, текст шире
+ * экрана идёт бегущей строкой справа налево.
  */
 export class Marquee extends Container {
-  private readonly message: Text
+  private readonly ticker: GameTicker
+  private readonly message: BitmapText
+  private readonly screenWidth: number
   private readonly lamps: Lamp[]
+  /** Время, накопленное до следующего шага бегущей строки. */
+  private pendingMs = 0
 
   constructor(ticker: GameTicker) {
     super()
 
+    this.ticker = ticker
+
     const faces = getCabinetFaces()
 
-    this.message = new Text({
-      text: 'WELCOME',
-      style: {
-        fontFamily: HUD_FONT_FAMILY,
-        fontSize: 32,
-        fontWeight: 'bold',
-        fill: PALETTE.white,
-        align: 'center',
-      },
-      anchor: 0.5,
+    // Текст лежит в плоскости экрана табло: координаты — пиксели кадра экрана, наклон задаёт матрица грани
+    const screenSize = getFaceSize(faces.marqueeScreen)
+    const { a, b, c, d, tx, ty } = getFaceMatrix(faces.marqueeScreen, screenSize)
+    const screen = new Container()
+
+    this.screenWidth = screenSize.width
+    this.message = new BitmapText({
+      text: '',
+      style: { fontFamily: FONT_FAMILIES.marquee, fontSize: PIXEL_FONT_SIZE },
     })
+    screen.setFromMatrix(new Matrix(a, b, c, d, tx, ty))
 
-    const horizontal = projectPlaneOffset(CABINET_FRONT_PLANE, CELL_SIZE, 0)
-    const vertical = projectPlaneOffset(CABINET_FRONT_PLANE, 0, CELL_SIZE)
-    const center = worldToScreen(MARQUEE_TEXT_CENTER)
+    // Бегущая строка видна только внутри рамы экрана
+    const textArea = new Graphics()
+      .rect(MARQUEE_SCREEN_FRAME, MARQUEE_SCREEN_FRAME, this.screenWidth - 2 * MARQUEE_SCREEN_FRAME, MARQUEE_TEXT_ROWS)
+      .fill(0xffffff)
 
-    this.message.setFromMatrix(
-      new Matrix(
-        horizontal.x / CELL_SIZE,
-        horizontal.y / CELL_SIZE,
-        vertical.x / CELL_SIZE,
-        vertical.y / CELL_SIZE,
-        center.x,
-        center.y
-      )
-    )
+    this.message.mask = textArea
+    screen.addChild(textArea, this.message)
 
     // Мерцание ламп берёт свой генератор: оно не тратит `Math.random` игры
     const random = createRandom(LAMP_FLICKER_SEED)
@@ -75,7 +74,7 @@ export class Marquee extends Container {
       new Face(CABINET_FRAMES.marqueeFront, faces.marqueeFront),
       new Face(CABINET_FRAMES.marqueeScreen, faces.marqueeScreen),
       ...this.lamps,
-      this.message
+      screen
     )
   }
 
@@ -87,8 +86,44 @@ export class Marquee extends Container {
     })
   }
 
-  /** Выводит текст на переднюю грань табло. */
+  override destroy(options?: DestroyOptions): void {
+    this.ticker.remove(this.scroll)
+    super.destroy(options)
+  }
+
+  /** Выводит текст: умещающийся — у левого края экрана табло, более широкий — бегущей строкой. */
   setMessage(message: string): void {
     this.message.text = message
+    this.ticker.remove(this.scroll)
+
+    // Ширина — без маски: границы с маской включают её прямоугольник
+    const { width } = this.message
+    const inset = MARQUEE_SCREEN_FRAME + MARQUEE_TEXT_INSET
+
+    if (width <= this.screenWidth - 2 * inset) {
+      this.message.position.set(inset, inset)
+
+      return
+    }
+
+    this.message.position.set(this.screenWidth - MARQUEE_SCREEN_FRAME, inset)
+    this.pendingMs = 0
+    this.ticker.add(this.scroll)
+  }
+
+  /** Сдвигает бегущую строку на пиксель арта за шаг; ушедшая за левый край строка снова входит справа. */
+  private scroll = (ticker: Ticker): void => {
+    this.pendingMs += ticker.deltaMS
+
+    const steps = Math.floor(this.pendingMs / MARQUEE_SCROLL_STEP_MS)
+
+    if (steps === 0) return
+
+    this.pendingMs -= steps * MARQUEE_SCROLL_STEP_MS
+    this.message.x -= steps
+
+    if (this.message.x + this.message.width < MARQUEE_SCREEN_FRAME) {
+      this.message.x = this.screenWidth - MARQUEE_SCREEN_FRAME
+    }
   }
 }

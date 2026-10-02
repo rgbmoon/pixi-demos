@@ -107,15 +107,21 @@ export type LightSpot = {
   readonly alpha?: number
 }
 
-/** Параметры шрифта из файла `font.json` папки `{bmfont}`. */
-export type FontSpec = {
-  /** Размер кегля в пикселях: столько пикселей занимает em шрифта. */
-  readonly size?: number
-  readonly chars?: string
-  /** Цвет глифов TTF; по умолчанию белый, под `tint`. */
+/** Цвета шрифта: общие в `font.json` или одного стиля из `styles`. */
+export type FontStyle = {
+  /** Цвет глифов: в нём растеризуется TTF и перекрашиваются PNG-глифы. Без него TTF белый, под `tint`, PNG — в своих цветах. */
   readonly color?: string
   /** Цвет контура-свечения толщиной 1 px вокруг глифов. */
   readonly outline?: string
+}
+
+/** Параметры шрифта из файла `font.json` папки `{bmfont}`. */
+export type FontSpec = FontStyle & {
+  /** Размер кегля в пикселях: столько пикселей занимает em шрифта. */
+  readonly size?: number
+  readonly chars?: string
+  /** Стили одного набора глифов: каждый собирается в свой BMFont `<папка>-<стиль>`, поля стиля заменяют общие. */
+  readonly styles?: Readonly<Record<string, FontStyle>>
 }
 
 /** Глиф шрифта: растр и метрики в пикселях относительно начала строки. */

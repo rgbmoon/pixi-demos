@@ -259,6 +259,52 @@
         "x": 0.5,
         "y": 0.5454545454545454
       }
+    },
+    "bubble.png": {
+      "frame": {
+        "x": 82,
+        "y": 2,
+        "w": 24,
+        "h": 24
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 24
+      },
+      "sourceSize": {
+        "w": 24,
+        "h": 24
+      },
+      "borders": {
+        "left": 8,
+        "top": 8,
+        "right": 8,
+        "bottom": 8
+      }
+    },
+    "bubble-tail.png": {
+      "frame": {
+        "x": 28,
+        "y": 75,
+        "w": 8,
+        "h": 8
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 8,
+        "h": 8
+      },
+      "sourceSize": {
+        "w": 8,
+        "h": 8
+      }
     }
   },
   "animations": {
@@ -277,7 +323,7 @@
     "image": "hud.png",
     "format": "RGBA8888",
     "size": {
-      "w": 82,
+      "w": 108,
       "h": 88
     },
     "scale": 1,

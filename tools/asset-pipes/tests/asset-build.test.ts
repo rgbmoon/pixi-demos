@@ -74,4 +74,34 @@ describe('сборка ассетов', () => {
     expect(getVisibleColors(page).every((color) => paletteColors.has(color))).toBe(true)
     expect(await readFile(path.join(publicDir, 'card.jpg'), 'utf8')).toBe('card')
   })
+
+  it('собирает из одной папки шрифт на каждый стиль: PNG-глифы в цвете стиля, контур только у стиля с outline', async () => {
+    root = await mkdtemp(path.join(tmpdir(), 'asset-build-'))
+
+    const fontDir = path.join(root, 'art/fonts/pixel{bmfont}')
+    const outputDir = path.join(root, 'public/assets')
+
+    await mkdir(fontDir, { recursive: true })
+    await writeFile(path.join(fontDir, 'u0041.png'), await encodePng(fromRows(['#', '#'], { '#': '#ffffff' })))
+    await writeFile(
+      path.join(fontDir, 'font.json'),
+      JSON.stringify({ styles: { glow: { color: '#f1219f', outline: '#41107a' }, plain: { color: '#2b2a44' } } })
+    )
+
+    await new AssetBuild({
+      entry: path.join(root, 'art'),
+      output: outputDir,
+      cacheDir: path.join(root, 'cache'),
+      palette: PALETTE,
+      outlineColor: PALETTE.ramps.neon[2],
+      logLevel: 'error',
+    }).run()
+
+    const readPage = async (face: string): Promise<string[]> =>
+      getVisibleColors(await decodePng(await readFile(path.join(outputDir, `fonts/${face}.png`))))
+
+    expect(new Set(await readPage('pixel-glow'))).toEqual(new Set(['241,33,159,255', '65,16,122,255']))
+    expect(new Set(await readPage('pixel-plain'))).toEqual(new Set(['43,42,68,255']))
+    expect(await readFile(path.join(outputDir, 'fonts/pixel-plain.fnt'), 'utf8')).toContain('face="pixel-plain"')
+  })
 })

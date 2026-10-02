@@ -48,6 +48,11 @@ export abstract class ToyPile {
     return this.bodies.values()
   }
 
+  /** Число игрушек в куче. */
+  get toyCount(): number {
+    return this.bodies.size
+  }
+
   /** Куча в покое: все тела уснули. */
   get settled(): boolean {
     return !this.world.hasAwake()

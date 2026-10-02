@@ -15,7 +15,7 @@ import type { RoomController } from '#src/controllers/room/room'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import { Cabinet } from '#src/ui/box/cabinet'
 import { getMachineLayout } from '#src/utils/machine-geometry'
-import { worldToScreen } from '#src/utils/projection'
+import { snapToArtPixel, worldToScreen } from '#src/utils/projection'
 
 /** Сцена: корпус автомата вписывается в канвас целым масштабом и центрируется, фон закрывает весь канвас. */
 @injectable()
@@ -46,8 +46,9 @@ export class GameScene extends Container {
       [drop, DROP_BUTTON_CENTER],
     ] as const
 
+    // Позиция округляется до пикселя арта: центр органа управления на панели может прийтись на долю пикселя
     for (const [controller, point] of placements) {
-      const { x, y } = worldToScreen(point)
+      const { x, y } = snapToArtPixel(worldToScreen(point))
 
       controller.position.set(x, y)
     }

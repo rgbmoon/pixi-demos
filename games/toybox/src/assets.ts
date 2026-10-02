@@ -1,4 +1,4 @@
-import { Assets, type Spritesheet } from 'pixi.js'
+import { Assets, BitmapFont, type Spritesheet } from 'pixi.js'
 
 import type { ButtonFrames, LampColor, PrizeLight } from './types'
 
@@ -113,7 +113,8 @@ export const CLAW_SEQUENCES = {
 
 /**
  * Кадры атласа органов управления, нарисованные в экранной проекции: наклон панели у кнопки Drop и основания
- * джойстика заложен в рисунок. Якорь Drop и основания — центр основания, шара и кнопки сброса — их центр.
+ * джойстика заложен в рисунок. Якорь Drop и основания — центр основания, шара и кнопки сброса — их центр. Облако
+ * диалога — кадр 9-slice, хвост облака смотрит остриём вниз-влево.
  */
 export const HUD_FRAMES = {
   drop: { normal: 'drop.png', pressed: 'drop-pressed.png' },
@@ -121,6 +122,8 @@ export const HUD_FRAMES = {
   joystickBase: 'joystick-base.png',
   joystickBall: 'joystick-ball.png',
   joystickStick: 'joystick-stick.png',
+  bubble: 'bubble.png',
+  bubbleTail: 'bubble-tail.png',
 } as const satisfies Record<string, string | ButtonFrames>
 
 /**
@@ -155,12 +158,29 @@ export const ROOM_FRAMES = {
 } as const
 
 /**
- * Грузит атласы в кэш Assets. Каждому атласу после загрузки ставится выборка ближайшего пикселя (`nearest`):
- * пиксель-арт рисуется целым масштабом без сглаживания. `TextureSource.defaultOptions` не меняется, потому что
- * его использует и слот.
+ * Семейства пиксельного шрифта для `BitmapText`: оба собраны из одного набора глифов 5×7. Табло — оранжевый текст,
+ * облако диалога — тёмный.
+ */
+export const FONT_FAMILIES = {
+  marquee: 'pixel-marquee',
+  dialog: 'pixel-dialog',
+} as const
+
+/**
+ * Грузит атласы и шрифты в кэш Assets. Каждому атласу и странице шрифта после загрузки ставится выборка ближайшего
+ * пикселя (`nearest`): пиксель-арт рисуется целым масштабом без сглаживания. `TextureSource.defaultOptions` не
+ * меняется, потому что его использует и слот.
  */
 export async function preloadGameAssets(): Promise<void> {
-  const sheets = await Assets.load<Spritesheet>(Object.entries(ATLASES).map(([alias, src]) => ({ alias, src })))
+  const assets = await Assets.load<Spritesheet | BitmapFont>([
+    ...Object.entries(ATLASES).map(([alias, src]) => ({ alias, src })),
+    ...Object.values(FONT_FAMILIES).map((family) => ({ alias: family, src: `${ASSETS_DIR}/fonts/${family}.fnt` })),
+  ])
 
-  for (const sheet of Object.values(sheets)) sheet.textureSource.scaleMode = 'nearest'
+  for (const asset of Object.values(assets)) {
+    const sources =
+      asset instanceof BitmapFont ? asset.pages.map(({ texture }) => texture.source) : [asset.textureSource]
+
+    for (const source of sources) source.scaleMode = 'nearest'
+  }
 }

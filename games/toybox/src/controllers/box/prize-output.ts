@@ -31,6 +31,11 @@ export class PrizeOutputController extends LiveContainer {
     await this.view.open(AbortSignal.any([signal, this.life.signal]))
   }
 
+  /** Выводит реплику приза до конца или отмены. */
+  async speak(speech: string, signal: AbortSignal): Promise<void> {
+    await this.view.speak(speech, AbortSignal.any([signal, this.life.signal]))
+  }
+
   /** Убирает приз из окна: игрушка выпала на пол, шторка остаётся открытой. */
   eject(): void {
     this.view.eject()

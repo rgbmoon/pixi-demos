@@ -1,0 +1,44 @@
+[
+  {
+    "date": "2026-10-02",
+    "tool": "create_font",
+    "params": {
+      "description": "dim neon LED marquee font, clean square pixels, readable capitals",
+      "weight": "Bold",
+      "glyph_px": 8,
+      "seed": 1301
+    },
+    "seed": 1301,
+    "id": "56742236-2dee-4bbd-ada7-9b0fd16050ab",
+    "urls": [
+      "https://api.pixellab.ai/mcp/font/56742236-2dee-4bbd-ada7-9b0fd16050ab/download",
+      "https://api.pixellab.ai/mcp/font/56742236-2dee-4bbd-ada7-9b0fd16050ab/download_ttf"
+    ],
+    "cost": 25,
+    "picked": [],
+    "rejected": [
+      "font"
+    ],
+    "note": "Атлас 64×80, клетка 8×8, 80 глифов: A–Z, a–z, пунктуация, 0–9. TTF: unitsPerEm 1024, ascender 768; растр пайпом при size 8 совпадает с атласом, заглавные 5 px. Нет # и &. Жирное начертание заливает просветы: a, e, o, s, 0, 8 — сплошные пятна, S читается как B, W как H."
+  },
+  {
+    "date": "2026-10-02",
+    "tool": "script",
+    "params": {
+      "generator": "Т13: шрифт 5×7 скриптом, PNG-глифы белым в pixel{bmfont}/uXXXX.png",
+      "cell": "высота 9 строк: 7 над базовой линией, 2 под ней (g j p q y , ;); ширина по рисунку, у цифр и пробела — 5 и 3 px",
+      "chars": "A–Z, a–z, 0–9, пробел, . , ! ? : ; - + / ' \" ( ) % # & $ * @",
+      "icons": "7×7 на базовой линии: ♥ U+2665, ♡ U+2661, ☠ U+2620, ★ U+2605, ✕ U+2715, ✓ U+2713, ← ↑ → ↓ U+2190–U+2193",
+      "styles": "font.json: marquee — red[3] без контура, dialog — metal[0] без контура (ревью 1; до ревью у marquee был neon[3] с контуром neon[1])"
+    },
+    "seed": null,
+    "id": null,
+    "urls": [],
+    "cost": 0,
+    "picked": [
+      "pixel"
+    ],
+    "rejected": [],
+    "note": "Сергей выбрал шрифт скриптом вместо create_font. Состав глифов и иконок дополняется: новый символ — PNG uXXXX.png (код символа) высотой 9 строк в папке pixel{bmfont}, иконка рисуется в строках 0–6. Оба стиля получают его при следующем pnpm assets."
+  }
+]

@@ -4,7 +4,7 @@ import path from 'node:path'
 import { type AssetPipe, BuildReporter, createNewAssetAt, stripTags } from '@assetpack/core'
 
 import { DEFAULT_FONT_CHARS, FONT_SPEC_FILE } from '#src/constants'
-import type { BitmapFontData, BitmapGlyph } from '#src/types'
+import type { BitmapFontData, BitmapGlyph, FontStyle } from '#src/types'
 import { getBaseName } from '#src/utils/asset'
 import {
   addGlyphOutline,
@@ -13,6 +13,7 @@ import {
   packGlyphs,
   parseFontSpec,
   rasterizeFont,
+  recolorImage,
 } from '#src/utils/bmfont'
 import { decodePng, encodePng } from '#src/utils/image'
 import { readJson } from '#src/utils/json'
@@ -22,7 +23,8 @@ const ICON_FILE = /^u([0-9a-f]{4,5})\.png$/i
 
 /**
  * Собирает BMFont (`.fnt` и страницу `.png`) из папки `{bmfont}`: символы TTF, растеризованного без сглаживания,
- * и PNG-иконки с кодом символа в имени (`u2665.png` → ♥). Параметры — в `font.json` папки.
+ * и PNG-глифы с кодом символа в имени (`u2665.png` → ♥). Параметры — в `font.json` папки; каждый стиль из `styles`
+ * собирается в отдельный BMFont из тех же глифов.
  */
 export const bitmapFontPipe = (): AssetPipe => ({
   name: 'bitmap-font',
@@ -54,42 +56,56 @@ export const bitmapFontPipe = (): AssetPipe => ({
 
     if (ttf && !spec.size) throw new Error(`${FONT_SPEC_FILE} of font "${face}" needs size`)
 
-    const rasterized =
-      ttf && spec.size
-        ? rasterizeFont(
-            new Uint8Array(ttf).buffer,
-            face,
-            spec.size,
-            spec.chars ?? DEFAULT_FONT_CHARS,
-            parseHex(spec.color ?? '#ffffff')
-          )
-        : undefined
+    const styles: [string, FontStyle][] = spec.styles
+      ? Object.entries(spec.styles).map(([name, style]) => [
+          `${face}-${name}`,
+          { color: style.color ?? spec.color, outline: style.outline ?? spec.outline },
+        ])
+      : [[face, spec]]
 
-    if (rasterized && rasterized.missing.length > 0) {
-      BuildReporter.warn(`[bitmap-font] ${face}: no glyphs for ${rasterized.missing.join(' ')}`)
-    }
+    return (
+      await Promise.all(
+        styles.map(async ([styleFace, style]) => {
+          const color = style.color === undefined ? undefined : parseHex(style.color)
+          const rasterized =
+            ttf && spec.size
+              ? rasterizeFont(
+                  new Uint8Array(ttf).buffer,
+                  styleFace,
+                  spec.size,
+                  spec.chars ?? DEFAULT_FONT_CHARS,
+                  color ?? parseHex('#ffffff')
+                )
+              : undefined
 
-    // У шрифта из одних иконок строку задаёт самая высокая иконка
-    const iconHeight = Math.max(0, ...icons.map(({ image }) => image.height))
-    const font: BitmapFontData = rasterized?.font ?? {
-      face,
-      size: iconHeight,
-      lineHeight: iconHeight,
-      base: iconHeight,
-      glyphs: [],
-    }
-    const outline = spec.outline && parseHex(spec.outline)
-    const glyphs: BitmapGlyph[] = [
-      ...font.glyphs,
-      ...icons.map(({ id, image }) => createIconGlyph(id, image, font.base)),
-    ].map((glyph) => (outline ? addGlyphOutline(glyph, outline) : glyph))
-    const page = packGlyphs(glyphs)
-    const fnt = createNewAssetAt(folder, `${face}.fnt`)
-    const png = createNewAssetAt(folder, `${face}.png`)
+          if (rasterized && rasterized.missing.length > 0) {
+            BuildReporter.warn(`[bitmap-font] ${styleFace}: no glyphs for ${rasterized.missing.join(' ')}`)
+          }
 
-    fnt.buffer = Buffer.from(formatBmfont({ ...font, glyphs }, page, `${face}.png`))
-    png.buffer = await encodePng(page.image)
+          // У шрифта из одних PNG-глифов строку задаёт самый высокий глиф
+          const iconHeight = Math.max(0, ...icons.map(({ image }) => image.height))
+          const font: BitmapFontData = rasterized?.font ?? {
+            face: styleFace,
+            size: iconHeight,
+            lineHeight: iconHeight,
+            base: iconHeight,
+            glyphs: [],
+          }
+          const outline = style.outline && parseHex(style.outline)
+          const glyphs: BitmapGlyph[] = [
+            ...font.glyphs,
+            ...icons.map(({ id, image }) => createIconGlyph(id, color ? recolorImage(image, color) : image, font.base)),
+          ].map((glyph) => (outline ? addGlyphOutline(glyph, outline) : glyph))
+          const page = packGlyphs(glyphs)
+          const fnt = createNewAssetAt(folder, `${styleFace}.fnt`)
+          const png = createNewAssetAt(folder, `${styleFace}.png`)
 
-    return [fnt, png]
+          fnt.buffer = Buffer.from(formatBmfont({ ...font, glyphs }, page, `${styleFace}.png`))
+          png.buffer = await encodePng(page.image)
+
+          return [fnt, png]
+        })
+      )
+    ).flat()
   },
 })

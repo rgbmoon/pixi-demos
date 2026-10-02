@@ -1,3 +1,6 @@
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
+
 import { configure } from 'mobx'
 import { beforeAll, vi } from 'vitest'
 
@@ -20,6 +23,20 @@ if (typeof window !== 'undefined') {
     removeListener: () => {},
     dispatchEvent: () => false,
   })) as typeof window.matchMedia
+
+  // Текст сцены выводят пиксельные шрифты игры. Без них BitmapText строит шрифт на канвасе, которого в jsdom нет;
+  // метрики берутся из собранных BMFont, страница шрифта тесту не нужна
+  const { BitmapFont, Cache, Texture, bitmapFontTextParser } = await import('pixi.js')
+  const { FONT_FAMILIES } = await import('#src/assets')
+
+  for (const family of Object.values(FONT_FAMILIES)) {
+    const fnt = await readFile(
+      path.join(import.meta.dirname, `../../../../web/public/games/toybox/assets/fonts/${family}.fnt`)
+    )
+    const data = bitmapFontTextParser.parse(fnt.toString('utf8'))
+
+    Cache.set(`${family}-bitmap`, new BitmapFont({ data, textures: [Texture.WHITE] }))
+  }
 }
 
 beforeAll(() => {

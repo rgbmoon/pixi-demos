@@ -227,6 +227,18 @@ export type ButtonOptions = {
   onTap: () => void
 }
 
+/** Действия кнопок диалога подтверждения сброса. */
+export type ResetConfirmOptions = {
+  onConfirm: () => void
+  onCancel: () => void
+}
+
+/** Куда смотрит острие хвоста облака диалога относительно облака: вверх или вниз, вправо или влево. */
+export type BubbleTail = {
+  readonly up: boolean
+  readonly right: boolean
+}
+
 /** Кадры кнопки атласа органов управления: обычная и нажатая. */
 export type ButtonFrames = {
   readonly normal: string

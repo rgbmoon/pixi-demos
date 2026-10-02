@@ -135,9 +135,15 @@ export const CABINET_FRONT_PLANE: WorldPlane = {
   vertical: { x: 0, y: 0, z: -1 },
 }
 
+/** Центр джойстика и кнопки Drop от бокового края панели, в ячейках: основание Ø24 отступает от края на 13 px арта. */
+export const CONTROL_SIDE_OFFSET = (12 + 13) / ART_CELL
 /** Центры встроенных органов управления в координатах мира. */
-export const JOYSTICK_CENTER: WorldPoint = { x: CABINET_FRONT_X / 2, y: 2, z: CABINET_TOP_Z / 2 }
-export const DROP_BUTTON_CENTER: WorldPoint = { x: CABINET_FRONT_X / 2, y: 6, z: CABINET_TOP_Z / 2 }
+export const JOYSTICK_CENTER: WorldPoint = { x: CABINET_FRONT_X / 2, y: CONTROL_SIDE_OFFSET, z: CABINET_TOP_Z / 2 }
+export const DROP_BUTTON_CENTER: WorldPoint = {
+  x: CABINET_FRONT_X / 2,
+  y: GRID_SIZE - CONTROL_SIDE_OFFSET,
+  z: CABINET_TOP_Z / 2,
+}
 export const PRIZE_HATCH_CENTER: WorldPoint = {
   x: CABINET_FRONT_X,
   y: GRID_SIZE / 2,
@@ -147,12 +153,6 @@ export const RESET_BUTTON_CENTER: WorldPoint = {
   x: 0,
   y: RESET_PLATE_WIDTH / 2,
   z: (CUBE_HEIGHT + MARQUEE_TOP_Z) / 2,
-}
-/** Центр строки текста: середина экрана табло. */
-export const MARQUEE_TEXT_CENTER: WorldPoint = {
-  x: 0,
-  y: (GRID_SIZE + RESET_PLATE_WIDTH) / 2,
-  z: MARQUEE_TOP_Z - (MARQUEE_SCREEN_TOP + MARQUEE_SCREEN_HEIGHT / 2) / ART_CELL,
 }
 
 // Клешня
@@ -367,8 +367,72 @@ export const LAMP_HALO_ALPHA: Readonly<Record<LampLight, number>> = {
 export const LAMP_PRIZE_COLOR: LampColor = LampColor.yellow
 /** Сид генератора мерцания ламп: мерцание не тратит `Math.random` игры. */
 export const LAMP_FLICKER_SEED = 11
-/** Шрифт текстов сцены: своих ассетов у игры нет, берётся системный гротеск. */
-export const HUD_FONT_FAMILY = 'Arial, Helvetica, sans-serif'
+/** Кегль пиксельных шрифтов: высота клетки глифа в px арта, при нём глиф выводится один к одному. */
+export const PIXEL_FONT_SIZE = 9
+/** Высота заглавных пиксельного шрифта, px арта: выносные строчных уходят ниже, в поле облака. */
+export const PIXEL_FONT_CAP_HEIGHT = 7
+/** Рама экрана табло, px арта: текст выводится внутри неё. */
+export const MARQUEE_SCREEN_FRAME = 1
+/** Строки экрана табло внутри рамы над фаской. */
+export const MARQUEE_TEXT_ROWS = 11
+/** Отступ текста табло от рамы, px арта: строка заглавных стоит посередине рамы, слева отступ тот же. */
+export const MARQUEE_TEXT_INSET = (MARQUEE_TEXT_ROWS - PIXEL_FONT_CAP_HEIGHT) / 2
+/** Бегущая строка табло: сдвиг на пиксель арта за шаг. */
+export const MARQUEE_SCROLL_STEP_MS = 50
 /** Время временных сообщений на табло. */
 export const WELCOME_MS = 1500
 export const RESET_MS = 1000
+
+// Облако диалога
+/** Поле между краем облака и текстом, px арта. */
+export const BUBBLE_PADDING = 4
+/** Наибольшая ширина строки текста в облаке, px арта: длинная реплика переносится по словам. */
+export const BUBBLE_TEXT_WIDTH = 64
+/** Шаг строк текста в облаке, px арта: клетка глифа и просвет в строку. */
+export const BUBBLE_LINE_HEIGHT = 10
+/** Сторона облака в начале роста, px арта: меньше двух бордеров 9-slice кадр не сжимается. */
+export const BUBBLE_MIN_SIZE = 16
+/** Рост облака при появлении: число шагов и длительность шага. */
+export const BUBBLE_GROW_STEPS = 4
+export const BUBBLE_GROW_STEP_MS = 30
+/** Отступ хвоста от бокового края облака, px арта: хвост не заходит на скругление угла. */
+export const BUBBLE_TAIL_INSET = 6
+
+// Реплики игрушек
+/** Доля призов, которые говорят в окне выдачи. */
+export const TOY_SPEECH_CHANCE = 1 / 3
+/** Реплики игрушек. Пока игрушек нет, список общий для всех форм. */
+export const TOY_SPEECH_LINES = ['Help', 'Test', "It's cold out here.", 'Thank you', 'I love you', 'Are you the one?']
+/** Значки реплики из случайных символов, как ругательство в комиксах; за ними идут восклицательные знаки. */
+export const TOY_SYMBOL_CHARS = '#$&*@%'
+export const TOY_SYMBOL_MIN_LENGTH = 4
+export const TOY_SYMBOL_MAX_LENGTH = 6
+export const TOY_SYMBOL_MAX_BANGS = 3
+/** Вывод реплики: мс на символ. */
+export const TOY_SPEECH_CHAR_MS = 40
+/** Выдержка на чтение после вывода реплики. */
+export const TOY_SPEECH_READ_MS = 1500
+/** Острие хвоста облака реплики: на 4 px арта ниже середины верхнего края проёма окна выдачи. */
+export const TOY_SPEECH_TIP: WorldPoint = {
+  ...PRIZE_HATCH_CENTER,
+  z: PRIZE_HATCH_CENTER.z + PRIZE_HATCH_SIZE / 2 - 4 / ART_CELL,
+}
+
+// Подтверждение сброса
+/** Вопрос диалога сброса. */
+export const RESET_CONFIRM_TEXT = 'Reset?'
+/** Иконки кнопок диалога из пиксельного шрифта: галочка и крестик. */
+export const RESET_CONFIRM_ICON = '\u2713'
+export const RESET_CANCEL_ICON = '\u2715'
+/** Имена кнопок диалога в слое доступности. */
+export const RESET_CONFIRM_LABEL = 'Confirm reset'
+export const RESET_CANCEL_LABEL = 'Cancel reset'
+/** Клавиши кнопок диалога: подтверждение и отмена. */
+export const KEYBOARD_CONFIRM_CODES = ['Enter'] as const
+export const KEYBOARD_CANCEL_CODES = ['Escape'] as const
+/** Промежуток между вопросом и кнопками и между кнопками, px арта. */
+export const RESET_CONFIRM_GAP = 6
+/** Острие хвоста диалога от центра кнопки сброса, px арта: у её нижнего левого края. */
+export const RESET_CONFIRM_TAIL: ScreenPoint = { x: -6, y: 7 }
+/** На сколько px арта нижний край стрелки над кнопкой сброса поднят над её центром. */
+export const RESET_HINT_LIFT = 9

@@ -106,6 +106,15 @@ describe('цикл клешни', () => {
     })
   })
 
+  it('говорящий приз произносит реплику в открытом окне и только потом выпадает на пол', async () => {
+    // Бросок реплики ниже её доли: приз говорит, и первая строка списка выпадает на тот же бросок
+    cycle = await startCycle({ bodies: SCENE, random: () => 0.1 })
+    cycle.rolls.push(getGrabRolls(cycle).hit, SLIP_MISS, FUMBLE_MISS)
+
+    expect(await cycle.playRound()).toEqual(DELIVERY)
+    expect(cycle.presentation).toEqual(['show', 'open', 'speak:Help', 'eject', 'prize:taken', 'close', 'hide'])
+  })
+
   it('открывает шторку с толчком: стопка игрушек под окном выдачи рассыпается', async () => {
     const base = paint(stand('cube8', 0, PRIZE_NICHE_FLOOR.y, CABINET_BOTTOM_Z), STACK_COLOR)
     const middle = paint(stand('cube8', 0, PRIZE_NICHE_FLOOR.y, topOf(base)), STACK_COLOR)
