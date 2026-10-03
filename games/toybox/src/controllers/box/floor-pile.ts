@@ -1,6 +1,7 @@
 import { inject, injectable } from 'inversify'
 import type { DestroyOptions, Ticker } from 'pixi.js'
 
+import { TOY_TWITCH_SEED } from '#src/constants'
 import type { FloorPile } from '#src/heap/floor-pile'
 import type { ToyBody } from '#src/heap/types'
 import { TOYBOX_TOKENS } from '#src/tokens'
@@ -11,13 +12,14 @@ import { ToyShapes } from '#src/ui/box/toy-shapes'
 import { getToyDepthItem } from '#src/utils/depth'
 import { worldToScreen } from '#src/utils/projection'
 import { getAngleStep } from '#src/utils/shapes'
+import { createRandom } from '@pixi-demos/core/random'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 import { LiveContainer } from '@pixi-demos/engine/live-container'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 
 /**
  * Выигранные игрушки на полу перед автоматом. Каждый кадр контроллер продвигает модель пола, переносит позы игрушек в
- * View-компоненты и сортирует их слой.
+ * View-компоненты и сортирует их слой. Игрушки на полу время от времени дёргаются.
  */
 @injectable()
 export class FloorPileController extends LiveContainer {
@@ -27,6 +29,8 @@ export class FloorPileController extends LiveContainer {
   private readonly shapes = new ToyShapes()
   private readonly toys = new Map<ToyId, Toy>()
   private readonly seen = new Set<ToyId>()
+  /** Генератор пауз между тиками: тики не тратят `Math.random` игры. */
+  private readonly random = createRandom(TOY_TWITCH_SEED)
 
   constructor(
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
@@ -78,8 +82,9 @@ export class FloorPileController extends LiveContainer {
   }
 
   private addToy(body: Readonly<ToyBody>): Toy {
-    const toy = new Toy(this.shapes, body.shape, body.variant, body.color)
+    const toy = new Toy(this.ticker, this.shapes, body.shape, body.variant, body.color)
 
+    toy.startTwitching(this.random)
     this.toys.set(body.id, toy)
 
     return toy

@@ -245,10 +245,14 @@ export type ButtonFrames = {
   readonly pressed: string
 }
 
-/** Последовательности атласа игрушек одного положения формы: кадры крена и обводка подсветки тех же поз. */
+/** Последовательности атласа игрушек одного положения формы: кадры крена, обводка подсветки тех же поз и состояния. */
 export type ToySequences = {
   readonly body: string
   readonly outline: string
+  /** Сжатие клешнёй без крена: слабое и сильное. */
+  readonly squeeze?: string
+  /** Поза тика на полу по кадрам крена. */
+  readonly twitch?: string
 }
 
 export type JoystickOptions = {

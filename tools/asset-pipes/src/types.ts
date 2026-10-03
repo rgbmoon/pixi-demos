@@ -183,3 +183,85 @@ export type AssetBuildOptions = {
   /** Каталог превью атласов и тайлов для ревью; без него превью не пишутся. */
   readonly previewDir?: string
 }
+
+/** Вектор модели в пикселях арта: `a` — вправо, `b` — вверх, `d` — вглубь, от игрока. */
+export type ModelVector = readonly [a: number, b: number, d: number]
+
+/** Точка модели в плоскости экрана `(a, b)`. */
+export type ModelPlanePoint = readonly [a: number, b: number]
+
+/** Цвет модели: рампа палитры и ступень. */
+export type ModelColor = readonly [ramp: string, step: number]
+
+/** Часть модели: эллипсоид из одной рампы палитры. */
+export type ModelPart = {
+  readonly name: string
+  /** Группа частей, которую поза сдвигает целиком, например голова с ушами и мордой. */
+  readonly group?: string
+  readonly center: ModelVector
+  readonly radii: ModelVector
+  readonly ramp: string
+  /** Ступень освещённой части; на свету — на ступень светлее, в тени — на ступень темнее. */
+  readonly base: number
+  /** Ступень контура силуэта. */
+  readonly outline: number
+  /** Ступень шва с частью той же рампы, лежащей глубже; без поля шов не рисуется. */
+  readonly seam?: number
+}
+
+/**
+ * Сдвиг группы частей в позе, в плоскости `(a, b)`: масштаб и поворот по часовой стрелке вокруг опорной точки, затем
+ * смещение. Глубину поза не меняет.
+ */
+export type ModelTransform = {
+  readonly pivot?: ModelPlanePoint
+  readonly scale?: ModelPlanePoint
+  /** Поворот по часовой стрелке, в градусах. */
+  readonly angle?: number
+  readonly offset?: ModelPlanePoint
+}
+
+/** Поза модели: сдвиги групп по имени; группа без сдвига остаётся в покое. */
+export type ModelPose = Readonly<Record<string, ModelTransform>>
+
+/** Кадр рендера модели: поза и крен по часовой стрелке в градусах. */
+export type ModelFrame = {
+  readonly pose: ModelPose
+  readonly roll: number
+}
+
+/** Попадание луча в часть: точка и нормаль в системе части в покое, по ним модель рисует детали поверхности. */
+export type ModelHit = {
+  readonly part: ModelPart
+  readonly point: ModelVector
+  readonly normal: ModelVector
+}
+
+/** Модель игрушки для рендера лучом: эллипсоиды и детали поверхности. */
+export type ToyModel = {
+  readonly parts: readonly ModelPart[]
+  /** Шов рисуется, когда соседняя часть той же рампы глубже на это число пикселей. */
+  readonly seamDepth: number
+  /** Цвет детали поверхности в точке попадания; без детали — `undefined`, и цвет задаёт свет. */
+  readonly decal?: (hit: ModelHit) => ModelColor | undefined
+}
+
+/** Свет рендера модели: направление на источник в системе экрана и пороги смены ступени. */
+export type ModelLight = {
+  /** Единичный вектор: x — вправо, y — вверх, d — вглубь. */
+  readonly direction: ModelVector
+  /** Выше порога косинуса — ступень светлее. */
+  readonly lit: number
+  /** Ниже порога косинуса — ступень темнее. */
+  readonly shade: number
+}
+
+/** Проекция, свет и кадр рендера модели. */
+export type ModelRenderOptions = {
+  readonly ramps: Palette['ramps']
+  /** Сторона квадратного кадра; опорная точка модели — центр кадра. */
+  readonly frame: number
+  /** Сдвиг точки на экране на пиксель глубины: x — вправо, y — вверх. */
+  readonly depthShift: ModelPlanePoint
+  readonly light: ModelLight
+}

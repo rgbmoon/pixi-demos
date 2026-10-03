@@ -156,11 +156,12 @@ export const HATCH_SEQUENCES = {
 } as const
 
 /**
- * Последовательности атласа игрушек по форме и её положению: кадры крена с шагом `TOY_ANGLE_STEP` по часовой стрелке
- * и их обводка подсветки. Якорь кадра — центр сечения. Форма без последовательностей рисуется силуэтом.
+ * Последовательности атласа игрушек по форме и её положению: кадры крена с шагом `TOY_ANGLE_STEP` по часовой стрелке,
+ * их обводка подсветки, сжатие клешнёй и тик. Якорь кадра — центр сечения. Форма без последовательностей рисуется
+ * силуэтом.
  */
 export const TOY_SEQUENCES: Partial<Record<ShapeKey, readonly ToySequences[]>> = {
-  cube8: [{ body: 'bear', outline: 'bear-outline' }],
+  cube8: [{ body: 'bear', outline: 'bear-outline', squeeze: 'bear-squeeze', twitch: 'bear-twitch' }],
 }
 
 /** Кадры атласа фона: ключи текстур в кэше Assets. */

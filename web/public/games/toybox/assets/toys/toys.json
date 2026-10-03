@@ -1,8 +1,1784 @@
 {
   "frames": {
-    "bear-outline-9.png": {
+    "bear-twitch-9.png": {
       "frame": {
         "x": 2,
+        "y": 2,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-8.png": {
+      "frame": {
+        "x": 56,
+        "y": 2,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-71.png": {
+      "frame": {
+        "x": 2,
+        "y": 56,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-70.png": {
+      "frame": {
+        "x": 56,
+        "y": 56,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-7.png": {
+      "frame": {
+        "x": 110,
+        "y": 2,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-69.png": {
+      "frame": {
+        "x": 110,
+        "y": 56,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-68.png": {
+      "frame": {
+        "x": 2,
+        "y": 110,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-67.png": {
+      "frame": {
+        "x": 56,
+        "y": 110,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-66.png": {
+      "frame": {
+        "x": 110,
+        "y": 110,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-65.png": {
+      "frame": {
+        "x": 164,
+        "y": 2,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-64.png": {
+      "frame": {
+        "x": 164,
+        "y": 56,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-63.png": {
+      "frame": {
+        "x": 164,
+        "y": 110,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-62.png": {
+      "frame": {
+        "x": 2,
+        "y": 164,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-61.png": {
+      "frame": {
+        "x": 56,
+        "y": 164,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-60.png": {
+      "frame": {
+        "x": 110,
+        "y": 164,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-6.png": {
+      "frame": {
+        "x": 164,
+        "y": 164,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-59.png": {
+      "frame": {
+        "x": 218,
+        "y": 2,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-58.png": {
+      "frame": {
+        "x": 218,
+        "y": 56,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-57.png": {
+      "frame": {
+        "x": 218,
+        "y": 110,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-56.png": {
+      "frame": {
+        "x": 218,
+        "y": 164,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-55.png": {
+      "frame": {
+        "x": 2,
+        "y": 218,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-54.png": {
+      "frame": {
+        "x": 56,
+        "y": 218,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-53.png": {
+      "frame": {
+        "x": 110,
+        "y": 218,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-52.png": {
+      "frame": {
+        "x": 164,
+        "y": 218,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-51.png": {
+      "frame": {
+        "x": 218,
+        "y": 218,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-50.png": {
+      "frame": {
+        "x": 272,
+        "y": 2,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-5.png": {
+      "frame": {
+        "x": 272,
+        "y": 56,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-49.png": {
+      "frame": {
+        "x": 272,
+        "y": 110,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-48.png": {
+      "frame": {
+        "x": 272,
+        "y": 164,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-47.png": {
+      "frame": {
+        "x": 272,
+        "y": 218,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-46.png": {
+      "frame": {
+        "x": 2,
+        "y": 272,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-45.png": {
+      "frame": {
+        "x": 56,
+        "y": 272,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-44.png": {
+      "frame": {
+        "x": 110,
+        "y": 272,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-43.png": {
+      "frame": {
+        "x": 164,
+        "y": 272,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-42.png": {
+      "frame": {
+        "x": 218,
+        "y": 272,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-41.png": {
+      "frame": {
+        "x": 272,
+        "y": 272,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-40.png": {
+      "frame": {
+        "x": 326,
+        "y": 2,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-4.png": {
+      "frame": {
+        "x": 326,
+        "y": 56,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-39.png": {
+      "frame": {
+        "x": 326,
+        "y": 110,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-38.png": {
+      "frame": {
+        "x": 326,
+        "y": 164,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-37.png": {
+      "frame": {
+        "x": 326,
+        "y": 218,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-36.png": {
+      "frame": {
+        "x": 326,
+        "y": 272,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-35.png": {
+      "frame": {
+        "x": 2,
+        "y": 326,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-34.png": {
+      "frame": {
+        "x": 56,
+        "y": 326,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-33.png": {
+      "frame": {
+        "x": 110,
+        "y": 326,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-32.png": {
+      "frame": {
+        "x": 164,
+        "y": 326,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-31.png": {
+      "frame": {
+        "x": 218,
+        "y": 326,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-30.png": {
+      "frame": {
+        "x": 272,
+        "y": 326,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-3.png": {
+      "frame": {
+        "x": 326,
+        "y": 326,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-29.png": {
+      "frame": {
+        "x": 380,
+        "y": 2,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-28.png": {
+      "frame": {
+        "x": 380,
+        "y": 56,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-27.png": {
+      "frame": {
+        "x": 380,
+        "y": 110,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-26.png": {
+      "frame": {
+        "x": 380,
+        "y": 164,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-25.png": {
+      "frame": {
+        "x": 380,
+        "y": 218,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-24.png": {
+      "frame": {
+        "x": 380,
+        "y": 272,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-23.png": {
+      "frame": {
+        "x": 380,
+        "y": 326,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-22.png": {
+      "frame": {
+        "x": 2,
+        "y": 380,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-21.png": {
+      "frame": {
+        "x": 56,
+        "y": 380,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-20.png": {
+      "frame": {
+        "x": 110,
+        "y": 380,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-2.png": {
+      "frame": {
+        "x": 164,
+        "y": 380,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-19.png": {
+      "frame": {
+        "x": 218,
+        "y": 380,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-18.png": {
+      "frame": {
+        "x": 272,
+        "y": 380,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-17.png": {
+      "frame": {
+        "x": 326,
+        "y": 380,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-16.png": {
+      "frame": {
+        "x": 380,
+        "y": 380,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-15.png": {
+      "frame": {
+        "x": 434,
+        "y": 2,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-14.png": {
+      "frame": {
+        "x": 434,
+        "y": 56,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-13.png": {
+      "frame": {
+        "x": 434,
+        "y": 110,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-12.png": {
+      "frame": {
+        "x": 434,
+        "y": 164,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-11.png": {
+      "frame": {
+        "x": 434,
+        "y": 218,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-10.png": {
+      "frame": {
+        "x": 434,
+        "y": 272,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-1.png": {
+      "frame": {
+        "x": 434,
+        "y": 326,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-twitch-0.png": {
+      "frame": {
+        "x": 434,
+        "y": 380,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-squeeze-1.png": {
+      "frame": {
+        "x": 2,
+        "y": 434,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-squeeze-0.png": {
+      "frame": {
+        "x": 56,
+        "y": 434,
+        "w": 52,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 52,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 52,
+        "h": 52
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bear-outline-9.png": {
+      "frame": {
+        "x": 488,
         "y": 2,
         "w": 54,
         "h": 54
@@ -26,8 +1802,8 @@
     },
     "bear-outline-8.png": {
       "frame": {
-        "x": 58,
-        "y": 2,
+        "x": 488,
+        "y": 58,
         "w": 54,
         "h": 54
       },
@@ -50,8 +1826,8 @@
     },
     "bear-outline-71.png": {
       "frame": {
-        "x": 2,
-        "y": 58,
+        "x": 488,
+        "y": 114,
         "w": 54,
         "h": 54
       },
@@ -74,8 +1850,8 @@
     },
     "bear-outline-70.png": {
       "frame": {
-        "x": 58,
-        "y": 58,
+        "x": 488,
+        "y": 170,
         "w": 54,
         "h": 54
       },
@@ -98,8 +1874,8 @@
     },
     "bear-outline-7.png": {
       "frame": {
-        "x": 114,
-        "y": 2,
+        "x": 488,
+        "y": 226,
         "w": 54,
         "h": 54
       },
@@ -122,8 +1898,8 @@
     },
     "bear-outline-69.png": {
       "frame": {
-        "x": 114,
-        "y": 58,
+        "x": 488,
+        "y": 282,
         "w": 54,
         "h": 54
       },
@@ -146,8 +1922,8 @@
     },
     "bear-outline-68.png": {
       "frame": {
-        "x": 2,
-        "y": 114,
+        "x": 488,
+        "y": 338,
         "w": 54,
         "h": 54
       },
@@ -170,8 +1946,8 @@
     },
     "bear-outline-67.png": {
       "frame": {
-        "x": 58,
-        "y": 114,
+        "x": 488,
+        "y": 394,
         "w": 54,
         "h": 54
       },
@@ -194,8 +1970,8 @@
     },
     "bear-outline-66.png": {
       "frame": {
-        "x": 114,
-        "y": 114,
+        "x": 2,
+        "y": 488,
         "w": 54,
         "h": 54
       },
@@ -218,8 +1994,8 @@
     },
     "bear-outline-65.png": {
       "frame": {
-        "x": 170,
-        "y": 2,
+        "x": 58,
+        "y": 488,
         "w": 54,
         "h": 54
       },
@@ -242,8 +2018,8 @@
     },
     "bear-outline-64.png": {
       "frame": {
-        "x": 170,
-        "y": 58,
+        "x": 114,
+        "y": 450,
         "w": 54,
         "h": 54
       },
@@ -267,7 +2043,7 @@
     "bear-outline-63.png": {
       "frame": {
         "x": 170,
-        "y": 114,
+        "y": 450,
         "w": 54,
         "h": 54
       },
@@ -290,8 +2066,8 @@
     },
     "bear-outline-62.png": {
       "frame": {
-        "x": 2,
-        "y": 170,
+        "x": 226,
+        "y": 450,
         "w": 54,
         "h": 54
       },
@@ -314,8 +2090,8 @@
     },
     "bear-outline-61.png": {
       "frame": {
-        "x": 58,
-        "y": 170,
+        "x": 282,
+        "y": 450,
         "w": 54,
         "h": 54
       },
@@ -338,8 +2114,8 @@
     },
     "bear-outline-60.png": {
       "frame": {
-        "x": 114,
-        "y": 170,
+        "x": 338,
+        "y": 450,
         "w": 54,
         "h": 54
       },
@@ -362,8 +2138,8 @@
     },
     "bear-outline-6.png": {
       "frame": {
-        "x": 170,
-        "y": 170,
+        "x": 394,
+        "y": 450,
         "w": 54,
         "h": 54
       },
@@ -386,8 +2162,8 @@
     },
     "bear-outline-59.png": {
       "frame": {
-        "x": 226,
-        "y": 2,
+        "x": 450,
+        "y": 450,
         "w": 54,
         "h": 54
       },
@@ -410,8 +2186,8 @@
     },
     "bear-outline-58.png": {
       "frame": {
-        "x": 226,
-        "y": 58,
+        "x": 544,
+        "y": 2,
         "w": 54,
         "h": 54
       },
@@ -434,8 +2210,8 @@
     },
     "bear-outline-57.png": {
       "frame": {
-        "x": 226,
-        "y": 114,
+        "x": 544,
+        "y": 58,
         "w": 54,
         "h": 54
       },
@@ -458,8 +2234,8 @@
     },
     "bear-outline-56.png": {
       "frame": {
-        "x": 226,
-        "y": 170,
+        "x": 544,
+        "y": 114,
         "w": 54,
         "h": 54
       },
@@ -482,8 +2258,8 @@
     },
     "bear-outline-55.png": {
       "frame": {
-        "x": 2,
-        "y": 226,
+        "x": 544,
+        "y": 170,
         "w": 54,
         "h": 54
       },
@@ -506,7 +2282,7 @@
     },
     "bear-outline-54.png": {
       "frame": {
-        "x": 58,
+        "x": 544,
         "y": 226,
         "w": 54,
         "h": 54
@@ -530,8 +2306,8 @@
     },
     "bear-outline-53.png": {
       "frame": {
-        "x": 114,
-        "y": 226,
+        "x": 544,
+        "y": 282,
         "w": 54,
         "h": 54
       },
@@ -554,8 +2330,8 @@
     },
     "bear-outline-52.png": {
       "frame": {
-        "x": 170,
-        "y": 226,
+        "x": 544,
+        "y": 338,
         "w": 54,
         "h": 54
       },
@@ -578,8 +2354,8 @@
     },
     "bear-outline-51.png": {
       "frame": {
-        "x": 226,
-        "y": 226,
+        "x": 544,
+        "y": 394,
         "w": 54,
         "h": 54
       },
@@ -602,8 +2378,8 @@
     },
     "bear-outline-50.png": {
       "frame": {
-        "x": 282,
-        "y": 2,
+        "x": 506,
+        "y": 450,
         "w": 54,
         "h": 54
       },
@@ -626,8 +2402,8 @@
     },
     "bear-outline-5.png": {
       "frame": {
-        "x": 282,
-        "y": 58,
+        "x": 2,
+        "y": 544,
         "w": 54,
         "h": 54
       },
@@ -650,8 +2426,8 @@
     },
     "bear-outline-49.png": {
       "frame": {
-        "x": 282,
-        "y": 114,
+        "x": 58,
+        "y": 544,
         "w": 54,
         "h": 54
       },
@@ -674,8 +2450,8 @@
     },
     "bear-outline-48.png": {
       "frame": {
-        "x": 282,
-        "y": 170,
+        "x": 114,
+        "y": 506,
         "w": 54,
         "h": 54
       },
@@ -698,8 +2474,8 @@
     },
     "bear-outline-47.png": {
       "frame": {
-        "x": 282,
-        "y": 226,
+        "x": 170,
+        "y": 506,
         "w": 54,
         "h": 54
       },
@@ -722,8 +2498,8 @@
     },
     "bear-outline-46.png": {
       "frame": {
-        "x": 2,
-        "y": 282,
+        "x": 226,
+        "y": 506,
         "w": 54,
         "h": 54
       },
@@ -746,8 +2522,8 @@
     },
     "bear-outline-45.png": {
       "frame": {
-        "x": 58,
-        "y": 282,
+        "x": 282,
+        "y": 506,
         "w": 54,
         "h": 54
       },
@@ -770,8 +2546,8 @@
     },
     "bear-outline-44.png": {
       "frame": {
-        "x": 114,
-        "y": 282,
+        "x": 338,
+        "y": 506,
         "w": 54,
         "h": 54
       },
@@ -794,8 +2570,8 @@
     },
     "bear-outline-43.png": {
       "frame": {
-        "x": 170,
-        "y": 282,
+        "x": 394,
+        "y": 506,
         "w": 54,
         "h": 54
       },
@@ -818,8 +2594,8 @@
     },
     "bear-outline-42.png": {
       "frame": {
-        "x": 226,
-        "y": 282,
+        "x": 450,
+        "y": 506,
         "w": 54,
         "h": 54
       },
@@ -842,8 +2618,8 @@
     },
     "bear-outline-41.png": {
       "frame": {
-        "x": 282,
-        "y": 282,
+        "x": 506,
+        "y": 506,
         "w": 54,
         "h": 54
       },
@@ -866,7 +2642,7 @@
     },
     "bear-outline-40.png": {
       "frame": {
-        "x": 338,
+        "x": 600,
         "y": 2,
         "w": 54,
         "h": 54
@@ -890,7 +2666,7 @@
     },
     "bear-outline-4.png": {
       "frame": {
-        "x": 338,
+        "x": 600,
         "y": 58,
         "w": 54,
         "h": 54
@@ -914,7 +2690,7 @@
     },
     "bear-outline-39.png": {
       "frame": {
-        "x": 338,
+        "x": 600,
         "y": 114,
         "w": 54,
         "h": 54
@@ -938,7 +2714,7 @@
     },
     "bear-outline-38.png": {
       "frame": {
-        "x": 338,
+        "x": 600,
         "y": 170,
         "w": 54,
         "h": 54
@@ -962,7 +2738,7 @@
     },
     "bear-outline-37.png": {
       "frame": {
-        "x": 338,
+        "x": 600,
         "y": 226,
         "w": 54,
         "h": 54
@@ -986,7 +2762,7 @@
     },
     "bear-outline-36.png": {
       "frame": {
-        "x": 338,
+        "x": 600,
         "y": 282,
         "w": 54,
         "h": 54
@@ -1010,7 +2786,7 @@
     },
     "bear-outline-35.png": {
       "frame": {
-        "x": 2,
+        "x": 600,
         "y": 338,
         "w": 54,
         "h": 54
@@ -1034,8 +2810,8 @@
     },
     "bear-outline-34.png": {
       "frame": {
-        "x": 58,
-        "y": 338,
+        "x": 600,
+        "y": 394,
         "w": 54,
         "h": 54
       },
@@ -1058,8 +2834,8 @@
     },
     "bear-outline-33.png": {
       "frame": {
-        "x": 114,
-        "y": 338,
+        "x": 562,
+        "y": 450,
         "w": 54,
         "h": 54
       },
@@ -1082,8 +2858,8 @@
     },
     "bear-outline-32.png": {
       "frame": {
-        "x": 170,
-        "y": 338,
+        "x": 562,
+        "y": 506,
         "w": 54,
         "h": 54
       },
@@ -1106,8 +2882,8 @@
     },
     "bear-outline-31.png": {
       "frame": {
-        "x": 226,
-        "y": 338,
+        "x": 2,
+        "y": 600,
         "w": 54,
         "h": 54
       },
@@ -1130,8 +2906,8 @@
     },
     "bear-outline-30.png": {
       "frame": {
-        "x": 282,
-        "y": 338,
+        "x": 58,
+        "y": 600,
         "w": 54,
         "h": 54
       },
@@ -1154,8 +2930,8 @@
     },
     "bear-outline-3.png": {
       "frame": {
-        "x": 338,
-        "y": 338,
+        "x": 114,
+        "y": 562,
         "w": 54,
         "h": 54
       },
@@ -1178,8 +2954,8 @@
     },
     "bear-outline-29.png": {
       "frame": {
-        "x": 394,
-        "y": 2,
+        "x": 170,
+        "y": 562,
         "w": 54,
         "h": 54
       },
@@ -1202,8 +2978,8 @@
     },
     "bear-outline-28.png": {
       "frame": {
-        "x": 394,
-        "y": 58,
+        "x": 226,
+        "y": 562,
         "w": 54,
         "h": 54
       },
@@ -1226,8 +3002,8 @@
     },
     "bear-outline-27.png": {
       "frame": {
-        "x": 394,
-        "y": 114,
+        "x": 282,
+        "y": 562,
         "w": 54,
         "h": 54
       },
@@ -1250,8 +3026,8 @@
     },
     "bear-outline-26.png": {
       "frame": {
-        "x": 394,
-        "y": 170,
+        "x": 338,
+        "y": 562,
         "w": 54,
         "h": 54
       },
@@ -1275,7 +3051,7 @@
     "bear-outline-25.png": {
       "frame": {
         "x": 394,
-        "y": 226,
+        "y": 562,
         "w": 54,
         "h": 54
       },
@@ -1298,8 +3074,8 @@
     },
     "bear-outline-24.png": {
       "frame": {
-        "x": 394,
-        "y": 282,
+        "x": 450,
+        "y": 562,
         "w": 54,
         "h": 54
       },
@@ -1322,8 +3098,8 @@
     },
     "bear-outline-23.png": {
       "frame": {
-        "x": 394,
-        "y": 338,
+        "x": 506,
+        "y": 562,
         "w": 54,
         "h": 54
       },
@@ -1346,8 +3122,8 @@
     },
     "bear-outline-22.png": {
       "frame": {
-        "x": 2,
-        "y": 394,
+        "x": 562,
+        "y": 562,
         "w": 54,
         "h": 54
       },
@@ -1370,8 +3146,8 @@
     },
     "bear-outline-21.png": {
       "frame": {
-        "x": 58,
-        "y": 394,
+        "x": 656,
+        "y": 2,
         "w": 54,
         "h": 54
       },
@@ -1394,8 +3170,8 @@
     },
     "bear-outline-20.png": {
       "frame": {
-        "x": 114,
-        "y": 394,
+        "x": 656,
+        "y": 58,
         "w": 54,
         "h": 54
       },
@@ -1418,8 +3194,8 @@
     },
     "bear-outline-2.png": {
       "frame": {
-        "x": 170,
-        "y": 394,
+        "x": 656,
+        "y": 114,
         "w": 54,
         "h": 54
       },
@@ -1442,8 +3218,8 @@
     },
     "bear-outline-19.png": {
       "frame": {
-        "x": 226,
-        "y": 394,
+        "x": 656,
+        "y": 170,
         "w": 54,
         "h": 54
       },
@@ -1466,8 +3242,8 @@
     },
     "bear-outline-18.png": {
       "frame": {
-        "x": 282,
-        "y": 394,
+        "x": 656,
+        "y": 226,
         "w": 54,
         "h": 54
       },
@@ -1490,8 +3266,8 @@
     },
     "bear-outline-17.png": {
       "frame": {
-        "x": 338,
-        "y": 394,
+        "x": 656,
+        "y": 282,
         "w": 54,
         "h": 54
       },
@@ -1514,8 +3290,8 @@
     },
     "bear-outline-16.png": {
       "frame": {
-        "x": 394,
-        "y": 394,
+        "x": 656,
+        "y": 338,
         "w": 54,
         "h": 54
       },
@@ -1538,8 +3314,8 @@
     },
     "bear-outline-15.png": {
       "frame": {
-        "x": 450,
-        "y": 2,
+        "x": 656,
+        "y": 394,
         "w": 54,
         "h": 54
       },
@@ -1562,8 +3338,8 @@
     },
     "bear-outline-14.png": {
       "frame": {
-        "x": 450,
-        "y": 58,
+        "x": 618,
+        "y": 450,
         "w": 54,
         "h": 54
       },
@@ -1586,8 +3362,8 @@
     },
     "bear-outline-13.png": {
       "frame": {
-        "x": 450,
-        "y": 114,
+        "x": 618,
+        "y": 506,
         "w": 54,
         "h": 54
       },
@@ -1610,8 +3386,8 @@
     },
     "bear-outline-12.png": {
       "frame": {
-        "x": 450,
-        "y": 170,
+        "x": 618,
+        "y": 562,
         "w": 54,
         "h": 54
       },
@@ -1634,8 +3410,8 @@
     },
     "bear-outline-11.png": {
       "frame": {
-        "x": 450,
-        "y": 226,
+        "x": 2,
+        "y": 656,
         "w": 54,
         "h": 54
       },
@@ -1658,8 +3434,8 @@
     },
     "bear-outline-10.png": {
       "frame": {
-        "x": 450,
-        "y": 282,
+        "x": 58,
+        "y": 656,
         "w": 54,
         "h": 54
       },
@@ -1682,8 +3458,8 @@
     },
     "bear-outline-1.png": {
       "frame": {
-        "x": 450,
-        "y": 338,
+        "x": 114,
+        "y": 618,
         "w": 54,
         "h": 54
       },
@@ -1706,8 +3482,8 @@
     },
     "bear-outline-0.png": {
       "frame": {
-        "x": 450,
-        "y": 394,
+        "x": 170,
+        "y": 618,
         "w": 54,
         "h": 54
       },
@@ -1730,8 +3506,8 @@
     },
     "bear-9.png": {
       "frame": {
-        "x": 2,
-        "y": 450,
+        "x": 226,
+        "y": 618,
         "w": 52,
         "h": 52
       },
@@ -1754,8 +3530,8 @@
     },
     "bear-8.png": {
       "frame": {
-        "x": 56,
-        "y": 450,
+        "x": 280,
+        "y": 618,
         "w": 52,
         "h": 52
       },
@@ -1778,8 +3554,8 @@
     },
     "bear-71.png": {
       "frame": {
-        "x": 110,
-        "y": 450,
+        "x": 334,
+        "y": 618,
         "w": 52,
         "h": 52
       },
@@ -1802,8 +3578,8 @@
     },
     "bear-70.png": {
       "frame": {
-        "x": 164,
-        "y": 450,
+        "x": 388,
+        "y": 618,
         "w": 52,
         "h": 52
       },
@@ -1826,8 +3602,8 @@
     },
     "bear-7.png": {
       "frame": {
-        "x": 218,
-        "y": 450,
+        "x": 442,
+        "y": 618,
         "w": 52,
         "h": 52
       },
@@ -1850,8 +3626,8 @@
     },
     "bear-69.png": {
       "frame": {
-        "x": 272,
-        "y": 450,
+        "x": 496,
+        "y": 618,
         "w": 52,
         "h": 52
       },
@@ -1874,8 +3650,8 @@
     },
     "bear-68.png": {
       "frame": {
-        "x": 326,
-        "y": 450,
+        "x": 550,
+        "y": 618,
         "w": 52,
         "h": 52
       },
@@ -1898,8 +3674,8 @@
     },
     "bear-67.png": {
       "frame": {
-        "x": 380,
-        "y": 450,
+        "x": 604,
+        "y": 618,
         "w": 52,
         "h": 52
       },
@@ -1922,8 +3698,8 @@
     },
     "bear-66.png": {
       "frame": {
-        "x": 434,
-        "y": 450,
+        "x": 658,
+        "y": 618,
         "w": 52,
         "h": 52
       },
@@ -1946,8 +3722,8 @@
     },
     "bear-65.png": {
       "frame": {
-        "x": 2,
-        "y": 504,
+        "x": 712,
+        "y": 2,
         "w": 52,
         "h": 52
       },
@@ -1970,8 +3746,8 @@
     },
     "bear-64.png": {
       "frame": {
-        "x": 56,
-        "y": 504,
+        "x": 712,
+        "y": 56,
         "w": 52,
         "h": 52
       },
@@ -1994,8 +3770,8 @@
     },
     "bear-63.png": {
       "frame": {
-        "x": 110,
-        "y": 504,
+        "x": 712,
+        "y": 110,
         "w": 52,
         "h": 52
       },
@@ -2018,8 +3794,8 @@
     },
     "bear-62.png": {
       "frame": {
-        "x": 164,
-        "y": 504,
+        "x": 712,
+        "y": 164,
         "w": 52,
         "h": 52
       },
@@ -2042,8 +3818,8 @@
     },
     "bear-61.png": {
       "frame": {
-        "x": 218,
-        "y": 504,
+        "x": 712,
+        "y": 218,
         "w": 52,
         "h": 52
       },
@@ -2066,8 +3842,8 @@
     },
     "bear-60.png": {
       "frame": {
-        "x": 272,
-        "y": 504,
+        "x": 712,
+        "y": 272,
         "w": 52,
         "h": 52
       },
@@ -2090,8 +3866,8 @@
     },
     "bear-6.png": {
       "frame": {
-        "x": 326,
-        "y": 504,
+        "x": 712,
+        "y": 326,
         "w": 52,
         "h": 52
       },
@@ -2114,8 +3890,8 @@
     },
     "bear-59.png": {
       "frame": {
-        "x": 380,
-        "y": 504,
+        "x": 712,
+        "y": 380,
         "w": 52,
         "h": 52
       },
@@ -2138,8 +3914,8 @@
     },
     "bear-58.png": {
       "frame": {
-        "x": 434,
-        "y": 504,
+        "x": 712,
+        "y": 434,
         "w": 52,
         "h": 52
       },
@@ -2162,8 +3938,8 @@
     },
     "bear-57.png": {
       "frame": {
-        "x": 506,
-        "y": 2,
+        "x": 712,
+        "y": 488,
         "w": 52,
         "h": 52
       },
@@ -2186,8 +3962,8 @@
     },
     "bear-56.png": {
       "frame": {
-        "x": 506,
-        "y": 56,
+        "x": 712,
+        "y": 542,
         "w": 52,
         "h": 52
       },
@@ -2210,8 +3986,8 @@
     },
     "bear-55.png": {
       "frame": {
-        "x": 506,
-        "y": 110,
+        "x": 712,
+        "y": 596,
         "w": 52,
         "h": 52
       },
@@ -2234,8 +4010,8 @@
     },
     "bear-54.png": {
       "frame": {
-        "x": 506,
-        "y": 164,
+        "x": 712,
+        "y": 650,
         "w": 52,
         "h": 52
       },
@@ -2258,8 +4034,8 @@
     },
     "bear-53.png": {
       "frame": {
-        "x": 506,
-        "y": 218,
+        "x": 2,
+        "y": 712,
         "w": 52,
         "h": 52
       },
@@ -2282,8 +4058,8 @@
     },
     "bear-52.png": {
       "frame": {
-        "x": 506,
-        "y": 272,
+        "x": 56,
+        "y": 712,
         "w": 52,
         "h": 52
       },
@@ -2306,8 +4082,8 @@
     },
     "bear-51.png": {
       "frame": {
-        "x": 506,
-        "y": 326,
+        "x": 110,
+        "y": 712,
         "w": 52,
         "h": 52
       },
@@ -2330,8 +4106,8 @@
     },
     "bear-50.png": {
       "frame": {
-        "x": 506,
-        "y": 380,
+        "x": 164,
+        "y": 704,
         "w": 52,
         "h": 52
       },
@@ -2354,8 +4130,8 @@
     },
     "bear-5.png": {
       "frame": {
-        "x": 506,
-        "y": 434,
+        "x": 218,
+        "y": 704,
         "w": 52,
         "h": 52
       },
@@ -2378,8 +4154,8 @@
     },
     "bear-49.png": {
       "frame": {
-        "x": 488,
-        "y": 488,
+        "x": 272,
+        "y": 704,
         "w": 52,
         "h": 52
       },
@@ -2402,8 +4178,8 @@
     },
     "bear-48.png": {
       "frame": {
-        "x": 2,
-        "y": 558,
+        "x": 326,
+        "y": 704,
         "w": 52,
         "h": 52
       },
@@ -2426,8 +4202,8 @@
     },
     "bear-47.png": {
       "frame": {
-        "x": 56,
-        "y": 558,
+        "x": 380,
+        "y": 704,
         "w": 52,
         "h": 52
       },
@@ -2450,8 +4226,8 @@
     },
     "bear-46.png": {
       "frame": {
-        "x": 110,
-        "y": 558,
+        "x": 434,
+        "y": 704,
         "w": 52,
         "h": 52
       },
@@ -2474,8 +4250,8 @@
     },
     "bear-45.png": {
       "frame": {
-        "x": 164,
-        "y": 558,
+        "x": 488,
+        "y": 704,
         "w": 52,
         "h": 52
       },
@@ -2498,8 +4274,8 @@
     },
     "bear-44.png": {
       "frame": {
-        "x": 218,
-        "y": 558,
+        "x": 542,
+        "y": 704,
         "w": 52,
         "h": 52
       },
@@ -2522,8 +4298,8 @@
     },
     "bear-43.png": {
       "frame": {
-        "x": 272,
-        "y": 558,
+        "x": 596,
+        "y": 704,
         "w": 52,
         "h": 52
       },
@@ -2546,8 +4322,8 @@
     },
     "bear-42.png": {
       "frame": {
-        "x": 326,
-        "y": 558,
+        "x": 650,
+        "y": 672,
         "w": 52,
         "h": 52
       },
@@ -2570,8 +4346,8 @@
     },
     "bear-41.png": {
       "frame": {
-        "x": 380,
-        "y": 558,
+        "x": 704,
+        "y": 704,
         "w": 52,
         "h": 52
       },
@@ -2594,8 +4370,8 @@
     },
     "bear-40.png": {
       "frame": {
-        "x": 434,
-        "y": 558,
+        "x": 766,
+        "y": 2,
         "w": 52,
         "h": 52
       },
@@ -2618,8 +4394,8 @@
     },
     "bear-4.png": {
       "frame": {
-        "x": 488,
-        "y": 542,
+        "x": 766,
+        "y": 56,
         "w": 52,
         "h": 52
       },
@@ -2642,8 +4418,8 @@
     },
     "bear-39.png": {
       "frame": {
-        "x": 560,
-        "y": 2,
+        "x": 766,
+        "y": 110,
         "w": 52,
         "h": 52
       },
@@ -2666,8 +4442,8 @@
     },
     "bear-38.png": {
       "frame": {
-        "x": 560,
-        "y": 56,
+        "x": 766,
+        "y": 164,
         "w": 52,
         "h": 52
       },
@@ -2690,8 +4466,8 @@
     },
     "bear-37.png": {
       "frame": {
-        "x": 560,
-        "y": 110,
+        "x": 766,
+        "y": 218,
         "w": 52,
         "h": 52
       },
@@ -2714,8 +4490,8 @@
     },
     "bear-36.png": {
       "frame": {
-        "x": 560,
-        "y": 164,
+        "x": 766,
+        "y": 272,
         "w": 52,
         "h": 52
       },
@@ -2738,8 +4514,8 @@
     },
     "bear-35.png": {
       "frame": {
-        "x": 560,
-        "y": 218,
+        "x": 766,
+        "y": 326,
         "w": 52,
         "h": 52
       },
@@ -2762,8 +4538,8 @@
     },
     "bear-34.png": {
       "frame": {
-        "x": 560,
-        "y": 272,
+        "x": 766,
+        "y": 380,
         "w": 52,
         "h": 52
       },
@@ -2786,8 +4562,8 @@
     },
     "bear-33.png": {
       "frame": {
-        "x": 560,
-        "y": 326,
+        "x": 766,
+        "y": 434,
         "w": 52,
         "h": 52
       },
@@ -2810,8 +4586,8 @@
     },
     "bear-32.png": {
       "frame": {
-        "x": 560,
-        "y": 380,
+        "x": 766,
+        "y": 488,
         "w": 52,
         "h": 52
       },
@@ -2834,8 +4610,8 @@
     },
     "bear-31.png": {
       "frame": {
-        "x": 560,
-        "y": 434,
+        "x": 766,
+        "y": 542,
         "w": 52,
         "h": 52
       },
@@ -2858,8 +4634,8 @@
     },
     "bear-30.png": {
       "frame": {
-        "x": 542,
-        "y": 488,
+        "x": 766,
+        "y": 596,
         "w": 52,
         "h": 52
       },
@@ -2882,8 +4658,8 @@
     },
     "bear-3.png": {
       "frame": {
-        "x": 542,
-        "y": 542,
+        "x": 766,
+        "y": 650,
         "w": 52,
         "h": 52
       },
@@ -2906,8 +4682,8 @@
     },
     "bear-29.png": {
       "frame": {
-        "x": 2,
-        "y": 612,
+        "x": 758,
+        "y": 704,
         "w": 52,
         "h": 52
       },
@@ -2930,8 +4706,8 @@
     },
     "bear-28.png": {
       "frame": {
-        "x": 56,
-        "y": 612,
+        "x": 650,
+        "y": 726,
         "w": 52,
         "h": 52
       },
@@ -2954,8 +4730,8 @@
     },
     "bear-27.png": {
       "frame": {
-        "x": 110,
-        "y": 612,
+        "x": 2,
+        "y": 766,
         "w": 52,
         "h": 52
       },
@@ -2978,8 +4754,8 @@
     },
     "bear-26.png": {
       "frame": {
-        "x": 164,
-        "y": 612,
+        "x": 56,
+        "y": 766,
         "w": 52,
         "h": 52
       },
@@ -3002,8 +4778,8 @@
     },
     "bear-25.png": {
       "frame": {
-        "x": 218,
-        "y": 612,
+        "x": 110,
+        "y": 766,
         "w": 52,
         "h": 52
       },
@@ -3026,8 +4802,8 @@
     },
     "bear-24.png": {
       "frame": {
-        "x": 272,
-        "y": 612,
+        "x": 164,
+        "y": 758,
         "w": 52,
         "h": 52
       },
@@ -3050,8 +4826,8 @@
     },
     "bear-23.png": {
       "frame": {
-        "x": 326,
-        "y": 612,
+        "x": 704,
+        "y": 758,
         "w": 52,
         "h": 52
       },
@@ -3074,8 +4850,8 @@
     },
     "bear-22.png": {
       "frame": {
-        "x": 380,
-        "y": 612,
+        "x": 218,
+        "y": 758,
         "w": 52,
         "h": 52
       },
@@ -3098,8 +4874,8 @@
     },
     "bear-21.png": {
       "frame": {
-        "x": 434,
-        "y": 612,
+        "x": 758,
+        "y": 758,
         "w": 52,
         "h": 52
       },
@@ -3122,8 +4898,8 @@
     },
     "bear-20.png": {
       "frame": {
-        "x": 488,
-        "y": 596,
+        "x": 272,
+        "y": 758,
         "w": 52,
         "h": 52
       },
@@ -3146,8 +4922,8 @@
     },
     "bear-2.png": {
       "frame": {
-        "x": 542,
-        "y": 596,
+        "x": 326,
+        "y": 758,
         "w": 52,
         "h": 52
       },
@@ -3170,8 +4946,8 @@
     },
     "bear-19.png": {
       "frame": {
-        "x": 614,
-        "y": 2,
+        "x": 380,
+        "y": 758,
         "w": 52,
         "h": 52
       },
@@ -3194,8 +4970,8 @@
     },
     "bear-18.png": {
       "frame": {
-        "x": 614,
-        "y": 56,
+        "x": 434,
+        "y": 758,
         "w": 52,
         "h": 52
       },
@@ -3218,8 +4994,8 @@
     },
     "bear-17.png": {
       "frame": {
-        "x": 614,
-        "y": 110,
+        "x": 488,
+        "y": 758,
         "w": 52,
         "h": 52
       },
@@ -3242,8 +5018,8 @@
     },
     "bear-16.png": {
       "frame": {
-        "x": 614,
-        "y": 164,
+        "x": 542,
+        "y": 758,
         "w": 52,
         "h": 52
       },
@@ -3266,8 +5042,8 @@
     },
     "bear-15.png": {
       "frame": {
-        "x": 614,
-        "y": 218,
+        "x": 596,
+        "y": 758,
         "w": 52,
         "h": 52
       },
@@ -3290,8 +5066,8 @@
     },
     "bear-14.png": {
       "frame": {
-        "x": 614,
-        "y": 272,
+        "x": 820,
+        "y": 2,
         "w": 52,
         "h": 52
       },
@@ -3314,8 +5090,8 @@
     },
     "bear-13.png": {
       "frame": {
-        "x": 614,
-        "y": 326,
+        "x": 820,
+        "y": 56,
         "w": 52,
         "h": 52
       },
@@ -3338,8 +5114,8 @@
     },
     "bear-12.png": {
       "frame": {
-        "x": 614,
-        "y": 380,
+        "x": 820,
+        "y": 110,
         "w": 52,
         "h": 52
       },
@@ -3362,8 +5138,8 @@
     },
     "bear-11.png": {
       "frame": {
-        "x": 614,
-        "y": 434,
+        "x": 820,
+        "y": 164,
         "w": 52,
         "h": 52
       },
@@ -3386,8 +5162,8 @@
     },
     "bear-10.png": {
       "frame": {
-        "x": 596,
-        "y": 488,
+        "x": 820,
+        "y": 218,
         "w": 52,
         "h": 52
       },
@@ -3410,8 +5186,8 @@
     },
     "bear-1.png": {
       "frame": {
-        "x": 596,
-        "y": 542,
+        "x": 820,
+        "y": 272,
         "w": 52,
         "h": 52
       },
@@ -3434,8 +5210,8 @@
     },
     "bear-0.png": {
       "frame": {
-        "x": 596,
-        "y": 596,
+        "x": 820,
+        "y": 326,
         "w": 52,
         "h": 52
       },
@@ -3605,6 +5381,84 @@
       "bear-outline-69.png",
       "bear-outline-70.png",
       "bear-outline-71.png"
+    ],
+    "bear-squeeze": [
+      "bear-squeeze-0.png",
+      "bear-squeeze-1.png"
+    ],
+    "bear-twitch": [
+      "bear-twitch-0.png",
+      "bear-twitch-1.png",
+      "bear-twitch-2.png",
+      "bear-twitch-3.png",
+      "bear-twitch-4.png",
+      "bear-twitch-5.png",
+      "bear-twitch-6.png",
+      "bear-twitch-7.png",
+      "bear-twitch-8.png",
+      "bear-twitch-9.png",
+      "bear-twitch-10.png",
+      "bear-twitch-11.png",
+      "bear-twitch-12.png",
+      "bear-twitch-13.png",
+      "bear-twitch-14.png",
+      "bear-twitch-15.png",
+      "bear-twitch-16.png",
+      "bear-twitch-17.png",
+      "bear-twitch-18.png",
+      "bear-twitch-19.png",
+      "bear-twitch-20.png",
+      "bear-twitch-21.png",
+      "bear-twitch-22.png",
+      "bear-twitch-23.png",
+      "bear-twitch-24.png",
+      "bear-twitch-25.png",
+      "bear-twitch-26.png",
+      "bear-twitch-27.png",
+      "bear-twitch-28.png",
+      "bear-twitch-29.png",
+      "bear-twitch-30.png",
+      "bear-twitch-31.png",
+      "bear-twitch-32.png",
+      "bear-twitch-33.png",
+      "bear-twitch-34.png",
+      "bear-twitch-35.png",
+      "bear-twitch-36.png",
+      "bear-twitch-37.png",
+      "bear-twitch-38.png",
+      "bear-twitch-39.png",
+      "bear-twitch-40.png",
+      "bear-twitch-41.png",
+      "bear-twitch-42.png",
+      "bear-twitch-43.png",
+      "bear-twitch-44.png",
+      "bear-twitch-45.png",
+      "bear-twitch-46.png",
+      "bear-twitch-47.png",
+      "bear-twitch-48.png",
+      "bear-twitch-49.png",
+      "bear-twitch-50.png",
+      "bear-twitch-51.png",
+      "bear-twitch-52.png",
+      "bear-twitch-53.png",
+      "bear-twitch-54.png",
+      "bear-twitch-55.png",
+      "bear-twitch-56.png",
+      "bear-twitch-57.png",
+      "bear-twitch-58.png",
+      "bear-twitch-59.png",
+      "bear-twitch-60.png",
+      "bear-twitch-61.png",
+      "bear-twitch-62.png",
+      "bear-twitch-63.png",
+      "bear-twitch-64.png",
+      "bear-twitch-65.png",
+      "bear-twitch-66.png",
+      "bear-twitch-67.png",
+      "bear-twitch-68.png",
+      "bear-twitch-69.png",
+      "bear-twitch-70.png",
+      "bear-twitch-71.png"
     ]
   },
   "meta": {
@@ -3613,8 +5467,8 @@
     "image": "toys.png",
     "format": "RGBA8888",
     "size": {
-      "w": 668,
-      "h": 666
+      "w": 874,
+      "h": 820
     },
     "scale": 1,
     "related_multi_packs": []

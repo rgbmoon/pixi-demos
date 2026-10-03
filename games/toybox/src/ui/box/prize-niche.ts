@@ -22,7 +22,7 @@ import { ToyShapes } from './toy-shapes'
 /** Ниша за окном выдачи с призом на полу: свет загорается ровно или с перебоями и мерцает, в темноте приз затемнён. */
 export class PrizeNiche extends FrameAnimation<Face> {
   private readonly shapes = new ToyShapes()
-  private readonly prize = new Toy(this.shapes, 'single', 0, 0xffffff)
+  private readonly prize: Toy
   private readonly lights: Readonly<Record<PrizeLight, Texture>>
   /** Тинт приза по кадру света. */
   private readonly tints: ReadonlyMap<Texture, number>
@@ -38,6 +38,7 @@ export class PrizeNiche extends FrameAnimation<Face> {
 
     super(ticker, new Face(lights.off, getPrizeHatchFaces().opening))
 
+    this.prize = new Toy(ticker, this.shapes, 'single', 0, 0xffffff)
     this.lights = lights
     this.tints = new Map(Object.values(PrizeLight).map((light) => [lights[light], PRIZE_LIGHT_TINT[light]]))
     this.darkness = this.toSequence([[PrizeLight.off, 0]])

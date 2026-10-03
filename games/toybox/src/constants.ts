@@ -162,6 +162,11 @@ export const CLAW_RAMP_SHARE = 0.15
 export const CLAW_GRIP_FRAME_MS = [70, 20, 20, 50, 40] as const
 /** Длительность захвата, мс: за это время клешня сжимается, а игрушка встаёт под точку захвата. */
 export const CLAW_GRAB_MS = CLAW_GRIP_FRAME_MS.reduce((sum, ms) => sum + ms, 0)
+/**
+ * Время выравнивания крена игрушки при захвате, мс: замах и смыкание. К первому сжатому кадру клешни игрушка стоит без
+ * крена, и её кадры сжатия нарисованы без крена.
+ */
+export const CLAW_GRAB_ROLL_MS = CLAW_GRIP_FRAME_MS[0] + CLAW_GRIP_FRAME_MS[1]
 /** Длительности кадров разжатия, мс: клешня раскрывается медленнее, чем сжимается. */
 export const CLAW_RELEASE_FRAME_MS = [80, 80, 80] as const
 /** Длительность разжатия, мс: клешня уходит от лотка, только когда раскрылась полностью. */
@@ -216,6 +221,13 @@ export const TOY_ANGLE_STEP = Math.PI / 36
 export const TOY_HIGHLIGHT_THICKNESS = 2 * LINE_THICKNESS
 /** Прозрачность заливки игрушки: сквозь кучу видно её глубину. */
 export const TOY_FILL_ALPHA = 0.35
+/** Пауза между тиками игрушки на полу, мс: в среднем раз в минуту. */
+export const TOY_TWITCH_MIN_PAUSE_MS = 45000
+export const TOY_TWITCH_MAX_PAUSE_MS = 75000
+/** Длительности кадров тика, мс: рывок, возврат, второй рывок; последний кадр — поза покоя. */
+export const TOY_TWITCH_FRAME_MS = [100, 80, 140, 0] as const
+/** Сид генератора тиков игрушек: тики не тратят `Math.random` игры. */
+export const TOY_TWITCH_SEED = 17
 
 // Слой содержимого
 /** Пересечение силуэтов мельче этого, в единицах сцены, порядка наложения не требует: это касание контуров. */

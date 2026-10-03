@@ -21,11 +21,16 @@ const FRAME_MS = 100
 const OPEN = new Texture()
 const CLOSED = new Texture()
 const BACK = new Texture()
+/** Кадры игрушки в заглушке атласа: крен и сжатие, слабое и сильное. */
+const ROLL = Texture.WHITE
+const SQUEEZE_LIGHT = new Texture()
+const SQUEEZE_HARD = new Texture()
 
 describe('кадр куба', () => {
   // Тест атласы не грузит, а клешне нужны кадры поворота, поз и текстура троса
   beforeEach(() => {
-    for (const frame of Object.values(CLAW_FRAMES)) Assets.cache.set(frame, Texture.WHITE)
+    // Позы захвата различимы: сжатие игрушки выбирается по кадру клешни
+    for (const frame of Object.values(CLAW_FRAMES)) Assets.cache.set(frame, new Texture())
     Assets.cache.set(CLAW_ATLAS, {
       animations: {
         [CLAW_SEQUENCES.open]: [OPEN],
@@ -37,8 +42,12 @@ describe('кадр куба', () => {
       animations: Object.fromEntries(
         Object.values(TOY_SEQUENCES)
           .flat()
-          .flatMap(({ body, outline }) => [body, outline])
-          .map((sequence) => [sequence, Array<Texture>(72).fill(Texture.WHITE)])
+          .flatMap(({ body, outline, squeeze, twitch }) => [
+            [body, Array<Texture>(72).fill(ROLL)],
+            [outline, Array<Texture>(72).fill(ROLL)],
+            [squeeze, [SQUEEZE_LIGHT, SQUEEZE_HARD]],
+            [twitch, Array<Texture>(72).fill(ROLL)],
+          ])
       ),
     })
   })
@@ -88,6 +97,40 @@ describe('кадр куба', () => {
 
     expect(body.pose.point.x).toBeCloseTo(TRAY_CENTER.x, 12)
     expect(body.pose.point.y).toBeCloseTo(TRAY_CENTER.y, 12)
+
+    cube.destroy({ children: true })
+    ticker.destroy()
+  })
+
+  it('сжимает игрушку вслед за кадрами клешни: к смыканию крен выровнен, отскок слабее, выпавшая игрушка не сжата', async () => {
+    const ticker = new GameTicker()
+    const rig = new ClawRig()
+    const heap = createHeap([{ ...stand('cube8', 3, FIELD_CENTER.y, 0), angle: 0.3 }])
+    const cube = new CubeController(ticker, heap, new ToyboxStore(), rig)
+    const shown: Texture[] = []
+    let time = 0
+
+    heap.lift(FIELD_CENTER, rig.getGripPoint())
+    ticker.update(time)
+
+    const toy = findNode(cube, (node) => node instanceof Toy)
+    const sprite = toy.children.at(-1) as Sprite
+    const grab = rig.grab(new AbortController().signal)
+
+    // Шаг 10 мс мельче кадров захвата: видна каждая поза клешни
+    for (let elapsed = 0; elapsed < 2 * CLAW_GRAB_MS; elapsed += 10) {
+      time += 10
+      ticker.update(time)
+      if (shown.at(-1) !== sprite.texture) shown.push(sprite.texture)
+    }
+    await grab
+
+    expect(shown).toEqual([ROLL, SQUEEZE_HARD, SQUEEZE_LIGHT, SQUEEZE_HARD])
+
+    heap.release(rig.getGripPoint())
+    ticker.update(time + 10)
+
+    expect(sprite.texture).toBe(ROLL)
 
     cube.destroy({ children: true })
     ticker.destroy()

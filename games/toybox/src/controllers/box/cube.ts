@@ -120,6 +120,8 @@ export class CubeController extends LiveContainer {
       this.seen.add(body.id)
       toy.setPose(point, angle)
       toy.setHighlighted(body.id === highlighted)
+      // Сжатие идёт за кадром клешни: смыкание, отскок и захват на весь перенос
+      toy.setSqueeze(body.state === ToyState.carried ? this.claw.squeeze : 0)
 
       // Игрушка в захвате рисуется между задним пальцем и клешней; отпущенную `place` возвращает в слой
       if (body.state === ToyState.carried) {
@@ -168,7 +170,7 @@ export class CubeController extends LiveContainer {
   }
 
   private addToy(body: Readonly<ToyBody>): Toy {
-    const toy = new Toy(this.shapes, body.shape, body.variant, body.color)
+    const toy = new Toy(this.ticker, this.shapes, body.shape, body.variant, body.color)
 
     this.toys.set(body.id, toy)
 

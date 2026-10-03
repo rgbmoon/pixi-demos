@@ -374,6 +374,7 @@ export default [
       '**/vitest.config.ts',
       '**/playwright.config.ts',
       '**/assetpack.config.ts',
+      'games/*/art/**/*.ts',
       'vitest.shared.ts',
       'playwright.shared.ts',
     ],
@@ -390,8 +391,8 @@ export default [
     },
   },
   {
-    // Сборка ассетов идёт в Node: пакеты инструментов и конфиги сборки игр
-    files: ['tools/**/*.ts', '**/assetpack.config.ts'],
+    // Сборка ассетов идёт в Node: пакеты инструментов, конфиги сборки и рендер игрушек игр
+    files: ['tools/**/*.ts', '**/assetpack.config.ts', 'games/*/art/**/*.ts'],
     languageOptions: {
       globals: globals.node,
     },

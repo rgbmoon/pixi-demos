@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { CLAW_REST_HEIGHT } from '#src/claw/constants'
-import { CART_SIZE, CLAW_GRAB_MS, GRID_SIZE, MARQUEE_LAMP_COUNT, TRAY_CENTER } from '#src/constants'
+import { CART_SIZE, CLAW_GRAB_MS, CLAW_GRAB_ROLL_MS, GRID_SIZE, MARQUEE_LAMP_COUNT, TRAY_CENTER } from '#src/constants'
 import type { Heap } from '#src/heap/heap'
 import { type ToyBody, ToyState } from '#src/heap/types'
 import { lerpPose, pourHeap } from '#src/heap/utils'
@@ -165,7 +165,7 @@ describe('куча: захват', () => {
     expect(rider.pose.point.z).toBeLessThan(before - 1)
   })
 
-  it('не дёргает игрушку при захвате и за время захвата ставит её под клешню без крена, верхом не выше пальцев', () => {
+  it('не дёргает игрушку при захвате, к смыканию клешни выравнивает крен, к концу захвата ставит её под клешню', () => {
     let lowered = 0
 
     for (const { shape, variant } of VARIANTS) {
@@ -186,7 +186,11 @@ describe('куча: захват', () => {
       expect(body.pose.point.z).toBeCloseTo(visible.z, 12)
       expect(body.pose.angle).toBe(0.3)
 
-      for (let elapsed = 0; elapsed <= CLAW_GRAB_MS; elapsed += FRAME_MS) heap.advance(FRAME_MS, grip)
+      heap.advance(CLAW_GRAB_ROLL_MS, grip)
+
+      expect(body.pose.angle).toBeCloseTo(0, 9)
+
+      for (let elapsed = CLAW_GRAB_ROLL_MS; elapsed <= CLAW_GRAB_MS; elapsed += FRAME_MS) heap.advance(FRAME_MS, grip)
 
       expect(body.pose.point.x).toBeCloseTo(grip.x, 9)
       expect(body.pose.point.y).toBeCloseTo(grip.y, 9)

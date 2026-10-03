@@ -123,7 +123,7 @@ games/
                        tokens, types, constants, events, toys, utils; ui/ и controllers/ внутри разбиты
                        по зонам сцены: box/, hud/ и room/, вне зон — controllers/persistence.ts и keyboard.ts
 tools/
-  asset-pipes/         сборка ассетов в Node: пайпы AssetPack и класс сборки AssetBuild
+  asset-pipes/         сборка ассетов в Node: пайпы AssetPack, класс сборки AssetBuild и рендер моделей игрушек
 web/                   приложение
   src/main.tsx         вход; сюда же подключён styles/index.css
   src/app/             composition root: контейнеры, биндинги, роутер, провайдеры
@@ -149,7 +149,7 @@ web/                   приложение
   reels               →  ничего;                        независимая библиотека, запрещены pixi.js и react
   reels-pixi-adapter  →  reels;                         pixi.js — peerDependency
   games/*             →  core, net, engine, reels, reels-pixi-adapter;  никогда друг в друга;
-                         конфиг сборки ассетов (assetpack.config.ts) — ещё asset-pipes
+                         конфиг сборки ассетов (assetpack.config.ts) и скрипты art/ — ещё asset-pipes
   tools/asset-pipes   →  ничего;                        Node, запрещены pixi.js и react
   web: components     →  core, net;                     PIXI только динамическим import()
   web: pages/*        →  всё; из игры — только её контракт

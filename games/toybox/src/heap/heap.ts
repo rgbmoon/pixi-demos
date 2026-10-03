@@ -1,6 +1,6 @@
 import { injectable } from 'inversify'
 
-import { CLAW_GRAB_MS, CLAW_RAMP_SHARE, CUBE_HEIGHT, GRID_SIZE } from '#src/constants'
+import { CLAW_GRAB_MS, CLAW_GRAB_ROLL_MS, CLAW_RAMP_SHARE, CUBE_HEIGHT, GRID_SIZE } from '#src/constants'
 import type { GroundPoint, HeapSnapshotBody, Prize, ToyId, ToyPose, WorldPoint } from '#src/types'
 import { getSeparation, polygonsOverlap, projectPolygon } from '#src/utils/geometry'
 import { clamp } from '#src/utils/math'
@@ -204,8 +204,8 @@ export class Heap extends ToyPile {
 
   /**
    * Ставит удерживаемую игрушку за точкой захвата после движения и качания клешни в этом кадре. За время
-   * посадки игрушка по `easeTrapezoid` центрируется под точкой захвата, выравнивает крен и опускается так, что её
-   * верх не выше верха пальцев.
+   * посадки игрушка по `easeTrapezoid` центрируется под точкой захвата и опускается так, что её верх не выше верха
+   * пальцев; крен она выравнивает раньше, за `CLAW_GRAB_ROLL_MS`.
    */
   private setGripPoint(grip: WorldPoint): void {
     const body = this.carried
@@ -213,12 +213,13 @@ export class Heap extends ToyPile {
     if (!body) return
 
     const remaining = 1 - easeTrapezoid(this.grabMs / CLAW_GRAB_MS, CLAW_RAMP_SHARE)
+    const remainingRoll = 1 - easeTrapezoid(Math.min(1, this.grabMs / CLAW_GRAB_ROLL_MS), CLAW_RAMP_SHARE)
     const { point } = body.pose
 
     point.x = grip.x + this.initialGripOffset.x * remaining
     point.y = grip.y + this.initialGripOffset.y * remaining
     point.z = grip.z + this.seatedGripOffsetZ + (this.initialGripOffset.z - this.seatedGripOffsetZ) * remaining
-    body.pose.angle = this.initialAngle * remaining
+    body.pose.angle = this.initialAngle * remainingRoll
     this.world.moveCarried(body.id, { y: point.y, z: point.z, angle: body.pose.angle })
   }
 
