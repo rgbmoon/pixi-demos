@@ -24,8 +24,6 @@ export const ART_PIXEL = 4
 export const ART_CELL = 16
 /** Сторона ячейки в единицах сцены; в исходном арте это 16 пикселей. */
 export const CELL_SIZE = ART_CELL * ART_PIXEL
-/** Толщина линий арта: один пиксель. */
-export const LINE_THICKNESS = ART_PIXEL
 /** Экранный шаг на ячейку вдоль оси x: она уходит вглубь сцены, наклон 1:1. */
 export const AXIS_X: ScreenPoint = { x: 8, y: -8 }
 /** Экранный шаг на ячейку вдоль оси y: она идёт вдоль фронтальной грани влево, наклон 1:16. */
@@ -164,7 +162,7 @@ export const CLAW_GRIP_FRAME_MS = [70, 20, 20, 50, 40] as const
 export const CLAW_GRAB_MS = CLAW_GRIP_FRAME_MS.reduce((sum, ms) => sum + ms, 0)
 /**
  * Время выравнивания крена игрушки при захвате, мс: замах и смыкание. К первому сжатому кадру клешни игрушка стоит без
- * крена, и её кадры сжатия нарисованы без крена.
+ * крена.
  */
 export const CLAW_GRAB_ROLL_MS = CLAW_GRIP_FRAME_MS[0] + CLAW_GRIP_FRAME_MS[1]
 /** Длительности кадров разжатия, мс: клешня раскрывается медленнее, чем сжимается. */
@@ -204,23 +202,22 @@ export const LIFT_SLIP_MAX_SHARE = 0.85
 
 // Снимок кучи
 /** Версия снимка кучи: не сошлась — снимок игнорируется и куча складывается заново. */
-export const HEAP_SNAPSHOT_VERSION = 7
+export const HEAP_SNAPSHOT_VERSION = 8
 /** Адрес снимка кучи в IndexedDB. */
 export const HEAP_DB_NAME = 'toybox'
 export const HEAP_STORE_NAME = 'heap'
 export const HEAP_SNAPSHOT_KEY = 'current'
 
 // Игрушки
-/** Наибольшая доля ребра сечения, которую занимает скругление угла: соседние скругления не смыкаются. */
-export const CORNER_EDGE_SHARE = 0.45
-/** Доля сечения и глубины, которую занимает игрушка внутри своих клеток: между соседями остаётся зазор. */
+/** Доля глубины, которую занимает игрушка внутри своих срезов: между соседями по глубине остаётся зазор. */
 export const TOY_INSET = 0.875
+/**
+ * Доля сечения, которой игрушка касается других игрушек: мягкие игрушки вдавливаются друг в друга и ложатся плотнее.
+ * Стенки, пол и клешня держат полное сечение.
+ */
+export const TOY_CONTACT_SHARE = 0.92
 /** Шаг угла, с которым рисуется крен игрушки. */
-export const TOY_ANGLE_STEP = Math.PI / 36
-/** Толщина бордера подсвеченной игрушки: её клешня возьмёт. */
-export const TOY_HIGHLIGHT_THICKNESS = 2 * LINE_THICKNESS
-/** Прозрачность заливки игрушки: сквозь кучу видно её глубину. */
-export const TOY_FILL_ALPHA = 0.35
+export const TOY_ANGLE_STEP = Math.PI / 18
 /** Пауза между тиками игрушки на полу, мс: в среднем раз в минуту. */
 export const TOY_TWITCH_MIN_PAUSE_MS = 45000
 export const TOY_TWITCH_MAX_PAUSE_MS = 75000

@@ -23,12 +23,12 @@ const SLIP_MISS = (1 + LIFT_FUMBLE_CHANCE) / 2
 const FUMBLE_MISS = (1 + FUMBLE_CHANCE) / 2
 
 /** Под кареткой в покое стоит куб с мячом наверху. */
-const cube = stand('cube8', 3, FIELD_CENTER.y, 0)
-const ball = stand('single', 4, FIELD_CENTER.y, topOf(cube))
+const cube = stand('teddy', 3, FIELD_CENTER.y, 0)
+const ball = stand('dolphin', 4, FIELD_CENTER.y, topOf(cube))
 const SCENE = [cube, ball]
 
 /** На полу справа от тумбы, за краем куба, лежит выигранный брусок. */
-const FLOOR = [stand('bar2', 2, -2, CABINET_BOTTOM_Z)]
+const FLOOR = [stand('giraffe', 2, -2, CABINET_BOTTOM_Z)]
 
 const getIds = (cycle: Cycle): Set<number> => new Set([...cycle.heap.getBodies()].map(({ id }) => id))
 
@@ -90,7 +90,7 @@ describe('сессия', () => {
   })
 
   describe('проверка снимка из хранилища', () => {
-    const body = { shape: 'cube8', variant: 0, slab: 3, y: 4, z: 0.9, angle: 0.3, color: 0xffa24b }
+    const body = { slab: 3, y: 4, z: 0.9, angle: 0.3, toy: 'teddy' }
     const snapshot = { version: HEAP_SNAPSHOT_VERSION, collected: 3, bodies: [body], floor: [] }
     const withBody = (patch: Record<string, unknown>) => ({ ...snapshot, bodies: [{ ...body, ...patch }] })
 
@@ -108,18 +108,16 @@ describe('сессия', () => {
       expect(isHeapSnapshot(withoutFloor)).toBe(false)
     })
 
-    it('отбрасывает чужую версию, мусор и незнакомую форму', () => {
+    it('отбрасывает чужую версию, мусор и игрушку вне каталога', () => {
       expect(isHeapSnapshot({ ...snapshot, version: HEAP_SNAPSHOT_VERSION - 1 })).toBe(false)
       expect(isHeapSnapshot(undefined)).toBe(false)
       expect(isHeapSnapshot('heap')).toBe(false)
-      expect(isHeapSnapshot(withBody({ shape: 'pyramid' }))).toBe(false)
-      expect(isHeapSnapshot(withBody({ shape: 'ell3' }))).toBe(false)
-      expect(isHeapSnapshot(withBody({ shape: 'toString' }))).toBe(false)
+      expect(isHeapSnapshot(withBody({ toy: 'unicorn' }))).toBe(false)
+      expect(isHeapSnapshot(withBody({ toy: 'toString' }))).toBe(false)
+      expect(isHeapSnapshot(withBody({ toy: undefined }))).toBe(false)
     })
 
-    it('отбрасывает положение вне каталога и срез, из которого игрушка выходит за куб', () => {
-      expect(isHeapSnapshot(withBody({ variant: 1 }))).toBe(false)
-      expect(isHeapSnapshot(withBody({ variant: 0.5 }))).toBe(false)
+    it('отбрасывает срез, из которого игрушка выходит за куб', () => {
       expect(isHeapSnapshot(withBody({ slab: GRID_SIZE - 1 }))).toBe(false)
       expect(isHeapSnapshot(withBody({ slab: -1 }))).toBe(false)
     })

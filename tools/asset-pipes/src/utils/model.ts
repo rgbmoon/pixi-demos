@@ -222,6 +222,39 @@ export const renderModelStrip = (
   return strip
 }
 
+/** Сдвигает модель в плоскости экрана на `offset`; детали поверхности модель получает в прежней системе координат. */
+export const moveModel = (model: ToyModel, [offsetA, offsetB]: ModelPlanePoint): ToyModel => {
+  const originals = new Map<ModelPart, ModelPart>()
+  const parts = model.parts.map((part) => {
+    const [a, b, d] = part.center
+    const moved: ModelPart = { ...part, center: [a + offsetA, b + offsetB, d] }
+
+    originals.set(moved, part)
+
+    return moved
+  })
+  const { decal } = model
+
+  return {
+    ...model,
+    parts,
+    decal:
+      decal &&
+      (({ part, point: [a, b, d], normal }) =>
+        decal({ part: originals.get(part) ?? part, point: [a - offsetA, b - offsetB, d], normal })),
+  }
+}
+
+/** Сдвигает опорные точки позы вместе с моделью, сдвинутой `moveModel`. */
+export const movePose = (pose: ModelPose, [offsetA, offsetB]: ModelPlanePoint): ModelPose =>
+  Object.fromEntries(
+    Object.entries(pose).map(([group, transform]) => {
+      const [pivotA, pivotB] = transform.pivot ?? [0, 0]
+
+      return [group, { ...transform, pivot: [pivotA + offsetA, pivotB + offsetB] }]
+    })
+  )
+
 /** Лежит ли точка `(a, b)` внутри эллипса с центром `center` и полуосями `radii`. */
 export const isInEllipse = (a: number, b: number, center: ModelPlanePoint, radii: ModelPlanePoint): boolean =>
   ((a - center[0]) / radii[0]) ** 2 + ((b - center[1]) / radii[1]) ** 2 <= 1

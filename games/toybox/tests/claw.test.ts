@@ -5,7 +5,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ClawRig } from '#src/claw/claw-rig'
 import { CLAW_MAX_SPEED, CLAW_REST_HEIGHT, SWAY_MAX_OFFSET } from '#src/claw/constants'
 import { pickFumbleShare } from '#src/claw/utils'
-import { CART_SIZE, FIELD_CENTER, FUMBLE_START_CLEARANCE, GRID_SIZE, TRAY_CENTER, TRAY_ORIGIN, TRAY_SIZE } from '#src/constants'
+import {
+  CART_SIZE,
+  FIELD_CENTER,
+  FUMBLE_START_CLEARANCE,
+  GRID_SIZE,
+  TRAY_CENTER,
+  TRAY_ORIGIN,
+  TRAY_SIZE,
+} from '#src/constants'
 import type { ClawDrop, GroundPoint, WorldPoint } from '#src/types'
 import { createRandom } from '@pixi-demos/core/random'
 

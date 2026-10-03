@@ -76,7 +76,7 @@ await new AssetBuild({
   output: path.join(root, '../../web/public/games/toybox/assets'),
   cacheDir: path.join(root, 'node_modules/.cache/assets'),
   // Палитра, выходы PixelLab, журналы генераций и модели игрушек — исходники для людей и пайпов, в сборку они не идут
-  ignore: ['palette/**', '**/raw/**', '**/source.json', '**/*.ts'],
+  ignore: ['palette/**', '**/raw/**', '**/sprites/**', '**/source.json', '**/*.ts'],
   palette,
   faces: getFaceLayouts(),
   outlineColor: palette.ramps.bone[4],

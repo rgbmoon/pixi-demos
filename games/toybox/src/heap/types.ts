@@ -1,4 +1,4 @@
-import type { GroundPoint, ShapeKey, ToyId, WorldPoint } from '#src/types'
+import type { GroundPoint, ToyId, ToyKey, WorldPoint } from '#src/types'
 
 /** Профиль купола для наполнения: пик на полу, крутизна склона и расстояние от пика до дальнего угла. */
 export type DomeProfile = {
@@ -19,14 +19,12 @@ export const ToyState = {
 
 export type ToyState = (typeof ToyState)[keyof typeof ToyState]
 
-/** Игрушка в модели кучи: форма, срезы глубины и непрерывная поза, которой её рисуют. */
+/** Игрушка в модели кучи: игрушка каталога, срезы глубины и непрерывная поза, которой её рисуют. */
 export type ToyBody = {
   readonly id: ToyId
-  readonly shape: ShapeKey
-  readonly variant: number
-  readonly color: number
+  readonly toy: ToyKey
   readonly hasLamp?: boolean
-  /** Ближний срез глубины; игрушка занимает срезы от него на глубину своего положения. */
+  /** Ближний срез глубины; игрушка занимает срезы от него на свою глубину. */
   slab: number
   /** Центр игрушки в мировых координатах и крен. */
   pose: { point: WorldPoint; angle: number }

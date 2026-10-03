@@ -144,15 +144,15 @@ describe('табло', () => {
 
     expect(board.litLamps()).toBe(0)
 
-    board.floorPile.drop({ shape: 'single', color: 0x3366ff, hasLamp: true }, () => 0.5)
+    board.floorPile.drop({ toy: 'duck', hasLamp: true }, () => 0.5)
     board.emitter.emit('prize:taken')
 
     expect(board.litLamps()).toBe(1)
 
     // Игрушка без лампы новую лампу не зажигает
-    board.floorPile.drop({ shape: 'bar2', color: 0x3366ff }, () => 0.5)
+    board.floorPile.drop({ toy: 'giraffe' }, () => 0.5)
     board.emitter.emit('prize:taken')
-    board.floorPile.drop({ shape: 'cube8', color: 0x3366ff, hasLamp: true }, () => 0.5)
+    board.floorPile.drop({ toy: 'teddy', hasLamp: true }, () => 0.5)
     board.emitter.emit('prize:taken')
 
     expect(board.litLamps()).toBe(2)
@@ -165,7 +165,13 @@ describe('табло', () => {
   })
 
   it('после загрузки зажигает лампы по игрушкам с лампой, лежащим на полу', () => {
-    const toy = { shape: 'single', variant: 0, slab: 0, y: 4, z: CABINET_BOTTOM_Z + 0.5, angle: 0, color: 0x3366ff } as const
+    const toy = {
+      slab: 0,
+      y: 4,
+      z: CABINET_BOTTOM_Z + 0.5,
+      angle: 0,
+      toy: 'duck',
+    } as const
 
     board = createBoard()
     board.floorPile.restore([

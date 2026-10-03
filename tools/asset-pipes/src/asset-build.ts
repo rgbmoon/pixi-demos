@@ -15,6 +15,7 @@ import { rotspritePipe } from '#src/pipes/rotsprite'
 import { stagePipe } from '#src/pipes/stage'
 import { stripPipe } from '#src/pipes/strip'
 import { tileCheckPipe } from '#src/pipes/tile-check'
+import { trimPipe } from '#src/pipes/trim'
 import type { AssetBuildOptions } from '#src/types'
 
 /**
@@ -68,6 +69,7 @@ export class AssetBuild {
         palettePipe({ palette, target: targetPalette }),
         stripPipe(),
         rotspritePipe(),
+        trimPipe(),
         outlinePipe(outlineColor),
         lightPipe(targetPalette ?? palette),
         tileCheckPipe(previewDir),

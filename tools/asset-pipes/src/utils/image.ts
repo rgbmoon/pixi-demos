@@ -1,6 +1,6 @@
 import sharp from 'sharp'
 
-import type { RasterImage } from '#src/types'
+import type { RasterImage, RasterPoint } from '#src/types'
 
 /** Создаёт прозрачный растр. */
 export const createImage = (width: number, height: number): RasterImage => ({
@@ -105,6 +105,35 @@ export const cropImage = (
   }
 
   return result
+}
+
+/**
+ * Обрезает прозрачные поля растра до рамки непрозрачных пикселей; `offset` — угол рамки в исходном растре.
+ * Прозрачный растр не обрезается.
+ */
+export const trimImage = (image: RasterImage): { image: RasterImage; offset: RasterPoint } => {
+  let left = image.width
+  let top = image.height
+  let right = -1
+  let bottom = -1
+
+  for (let y = 0; y < image.height; y++) {
+    for (let x = 0; x < image.width; x++) {
+      if (!isOpaque(image, x, y)) continue
+
+      left = Math.min(left, x)
+      top = Math.min(top, y)
+      right = Math.max(right, x)
+      bottom = Math.max(bottom, y)
+    }
+  }
+
+  if (right < 0) return { image, offset: { x: 0, y: 0 } }
+
+  return {
+    image: cropImage(image, left, top, right - left + 1, bottom - top + 1),
+    offset: { x: left, y: top },
+  }
 }
 
 /** Повторяет растр `columns` × `rows` раз. */

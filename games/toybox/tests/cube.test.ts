@@ -2,14 +2,16 @@
 import { Assets, type Container, Sprite, Texture } from 'pixi.js'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { CLAW_ATLAS, CLAW_FRAMES, CLAW_SEQUENCES, TOY_SEQUENCES, TOYS_ATLAS } from '#src/assets'
+import { CLAW_ATLAS, CLAW_FRAMES, CLAW_SEQUENCES, getToySequences } from '#src/assets'
 import { ClawRig } from '#src/claw/claw-rig'
 import { CLAW_GRAB_MS, FIELD_CENTER, TRAY_CENTER } from '#src/constants'
 import { CubeController } from '#src/controllers/box/cube'
 import type { ToyBody } from '#src/heap/types'
 import { ToyboxStore } from '#src/stores/toybox'
+import { TOY_KEYS } from '#src/toys'
 import { Claw } from '#src/ui/box/claw'
 import { Toy } from '#src/ui/box/toy'
+import { ANGLE_STEPS } from '#src/utils/shapes'
 import { GameTicker } from '@pixi-demos/engine/game-ticker'
 
 import { createHeap, stand } from './setup/heap'
@@ -21,16 +23,16 @@ const FRAME_MS = 100
 const OPEN = new Texture()
 const CLOSED = new Texture()
 const BACK = new Texture()
-/** Кадры игрушки в заглушке атласа: крен и сжатие, слабое и сильное. */
-const ROLL = Texture.WHITE
-const SQUEEZE_LIGHT = new Texture()
-const SQUEEZE_HARD = new Texture()
+
+/** Имена кадров крена и обводки всех игрушек: игрушка берёт кадры из кэша по имени. */
+const TOY_FRAMES = TOY_KEYS.map(getToySequences).flatMap(({ body, outline }) =>
+  [body, outline].flatMap((sequence) => Array.from({ length: ANGLE_STEPS }, (_, step) => `${sequence}-${step}.png`))
+)
 
 describe('кадр куба', () => {
   // Тест атласы не грузит, а клешне нужны кадры поворота, поз и текстура троса
   beforeEach(() => {
-    // Позы захвата различимы: сжатие игрушки выбирается по кадру клешни
-    for (const frame of Object.values(CLAW_FRAMES)) Assets.cache.set(frame, new Texture())
+    for (const frame of Object.values(CLAW_FRAMES)) Assets.cache.set(frame, Texture.WHITE)
     Assets.cache.set(CLAW_ATLAS, {
       animations: {
         [CLAW_SEQUENCES.open]: [OPEN],
@@ -38,30 +40,19 @@ describe('кадр куба', () => {
         [CLAW_SEQUENCES.back]: [BACK],
       },
     })
-    Assets.cache.set(TOYS_ATLAS, {
-      animations: Object.fromEntries(
-        Object.values(TOY_SEQUENCES)
-          .flat()
-          .flatMap(({ body, outline, squeeze, twitch }) => [
-            [body, Array<Texture>(72).fill(ROLL)],
-            [outline, Array<Texture>(72).fill(ROLL)],
-            [squeeze, [SQUEEZE_LIGHT, SQUEEZE_HARD]],
-            [twitch, Array<Texture>(72).fill(ROLL)],
-          ])
-      ),
-    })
+    for (const frame of TOY_FRAMES) Assets.cache.set(frame, Texture.WHITE)
   })
 
   afterEach(() => {
     for (const frame of Object.values(CLAW_FRAMES)) Assets.cache.remove(frame)
     Assets.cache.remove(CLAW_ATLAS)
-    Assets.cache.remove(TOYS_ATLAS)
+    for (const frame of TOY_FRAMES) Assets.cache.remove(frame)
   })
 
   it('ведёт игрушку в клешне в том же кадре, что клешню, и доставляет её центр точно над лотком', async () => {
     const ticker = new GameTicker()
     const rig = new ClawRig()
-    const heap = createHeap([stand('cube8', 3, FIELD_CENTER.y, 0)])
+    const heap = createHeap([stand('teddy', 3, FIELD_CENTER.y, 0)])
     const cube = new CubeController(ticker, heap, new ToyboxStore(), rig)
     const body = heap.getTopBodyAt(FIELD_CENTER) as Readonly<ToyBody>
     const grip = rig.getGripPoint()
@@ -102,44 +93,10 @@ describe('кадр куба', () => {
     ticker.destroy()
   })
 
-  it('сжимает игрушку вслед за кадрами клешни: к смыканию крен выровнен, отскок слабее, выпавшая игрушка не сжата', async () => {
-    const ticker = new GameTicker()
-    const rig = new ClawRig()
-    const heap = createHeap([{ ...stand('cube8', 3, FIELD_CENTER.y, 0), angle: 0.3 }])
-    const cube = new CubeController(ticker, heap, new ToyboxStore(), rig)
-    const shown: Texture[] = []
-    let time = 0
-
-    heap.lift(FIELD_CENTER, rig.getGripPoint())
-    ticker.update(time)
-
-    const toy = findNode(cube, (node) => node instanceof Toy)
-    const sprite = toy.children.at(-1) as Sprite
-    const grab = rig.grab(new AbortController().signal)
-
-    // Шаг 10 мс мельче кадров захвата: видна каждая поза клешни
-    for (let elapsed = 0; elapsed < 2 * CLAW_GRAB_MS; elapsed += 10) {
-      time += 10
-      ticker.update(time)
-      if (shown.at(-1) !== sprite.texture) shown.push(sprite.texture)
-    }
-    await grab
-
-    expect(shown).toEqual([ROLL, SQUEEZE_HARD, SQUEEZE_LIGHT, SQUEEZE_HARD])
-
-    heap.release(rig.getGripPoint())
-    ticker.update(time + 10)
-
-    expect(sprite.texture).toBe(ROLL)
-
-    cube.destroy({ children: true })
-    ticker.destroy()
-  })
-
   it('рисует игрушку в захвате между задним пальцем и клешней и возвращает её в слой, когда игрушка выпала', async () => {
     const ticker = new GameTicker()
     const rig = new ClawRig()
-    const heap = createHeap([stand('cube8', 3, FIELD_CENTER.y, 0)])
+    const heap = createHeap([stand('teddy', 3, FIELD_CENTER.y, 0)])
     const cube = new CubeController(ticker, heap, new ToyboxStore(), rig)
     let time = 0
     const frame = () => {

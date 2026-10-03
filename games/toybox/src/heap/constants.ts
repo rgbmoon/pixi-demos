@@ -1,4 +1,3 @@
-import { PALETTE } from '@pixi-demos/core/palette'
 
 // Физика кучи
 /** Ускорение свободного падения, клеток в секунду за секунду: падение с высоты 4 занимает ≈0,36 с. */
@@ -15,7 +14,7 @@ export const WALL_THICKNESS = 0.5
 /** Толщина стенки лотка в физике, в клетках. */
 export const TRAY_WALL_THICKNESS = 0.06
 /** Конечная высота игрушки в шахте: полностью перекрыта корпусом с учётом контура и обводки. */
-export const TRAY_EXIT_Z = -1.75
+export const TRAY_EXIT_Z = -2
 
 /**
  * Биты фильтра столкновений. Биты 0–7 — срезы глубины: игрушки сталкиваются, если занимают общий срез.
@@ -38,8 +37,8 @@ export const HEAP_SETTLE_TIMEOUT_MS = 8000
 /**
  * Профиль купола при наполнении
  */
-export const DOME_CENTER_HEIGHT = 4.2
-export const DOME_EDGE_HEIGHT = 1.6
+export const DOME_CENTER_HEIGHT = 3.4
+export const DOME_EDGE_HEIGHT = 2.8
 export const DOME_PEAK_JITTER = 1.2
 export const DOME_FALLOFF_MIN = 0.7
 export const DOME_FALLOFF_MAX = 1.6
@@ -56,12 +55,6 @@ export const FILL_BATCH_STEPS = 20
 export const FILL_SPAWN_GAP = 0.1
 /** Наибольший крен новой игрушки, радианы в обе стороны. */
 export const FILL_MAX_TILT = 0.3
-/** Корневой цвет игрушек: от него каждая уходит случайным сдвигом. */
-export const TOY_ROOT_COLOR = PALETTE.orange
-/** Разброс тона игрушки вокруг корневого цвета, градусы в обе стороны. */
-export const TOY_HUE_SPREAD = 45
-/** Разброс светлоты игрушки вокруг корневого цвета, доли в обе стороны. */
-export const TOY_LIGHTNESS_SPREAD = 0.14
 
 // Захват и отпускание
 /** Доля успешных захватов свободной игрушки весом в одну клетку. */

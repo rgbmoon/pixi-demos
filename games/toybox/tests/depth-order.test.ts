@@ -3,12 +3,12 @@ import { Container } from 'pixi.js'
 import { describe, expect, it } from 'vitest'
 
 import { CUBE_HEIGHT, GRID_SIZE, TRAY_ORIGIN, TRAY_SIZE } from '#src/constants'
-import type { DepthItem, PlaneVector, ScreenPoint, ShapeKey, WorldPoint } from '#src/types'
+import type { DepthItem, PlaneVector, ScreenPoint, ToyKey, WorldPoint } from '#src/types'
 import { DepthLayer } from '#src/ui/box/depth-layer'
 import { getClawDepthItem, getDepthRelation, getPlaneDepthItem, getToyDepthItem, orderByDepth } from '#src/utils/depth'
 import { getCubeFaces } from '#src/utils/machine-geometry'
 import { getFaceQuad, getViewRay, screenToGround, worldToScreen } from '#src/utils/projection'
-import { getDepthCenter, getVariant } from '#src/utils/shapes'
+import { getDepth, getDepthCenter } from '#src/utils/shapes'
 
 import { getPouredHeap } from './setup/heap'
 
@@ -104,7 +104,10 @@ const traceOrder = (first: DepthItem, second: DepthItem): number => {
     x: common.reduce((sum, { x }) => sum + x, 0) / common.length,
     y: common.reduce((sum, { y }) => sum + y, 0) / common.length,
   }
-  const samples = [center, ...common.map(({ x, y }) => ({ x: center.x + (x - center.x) * 0.6, y: center.y + (y - center.y) * 0.6 }))]
+  const samples = [
+    center,
+    ...common.map(({ x, y }) => ({ x: center.x + (x - center.x) * 0.6, y: center.y + (y - center.y) * 0.6 })),
+  ]
 
   for (const sample of samples) {
     const a = enter(first, sample)
@@ -117,15 +120,15 @@ const traceOrder = (first: DepthItem, second: DepthItem): number => {
 }
 
 /** Центр игрушки, стоящей в срезе `slab` на высоте `z`. */
-const center = (shape: ShapeKey, slab: number, y: number, z: number, variant = 0): WorldPoint => ({
-  x: getDepthCenter(slab, getVariant(shape, variant).depth),
+const center = (key: ToyKey, slab: number, y: number, z: number): WorldPoint => ({
+  x: getDepthCenter(slab, getDepth(key)),
   y,
   z,
 })
 
 /** Предмет игрушки без крена, центр которой стоит в срезе `slab` на высоте `z`. */
-const toy = (shape: ShapeKey, slab: number, y: number, z: number, variant = 0): DepthItem =>
-  getToyDepthItem(shape, variant, center(shape, slab, y, z, variant), 0)
+const toy = (key: ToyKey, slab: number, y: number, z: number): DepthItem =>
+  getToyDepthItem(key, center(key, slab, y, z), 0)
 
 /** Порядок отрисовки предметов, от дальнего к ближнему, со сравнением каждой пары заново. */
 const sortByDepth = (items: readonly DepthItem[]): number[] =>
@@ -149,8 +152,12 @@ describe('порядок наложения', () => {
     let largestBreak = 0
 
     for (const seed of [1, 2, 3]) {
-      const items = getPouredHeap(seed).map(({ shape, variant, slab, y, z, angle }) =>
-        getToyDepthItem(shape, variant, { x: getDepthCenter(slab, getVariant(shape, variant).depth), y, z }, angle)
+      const items = getPouredHeap(seed).map((body) =>
+        getToyDepthItem(
+          body.toy,
+          { x: getDepthCenter(body.slab, getDepth(body.toy)), y: body.y, z: body.z },
+          body.angle
+        )
       )
       const ranks = rank(items)
 
@@ -164,20 +171,23 @@ describe('порядок наложения', () => {
           pairs += 1
           if (Math.sign(relation) !== truth) relationErrors += 1
           if (Math.sign(ranks[first] - ranks[second]) !== truth) {
-            largestBreak = Math.max(largestBreak, Math.abs(getArea(intersect(items[first].outline, items[second].outline))))
+            largestBreak = Math.max(
+              largestBreak,
+              Math.abs(getArea(intersect(items[first].outline, items[second].outline)))
+            )
           }
         }
       }
     }
 
-    // Три кучи дают около тысячи пересекающихся пар: меньше половины значит, что проверка выродилась
-    expect(pairs).toBeGreaterThan(500)
+    // Три кучи дают около восьмидесяти пересекающихся пар: меньше половины значит, что проверка выродилась
+    expect(pairs).toBeGreaterThan(40)
     expect(relationErrors).toBe(0)
     expect(largestBreak).toBeLessThan(CYCLE_AREA_LIMIT)
   })
 
   it('рисует верхнюю игрушку стопки поверх нижних', () => {
-    const items = [0.4, 1.2, 2.0].map((z) => toy('single', 3, 4, z))
+    const items = [0.4, 1.2, 2.0].map((z) => toy('dolphin', 3, 4, z))
     const ranks = rank(items)
 
     expect(ranks[1]).toBeGreaterThan(ranks[0])
@@ -185,16 +195,16 @@ describe('порядок наложения', () => {
   })
 
   it('рисует игрушку ближнего среза поверх дальнего', () => {
-    const ranks = rank([4, 3, 2].map((slab) => toy('single', slab, 4, 0.5)))
+    const ranks = rank([4, 3, 2].map((slab) => toy('dolphin', slab, 4, 0.5)))
 
     expect(ranks[1]).toBeGreaterThan(ranks[0])
     expect(ranks[2]).toBeGreaterThan(ranks[1])
   })
 
   it('ставит игрушку на два среза между соседями обоих срезов', () => {
-    const cube = toy('cube8', 3, 4, 0.9)
-    const onTop = toy('single', 3, 4, 2.2)
-    const behind = toy('bar2', 5, 4, 0.5)
+    const cube = toy('teddy', 3, 4, 0.9)
+    const onTop = toy('dolphin', 3, 4, 2.2)
+    const behind = toy('giraffe', 5, 4, 0.5)
     const ranks = rank([cube, onTop, behind])
 
     expect(ranks[1]).toBeGreaterThan(ranks[0])
@@ -203,8 +213,8 @@ describe('порядок наложения', () => {
 
   it('прячет за дальней стенкой лотка то, что лежит за ней, и показывает перед ней игрушку в шахте', () => {
     const wall = getPlaneDepthItem(getFaceQuad(getCubeFaces().trayBack))
-    const behind = toy('single', TRAY_ORIGIN.x + TRAY_SIZE.x, 7, 0.5)
-    const falling = toy('single', TRAY_ORIGIN.x + TRAY_SIZE.x - 1, 7, 0.8)
+    const behind = toy('dolphin', TRAY_ORIGIN.x + TRAY_SIZE.x, 7, 0.5)
+    const falling = toy('dolphin', TRAY_ORIGIN.x + TRAY_SIZE.x - 2, 7, 0.8)
 
     expect(getDepthRelation(wall, behind)).toBeGreaterThan(0)
     expect(getDepthRelation(falling, wall)).toBeGreaterThan(0)
@@ -215,8 +225,8 @@ describe('порядок наложения', () => {
     const near = edge({ x: 0, y: 0, z: 0 })
     const far = edge({ x: GRID_SIZE, y: GRID_SIZE, z: 0 })
 
-    expect(getDepthRelation(near, toy('single', 0, 0.45, 1))).toBeGreaterThan(0)
-    expect(getDepthRelation(far, toy('single', GRID_SIZE - 1, GRID_SIZE - 0.45, 1))).toBeLessThan(0)
+    expect(getDepthRelation(near, toy('dolphin', 0, 0.45, 1))).toBeGreaterThan(0)
+    expect(getDepthRelation(far, toy('dolphin', GRID_SIZE - 1, GRID_SIZE - 0.45, 1))).toBeLessThan(0)
   })
 
   it('рисует клешню над игрушкой, на которую она опускается, и прячет её за игрушкой ближнего среза', () => {
@@ -231,9 +241,9 @@ describe('порядок наложения', () => {
         { x: x - 48, y: y + 48 },
       ])
     }
-    const below = toy('cube8', 3, 4, 0.9)
+    const below = toy('teddy', 3, 4, 0.9)
     const claw = clawAt({ x: 4, y: 4, z: 2 })
-    const front = toy('cube8', 0, 4, 1.8)
+    const front = toy('teddy', 0, 4, 1.8)
     const distant = clawAt({ x: 6.5, y: 4, z: 1.5 })
 
     expect(getDepthRelation(claw, below)).toBeGreaterThan(0)
@@ -247,18 +257,18 @@ describe('слой наложения', () => {
     const moving = new Container()
     const standing = new Container()
     const place = (view: Container, slab: number) => {
-      const point = center('single', slab, 4, 0.5)
+      const point = center('dolphin', slab, 4, 0.5)
 
-      layer.place(view, worldToScreen(point), 0, () => getToyDepthItem('single', 0, point, 0))
+      layer.place(view, worldToScreen(point), 0, () => getToyDepthItem('dolphin', point, 0))
     }
 
-    place(moving, 4)
+    place(moving, 5)
     place(standing, 3)
     layer.sort()
 
     expect(moving.zIndex).toBeLessThan(standing.zIndex)
 
-    place(moving, 2)
+    place(moving, 1)
     layer.sort()
 
     expect(moving.zIndex).toBeGreaterThan(standing.zIndex)

@@ -15,7 +15,7 @@ import {
   TRAY_ORIGIN,
   TRAY_SIZE,
 } from '#src/constants'
-import { type GroundPoint, type HeapSnapshotBody, PhaseName } from '#src/types'
+import { type GroundPoint, PhaseName } from '#src/types'
 import { createRandom } from '@pixi-demos/core/random'
 
 import { type Cycle, getGrabRolls, startCycle } from './setup/cycle'
@@ -42,20 +42,21 @@ const DELIVERY = [
 ]
 const EMPTY_HANDED = DELIVERY.filter((phase) => phase !== PhaseName.presenting)
 
-/** Игрушка снимка своего цвета: по цвету приз отличается от соседей той же формы. */
-const paint = (body: HeapSnapshotBody, color: number): HeapSnapshotBody => ({ ...body, color })
-
-/** Цвет игрушек стопки на полу: по нему они отличаются от выпавшего приза. */
-const STACK_COLOR = 0x22aa22
+/** Игрушка стопки на полу: по ней стопка отличается от выпавшего приза. */
+const STACK_TOY = 'elephant'
 
 /** Под кареткой в покое стоит куб с мячом наверху, в стороне — треугольник; мяч зажигает лампу табло. */
-const cube = paint(stand('cube8', 3, FIELD_CENTER.y, 0), 0x3366ff)
-const ball = { ...paint(stand('single', 4, FIELD_CENTER.y, topOf(cube)), 0xff3366), hasLamp: true }
-const triangle = paint(stand('triangle', 6, 2, 0), 0x33ff66)
+const cube = stand('pig-mask', 3, FIELD_CENTER.y, 0)
+const ball = { ...stand('dolphin', 4, FIELD_CENTER.y, topOf(cube)), hasLamp: true }
+const triangle = stand('cat', 6, 2, 0)
 const SCENE = [cube, ball, triangle]
 
-/** Формы игрушек, оставшихся в куче. */
-const getShapes = (cycle: Cycle): string[] => cycle.heap.takeSnapshot().map(({ shape }) => shape).sort()
+/** Игрушки, оставшиеся в куче. */
+const getToys = (cycle: Cycle): string[] =>
+  cycle.heap
+    .takeSnapshot()
+    .map(({ toy }) => toy)
+    .sort()
 
 /** Высота, на которой клешня сжималась. */
 const getGrabHeight = (cycle: Cycle): number | undefined =>
@@ -90,12 +91,12 @@ describe('цикл клешни', () => {
     // Клешня садится ровно на верх игрушки под кареткой
     expect(getGrabHeight(cycle)).toBeCloseTo(topOf(ball), 6)
     // Счёт растёт перед показом приза, а табло узнаёт о получении до того, как дверца закроется
-    expect(cycle.prizes).toEqual([{ shape: 'single', color: ball.color, hasLamp: true, collected: 1 }])
+    expect(cycle.prizes).toEqual([{ toy: ball.toy, hasLamp: true, collected: 1 }])
     expect(cycle.presentation).toEqual(['show', 'open', 'eject', 'prize:taken', 'close', 'hide'])
     expect(cycle.store.collected).toBe(1)
-    expect(getShapes(cycle)).toEqual(['cube8', 'triangle'])
+    expect(getToys(cycle)).toEqual(['cat', 'pig-mask'])
     // Приз лежит в покое на полу перед автоматом с отметкой лампы табло
-    expect(cycle.floorPile.takeSnapshot()).toMatchObject([{ shape: 'single', color: ball.color, hasLamp: true }])
+    expect(cycle.floorPile.takeSnapshot()).toMatchObject([{ toy: ball.toy, hasLamp: true }])
     expect(cycle.rig.getCartPoint()).toMatchObject(FIELD_CENTER)
     expect(cycle.rig.getGripPoint().z).toBe(CLAW_REST_HEIGHT)
     expect(cycle.store.checkpoint).toEqual({
@@ -116,16 +117,16 @@ describe('цикл клешни', () => {
   })
 
   it('открывает шторку с толчком: стопка игрушек под окном выдачи рассыпается', async () => {
-    const base = paint(stand('cube8', 0, PRIZE_NICHE_FLOOR.y, CABINET_BOTTOM_Z), STACK_COLOR)
-    const middle = paint(stand('cube8', 0, PRIZE_NICHE_FLOOR.y, topOf(base)), STACK_COLOR)
-    const top = paint(stand('cube8', 0, PRIZE_NICHE_FLOOR.y, topOf(middle)), STACK_COLOR)
+    const base = stand(STACK_TOY, 0, PRIZE_NICHE_FLOOR.y, CABINET_BOTTOM_Z)
+    const middle = stand(STACK_TOY, 0, PRIZE_NICHE_FLOOR.y, topOf(base))
+    const top = stand(STACK_TOY, 0, PRIZE_NICHE_FLOOR.y, topOf(middle))
 
     cycle = await startCycle({ bodies: SCENE, floor: [base, middle, top] })
     cycle.rolls.push(getGrabRolls(cycle).hit, SLIP_MISS, FUMBLE_MISS)
 
     expect(await cycle.playRound()).toEqual(DELIVERY)
 
-    const stack = [...cycle.floorPile.getBodies()].filter(({ color }) => color === STACK_COLOR)
+    const stack = [...cycle.floorPile.getBodies()].filter(({ toy }) => toy === STACK_TOY)
 
     expect(stack).toHaveLength(3)
     expect(Math.max(...stack.flatMap((body) => sectionOf(body).map(({ y }) => y)))).toBeLessThan(topOf(middle))
@@ -139,7 +140,7 @@ describe('цикл клешни', () => {
     expect(cycle.prizes).toEqual([])
     expect(cycle.floorPile.takeSnapshot()).toEqual([])
     expect(cycle.store.collected).toBe(0)
-    expect(getShapes(cycle)).toEqual(['cube8', 'single', 'triangle'])
+    expect(getToys(cycle)).toEqual(['cat', 'dolphin', 'pig-mask'])
     expectSoundHeap(cycle.heap)
   })
 
@@ -172,7 +173,7 @@ describe('цикл клешни', () => {
     expect(await cycle.playRound()).toEqual(EMPTY_HANDED)
     expect(cycle.drops.map(({ phase }) => phase)).toEqual([PhaseName.ascending])
     expect(cycle.store.collected).toBe(0)
-    expect(getShapes(cycle)).toEqual(['cube8', 'single', 'triangle'])
+    expect(getToys(cycle)).toEqual(['cat', 'dolphin', 'pig-mask'])
     expectSoundHeap(cycle.heap)
   })
 
@@ -195,7 +196,7 @@ describe('цикл клешни', () => {
     expect(frames[released + 1].phase).toBe(PhaseName.delivering)
     expect(getDistance(frames[released].cart, frames[released + 1].cart)).toBeGreaterThan(0)
     expect(cycle.store.collected).toBe(0)
-    expect(getShapes(cycle)).toEqual(['cube8', 'single', 'triangle'])
+    expect(getToys(cycle)).toEqual(['cat', 'dolphin', 'pig-mask'])
   })
 
   it('опускает клешню под кареткой, куда её подвёл игрок', async () => {
@@ -205,15 +206,15 @@ describe('цикл клешни', () => {
     cycle.rolls.push(getGrabRolls(cycle).hit, SLIP_MISS, FUMBLE_MISS)
     await cycle.playRound()
 
-    expect(cycle.prizes).toEqual([{ shape: 'triangle', color: triangle.color, collected: 1 }])
-    expect(getShapes(cycle)).toEqual(['cube8', 'single'])
+    expect(cycle.prizes).toEqual([{ toy: triangle.toy, collected: 1 }])
+    expect(getToys(cycle)).toEqual(['dolphin', 'pig-mask'])
   })
 
   it('выдаёт по очереди все игрушки, дошедшие до лотка за цикл', async () => {
     // Куб лежит на подушке у стенки лотка, мяч на кубе свешивается над шахтой: без куба мяч падает в лоток
-    const pillow = stand('square4', 0, TRAY_ORIGIN.y - 1, 0)
-    const base = paint(stand('cube8', 0, TRAY_ORIGIN.y - 1, topOf(pillow)), 0x3366ff)
-    const rider = paint(stand('single', 1, TRAY_ORIGIN.y + 0.2, topOf(base)), 0xff3366)
+    const pillow = stand('lying-pig', 0, TRAY_ORIGIN.y - 1, 0)
+    const base = stand('tumbler', 0, TRAY_ORIGIN.y - 1, topOf(pillow))
+    const rider = stand('dolphin', 1, TRAY_ORIGIN.y + 0.2, topOf(base))
 
     cycle = await startCycle({ bodies: [pillow, base, rider] })
 
@@ -232,12 +233,12 @@ describe('цикл клешни', () => {
       PhaseName.idle,
     ])
     expect(cycle.prizes).toEqual([
-      { shape: 'single', color: rider.color, collected: 1 },
-      { shape: 'cube8', color: base.color, collected: 2 },
+      { toy: rider.toy, collected: 1 },
+      { toy: base.toy, collected: 2 },
     ])
     expect(cycle.store.collected).toBe(2)
-    expect(getShapes(cycle)).toEqual(['square4'])
-    expect(cycle.floorPile.takeSnapshot().map(({ color }) => color)).toEqual([rider.color, base.color])
+    expect(getToys(cycle)).toEqual(['lying-pig'])
+    expect(cycle.floorPile.takeSnapshot().map(({ toy }) => toy)).toEqual([rider.toy, base.toy])
   })
 
   it('игнорирует опускание посреди цикла и принимает следующее после покоя', async () => {

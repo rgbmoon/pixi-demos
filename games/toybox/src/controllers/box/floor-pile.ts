@@ -8,7 +8,6 @@ import { TOYBOX_TOKENS } from '#src/tokens'
 import type { ToyId } from '#src/types'
 import { DepthLayer } from '#src/ui/box/depth-layer'
 import { Toy } from '#src/ui/box/toy'
-import { ToyShapes } from '#src/ui/box/toy-shapes'
 import { getToyDepthItem } from '#src/utils/depth'
 import { worldToScreen } from '#src/utils/projection'
 import { getAngleStep } from '#src/utils/shapes'
@@ -26,7 +25,6 @@ export class FloorPileController extends LiveContainer {
   private readonly ticker: GameTicker
   private readonly pile: FloorPile
   private readonly layer = new DepthLayer()
-  private readonly shapes = new ToyShapes()
   private readonly toys = new Map<ToyId, Toy>()
   private readonly seen = new Set<ToyId>()
   /** Генератор пауз между тиками: тики не тратят `Math.random` игры. */
@@ -52,8 +50,6 @@ export class FloorPileController extends LiveContainer {
     this.toys.clear()
 
     super.destroy(options)
-    // Общие контексты геометрии уничтожаются после игрушек, которые на них ссылаются
-    this.shapes.destroy()
   }
 
   /** Кадр пола: шаг модели, позы View-компонентов и порядок наложения. */
@@ -74,7 +70,7 @@ export class FloorPileController extends LiveContainer {
       this.seen.add(body.id)
       toy.setPose(point, angle)
       this.layer.place(toy, worldToScreen(point), getAngleStep(angle), () =>
-        getToyDepthItem(body.shape, body.variant, point, angle)
+        getToyDepthItem(body.toy, point, angle)
       )
     }
 
@@ -82,7 +78,7 @@ export class FloorPileController extends LiveContainer {
   }
 
   private addToy(body: Readonly<ToyBody>): Toy {
-    const toy = new Toy(this.ticker, this.shapes, body.shape, body.variant, body.color)
+    const toy = new Toy(this.ticker, body.toy)
 
     toy.startTwitching(this.random)
     this.toys.set(body.id, toy)

@@ -1,3 +1,5 @@
+import type { TOY_SPECS } from '#src/toy-specs'
+
 export const PhaseName = {
   booting: 'booting',
   idle: 'idle',
@@ -92,12 +94,12 @@ export type ClawDrop = {
  */
 export type ToyId = number
 
-export type ShapeKey = 'single' | 'bar2' | 'square4' | 'cube8' | 'triangle'
+/** Игрушка каталога: ключ её арта в атласе игрушек. */
+export type ToyKey = keyof typeof TOY_SPECS
 
 /** Внешний вид выданной игрушки без её положения в куче. */
 export type ToyAppearance = {
-  readonly shape: ShapeKey
-  readonly color: number
+  readonly toy: ToyKey
 }
 
 /** Выданная игрушка: внешний вид и отметка, что она зажигает лампу табло. */
@@ -111,22 +113,6 @@ export type SectionPoint = {
   z: number
 }
 
-/** Положение формы: выпуклое сечение в плоскости `(y, z)` и глубина в срезах. */
-export type ShapeVariant = {
-  /** Вершины выпуклого многоугольника сечения в клетках, против часовой стрелки. */
-  readonly section: readonly SectionPoint[]
-  /** Радиус скругления углов сечения в клетках. */
-  readonly radius: number
-  readonly depth: number
-}
-
-/** Форма игрушки: её положения, вес в клетках и то, как часто она попадается при наполнении. */
-export type Shape = {
-  readonly variants: readonly ShapeVariant[]
-  readonly weight: number
-  readonly fillWeight: number
-}
-
 /** Центр игрушки в плоскости сечения и её крен в радианах. */
 export type ToyPose = {
   y: number
@@ -134,15 +120,13 @@ export type ToyPose = {
   angle: number
 }
 
-/** Игрушка в снимке: форма, срезы, поза покоя и отметка лампы табло. */
+/** Игрушка в снимке: игрушка каталога, срезы, поза покоя и отметка лампы табло. */
 export type HeapSnapshotBody = {
-  shape: ShapeKey
-  variant: number
   slab: number
   y: number
   z: number
   angle: number
-  color: number
+  toy: ToyKey
   /** Выигранная игрушка зажигает следующую лампу табло; у остальных игрушек поля нет. */
   hasLamp?: boolean
 }
@@ -245,12 +229,10 @@ export type ButtonFrames = {
   readonly pressed: string
 }
 
-/** Последовательности атласа игрушек одного положения формы: кадры крена, обводка подсветки тех же поз и состояния. */
+/** Последовательности атласа игрушки: кадры крена, обводка подсветки тех же поз и тик на полу, если он нарисован. */
 export type ToySequences = {
   readonly body: string
   readonly outline: string
-  /** Сжатие клешнёй без крена: слабое и сильное. */
-  readonly squeeze?: string
   /** Поза тика на полу по кадрам крена. */
   readonly twitch?: string
 }

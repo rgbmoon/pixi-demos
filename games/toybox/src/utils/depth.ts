@@ -1,9 +1,9 @@
 import { CLAW_HUB_HALF_WIDTH, DEPTH_OVERLAP_TOLERANCE, TOY_INSET } from '#src/constants'
-import type { DepthItem, PlaneVector, ScreenPoint, ShapeKey, WorldPoint } from '#src/types'
+import type { DepthItem, PlaneVector, ScreenPoint, ToyKey, WorldPoint } from '#src/types'
 
 import { getAxes, getBounds, getConvexHull, getSeparation, projectPolygon } from './geometry'
 import { getDepthOrder, getViewRay, worldToScreen } from './projection'
-import { getPrismOutline, getSection, getVariant, placeSection, toPlane } from './shapes'
+import { getContactSection, getDepth, getPrismOutline, getSection, placeSection, toPlane } from './shapes'
 
 /** Допуск сравнения границ глубины: касание срезов не считается их пересечением. */
 const DEPTH_EPSILON = 1e-6
@@ -126,17 +126,17 @@ export const orderByDepth = (items: readonly DepthItem[], relate: (first: number
 }
 
 /** Предмет сортировки для игрушки: центр позы и крен. */
-export const getToyDepthItem = (shape: ShapeKey, variant: number, point: WorldPoint, angle: number): DepthItem => {
-  const { depth } = getVariant(shape, variant)
-  const section = getSection(shape, variant)
+export const getToyDepthItem = (toy: ToyKey, point: WorldPoint, angle: number): DepthItem => {
+  const depth = getDepth(toy)
   const center = worldToScreen(point)
   const half = (depth * TOY_INSET) / 2
 
+  // Соседние игрушки вдавлены друг в друга: прямая между ними проходит по сечениям касания, силуэт — по рисунку
   return createItem(
     point.x - half,
     point.x + half,
-    toPlane(placeSection(section, { y: point.y, z: point.z, angle })),
-    getPrismOutline(section, depth, angle).map(({ x, y }) => ({ x: x + center.x, y: y + center.y })),
+    toPlane(placeSection(getContactSection(toy), { y: point.y, z: point.z, angle })),
+    getPrismOutline(getSection(toy), depth, angle).map(({ x, y }) => ({ x: x + center.x, y: y + center.y })),
     getDepthOrder(point)
   )
 }

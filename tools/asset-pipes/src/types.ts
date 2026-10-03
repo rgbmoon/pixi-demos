@@ -148,9 +148,13 @@ export type BitmapFontPage = {
   readonly positions: ReadonlyMap<number, RasterPoint>
 }
 
-/** Кадр в JSON атласа: поля, которые читает и дописывает `frame-meta`. */
+/** Кадр в JSON атласа: поля встроенного упаковщика и поля, которые дописывает `frame-meta`. */
 export type AtlasFrame = {
-  sourceSize: { w: number; h: number }
+  frame: { x: number; y: number; w: number; h: number }
+  rotated?: boolean
+  trimmed?: boolean
+  spriteSourceSize?: { x: number; y: number; w: number; h: number }
+  sourceSize?: { w: number; h: number }
   anchor?: RasterPoint
   borders?: FrameBorders
 }

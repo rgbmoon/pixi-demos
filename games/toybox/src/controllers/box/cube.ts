@@ -13,7 +13,6 @@ import { DepthLayer } from '#src/ui/box/depth-layer'
 import { Face } from '#src/ui/box/face'
 import { Floor } from '#src/ui/box/floor'
 import { Toy } from '#src/ui/box/toy'
-import { ToyShapes } from '#src/ui/box/toy-shapes'
 import { getClawDepthItem, getPlaneDepthItem, getToyDepthItem } from '#src/utils/depth'
 import { getCubeFaces, getPillarFaces } from '#src/utils/machine-geometry'
 import { getFaceQuad, worldToScreen } from '#src/utils/projection'
@@ -40,7 +39,6 @@ export class CubeController extends LiveContainer {
   private readonly claw: Claw
   /** Сжата ли клешня на экране: смену состояния модели контроллер проигрывает анимацией. */
   private isClawClosed = false
-  private readonly shapes = new ToyShapes()
   private readonly toys = new Map<ToyId, Toy>()
   private readonly seen = new Set<ToyId>()
   /** Игрушка в захвате в этом кадре: её View-компонент лежит в сборке клешни, а не в слое. */
@@ -89,8 +87,6 @@ export class CubeController extends LiveContainer {
     this.toys.clear()
 
     super.destroy(options)
-    // Общие контексты геометрии уничтожаются после игрушек, которые на них ссылаются
-    this.shapes.destroy()
   }
 
   /** Кадр бокса: ход клешни, шаг кучи за точкой захвата, позы View-компонентов и порядок наложения. */
@@ -120,8 +116,6 @@ export class CubeController extends LiveContainer {
       this.seen.add(body.id)
       toy.setPose(point, angle)
       toy.setHighlighted(body.id === highlighted)
-      // Сжатие идёт за кадром клешни: смыкание, отскок и захват на весь перенос
-      toy.setSqueeze(body.state === ToyState.carried ? this.claw.squeeze : 0)
 
       // Игрушка в захвате рисуется между задним пальцем и клешней; отпущенную `place` возвращает в слой
       if (body.state === ToyState.carried) {
@@ -132,7 +126,7 @@ export class CubeController extends LiveContainer {
       }
 
       this.layer.place(toy, worldToScreen(point), getAngleStep(angle), () =>
-        getToyDepthItem(body.shape, body.variant, point, angle)
+        getToyDepthItem(body.toy, point, angle)
       )
     }
 
@@ -165,12 +159,12 @@ export class CubeController extends LiveContainer {
     const { point, angle } = held.pose
 
     this.layer.place(this.claw, worldToScreen(point), getAngleStep(angle) + 1, () =>
-      getClawDepthItem(grip, this.claw.getOutline(), getToyDepthItem(held.shape, held.variant, point, angle))
+      getClawDepthItem(grip, this.claw.getOutline(), getToyDepthItem(held.toy, point, angle))
     )
   }
 
   private addToy(body: Readonly<ToyBody>): Toy {
-    const toy = new Toy(this.ticker, this.shapes, body.shape, body.variant, body.color)
+    const toy = new Toy(this.ticker, body.toy)
 
     this.toys.set(body.id, toy)
 

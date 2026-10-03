@@ -1,6 +1,7 @@
 import { Assets, BitmapFont, type Spritesheet } from 'pixi.js'
 
-import type { ButtonFrames, LampColor, PrizeLight, ShapeKey, ToySequences } from './types'
+import { TOY_SPECS } from './toy-specs'
+import type { ButtonFrames, LampColor, PrizeLight, ToyKey, ToySequences } from './types'
 
 // Единый манифест ассетов toybox: все URL в одном месте. Атласы и шрифты собирает `pnpm assets` из
 // `games/toybox/art/`; `preloadGameAssets` грузит их одним `Assets.load` до сборки сцены, классы читают их из
@@ -156,13 +157,14 @@ export const HATCH_SEQUENCES = {
 } as const
 
 /**
- * Последовательности атласа игрушек по форме и её положению: кадры крена с шагом `TOY_ANGLE_STEP` по часовой стрелке,
- * их обводка подсветки, сжатие клешнёй и тик. Якорь кадра — центр сечения. Форма без последовательностей рисуется
- * силуэтом.
+ * Последовательности атласа игрушки: кадры крена с шагом `TOY_ANGLE_STEP` по часовой стрелке, их обводка подсветки и
+ * тик на полу, если он нарисован. Якорь кадра — опорная точка сечения.
  */
-export const TOY_SEQUENCES: Partial<Record<ShapeKey, readonly ToySequences[]>> = {
-  cube8: [{ body: 'bear', outline: 'bear-outline', squeeze: 'bear-squeeze', twitch: 'bear-twitch' }],
-}
+export const getToySequences = (toy: ToyKey): ToySequences => ({
+  body: toy,
+  outline: `${toy}-outline`,
+  twitch: TOY_SPECS[toy].twitch ? `${toy}-twitch` : undefined,
+})
 
 /** Кадры атласа фона: ключи текстур в кэше Assets. */
 export const ROOM_FRAMES = {
@@ -182,7 +184,7 @@ export const FONT_FAMILIES = {
 } as const
 
 /**
- * Грузит атласы и шрифты в кэш Assets. Каждому атласу и странице шрифта после загрузки ставится выборка ближайшего
+ * Грузит атласы и шрифты в кэш Assets. Каждой странице атласа и шрифта после загрузки ставится выборка ближайшего
  * пикселя (`nearest`): пиксель-арт рисуется целым масштабом без сглаживания. `TextureSource.defaultOptions` не
  * меняется, потому что его использует и слот.
  */
@@ -193,8 +195,11 @@ export async function preloadGameAssets(): Promise<void> {
   ])
 
   for (const asset of Object.values(assets)) {
+    // Страницы многостраничного атласа грузит первая страница: выборку ставим и им
     const sources =
-      asset instanceof BitmapFont ? asset.pages.map(({ texture }) => texture.source) : [asset.textureSource]
+      asset instanceof BitmapFont
+        ? asset.pages.map(({ texture }) => texture.source)
+        : [asset, ...asset.linkedSheets].map(({ textureSource }) => textureSource)
 
     for (const source of sources) source.scaleMode = 'nearest'
   }

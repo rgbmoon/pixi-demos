@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import { ART_PIXEL, MACHINE_CANVAS_SHARE, MACHINE_MARGIN, TOY_ANGLE_STEP, TRAY_CENTER } from '#src/constants'
 import { TRAY_EXIT_Z } from '#src/heap/constants'
-import { SHAPE_KEYS } from '#src/toys'
+import { TOY_KEYS } from '#src/toys'
 import type { ScreenPoint } from '#src/types'
 import { getCabinetOutlines, getMachineBounds, getMachineLayout } from '#src/utils/machine-geometry'
 import { worldToScreen } from '#src/utils/projection'
-import { getShapeOutline, getVariantCount } from '#src/utils/shapes'
+import { getDepth, getPrismOutline, getSection } from '#src/utils/shapes'
 
 /**
  * Канвасы: ширина и высота области под шапкой страницы в CSS-пикселях и плотность рендера. Десктоп 1920×1080,
@@ -97,31 +97,29 @@ describe('корпус автомата', () => {
     }
   })
 
-  it('закрывает игрушку, ушедшую из шахты лотка, при любой форме и крене', () => {
+  it('закрывает игрушку, ушедшую из шахты лотка, при любой игрушке и крене', () => {
     const faces = getCabinetOutlines().map((face) => face.map((point) => worldToScreen(point)))
     const origin = worldToScreen({ ...TRAY_CENTER, z: TRAY_EXIT_Z })
     const stepsPerTurn = Math.round((2 * Math.PI) / TOY_ANGLE_STEP)
     const exposed: string[] = []
 
-    for (const shape of SHAPE_KEYS) {
-      for (let variant = 0; variant < getVariantCount(shape); variant++) {
-        for (let sample = 0; sample < ANGLE_SAMPLES; sample++) {
-          const step = Math.round((sample * stepsPerTurn) / ANGLE_SAMPLES)
-          const outline = getShapeOutline(shape, variant, step)
+    for (const toy of TOY_KEYS) {
+      for (let sample = 0; sample < ANGLE_SAMPLES; sample++) {
+        const step = Math.round((sample * stepsPerTurn) / ANGLE_SAMPLES)
+        const outline = getPrismOutline(getSection(toy), getDepth(toy), step * TOY_ANGLE_STEP)
 
-          // Вершины и середины рёбер силуэта, сдвинутые на ширину обводки во все стороны
-          for (const [index, from] of outline.entries()) {
-            const to = outline[(index + 1) % outline.length]
+        // Вершины и середины рёбер силуэта, сдвинутые на ширину обводки во все стороны
+        for (const [index, from] of outline.entries()) {
+          const to = outline[(index + 1) % outline.length]
 
-            for (const share of [0, 0.5]) {
-              for (let turn = 0; turn < 8; turn++) {
-                const point = {
-                  x: origin.x + from.x + (to.x - from.x) * share + OUTLINE_MARGIN * Math.cos((turn * Math.PI) / 4),
-                  y: origin.y + from.y + (to.y - from.y) * share + OUTLINE_MARGIN * Math.sin((turn * Math.PI) / 4),
-                }
-
-                if (!faces.some((face) => isInside(face, point))) exposed.push(`${shape}/${variant}, шаг крена ${step}`)
+          for (const share of [0, 0.5]) {
+            for (let turn = 0; turn < 8; turn++) {
+              const point = {
+                x: origin.x + from.x + (to.x - from.x) * share + OUTLINE_MARGIN * Math.cos((turn * Math.PI) / 4),
+                y: origin.y + from.y + (to.y - from.y) * share + OUTLINE_MARGIN * Math.sin((turn * Math.PI) / 4),
               }
+
+              if (!faces.some((face) => isInside(face, point))) exposed.push(`${toy}, шаг крена ${step}`)
             }
           }
         }

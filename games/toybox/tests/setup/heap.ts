@@ -5,9 +5,9 @@ import { CLAW_GRAB_MS, FIELD_CENTER, GRID_SIZE } from '#src/constants'
 import { Heap } from '#src/heap/heap'
 import type { ToyPile } from '#src/heap/toy-pile'
 import { type ToyBody, ToyState } from '#src/heap/types'
-import type { GroundPoint, HeapSnapshotBody, ShapeKey, ToyId, WorldPoint } from '#src/types'
+import type { GroundPoint, HeapSnapshotBody, ToyId, ToyKey, WorldPoint } from '#src/types'
 import { polygonsOverlap } from '#src/utils/geometry'
-import { getSection, getVariant, placeSection, toPlane } from '#src/utils/shapes'
+import { getContactSection, getDepth, getSection, placeSection, toPlane } from '#src/utils/shapes'
 
 /** Шаг кадра при 60 fps. */
 export const FRAME_MS = 1000 / 60
@@ -40,33 +40,34 @@ export const createHeap = (bodies: readonly HeapSnapshotBody[]): Heap => {
 }
 
 /** Нижняя и верхняя границы сечения относительно центра игрушки. */
-const getExtent = (shape: ShapeKey, variant: number): { bottom: number; top: number } => {
-  const heights = getSection(shape, variant).map(({ z }) => z)
+const getExtent = (toy: ToyKey): { bottom: number; top: number } => {
+  const heights = getSection(toy).map(({ z }) => z)
 
   return { bottom: Math.min(...heights), top: Math.max(...heights) }
 }
 
 /** Игрушка снимка без крена, стоящая в срезе `slab` на высоте `floor`. */
-export const stand = (shape: ShapeKey, slab: number, y: number, floor: number, variant = 0): HeapSnapshotBody => ({
-  shape,
-  variant,
+export const stand = (toy: ToyKey, slab: number, y: number, floor: number): HeapSnapshotBody => ({
   slab,
   y,
-  z: floor - getExtent(shape, variant).bottom + 0.001,
+  z: floor - getExtent(toy).bottom + 0.001,
   angle: 0,
-  color: 0xff8800,
+  toy,
 })
 
 /** Верх игрушки снимка, стоящей без крена. */
-export const topOf = ({ shape, variant, z }: HeapSnapshotBody): number => z + getExtent(shape, variant).top
+export const topOf = ({ toy, z }: HeapSnapshotBody): number => z + getExtent(toy).top
 
 /** Сечение игрушки в её позе как фигура плоскости `(y, z)`. */
 export const sectionOf = (body: Readonly<ToyBody>) =>
-  toPlane(placeSection(getSection(body.shape, body.variant), { ...body.pose.point, angle: body.pose.angle }))
+  toPlane(placeSection(getSection(body.toy), { ...body.pose.point, angle: body.pose.angle }))
+
+/** Сечение касания игрушки в её позе: им игрушки упираются друг в друга. */
+const contactOf = (body: Readonly<ToyBody>) =>
+  toPlane(placeSection(getContactSection(body.toy), { ...body.pose.point, angle: body.pose.angle }))
 
 const shareSlab = (first: Readonly<ToyBody>, second: Readonly<ToyBody>): boolean =>
-  first.slab < second.slab + getVariant(second.shape, second.variant).depth &&
-  second.slab < first.slab + getVariant(first.shape, first.variant).depth
+  first.slab < second.slab + getDepth(second.toy) && second.slab < first.slab + getDepth(first.toy)
 
 export const findBody = (heap: Heap, id: ToyId | undefined): Readonly<ToyBody> => {
   const body = [...heap.getBodies()].find((candidate) => candidate.id === id)
@@ -106,7 +107,7 @@ export const expectSoundHeap = (pile: ToyPile, { minY, maxY, floor }: PileBounds
     for (let second = first + 1; second < bodies.length; second++) {
       if (!shareSlab(bodies[first], bodies[second])) continue
 
-      expect(polygonsOverlap(sectionOf(bodies[first]), sectionOf(bodies[second]), OVERLAP_TOLERANCE)).toBe(false)
+      expect(polygonsOverlap(contactOf(bodies[first]), contactOf(bodies[second]), OVERLAP_TOLERANCE)).toBe(false)
     }
   }
 }

@@ -1,5 +1,5 @@
 import type { HeapSnapshotBody, ToyId, ToyPose } from '#src/types'
-import { getSection, getVariant, getWeight } from '#src/utils/shapes'
+import { getContactSection, getDepth, getSection, getWeight } from '#src/utils/shapes'
 import { isReducedMotion } from '@pixi-demos/core/accessibility'
 
 import { HEAP_MAX_STEPS_PER_FRAME, HEAP_SETTLE_MAX_STEPS, HEAP_SETTLE_TIMEOUT_MS, HEAP_STEP_MS } from './constants'
@@ -62,14 +62,12 @@ export abstract class ToyPile {
   takeSnapshot(): HeapSnapshotBody[] {
     if (!this.settled) throw new Error('Heap is not settled')
 
-    return [...this.bodies.values()].map(({ shape, variant, slab, pose, color, hasLamp }) => ({
-      shape,
-      variant,
+    return [...this.bodies.values()].map(({ slab, pose, toy, hasLamp }) => ({
       slab,
       y: pose.point.y,
       z: pose.point.z,
       angle: pose.angle,
-      color,
+      toy,
       hasLamp,
     }))
   }
@@ -82,17 +80,15 @@ export abstract class ToyPile {
 
   /** Добавляет игрушку в срезы от `slab`: спящей в позе покоя или падающей. */
   protected create(
-    { shape, variant, slab, y, z, angle, color, hasLamp }: Readonly<HeapSnapshotBody>,
+    { slab, y, z, angle, toy, hasLamp }: Readonly<HeapSnapshotBody>,
     awake: boolean
   ): ToyBody {
     this.nextId += 1
 
-    const { depth } = getVariant(shape, variant)
+    const depth = getDepth(toy)
     const body: ToyBody = {
       id: this.nextId,
-      shape,
-      variant,
-      color,
+      toy,
       hasLamp,
       slab,
       pose: { point: { x: this.getDepthX(slab, depth), y, z }, angle },
@@ -100,7 +96,7 @@ export abstract class ToyPile {
     }
 
     this.bodies.set(body.id, body)
-    this.world.add(body.id, getSection(shape, variant), getWeight(shape), slab, depth, { y, z, angle }, awake)
+    this.world.add(body.id, getSection(toy), getContactSection(toy), getWeight(toy), slab, depth, { y, z, angle }, awake)
 
     return body
   }

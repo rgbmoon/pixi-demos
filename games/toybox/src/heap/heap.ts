@@ -4,7 +4,7 @@ import { CLAW_GRAB_MS, CLAW_GRAB_ROLL_MS, CLAW_RAMP_SHARE, CUBE_HEIGHT, GRID_SIZ
 import type { GroundPoint, HeapSnapshotBody, Prize, ToyId, ToyPose, WorldPoint } from '#src/types'
 import { getSeparation, polygonsOverlap, projectPolygon } from '#src/utils/geometry'
 import { clamp } from '#src/utils/math'
-import { getDepthCenter, getSection, getVariant, getWeight, placeSection, toPlane } from '#src/utils/shapes'
+import { getDepth, getDepthCenter, getSection, getWeight, placeSection, toPlane } from '#src/utils/shapes'
 import { isReducedMotion } from '@pixi-demos/core/accessibility'
 import { easeTrapezoid } from '@pixi-demos/core/easing'
 
@@ -69,7 +69,7 @@ export class Heap extends ToyPile {
     if (!body) return 0
 
     return clamp(
-      GRAB_BASE_CHANCE / (1 + GRAB_WEIGHT_PENALTY * getWeight(body.shape) + GRAB_LOAD_PENALTY * this.getLoad(body.id)),
+      GRAB_BASE_CHANCE / (1 + GRAB_WEIGHT_PENALTY * getWeight(body.toy) + GRAB_LOAD_PENALTY * this.getLoad(body.id)),
       GRAB_MIN_CHANCE,
       GRAB_MAX_CHANCE
     )
@@ -118,7 +118,7 @@ export class Heap extends ToyPile {
     // Точка захвата лежит на верхнем крае пальцев: игрушка, захваченная ниже своего верха, опускается в клешню
     this.seatedGripOffsetZ = Math.min(
       this.initialGripOffset.z,
-      -Math.max(...getSection(body.shape, body.variant).map(({ z }) => z))
+      -Math.max(...getSection(body.toy).map(({ z }) => z))
     )
     this.grabMs = 0
     this.touch()
@@ -135,7 +135,7 @@ export class Heap extends ToyPile {
     this.setGripPoint(grip)
     this.carried = undefined
 
-    const { depth } = getVariant(body.shape, body.variant)
+    const depth = getDepth(body.toy)
     const slab = clamp(Math.round(body.pose.point.x - depth / 2), 0, GRID_SIZE - depth)
     const pose = this.findFreePose(body, slab, depth)
 
@@ -173,7 +173,7 @@ export class Heap extends ToyPile {
 
     if (!body || body.state !== ToyState.free) return
 
-    this.world.push(body.id, { y: 0, z: -getWeight(body.shape) * PRESS_SPEED }, { y: point.y, z })
+    this.world.push(body.id, { y: 0, z: -getWeight(body.toy) * PRESS_SPEED }, { y: point.y, z })
     this.touch()
   }
 
@@ -199,7 +199,7 @@ export class Heap extends ToyPile {
     if (pose.z > TRAY_EXIT_Z) return
 
     this.remove(body.id)
-    this.prizes.push({ shape: body.shape, color: body.color, hasLamp: body.hasLamp })
+    this.prizes.push({ toy: body.toy, hasLamp: body.hasLamp })
   }
 
   /**
@@ -243,7 +243,7 @@ export class Heap extends ToyPile {
         if (seen.has(other.id) || other.state !== ToyState.free || !this.restsOn(other, current)) continue
 
         seen.add(other.id)
-        load += getWeight(other.shape)
+        load += getWeight(other.toy)
         queue.push(other)
       }
     }
@@ -253,16 +253,16 @@ export class Heap extends ToyPile {
 
   /** Лежит ли `upper` на `lower`: игрушки делят срез, их сечения касаются, и нормаль касания смотрит вверх. */
   private restsOn(upper: ToyBody, lower: ToyBody): boolean {
-    const upperDepth = getVariant(upper.shape, upper.variant).depth
-    const lowerDepth = getVariant(lower.shape, lower.variant).depth
+    const upperDepth = getDepth(upper.toy)
+    const lowerDepth = getDepth(lower.toy)
 
     if (upper.slab >= lower.slab + lowerDepth || lower.slab >= upper.slab + upperDepth) return false
 
     const top = toPlane(
-      placeSection(getSection(upper.shape, upper.variant), { ...upper.pose.point, angle: upper.pose.angle })
+      placeSection(getSection(upper.toy), { ...upper.pose.point, angle: upper.pose.angle })
     )
     const bottom = toPlane(
-      placeSection(getSection(lower.shape, lower.variant), { ...lower.pose.point, angle: lower.pose.angle })
+      placeSection(getSection(lower.toy), { ...lower.pose.point, angle: lower.pose.angle })
     )
     const { axis, gap } = getSeparation(bottom, top)
 
@@ -285,7 +285,7 @@ export class Heap extends ToyPile {
    * сечение пересекает игрушки тех же срезов.
    */
   private findFreePose(body: ToyBody, slab: number, depth: number): ToyPose {
-    const section = getSection(body.shape, body.variant)
+    const section = getSection(body.toy)
     const { angle } = body.pose
     const turned = placeSection(section, { y: 0, z: 0, angle })
     const left = -Math.min(...turned.map(({ y }) => y))
@@ -303,7 +303,7 @@ export class Heap extends ToyPile {
           polygonsOverlap(
             toPlane(placed),
             toPlane(
-              placeSection(getSection(other.shape, other.variant), { ...other.pose.point, angle: other.pose.angle })
+              placeSection(getSection(other.toy), { ...other.pose.point, angle: other.pose.angle })
             ),
             RELEASE_RAISE_STEP / 2
           )

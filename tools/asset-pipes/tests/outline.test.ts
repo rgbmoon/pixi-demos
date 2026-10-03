@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import { isOpaque } from '#src/utils/image'
-import { outlineImage } from '#src/utils/outline'
+import { outlineImage, softenDarkest } from '#src/utils/outline'
 import { parseHex } from '#src/utils/palette'
 
-import { fromRows } from './setup/raster'
+import { fromRows, toRows } from './setup/raster'
 
 const SHAPE = fromRows(['.##..', '#..#.', '#.###', '.#...'], { '#': '#6e7c40' })
 
@@ -31,5 +31,19 @@ describe('пайп outline', () => {
         }
       }
     }
+  })
+
+  it('смягчает самый тёмный цвет: край силуэта — цветом края, внутри — нижней ступенью рампы соседей', () => {
+    const palette = { ramps: { indigo: ['#080633', '#200e64'], metal: ['#2b2a44', '#4c4869'], brown: ['#2e1916', '#4e2e26'] } }
+    const legend = { k: '#080633', b: '#4e2e26', m: '#2b2a44', d: '#2e1916' }
+    const source = fromRows(['.kkk.', 'kbbbk', 'kbkbk', 'kbbbk', '.kkk.'], legend)
+
+    expect(toRows(softenDarkest(source, palette, '#080633', '#2b2a44'), legend)).toEqual([
+      '.mmm.',
+      'mbbbm',
+      'mbdbm',
+      'mbbbm',
+      '.mmm.',
+    ])
   })
 })

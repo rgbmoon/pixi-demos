@@ -71,7 +71,7 @@ describe('сборка ассетов', () => {
       dot: ['dot-0.png', 'dot-1.png'],
       strip: ['strip-0.png', 'strip-1.png', 'strip-2.png'],
     })
-    expect(atlas.frames['dot-0.png'].anchor).toEqual({ x: 1 / 3, y: 1 })
+    expect(atlas.frames['dot-0.png']).toEqual({ frame: atlas.frames['dot-0.png'].frame, anchor: { x: 1 / 3, y: 1 } })
     expect(atlas.frames['dot-1.png'].anchor).toBeUndefined()
     expect([0, 1, 2, 3].map((frame) => atlas.frames[`arrow-${frame}.png`].anchor)).toEqual([
       { x: 0, y: 0 },

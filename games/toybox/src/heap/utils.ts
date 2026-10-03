@@ -1,4 +1,8 @@
 import {
+  ART_CELL,
+  ART_PIXEL,
+  AXIS_X,
+  AXIS_Y,
   CABINET_BOTTOM_Z,
   CUBE_HEIGHT,
   FLOOR_PILE_DEPTH,
@@ -7,14 +11,18 @@ import {
   HEAP_SNAPSHOT_VERSION,
   MARQUEE_LAMP_COUNT,
   MARQUEE_TOP_Z,
+  PILLAR_WIDTH,
+  TOY_INSET,
   TRAY_ORIGIN,
   TRAY_SIZE,
   TRAY_WALL_HEIGHT,
 } from '#src/constants'
-import { SHAPE_KEYS, SHAPES } from '#src/toys'
-import type { GroundPoint, HeapSnapshot, HeapSnapshotBody, ShapeKey, ToyId, ToyPose } from '#src/types'
-import { clamp, lerp } from '#src/utils/math'
-import { getDepthCenter, getSection, getSectionExtent, getVariant, getVariantCount, getWeight } from '#src/utils/shapes'
+import { TOY_SPECS } from '#src/toy-specs'
+import { TOY_KEYS } from '#src/toys'
+import type { GroundPoint, HeapSnapshot, HeapSnapshotBody, ToyId, ToyKey, ToyPose } from '#src/types'
+import { lerp } from '#src/utils/math'
+import { worldToScreen } from '#src/utils/projection'
+import { getContactSection, getDepth, getDepthCenter, getSection, getSectionExtent, getWeight } from '#src/utils/shapes'
 import type { Random } from '@pixi-demos/core/types'
 
 import {
@@ -33,9 +41,6 @@ import {
   FILL_VOLUME,
   HEAP_SETTLE_MAX_STEPS,
   HEAP_STEP_MS,
-  TOY_HUE_SPREAD,
-  TOY_LIGHTNESS_SPREAD,
-  TOY_ROOT_COLOR,
   TRAY_EXIT_Z,
   TRAY_WALL_THICKNESS,
   WALL_THICKNESS,
@@ -47,8 +52,20 @@ import type { DomeProfile, SnapshotBounds, StaticBox, WorldStatics } from './typ
 const getFloorPileRight = (): number => (GRID_SIZE - FLOOR_PILE_WIDTH) / 2
 
 /**
+ * Правая стенка куба (сторона `y = 0`) в срезе `slab`. На экране глубина уходит вправо, и у дальних срезов стенка
+ * отодвинута внутрь: игрушка, прижатая к ней, вместе с обводкой подсветки не заходит на заднюю правую стойку.
+ */
+export const getRightWallY = (slab: number): number => {
+  // Дальний край игрушки в срезе и внутренний край задней правой стойки на экране за вычетом обводки
+  const far = slab + (1 + TOY_INSET) / 2
+  const limit = worldToScreen({ x: GRID_SIZE, y: PILLAR_WIDTH / ART_CELL, z: 0 }).x - ART_PIXEL
+
+  return Math.max(0, (far * AXIS_X.x - limit) / -AXIS_Y.x)
+}
+
+/**
  * Статика куба: пол, стенки и лоток. Пол перед шахтой лотка лежит во всех срезах, над шахтой — только в срезах за
- * лотком. Стенки стоят снаружи куба.
+ * лотком. Стенки стоят снаружи куба; правая стенка у дальних срезов отодвинута внутрь (`getRightWallY`).
  */
 export const getCubeStatics = (): WorldStatics => {
   const allSlabs = (1 << GRID_SIZE) - 1
@@ -63,6 +80,14 @@ export const getCubeStatics = (): WorldStatics => {
     height,
     mask,
   })
+  // Срезы с одним положением правой стенки делят один бокс
+  const rightWalls = new Map<number, number>()
+
+  for (let slab = 0; slab < GRID_SIZE; slab++) {
+    const wall = getRightWallY(slab)
+
+    rightWalls.set(wall, (rightWalls.get(wall) ?? 0) | (1 << slab))
+  }
 
   return {
     boxes: [
@@ -74,7 +99,9 @@ export const getCubeStatics = (): WorldStatics => {
         -WALL_THICKNESS / 2,
         allSlabs & ~traySlabs
       ),
-      box(WALL_THICKNESS, wallHeight, -WALL_THICKNESS / 2, wallCenter, allSlabs),
+      ...[...rightWalls].map(([wall, mask]) =>
+        box(WALL_THICKNESS, wallHeight, wall - WALL_THICKNESS / 2, wallCenter, mask)
+      ),
       box(WALL_THICKNESS, wallHeight, GRID_SIZE + WALL_THICKNESS / 2, wallCenter, allSlabs),
       box(
         TRAY_WALL_THICKNESS,
@@ -124,18 +151,31 @@ export const getFloorStatics = (): WorldStatics => {
   }
 }
 
-/** Форма для наполнения: выбор с весами `fillWeight`. */
-const pickShape = (random: Random): ShapeKey => {
-  const total = SHAPE_KEYS.reduce((sum, key) => sum + SHAPES[key].fillWeight, 0)
-  let roll = random() * total
+/**
+ * Мешок игрушек для наполнения: каталог в случайном порядке, новый мешок — когда старый кончился. Игрушка повторяется,
+ * только когда в кучу легли все; игрушка, которой не нашлось места, возвращается на дно мешка.
+ */
+const createToyBag = (random: Random) => {
+  const bag: ToyKey[] = []
 
-  for (const key of SHAPE_KEYS) {
-    roll -= SHAPES[key].fillWeight
+  return {
+    take(): ToyKey {
+      if (bag.length === 0) {
+        bag.push(...TOY_KEYS)
 
-    if (roll < 0) return key
+        for (let index = bag.length - 1; index > 0; index--) {
+          const pick = Math.floor(random() * (index + 1))
+
+          ;[bag[index], bag[pick]] = [bag[pick], bag[index]]
+        }
+      }
+
+      return bag.pop() as ToyKey
+    },
+    putBack(toy: ToyKey): void {
+      bag.unshift(toy)
+    },
   }
-
-  return SHAPE_KEYS[SHAPE_KEYS.length - 1]
 }
 
 /** Профиль купола: бросок сдвигает пик от центра поля и задаёт крутизну склона. */
@@ -159,41 +199,6 @@ const getDomeHeight = ({ peak, falloff, reach }: DomeProfile, point: GroundPoint
   const slope = (Math.hypot(point.x - peak.x, point.y - peak.y) / reach) ** falloff
 
   return lerp(DOME_CENTER_HEIGHT, DOME_EDGE_HEIGHT, slope)
-}
-
-/** Компоненты цвета в HSL: тон в градусах, насыщенность и светлота в долях единицы. */
-const toHsl = (color: string): { h: number; s: number; l: number } => {
-  const rgb = Number.parseInt(color.slice(1), 16)
-  const r = ((rgb >> 16) & 255) / 255
-  const g = ((rgb >> 8) & 255) / 255
-  const b = (rgb & 255) / 255
-  const max = Math.max(r, g, b)
-  const min = Math.min(r, g, b)
-  const span = max - min
-  const l = (max + min) / 2
-
-  if (span === 0) return { h: 0, s: 0, l }
-
-  const s = span / (1 - Math.abs(2 * l - 1))
-  const h = max === r ? ((g - b) / span) % 6 : max === g ? (b - r) / span + 2 : (r - g) / span + 4
-
-  return { h: (((h * 60) % 360) + 360) % 360, s, l }
-}
-
-/** Цвет игрушки: корневой цвет со случайным сдвигом тона и светлоты. */
-const shiftColor = (base: string, random: Random): number => {
-  const { h, s, l } = toHsl(base)
-  const hue = (((h + (random() * 2 - 1) * TOY_HUE_SPREAD) % 360) + 360) % 360
-  const lightness = clamp(l + (random() * 2 - 1) * TOY_LIGHTNESS_SPREAD, 0.2, 0.8)
-
-  const amplitude = s * Math.min(lightness, 1 - lightness)
-  const channel = (offset: number): number => {
-    const k = (offset + hue / 30) % 12
-
-    return Math.round(255 * (lightness - amplitude * Math.max(-1, Math.min(k - 3, 9 - k, 1))))
-  }
-
-  return (channel(0) << 16) | (channel(8) << 8) | channel(4)
 }
 
 /** Отмечает лампой табло `MARQUEE_LAMP_COUNT` случайных игрушек кучи. */
@@ -239,11 +244,12 @@ export const pourHeap = (random: Random): HeapSnapshotBody[] => {
     }
   }
 
+  const bag = createToyBag(random)
+
   while (volume < FILL_VOLUME && failures < FILL_MAX_FAILURES) {
-    const shape = pickShape(random)
-    const variant = Math.floor(random() * getVariantCount(shape))
-    const { depth } = getVariant(shape, variant)
-    const section = getSection(shape, variant)
+    const toy = bag.take()
+    const depth = getDepth(toy)
+    const section = getSection(toy)
     const { halfWidth, halfHeight } = getSectionExtent(section)
     let best: { slab: number; y: number; surface: number; deficit: number } | undefined
 
@@ -251,7 +257,8 @@ export const pourHeap = (random: Random): HeapSnapshotBody[] => {
       const slab = Math.floor(random() * (GRID_SIZE - depth + 1))
       // Над шахтой лотка игрушка не появляется: там нет пола
       const right = slab < TRAY_ORIGIN.x + TRAY_SIZE.x ? TRAY_ORIGIN.y : GRID_SIZE
-      const y = halfWidth + random() * (right - 2 * halfWidth)
+      const wall = getRightWallY(slab + depth - 1)
+      const y = wall + halfWidth + random() * (right - wall - 2 * halfWidth)
       const surface = Math.max(
         world.castDown(y - halfWidth, slab, depth).z,
         world.castDown(y, slab, depth).z,
@@ -263,6 +270,7 @@ export const pourHeap = (random: Random): HeapSnapshotBody[] => {
     }
 
     if (!best || best.deficit <= 0) {
+      bag.putBack(toy)
       failures += 1
       continue
     }
@@ -274,13 +282,11 @@ export const pourHeap = (random: Random): HeapSnapshotBody[] => {
       z: best.surface + halfHeight + FILL_SPAWN_GAP,
       angle: (random() * 2 - 1) * FILL_MAX_TILT,
     }
-    const color = shiftColor(TOY_ROOT_COLOR, random)
-
     // Номер появления служит id тела во временном мире
     spawned += 1
-    toys.set(spawned, { shape, variant, slab: best.slab, ...pose, color })
-    world.add(spawned, section, getWeight(shape), best.slab, depth, pose, true)
-    volume += getWeight(shape)
+    toys.set(spawned, { slab: best.slab, ...pose, toy })
+    world.add(spawned, section, getContactSection(toy), getWeight(toy), best.slab, depth, pose, true)
+    volume += getWeight(toy)
 
     if (spawned % FILL_BATCH === 0) {
       for (let step = 0; step < FILL_BATCH_STEPS; step++) stepWorld()
@@ -315,25 +321,23 @@ const isInteger = (value: unknown, min: number, max: number): value is number =>
   typeof value === 'number' && Number.isSafeInteger(value) && value >= min && value <= max
 const isNumberIn = (value: unknown, min: number, max: number): value is number =>
   typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max
-const isShapeKey = (value: unknown): value is ShapeKey => typeof value === 'string' && Object.hasOwn(SHAPES, value)
+const isToyKey = (value: unknown): value is ToyKey => typeof value === 'string' && Object.hasOwn(TOY_SPECS, value)
 
-const isSnapshotBody = (value: unknown, { slabs, minY, maxY, minZ, maxZ }: SnapshotBounds): value is HeapSnapshotBody => {
+const isSnapshotBody = (
+  value: unknown,
+  { slabs, minY, maxY, minZ, maxZ }: SnapshotBounds
+): value is HeapSnapshotBody => {
   if (!isRecord(value)) return false
 
-  const { shape, variant, slab, y, z, angle, color, hasLamp } = value
+  const { slab, y, z, angle, toy, hasLamp } = value
 
-  if (!isShapeKey(shape)) return false
-
-  const { variants } = SHAPES[shape]
-
-  if (!isInteger(variant, 0, variants.length - 1)) return false
+  if (!isToyKey(toy)) return false
 
   return (
-    isInteger(slab, 0, slabs - variants[variant].depth) &&
+    isInteger(slab, 0, slabs - getDepth(toy)) &&
     isNumberIn(y, minY, maxY) &&
     isNumberIn(z, minZ, maxZ) &&
     isNumberIn(angle, -Number.MAX_VALUE, Number.MAX_VALUE) &&
-    isInteger(color, 0, 0xffffff) &&
     (hasLamp === undefined || typeof hasLamp === 'boolean')
   )
 }

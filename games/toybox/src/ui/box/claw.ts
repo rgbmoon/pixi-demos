@@ -29,8 +29,6 @@ export class Claw extends FrameAnimation {
   /** Кадр заднего пальца к кадру клешни: тот же наклон, у отвесных поз — без наклона. */
   private readonly backFrames: Map<Texture, Texture>
   private readonly backUpright: Texture
-  /** Сжатие игрушки в захвате по кадру клешни: у кадров, которых нет в карте, пальцы игрушку не сжимают. */
-  private readonly squeezes: ReadonlyMap<Texture, number>
   /** Кадры поворота раскрытой и сжатой клешни, кадр без наклона посередине. */
   private readonly openTilts: FrameSequence
   private readonly closedTilts: FrameSequence
@@ -77,7 +75,6 @@ export class Claw extends FrameAnimation {
       [openFrames, closedFrames].flatMap((frames) => frames.map((frame, index) => [frame, backFrames[index]] as const))
     )
     this.backUpright = backFrames[middle]
-    this.squeezes = new Map([...closedFrames.map((frame) => [frame, 2] as const), [pose(CLAW_FRAMES.twoThirds), 1]])
     this.tilts = this.openTilts
     this.tilt = middle
     this.carrier.scale.set(ART_PIXEL)
@@ -86,11 +83,6 @@ export class Claw extends FrameAnimation {
     this.addChildAt(this.back, 1)
     this.addChildAt(this.holder, 2)
     this.applyFrame(this.carrier.texture)
-  }
-
-  /** Сила, с которой пальцы в кадре на экране сжимают игрушку: 0 — не сжимают, 1 — приоткрыты, 2 — сомкнуты. */
-  get squeeze(): number {
-    return this.squeezes.get(this.carrier.texture) ?? 0
   }
 
   /** Сжимает клешню: замах, резкое смыкание и отскок с приоткрытием. */

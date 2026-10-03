@@ -8,6 +8,7 @@ import {
   PRIZE_LIGHT_SWITCH,
   PRIZE_LIGHT_TINT,
 } from '#src/constants'
+import { TOY_KEYS } from '#src/toys'
 import { PrizeLight, type ToyAppearance } from '#src/types'
 import { Face } from '#src/ui/box/face'
 import { getPrizeHatchFaces } from '#src/utils/machine-geometry'
@@ -17,11 +18,9 @@ import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 import type { FrameSequence } from '@pixi-demos/engine/types'
 
 import { Toy } from './toy'
-import { ToyShapes } from './toy-shapes'
 
 /** Ниша за окном выдачи с призом на полу: свет загорается ровно или с перебоями и мерцает, в темноте приз затемнён. */
 export class PrizeNiche extends FrameAnimation<Face> {
-  private readonly shapes = new ToyShapes()
   private readonly prize: Toy
   private readonly lights: Readonly<Record<PrizeLight, Texture>>
   /** Тинт приза по кадру света. */
@@ -38,7 +37,9 @@ export class PrizeNiche extends FrameAnimation<Face> {
 
     super(ticker, new Face(lights.off, getPrizeHatchFaces().opening))
 
-    this.prize = new Toy(ticker, this.shapes, 'single', 0, 0xffffff)
+    // До первого приза ниша держит любую игрушку скрытой
+    this.prize = new Toy(ticker, TOY_KEYS[0])
+    this.prize.visible = false
     this.lights = lights
     this.tints = new Map(Object.values(PrizeLight).map((light) => [lights[light], PRIZE_LIGHT_TINT[light]]))
     this.darkness = this.toSequence([[PrizeLight.off, 0]])
@@ -49,9 +50,9 @@ export class PrizeNiche extends FrameAnimation<Face> {
   }
 
   /** Ставит игрушку на пол ниши. */
-  setPrize({ shape, color }: ToyAppearance): void {
-    this.prize.setAppearance(shape, 0, color)
-    this.prize.setPose(getPrizeSeat(shape, 0), 0)
+  setPrize({ toy }: ToyAppearance): void {
+    this.prize.setAppearance(toy)
+    this.prize.setPose(getPrizeSeat(toy), 0)
     this.prize.visible = true
   }
 
@@ -81,7 +82,6 @@ export class PrizeNiche extends FrameAnimation<Face> {
     if (this.destroyed) return
 
     super.destroy(options)
-    this.shapes.destroy()
   }
 
   protected override applyFrame(texture: Texture | undefined): void {

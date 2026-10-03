@@ -8,7 +8,7 @@ import {
   getPrizeSeat,
   getSection,
   getSectionExtent,
-  getVariant,
+  getDepth,
   getWeight,
   placeSection,
 } from '#src/utils/shapes'
@@ -52,14 +52,13 @@ export class FloorPile extends ToyPile {
    * Роняет приз из окна выдачи: игрушка получает толчок вниз и вбок и летит вперёд в случайные срезы пола.
    * Падая, она расталкивает игрушки, которые уже лежат на полу.
    */
-  drop({ shape, color, hasLamp }: Prize, random: Random): void {
-    const variant = 0
-    const { depth } = getVariant(shape, variant)
+  drop({ toy, hasLamp }: Prize, random: Random): void {
+    const depth = getDepth(toy)
     const slab = Math.floor(random() * (FLOOR_PILE_DEPTH - depth + 1))
-    const { x, y, z } = getPrizeSeat(shape, variant)
-    const body = this.create({ shape, variant, slab, y, z, angle: 0, color, hasLamp }, true)
-    const { halfWidth } = getSectionExtent(getSection(shape, variant))
-    const weight = getWeight(shape)
+    const { x, y, z } = getPrizeSeat(toy)
+    const body = this.create({ slab, y, z, angle: 0, toy, hasLamp }, true)
+    const { halfWidth } = getSectionExtent(getSection(toy))
+    const weight = getWeight(toy)
 
     this.flights.set(body.id, { target: body.pose.point.x, elapsedMs: 0 })
     body.pose.point.x = x
@@ -82,7 +81,7 @@ export class FloorPile extends ToyPile {
     for (const body of this.bodies.values()) {
       const { y, z } = body.pose.point
       const offset = y - PRIZE_NICHE_FLOOR.y
-      const heights = placeSection(getSection(body.shape, body.variant), { y, z, angle: body.pose.angle }).map(
+      const heights = placeSection(getSection(body.toy), { y, z, angle: body.pose.angle }).map(
         (point) => point.z
       )
       const isOnFloor = Math.min(...heights) < CABINET_BOTTOM_Z + FLOOR_NUDGE_REST_TOLERANCE
@@ -91,7 +90,7 @@ export class FloorPile extends ToyPile {
 
       const side = Math.abs(offset) < FLOOR_NUDGE_AXIS_TOLERANCE ? (random() < 0.5 ? -1 : 1) : Math.sign(offset)
       // Масса тела равна весу игрушки, поэтому импульс — вес, умноженный на скорость
-      const impulse = side * FLOOR_NUDGE_SPEED * getWeight(body.shape)
+      const impulse = side * FLOOR_NUDGE_SPEED * getWeight(body.toy)
 
       this.world.push(body.id, { y: impulse, z: 0 }, { y, z: Math.max(...heights) })
     }

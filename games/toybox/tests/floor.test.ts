@@ -9,9 +9,9 @@ import {
   PRIZE_NICHE_FLOOR,
 } from '#src/constants'
 import { FloorPile } from '#src/heap/floor-pile'
-import { SHAPE_KEYS } from '#src/toys'
+import { TOY_KEYS } from '#src/toys'
 import type { HeapSnapshotBody, ToyAppearance } from '#src/types'
-import { getVariant } from '#src/utils/shapes'
+import { getDepth } from '#src/utils/shapes'
 import { createRandom } from '@pixi-demos/core/random'
 import type { Random } from '@pixi-demos/core/types'
 
@@ -30,7 +30,7 @@ const FLOOR_BOUNDS: PileBounds = {
   floor: CABINET_BOTTOM_Z,
 }
 
-const PRIZE: ToyAppearance = { shape: 'cube8', color: 0x3366ff }
+const PRIZE: ToyAppearance = { toy: 'elephant' }
 
 /** Крутит кадры, пока пол не придёт в покой. */
 const settle = (pile: FloorPile): void => {
@@ -45,12 +45,12 @@ const settle = (pile: FloorPile): void => {
 
 /**
  * Роняет `count` призов подряд в темпе показа и ждёт покоя: перед каждым призом пол получает толчок открытия шторки,
- * формы идут по кругу каталога, срезы и толчки задаёт генератор.
+ * игрушки идут по кругу каталога, срезы и толчки задаёт генератор.
  */
 const dropSeries = (pile: FloorPile, count: number, random: Random): HeapSnapshotBody[] => {
   for (let prize = 0; prize < count; prize++) {
     pile.nudge(random)
-    pile.drop({ shape: SHAPE_KEYS[prize % SHAPE_KEYS.length], color: prize }, random)
+    pile.drop({ toy: TOY_KEYS[prize % TOY_KEYS.length] }, random)
 
     for (let frame = 0; frame < PRESENTATION_FRAMES; frame++) pile.advance(FRAME_MS)
   }
@@ -72,9 +72,9 @@ describe('пол: выпадение приза', () => {
     settle(pile)
 
     const [body] = pile.getBodies()
-    const { depth } = getVariant(body.shape, body.variant)
+    const depth = getDepth(body.toy)
 
-    expect(body).toMatchObject({ shape: PRIZE.shape, color: PRIZE.color })
+    expect(body).toMatchObject({ toy: PRIZE.toy })
     expect(Math.min(...sectionOf(body).map(({ y }) => y))).toBeCloseTo(CABINET_BOTTOM_Z, 1)
     // Приз долетел от фасада до своих срезов
     expect(body.pose.point.x).toBe(CABINET_FRONT_X - (body.slab + depth / 2))
@@ -107,10 +107,10 @@ describe('пол: выпадение приза', () => {
 describe('пол: толчок при открытии шторки', () => {
   /** Стопка из трёх кубов на оси окна выдачи в одном срезе. */
   const getStack = (): HeapSnapshotBody[] => {
-    const base = stand('cube8', 0, PRIZE_NICHE_FLOOR.y, CABINET_BOTTOM_Z)
-    const middle = stand('cube8', 0, PRIZE_NICHE_FLOOR.y, topOf(base))
+    const base = stand('teddy', 0, PRIZE_NICHE_FLOOR.y, CABINET_BOTTOM_Z)
+    const middle = stand('teddy', 0, PRIZE_NICHE_FLOOR.y, topOf(base))
 
-    return [base, middle, stand('cube8', 0, PRIZE_NICHE_FLOOR.y, topOf(middle))]
+    return [base, middle, stand('teddy', 0, PRIZE_NICHE_FLOOR.y, topOf(middle))]
   }
 
   it('роняет стопку под окном выдачи', () => {
@@ -131,9 +131,9 @@ describe('пол: толчок при открытии шторки', () => {
     const pile = new FloorPile()
 
     pile.restore([
-      stand('cube8', 0, PRIZE_NICHE_FLOOR.y - 2, CABINET_BOTTOM_Z),
-      stand('single', 2, PRIZE_NICHE_FLOOR.y, CABINET_BOTTOM_Z),
-      stand('bar2', 4, PRIZE_NICHE_FLOOR.y + 2, CABINET_BOTTOM_Z),
+      stand('teddy', 0, PRIZE_NICHE_FLOOR.y - 2, CABINET_BOTTOM_Z),
+      stand('dolphin', 2, PRIZE_NICHE_FLOOR.y, CABINET_BOTTOM_Z),
+      stand('giraffe', 4, PRIZE_NICHE_FLOOR.y + 2, CABINET_BOTTOM_Z),
     ])
 
     const before = pile.takeSnapshot()
