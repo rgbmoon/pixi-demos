@@ -34,6 +34,8 @@ export class Heap extends ToyPile {
   private carried?: ToyBody
   private initialGripOffset: WorldPoint = { x: 0, y: 0, z: 0 }
   private initialAngle = 0
+  /** Смещение центра игрушки по высоте от точки захвата после посадки: верх игрушки без крена не выше верха пальцев. */
+  private seatedGripOffsetZ = 0
   /** Время посадки игрушки в клешню с момента `lift`; не больше `CLAW_GRAB_MS`. */
   private grabMs = 0
 
@@ -113,6 +115,11 @@ export class Heap extends ToyPile {
       z: body.pose.point.z - grip.z,
     }
     this.initialAngle = body.pose.angle
+    // Точка захвата лежит на верхнем крае пальцев: игрушка, захваченная ниже своего верха, опускается в клешню
+    this.seatedGripOffsetZ = Math.min(
+      this.initialGripOffset.z,
+      -Math.max(...getSection(body.shape, body.variant).map(({ z }) => z))
+    )
     this.grabMs = 0
     this.touch()
 
@@ -197,7 +204,8 @@ export class Heap extends ToyPile {
 
   /**
    * Ставит удерживаемую игрушку за точкой захвата после движения и качания клешни в этом кадре. За время
-   * посадки игрушка по `easeTrapezoid` центрируется под точкой захвата и выравнивает крен.
+   * посадки игрушка по `easeTrapezoid` центрируется под точкой захвата, выравнивает крен и опускается так, что её
+   * верх не выше верха пальцев.
    */
   private setGripPoint(grip: WorldPoint): void {
     const body = this.carried
@@ -209,7 +217,7 @@ export class Heap extends ToyPile {
 
     point.x = grip.x + this.initialGripOffset.x * remaining
     point.y = grip.y + this.initialGripOffset.y * remaining
-    point.z = grip.z + this.initialGripOffset.z
+    point.z = grip.z + this.seatedGripOffsetZ + (this.initialGripOffset.z - this.seatedGripOffsetZ) * remaining
     body.pose.angle = this.initialAngle * remaining
     this.world.moveCarried(body.id, { y: point.y, z: point.z, angle: body.pose.angle })
   }

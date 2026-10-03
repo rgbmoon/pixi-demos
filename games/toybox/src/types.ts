@@ -245,6 +245,12 @@ export type ButtonFrames = {
   readonly pressed: string
 }
 
+/** Последовательности атласа игрушек одного положения формы: кадры крена и обводка подсветки тех же поз. */
+export type ToySequences = {
+  readonly body: string
+  readonly outline: string
+}
+
 export type JoystickOptions = {
   /** Экранное направление с длиной 0–1 для проверки мёртвой зоны; целевая скорость от длины не зависит. */
   onMove: (vector: ScreenPoint) => void

@@ -165,14 +165,19 @@ describe('куча: захват', () => {
     expect(rider.pose.point.z).toBeLessThan(before - 1)
   })
 
-  it('не дёргает игрушку при захвате и за время захвата ставит её под клешню без крена', () => {
+  it('не дёргает игрушку при захвате и за время захвата ставит её под клешню без крена, верхом не выше пальцев', () => {
+    let lowered = 0
+
     for (const { shape, variant } of VARIANTS) {
       const heap = createHeap([tilted(stand(shape, 3, 4, 0, variant), 0.3)])
       const point = { x: 3.5, y: 4.2 }
       const body = heap.getTopBodyAt(point) as Readonly<ToyBody>
       const visible = { ...body.pose.point }
       const grip = { ...point, z: heap.getSurfaceHeightAt(point) }
+      const top = Math.max(...getSection(shape, variant).map(({ z }) => z))
+      const seatedZ = Math.min(visible.z, grip.z - top)
 
+      if (seatedZ < visible.z - 1e-6) lowered += 1
       heap.lift(point, grip)
       heap.advance(0, grip)
 
@@ -185,9 +190,11 @@ describe('куча: захват', () => {
 
       expect(body.pose.point.x).toBeCloseTo(grip.x, 9)
       expect(body.pose.point.y).toBeCloseTo(grip.y, 9)
-      expect(body.pose.point.z).toBeCloseTo(visible.z, 9)
+      expect(body.pose.point.z).toBeCloseTo(seatedZ, 9)
       expect(body.pose.angle).toBeCloseTo(0, 9)
     }
+
+    expect(lowered).toBeGreaterThan(0)
   })
 
   it('при уменьшенном движении ставит игрушку под клешню за один кадр', () => {

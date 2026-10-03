@@ -79,6 +79,6 @@ await new AssetBuild({
   ignore: ['palette/**', '**/raw/**', '**/source.json'],
   palette,
   faces: getFaceLayouts(),
-  outlineColor: palette.ramps.neon[4],
+  outlineColor: palette.ramps.bone[4],
   previewDir: process.env.ASSET_PREVIEW_DIR,
 }).run()

@@ -1,6 +1,6 @@
 import { Assets, BitmapFont, type Spritesheet } from 'pixi.js'
 
-import type { ButtonFrames, LampColor, PrizeLight } from './types'
+import type { ButtonFrames, LampColor, PrizeLight, ShapeKey, ToySequences } from './types'
 
 // Единый манифест ассетов toybox: все URL в одном месте. Атласы и шрифты собирает `pnpm assets` из
 // `games/toybox/art/`; `preloadGameAssets` грузит их одним `Assets.load` до сборки сцены, классы читают их из
@@ -34,6 +34,9 @@ export const HUD_ATLAS = 'hud'
 /** Алиас атласа окна выдачи в кэше Assets. */
 export const HATCH_ATLAS = 'hatch'
 
+/** Алиас атласа игрушек в кэше Assets. */
+export const TOYS_ATLAS = 'toys'
+
 /** Атласы игры: алиас в кэше Assets → URL JSON атласа. */
 export const ATLASES = {
   [ROOM_ATLAS]: `${ASSETS_DIR}/room/room.json`,
@@ -42,6 +45,7 @@ export const ATLASES = {
   [CLAW_ATLAS]: `${ASSETS_DIR}/claw/claw.json`,
   [HUD_ATLAS]: `${ASSETS_DIR}/hud/hud.json`,
   [HATCH_ATLAS]: `${ASSETS_DIR}/hatch/hatch.json`,
+  [TOYS_ATLAS]: `${ASSETS_DIR}/toys/toys.json`,
 } as const
 
 /**
@@ -104,11 +108,13 @@ export const CLAW_FRAMES = {
 
 /**
  * Последовательности атласа клешни: кадры поворота RotSprite раскрытой и сжатой клешни с шагом `CLAW_TILT_STEP` от
- * наклона влево до наклона вправо, кадр без наклона посередине. Якорь кадра — точка крепления троса.
+ * наклона влево до наклона вправо, кадр без наклона посередине. Задний палец — отдельные кадры тех же наклонов: между
+ * ним и клешней лежит игрушка в захвате. Якорь кадра — точка крепления троса.
  */
 export const CLAW_SEQUENCES = {
   open: 'claw-open',
   closed: 'claw-closed',
+  back: 'claw-back',
 } as const
 
 /**
@@ -148,6 +154,14 @@ export const HATCH_FRAMES = {
 export const HATCH_SEQUENCES = {
   door: 'door',
 } as const
+
+/**
+ * Последовательности атласа игрушек по форме и её положению: кадры крена с шагом `TOY_ANGLE_STEP` по часовой стрелке
+ * и их обводка подсветки. Якорь кадра — центр сечения. Форма без последовательностей рисуется силуэтом.
+ */
+export const TOY_SEQUENCES: Partial<Record<ShapeKey, readonly ToySequences[]>> = {
+  cube8: [{ body: 'bear', outline: 'bear-outline' }],
+}
 
 /** Кадры атласа фона: ключи текстур в кэше Assets. */
 export const ROOM_FRAMES = {

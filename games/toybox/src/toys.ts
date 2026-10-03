@@ -68,12 +68,12 @@ export const SHAPES: Record<ShapeKey, Shape> = {
     variants: [
       {
         section: [
-          { y: -1, z: -1 },
-          { y: 1, z: -1 },
-          { y: 0.85, z: 1 },
-          { y: -0.85, z: 1 },
+          { y: -1.2, z: -1.2 },
+          { y: 1.2, z: -1.2 },
+          { y: 1.02, z: 1.2 },
+          { y: -1.02, z: 1.2 },
         ],
-        radius: 0.55,
+        radius: 0.66,
         depth: 2,
       },
     ],

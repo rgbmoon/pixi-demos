@@ -159,19 +159,25 @@ export const getPlaneDepthItem = (points: readonly WorldPoint[]): DepthItem => {
 }
 
 /**
- * Предмет сортировки для клешни: сечение — квадрат корпуса над точкой захвата, поэтому игрушку в захвате и игрушку
- * под собой клешня закрывает; силуэт — рамка её рисунка на экране.
+ * Предмет сортировки для клешни: сечение — квадрат корпуса над точкой захвата, поэтому игрушку под собой клешня
+ * закрывает; силуэт — рамка её рисунка на экране. Игрушка в захвате рисуется внутри сборки клешни, и предмет
+ * охватывает её `held`: диапазон глубины, сечение и силуэт сборки — объединение клешни и игрушки.
  */
-export const getClawDepthItem = (grip: WorldPoint, outline: readonly ScreenPoint[]): DepthItem =>
-  createItem(
-    grip.x,
-    grip.x,
-    [
-      { x: grip.y - CLAW_HUB_HALF_WIDTH, y: grip.z },
-      { x: grip.y + CLAW_HUB_HALF_WIDTH, y: grip.z },
-      { x: grip.y + CLAW_HUB_HALF_WIDTH, y: grip.z + 2 * CLAW_HUB_HALF_WIDTH },
-      { x: grip.y - CLAW_HUB_HALF_WIDTH, y: grip.z + 2 * CLAW_HUB_HALF_WIDTH },
-    ],
-    outline,
+export const getClawDepthItem = (grip: WorldPoint, outline: readonly ScreenPoint[], held?: DepthItem): DepthItem => {
+  const hub = [
+    { x: grip.y - CLAW_HUB_HALF_WIDTH, y: grip.z },
+    { x: grip.y + CLAW_HUB_HALF_WIDTH, y: grip.z },
+    { x: grip.y + CLAW_HUB_HALF_WIDTH, y: grip.z + 2 * CLAW_HUB_HALF_WIDTH },
+    { x: grip.y - CLAW_HUB_HALF_WIDTH, y: grip.z + 2 * CLAW_HUB_HALF_WIDTH },
+  ]
+
+  if (!held) return createItem(grip.x, grip.x, hub, outline, getDepthOrder(grip))
+
+  return createItem(
+    Math.min(grip.x, held.near),
+    Math.max(grip.x, held.far),
+    getConvexHull([...hub, ...held.section]),
+    getConvexHull([...outline, ...held.outline]),
     getDepthOrder(grip)
   )
+}

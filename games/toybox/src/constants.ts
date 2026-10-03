@@ -199,7 +199,7 @@ export const LIFT_SLIP_MAX_SHARE = 0.85
 
 // Снимок кучи
 /** Версия снимка кучи: не сошлась — снимок игнорируется и куча складывается заново. */
-export const HEAP_SNAPSHOT_VERSION = 6
+export const HEAP_SNAPSHOT_VERSION = 7
 /** Адрес снимка кучи в IndexedDB. */
 export const HEAP_DB_NAME = 'toybox'
 export const HEAP_STORE_NAME = 'heap'

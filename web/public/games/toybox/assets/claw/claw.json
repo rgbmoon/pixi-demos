@@ -24,16 +24,16 @@
       "frame": {
         "x": 6,
         "y": 2,
-        "w": 30,
-        "h": 39
+        "w": 32,
+        "h": 45
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 1,
-        "y": 1,
-        "w": 30,
-        "h": 39
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 45
       },
       "sourceSize": {
         "w": 32,
@@ -46,18 +46,18 @@
     },
     "claw-two-thirds.png": {
       "frame": {
-        "x": 38,
+        "x": 40,
         "y": 2,
-        "w": 22,
-        "h": 40
+        "w": 32,
+        "h": 45
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 5,
-        "y": 1,
-        "w": 22,
-        "h": 40
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 45
       },
       "sourceSize": {
         "w": 32,
@@ -71,17 +71,17 @@
     "claw-third.png": {
       "frame": {
         "x": 2,
-        "y": 44,
-        "w": 26,
-        "h": 40
+        "y": 49,
+        "w": 32,
+        "h": 45
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 3,
-        "y": 1,
-        "w": 26,
-        "h": 40
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 45
       },
       "sourceSize": {
         "w": 32,
@@ -94,18 +94,18 @@
     },
     "claw-open-9.png": {
       "frame": {
-        "x": 30,
-        "y": 44,
-        "w": 30,
-        "h": 40
+        "x": 74,
+        "y": 2,
+        "w": 38,
+        "h": 50
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 3,
-        "y": 4,
-        "w": 30,
-        "h": 40
+        "x": 0,
+        "y": 0,
+        "w": 38,
+        "h": 50
       },
       "sourceSize": {
         "w": 38,
@@ -118,18 +118,18 @@
     },
     "claw-open-8.png": {
       "frame": {
-        "x": 62,
-        "y": 2,
-        "w": 29,
-        "h": 40
+        "x": 2,
+        "y": 96,
+        "w": 38,
+        "h": 49
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 3,
-        "y": 3,
-        "w": 29,
-        "h": 40
+        "x": 0,
+        "y": 0,
+        "w": 38,
+        "h": 49
       },
       "sourceSize": {
         "w": 38,
@@ -142,18 +142,18 @@
     },
     "claw-open-7.png": {
       "frame": {
-        "x": 62,
-        "y": 44,
-        "w": 28,
-        "h": 40
+        "x": 42,
+        "y": 54,
+        "w": 37,
+        "h": 49
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 4,
-        "y": 3,
-        "w": 28,
-        "h": 40
+        "x": 0,
+        "y": 0,
+        "w": 37,
+        "h": 49
       },
       "sourceSize": {
         "w": 37,
@@ -166,18 +166,18 @@
     },
     "claw-open-6.png": {
       "frame": {
-        "x": 2,
-        "y": 86,
-        "w": 28,
-        "h": 39
+        "x": 114,
+        "y": 2,
+        "w": 35,
+        "h": 47
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 3,
-        "y": 2,
-        "w": 28,
-        "h": 39
+        "x": 0,
+        "y": 0,
+        "w": 35,
+        "h": 47
       },
       "sourceSize": {
         "w": 35,
@@ -190,18 +190,18 @@
     },
     "claw-open-5.png": {
       "frame": {
-        "x": 32,
-        "y": 86,
-        "w": 28,
-        "h": 39
+        "x": 114,
+        "y": 51,
+        "w": 32,
+        "h": 45
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 2,
-        "y": 1,
-        "w": 28,
-        "h": 39
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 45
       },
       "sourceSize": {
         "w": 32,
@@ -214,18 +214,18 @@
     },
     "claw-open-4.png": {
       "frame": {
-        "x": 62,
-        "y": 86,
-        "w": 28,
-        "h": 39
+        "x": 81,
+        "y": 98,
+        "w": 35,
+        "h": 47
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 4,
-        "y": 2,
-        "w": 28,
-        "h": 39
+        "x": 0,
+        "y": 0,
+        "w": 35,
+        "h": 47
       },
       "sourceSize": {
         "w": 35,
@@ -238,18 +238,18 @@
     },
     "claw-open-3.png": {
       "frame": {
-        "x": 93,
-        "y": 2,
-        "w": 28,
-        "h": 40
+        "x": 42,
+        "y": 105,
+        "w": 37,
+        "h": 49
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 5,
-        "y": 3,
-        "w": 28,
-        "h": 40
+        "x": 0,
+        "y": 0,
+        "w": 37,
+        "h": 49
       },
       "sourceSize": {
         "w": 37,
@@ -262,18 +262,18 @@
     },
     "claw-open-2.png": {
       "frame": {
-        "x": 92,
-        "y": 44,
-        "w": 29,
-        "h": 40
+        "x": 2,
+        "y": 147,
+        "w": 38,
+        "h": 49
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 6,
-        "y": 3,
-        "w": 29,
-        "h": 40
+        "x": 0,
+        "y": 0,
+        "w": 38,
+        "h": 49
       },
       "sourceSize": {
         "w": 38,
@@ -286,18 +286,18 @@
     },
     "claw-open-10.png": {
       "frame": {
-        "x": 123,
+        "x": 151,
         "y": 2,
-        "w": 30,
-        "h": 40
+        "w": 40,
+        "h": 51
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 4,
-        "y": 4,
-        "w": 30,
-        "h": 40
+        "x": 0,
+        "y": 0,
+        "w": 40,
+        "h": 51
       },
       "sourceSize": {
         "w": 40,
@@ -310,18 +310,18 @@
     },
     "claw-open-1.png": {
       "frame": {
-        "x": 123,
-        "y": 44,
-        "w": 30,
-        "h": 40
+        "x": 148,
+        "y": 55,
+        "w": 38,
+        "h": 50
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 5,
-        "y": 4,
-        "w": 30,
-        "h": 40
+        "x": 0,
+        "y": 0,
+        "w": 38,
+        "h": 50
       },
       "sourceSize": {
         "w": 38,
@@ -334,18 +334,18 @@
     },
     "claw-open-0.png": {
       "frame": {
-        "x": 2,
-        "y": 127,
-        "w": 30,
-        "h": 40
+        "x": 118,
+        "y": 107,
+        "w": 40,
+        "h": 51
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 6,
-        "y": 4,
-        "w": 30,
-        "h": 40
+        "x": 0,
+        "y": 0,
+        "w": 40,
+        "h": 51
       },
       "sourceSize": {
         "w": 40,
@@ -358,18 +358,18 @@
     },
     "claw-closed-9.png": {
       "frame": {
-        "x": 34,
-        "y": 127,
-        "w": 19,
-        "h": 40
+        "x": 193,
+        "y": 2,
+        "w": 38,
+        "h": 50
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 9,
-        "y": 4,
-        "w": 19,
-        "h": 40
+        "x": 0,
+        "y": 0,
+        "w": 38,
+        "h": 50
       },
       "sourceSize": {
         "w": 38,
@@ -382,18 +382,18 @@
     },
     "claw-closed-8.png": {
       "frame": {
-        "x": 55,
-        "y": 127,
-        "w": 20,
-        "h": 39
+        "x": 193,
+        "y": 54,
+        "w": 38,
+        "h": 49
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 8,
-        "y": 3,
-        "w": 20,
-        "h": 39
+        "x": 0,
+        "y": 0,
+        "w": 38,
+        "h": 49
       },
       "sourceSize": {
         "w": 38,
@@ -406,18 +406,18 @@
     },
     "claw-closed-7.png": {
       "frame": {
-        "x": 77,
-        "y": 127,
-        "w": 20,
-        "h": 40
+        "x": 188,
+        "y": 105,
+        "w": 37,
+        "h": 49
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 8,
-        "y": 3,
-        "w": 20,
-        "h": 40
+        "x": 0,
+        "y": 0,
+        "w": 37,
+        "h": 49
       },
       "sourceSize": {
         "w": 37,
@@ -430,18 +430,18 @@
     },
     "claw-closed-6.png": {
       "frame": {
-        "x": 99,
-        "y": 86,
-        "w": 20,
-        "h": 40
+        "x": 81,
+        "y": 147,
+        "w": 35,
+        "h": 47
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 7,
-        "y": 2,
-        "w": 20,
-        "h": 40
+        "x": 0,
+        "y": 0,
+        "w": 35,
+        "h": 47
       },
       "sourceSize": {
         "w": 35,
@@ -454,18 +454,18 @@
     },
     "claw-closed-5.png": {
       "frame": {
-        "x": 99,
-        "y": 128,
-        "w": 20,
-        "h": 39
+        "x": 2,
+        "y": 198,
+        "w": 32,
+        "h": 45
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 6,
-        "y": 1,
-        "w": 20,
-        "h": 39
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 45
       },
       "sourceSize": {
         "w": 32,
@@ -478,18 +478,18 @@
     },
     "claw-closed-4.png": {
       "frame": {
-        "x": 121,
-        "y": 86,
-        "w": 20,
-        "h": 40
+        "x": 42,
+        "y": 196,
+        "w": 35,
+        "h": 47
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 8,
-        "y": 2,
-        "w": 20,
-        "h": 40
+        "x": 0,
+        "y": 0,
+        "w": 35,
+        "h": 47
       },
       "sourceSize": {
         "w": 35,
@@ -502,18 +502,18 @@
     },
     "claw-closed-3.png": {
       "frame": {
-        "x": 155,
-        "y": 2,
-        "w": 20,
-        "h": 40
+        "x": 160,
+        "y": 156,
+        "w": 37,
+        "h": 49
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 9,
-        "y": 3,
-        "w": 20,
-        "h": 40
+        "x": 0,
+        "y": 0,
+        "w": 37,
+        "h": 49
       },
       "sourceSize": {
         "w": 37,
@@ -526,18 +526,18 @@
     },
     "claw-closed-2.png": {
       "frame": {
-        "x": 121,
-        "y": 128,
-        "w": 20,
-        "h": 39
+        "x": 118,
+        "y": 160,
+        "w": 38,
+        "h": 49
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 10,
-        "y": 3,
-        "w": 20,
-        "h": 39
+        "x": 0,
+        "y": 0,
+        "w": 38,
+        "h": 49
       },
       "sourceSize": {
         "w": 38,
@@ -550,18 +550,18 @@
     },
     "claw-closed-10.png": {
       "frame": {
-        "x": 155,
-        "y": 44,
-        "w": 19,
-        "h": 39
+        "x": 233,
+        "y": 2,
+        "w": 40,
+        "h": 51
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 10,
-        "y": 4,
-        "w": 19,
-        "h": 39
+        "x": 0,
+        "y": 0,
+        "w": 40,
+        "h": 51
       },
       "sourceSize": {
         "w": 40,
@@ -574,18 +574,18 @@
     },
     "claw-closed-1.png": {
       "frame": {
-        "x": 155,
-        "y": 85,
-        "w": 19,
-        "h": 40
+        "x": 233,
+        "y": 55,
+        "w": 38,
+        "h": 50
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 10,
-        "y": 4,
-        "w": 19,
-        "h": 40
+        "x": 0,
+        "y": 0,
+        "w": 38,
+        "h": 50
       },
       "sourceSize": {
         "w": 38,
@@ -598,18 +598,282 @@
     },
     "claw-closed-0.png": {
       "frame": {
-        "x": 143,
-        "y": 127,
-        "w": 19,
-        "h": 39
+        "x": 227,
+        "y": 107,
+        "w": 40,
+        "h": 51
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 11,
-        "y": 4,
-        "w": 19,
-        "h": 39
+        "x": 0,
+        "y": 0,
+        "w": 40,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 40,
+        "h": 51
+      },
+      "anchor": {
+        "x": 0.4,
+        "y": 0.0784313725490196
+      }
+    },
+    "claw-back-9.png": {
+      "frame": {
+        "x": 199,
+        "y": 160,
+        "w": 38,
+        "h": 50
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 38,
+        "h": 50
+      },
+      "sourceSize": {
+        "w": 38,
+        "h": 50
+      },
+      "anchor": {
+        "x": 0.5789473684210527,
+        "y": 0.08
+      }
+    },
+    "claw-back-8.png": {
+      "frame": {
+        "x": 2,
+        "y": 245,
+        "w": 38,
+        "h": 49
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 38,
+        "h": 49
+      },
+      "sourceSize": {
+        "w": 38,
+        "h": 49
+      },
+      "anchor": {
+        "x": 0.5526315789473685,
+        "y": 0.061224489795918366
+      }
+    },
+    "claw-back-7.png": {
+      "frame": {
+        "x": 79,
+        "y": 196,
+        "w": 37,
+        "h": 49
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 37,
+        "h": 49
+      },
+      "sourceSize": {
+        "w": 37,
+        "h": 49
+      },
+      "anchor": {
+        "x": 0.5405405405405406,
+        "y": 0.061224489795918366
+      }
+    },
+    "claw-back-6.png": {
+      "frame": {
+        "x": 42,
+        "y": 247,
+        "w": 35,
+        "h": 47
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 35,
+        "h": 47
+      },
+      "sourceSize": {
+        "w": 35,
+        "h": 47
+      },
+      "anchor": {
+        "x": 0.5142857142857142,
+        "y": 0.0425531914893617
+      }
+    },
+    "claw-back-5.png": {
+      "frame": {
+        "x": 239,
+        "y": 160,
+        "w": 32,
+        "h": 45
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 45
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 45
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.022222222222222223
+      }
+    },
+    "claw-back-4.png": {
+      "frame": {
+        "x": 79,
+        "y": 247,
+        "w": 35,
+        "h": 47
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 35,
+        "h": 47
+      },
+      "sourceSize": {
+        "w": 35,
+        "h": 47
+      },
+      "anchor": {
+        "x": 0.4857142857142857,
+        "y": 0.0425531914893617
+      }
+    },
+    "claw-back-3.png": {
+      "frame": {
+        "x": 158,
+        "y": 207,
+        "w": 37,
+        "h": 49
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 37,
+        "h": 49
+      },
+      "sourceSize": {
+        "w": 37,
+        "h": 49
+      },
+      "anchor": {
+        "x": 0.4594594594594595,
+        "y": 0.061224489795918366
+      }
+    },
+    "claw-back-2.png": {
+      "frame": {
+        "x": 118,
+        "y": 211,
+        "w": 38,
+        "h": 49
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 38,
+        "h": 49
+      },
+      "sourceSize": {
+        "w": 38,
+        "h": 49
+      },
+      "anchor": {
+        "x": 0.4473684210526316,
+        "y": 0.061224489795918366
+      }
+    },
+    "claw-back-10.png": {
+      "frame": {
+        "x": 197,
+        "y": 212,
+        "w": 40,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 40,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 40,
+        "h": 51
+      },
+      "anchor": {
+        "x": 0.6,
+        "y": 0.0784313725490196
+      }
+    },
+    "claw-back-1.png": {
+      "frame": {
+        "x": 275,
+        "y": 2,
+        "w": 38,
+        "h": 50
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 38,
+        "h": 50
+      },
+      "sourceSize": {
+        "w": 38,
+        "h": 50
+      },
+      "anchor": {
+        "x": 0.42105263157894735,
+        "y": 0.08
+      }
+    },
+    "claw-back-0.png": {
+      "frame": {
+        "x": 273,
+        "y": 55,
+        "w": 40,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 40,
+        "h": 51
       },
       "sourceSize": {
         "w": 40,
@@ -622,6 +886,19 @@
     }
   },
   "animations": {
+    "claw-back": [
+      "claw-back-0.png",
+      "claw-back-1.png",
+      "claw-back-2.png",
+      "claw-back-3.png",
+      "claw-back-4.png",
+      "claw-back-5.png",
+      "claw-back-6.png",
+      "claw-back-7.png",
+      "claw-back-8.png",
+      "claw-back-9.png",
+      "claw-back-10.png"
+    ],
     "claw-closed": [
       "claw-closed-0.png",
       "claw-closed-1.png",
@@ -655,8 +932,8 @@
     "image": "claw.png",
     "format": "RGBA8888",
     "size": {
-      "w": 177,
-      "h": 169
+      "w": 315,
+      "h": 296
     },
     "scale": 1,
     "related_multi_packs": []

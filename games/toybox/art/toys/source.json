@@ -1,0 +1,505 @@
+[
+  {
+    "date": "2026-10-02",
+    "tool": "script",
+    "params": {},
+    "seed": null,
+    "id": null,
+    "urls": [],
+    "cost": 0,
+    "picked": [
+      "raw/bear-sketch.png"
+    ],
+    "rejected": [],
+    "note": "Эскиз тестовой игрушки (решение Сергея: медведь cube8): сидит, глаза-крестики, заплатка на животе, вместо правой руки набивка. Кадр 28×28 в холсте 32×32 (отступ 2 px), силуэт обрезан сечением cube8 (getSection) с допуском 0,5 px. Палитра предмета bear-palette.png — brown[0..4], bone[0..4], red[1..2]. Скрипт в репозитории не хранится. Каталог raw/ удалён 03.10.2026 при подготовке диффа: выходы PixelLab — в аккаунте по id (get_image выдаёт свежую ссылку); эскиз, палитра предмета и вырезанные кадры были только локальными, пути raw/… — историческая справка."
+  },
+  {
+    "date": "2026-10-02",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "broken plush teddy bear sitting, cross-stitched X eyes, right arm torn off with stuffing sticking out of the shoulder, dark red patch sewn on belly, faded worn brown fabric, front view, orthographic, soft dim ambient light, no strong directional shadows, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "no_background": true,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "basic shading",
+      "detail": "medium detail",
+      "color_image": "art/toys/raw/bear-palette.png",
+      "seed": 15101,
+      "init_image": "art/toys/raw/bear-sketch.png",
+      "init_image_strength": 200
+    },
+    "seed": 15101,
+    "id": "2410dc76-b738-4469-ac0a-e436e0b0acd4",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/2410dc76-b738-4469-ac0a-e436e0b0acd4/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [],
+    "note": "Сила 200. Морда и заплатка близко к эскизу, глаза — точки вместо крестиков. Весь выход внутри сечения и в палитре."
+  },
+  {
+    "date": "2026-10-02",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "broken plush teddy bear sitting, cross-stitched X eyes, right arm torn off with stuffing sticking out of the shoulder, dark red patch sewn on belly, faded worn brown fabric, front view, orthographic, soft dim ambient light, no strong directional shadows, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "no_background": true,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "basic shading",
+      "detail": "medium detail",
+      "color_image": "art/toys/raw/bear-palette.png",
+      "seed": 15102,
+      "init_image": "art/toys/raw/bear-sketch.png",
+      "init_image_strength": 200
+    },
+    "seed": 15102,
+    "id": "11b0737c-9909-4b2b-ab2d-ed31ddd75576",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/11b0737c-9909-4b2b-ab2d-ed31ddd75576/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [],
+    "note": "Сила 200. Заплатка тёмным пятном, морда перерисована, набивка сохранилась. Весь выход внутри сечения и в палитре."
+  },
+  {
+    "date": "2026-10-02",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "broken plush teddy bear sitting, cross-stitched X eyes, right arm torn off with stuffing sticking out of the shoulder, dark red patch sewn on belly, faded worn brown fabric, front view, orthographic, soft dim ambient light, no strong directional shadows, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "no_background": true,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "basic shading",
+      "detail": "medium detail",
+      "color_image": "art/toys/raw/bear-palette.png",
+      "seed": 15103,
+      "init_image": "art/toys/raw/bear-sketch.png",
+      "init_image_strength": 200
+    },
+    "seed": 15103,
+    "id": "6cad677b-2b6c-4fab-9717-fe3b8e432fda",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/6cad677b-2b6c-4fab-9717-fe3b8e432fda/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [],
+    "note": "Сила 200. Мех светлее, на лапах подушечки с пальцами, заплатка мельче. Весь выход внутри сечения и в палитре."
+  },
+  {
+    "date": "2026-10-02",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "broken plush teddy bear sitting, cross-stitched X eyes, right arm torn off with stuffing sticking out of the shoulder, dark red patch sewn on belly, faded worn brown fabric, front view, orthographic, soft dim ambient light, no strong directional shadows, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "no_background": true,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "basic shading",
+      "detail": "medium detail",
+      "color_image": "art/toys/raw/bear-palette.png",
+      "seed": 15101,
+      "init_image": "art/toys/raw/bear-sketch.png",
+      "init_image_strength": 400
+    },
+    "seed": 15101,
+    "id": "7794826d-c865-47b3-8234-08ea2c01e259",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/7794826d-c865-47b3-8234-08ea2c01e259/download"
+    ],
+    "cost": 1,
+    "picked": [
+      "raw/bear-p400-s15101.png"
+    ],
+    "rejected": [],
+    "note": "Сила 400. Почти эскиз, лёгкий износ; набивка сохранилась. Кадр интеграции для ревью. Весь выход внутри сечения и в палитре."
+  },
+  {
+    "date": "2026-10-02",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "broken plush teddy bear sitting, cross-stitched X eyes, right arm torn off with stuffing sticking out of the shoulder, dark red patch sewn on belly, faded worn brown fabric, front view, orthographic, soft dim ambient light, no strong directional shadows, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "no_background": true,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "basic shading",
+      "detail": "medium detail",
+      "color_image": "art/toys/raw/bear-palette.png",
+      "seed": 15102,
+      "init_image": "art/toys/raw/bear-sketch.png",
+      "init_image_strength": 400
+    },
+    "seed": 15102,
+    "id": "aaa9fb8b-1099-46a8-ae53-b592ffbfb5aa",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/aaa9fb8b-1099-46a8-ae53-b592ffbfb5aa/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [],
+    "note": "Сила 400. Почти эскиз, заплатка тёмная, крестики слабее. Весь выход внутри сечения и в палитре."
+  },
+  {
+    "date": "2026-10-02",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "broken plush teddy bear sitting, cross-stitched X eyes, right arm torn off with stuffing sticking out of the shoulder, dark red patch sewn on belly, faded worn brown fabric, front view, orthographic, soft dim ambient light, no strong directional shadows, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "no_background": true,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "basic shading",
+      "detail": "medium detail",
+      "color_image": "art/toys/raw/bear-palette.png",
+      "seed": 15103,
+      "init_image": "art/toys/raw/bear-sketch.png",
+      "init_image_strength": 400
+    },
+    "seed": 15103,
+    "id": "752f0964-565c-4fdb-82fd-3835657e4140",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/752f0964-565c-4fdb-82fd-3835657e4140/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [],
+    "note": "Сила 400. Почти эскиз, заплатка — тёмный треугольник. Весь выход внутри сечения и в палитре."
+  },
+  {
+    "date": "2026-10-02",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "broken plush teddy bear sitting, cross-stitched X eyes, right arm torn off with stuffing sticking out of the shoulder, dark red patch sewn on belly, faded worn brown fabric, front view, orthographic, soft dim ambient light, no strong directional shadows, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "no_background": true,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "basic shading",
+      "detail": "medium detail",
+      "color_image": "art/toys/raw/bear-palette.png",
+      "seed": 15201,
+      "width": 32,
+      "height": 32
+    },
+    "seed": 15201,
+    "id": "bde1dcdf-f642-4729-bd88-cc61b9112fc6",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/bde1dcdf-f642-4729-bd88-cc61b9112fc6/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "raw/bear-text-s15201.png"
+    ],
+    "note": "Без эскиза, только текст: медведь на весь холст 32×32, за кадр 28×28 выходит 14 px, за сечение — 10–13; мелкий шум вместо кластеров."
+  },
+  {
+    "date": "2026-10-02",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "broken plush teddy bear sitting, cross-stitched X eyes, right arm torn off with stuffing sticking out of the shoulder, dark red patch sewn on belly, faded worn brown fabric, front view, orthographic, soft dim ambient light, no strong directional shadows, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "no_background": true,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "basic shading",
+      "detail": "medium detail",
+      "color_image": "art/toys/raw/bear-palette.png",
+      "seed": 15202,
+      "width": 32,
+      "height": 32
+    },
+    "seed": 15202,
+    "id": "ef8e09e6-c007-46af-a2a6-ece14bdcf412",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/ef8e09e6-c007-46af-a2a6-ece14bdcf412/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "raw/bear-text-s15202.png"
+    ],
+    "note": "Без эскиза, только текст: медведь на весь холст 32×32, за кадр 28×28 выходит 14 px, за сечение — 10–13; мелкий шум вместо кластеров."
+  },
+  {
+    "date": "2026-10-02",
+    "tool": "create_image_pro",
+    "params": {
+      "description": "broken plush teddy bear sitting, cross-stitched X eyes, right arm torn off with white stuffing sticking out of the shoulder, dark red fabric patch sewn on belly, faded worn brown fur, front view, orthographic, soft dim ambient light, no strong directional shadows, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 32,
+      "height": 32,
+      "no_background": true,
+      "seed": 15301,
+      "style_image": "образец фасада: get_image(9f02d8a4-e8c8-49ad-82f4-8fb363e4aed6), журнал cabinet",
+      "style_copy": [
+        "outline",
+        "detail",
+        "shading"
+      ],
+      "reference_images": [
+        {
+          "image": "art/toys/raw/bear-sketch.png",
+          "usage": "silhouette, pose and layout of the toy: keep the same outline, size and position on the canvas"
+        },
+        {
+          "image": "art/toys/raw/bear-palette.png",
+          "usage": "color palette: use only these colors"
+        }
+      ]
+    },
+    "seed": 15301,
+    "id": "14be57ff-4edb-4338-a5b6-5bff0869b428",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=0",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=1",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=2",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=3",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=4",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=5",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=6",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=7",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=8",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=9",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=10",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=11",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=12",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=13",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=14",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=15",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=16",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=17",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=18",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=19",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=20",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=21",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=22",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=23",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=24",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=25",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=26",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=27",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=28",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=29",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=30",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=31",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=32",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=33",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=34",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=35",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=36",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=37",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=38",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=39",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=40",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=41",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=42",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=43",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=44",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=45",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=46",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=47",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=48",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=49",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=50",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=51",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=52",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=53",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=54",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=55",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=56",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=57",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=58",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=59",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=60",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=61",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=62",
+      "https://api.pixellab.ai/mcp/images/14be57ff-4edb-4338-a5b6-5bff0869b428/download?index=63"
+    ],
+    "cost": 20,
+    "picked": [],
+    "rejected": [],
+    "note": "Решение Сергея: pro сразу, для сравнения с pixflux. 64 кандидата, 8 цветовых семейств по index % 8 (сиреневый, розовый, роза, тёмная слива, тёмный teal, голубой, серо-синий, teal); палитру референса модель не взяла, коричневого нет. Силуэт эскиза держит, контур чище, крестики контрастнее; набивка у большинства пропала, заплатка стала кругом или сердцем. После приведения к палитре чисто ложатся розовые (рампа pink) и голубые (blue); сиреневые расходятся по рампам. Финалисты ревью: 09, 17 (pink), 13 (blue), 17 и 09 с перекладкой pink → brown."
+  },
+  {
+    "date": "2026-10-03",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "broken plush teddy bear sitting, cross-stitched X eyes, right arm torn off with stuffing sticking out of the shoulder, dark red patch sewn on belly, faded worn brown fabric, front view, orthographic, soft dim ambient light, no strong directional shadows, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 40,
+      "height": 40,
+      "no_background": true,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "basic shading",
+      "detail": "medium detail",
+      "color_image": "art/toys/raw/bear-palette.png",
+      "seed": 15501
+    },
+    "seed": 15501,
+    "id": "31f59d12-1782-4327-bf53-8f1368c79dd9",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/31f59d12-1782-4327-bf53-8f1368c79dd9/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [],
+    "note": "Ревью 1, решение Сергея: попробовать без эскиза. Холст 40×40 под медведя на 20 % крупнее. Реалистичный потёртый медведь, мелкий шум, красные пятна читаются как кровь."
+  },
+  {
+    "date": "2026-10-03",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "broken plush teddy bear sitting, cross-stitched X eyes, right arm torn off with stuffing sticking out of the shoulder, dark red patch sewn on belly, faded worn brown fabric, front view, orthographic, soft dim ambient light, no strong directional shadows, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 40,
+      "height": 40,
+      "no_background": true,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "basic shading",
+      "detail": "medium detail",
+      "color_image": "art/toys/raw/bear-palette.png",
+      "seed": 15502
+    },
+    "seed": 15502,
+    "id": "9d2c43a4-53cb-4242-8338-b1022d2befac",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/9d2c43a4-53cb-4242-8338-b1022d2befac/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [],
+    "note": "Ревью 1, решение Сергея: попробовать без эскиза. Холст 40×40 под медведя на 20 % крупнее. Реалистичный потёртый медведь, мелкий шум, красные пятна читаются как кровь."
+  },
+  {
+    "date": "2026-10-03",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "broken plush teddy bear sitting, cross-stitched X eyes, right arm torn off with stuffing sticking out of the shoulder, dark red patch sewn on belly, faded worn brown fabric, front view, orthographic, soft dim ambient light, no strong directional shadows, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 40,
+      "height": 40,
+      "no_background": true,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "basic shading",
+      "detail": "medium detail",
+      "color_image": "art/toys/raw/bear-palette.png",
+      "seed": 15503
+    },
+    "seed": 15503,
+    "id": "d065f783-9bb2-4e0e-90a6-4784f09576da",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/d065f783-9bb2-4e0e-90a6-4784f09576da/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [],
+    "note": "Ревью 1, решение Сергея: попробовать без эскиза. Холст 40×40 под медведя на 20 % крупнее. Реалистичный потёртый медведь, мелкий шум, красные пятна читаются как кровь."
+  },
+  {
+    "date": "2026-10-03",
+    "tool": "create_image_pro",
+    "params": {
+      "description": "broken plush teddy bear sitting, cross-stitched X eyes, right arm torn off with white stuffing sticking out of the shoulder, dark red fabric patch sewn on belly, faded worn brown fur, front view, orthographic, soft dim ambient light, no strong directional shadows, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 40,
+      "height": 40,
+      "no_background": true,
+      "seed": 15401,
+      "style_image": "образец фасада: get_image(9f02d8a4-e8c8-49ad-82f4-8fb363e4aed6), журнал cabinet",
+      "style_copy": [
+        "outline",
+        "detail",
+        "shading"
+      ],
+      "reference_images": [
+        {
+          "image": "art/toys/raw/bear-palette.png",
+          "usage": "color palette: use only these colors"
+        }
+      ]
+    },
+    "seed": 15401,
+    "id": "f660998e-06f5-4ecb-96d7-5c90d32866fe",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=0",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=1",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=2",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=3",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=4",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=5",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=6",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=7",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=8",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=9",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=10",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=11",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=12",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=13",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=14",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=15",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=16",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=17",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=18",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=19",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=20",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=21",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=22",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=23",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=24",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=25",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=26",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=27",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=28",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=29",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=30",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=31",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=32",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=33",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=34",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=35",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=36",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=37",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=38",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=39",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=40",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=41",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=42",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=43",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=44",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=45",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=46",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=47",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=48",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=49",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=50",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=51",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=52",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=53",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=54",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=55",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=56",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=57",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=58",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=59",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=60",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=61",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=62",
+      "https://api.pixellab.ai/mcp/images/f660998e-06f5-4ecb-96d7-5c90d32866fe/download?index=63"
+    ],
+    "cost": 25,
+    "picked": [],
+    "rejected": [],
+    "note": "Ревью 1, решение Сергея: pro без эскиза. Холст 40×40 стоит 25 генераций (32×32 — 20). 64 почти одинаковых мультяшных коричневых медведя: чёрный контур, сердце на животе, глаза-крестики, светлая набивка у плеча."
+  },
+  {
+    "date": "2026-10-03",
+    "tool": "script",
+    "params": {},
+    "seed": null,
+    "id": null,
+    "urls": [],
+    "cost": 0,
+    "picked": [
+      "toys{tps}{pal}/bear{strip=72}{outline}.png"
+    ],
+    "rejected": [],
+    "note": "Ревью 1, решение Сергея: рисовать позы сразу в проекции игры, как кнопки панели, физическую глубину не показывать. Медведь — эллипсоиды по эскизу ×1,2 (голова, тело, уши, лапа, ноги, морда, набивка), рендер лучом: глубина сдвигает точку на (2, −2) px за ячейку, свет зафиксирован на экране сверху-слева, 3 ступени рампы, внешний контур brown[0], швы между частями brown[1]. 72 позы крена по 5° по часовой стрелке в полосу кадров 52×52, опорная точка (26, 26). Скрипт в репозитории не хранится."
+  }
+]

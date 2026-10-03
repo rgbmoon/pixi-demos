@@ -56,11 +56,15 @@ export const FACE_PARTS = {
 /** Суффикс сайдкара кадра. */
 export const SIDECAR_SUFFIX = '.meta.json'
 
-/** Опции встроенного упаковщика: без поворотов кадров и уменьшенных копий. */
+/**
+ * Опции встроенного упаковщика: без поворотов кадров, обрезки полей и уменьшенных копий. Обрезку делает `sharp.trim`
+ * с медианным фильтром: он стирает линии толщиной в пиксель и обрезает по ним кадр.
+ */
 export const TEXTURE_PACKER_OPTIONS = {
   texturePacker: {
     padding: 2,
     allowRotation: false,
+    allowTrim: false,
     nameStyle: 'relative',
     removeFileExtension: false,
     autodetectAnimations: true,

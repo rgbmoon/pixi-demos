@@ -1,4 +1,4 @@
-import { Assets, Sprite, type Spritesheet, type Texture } from 'pixi.js'
+import { Assets, Container, Sprite, type Spritesheet, type Texture } from 'pixi.js'
 
 import { CLAW_ATLAS, CLAW_FRAMES, CLAW_SEQUENCES } from '#src/assets'
 import {
@@ -18,12 +18,17 @@ import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 import type { FrameSequence } from '@pixi-demos/engine/types'
 
 /**
- * Клешня в сборе: трос от каретки и сама клешня. Клешня висит на конце троса и при качании поворачивается вместе с
- * ним: кадр поворота раскрытой или сжатой клешни выбирается по наклону троса, якорь кадра — точка крепления троса.
- * Захват и разжатие проигрываются отвесными кадрами.
+ * Клешня в сборе: трос от каретки, задний палец, игрушка в захвате и сама клешня — в этом порядке снизу вверх. Клешня
+ * висит на конце троса и при качании поворачивается вместе с ним: кадр поворота раскрытой или сжатой клешни
+ * выбирается по наклону троса, якорь кадра — точка крепления троса. Захват и разжатие проигрываются отвесными кадрами.
  */
 export class Claw extends FrameAnimation {
   private readonly rope = new Rope()
+  private readonly back = new Sprite()
+  private readonly holder = new Container()
+  /** Кадр заднего пальца к кадру клешни: тот же наклон, у отвесных поз — без наклона. */
+  private readonly backFrames: Map<Texture, Texture>
+  private readonly backUpright: Texture
   /** Кадры поворота раскрытой и сжатой клешни, кадр без наклона посередине. */
   private readonly openTilts: FrameSequence
   private readonly closedTilts: FrameSequence
@@ -44,6 +49,7 @@ export class Claw extends FrameAnimation {
     const { animations } = Assets.get<Spritesheet>(CLAW_ATLAS)
     const openFrames = animations[CLAW_SEQUENCES.open]
     const closedFrames = animations[CLAW_SEQUENCES.closed]
+    const backFrames = animations[CLAW_SEQUENCES.back]
     const middle = (openFrames.length - 1) / 2
     const pose = (frame: string) => Assets.get<Texture>(frame)
 
@@ -65,10 +71,18 @@ export class Claw extends FrameAnimation {
       frames: [pose(CLAW_FRAMES.twoThirds), pose(CLAW_FRAMES.third), openFrames[middle]],
       durations: CLAW_RELEASE_FRAME_MS,
     }
+    this.backFrames = new Map(
+      [openFrames, closedFrames].flatMap((frames) => frames.map((frame, index) => [frame, backFrames[index]] as const))
+    )
+    this.backUpright = backFrames[middle]
     this.tilts = this.openTilts
     this.tilt = middle
     this.carrier.scale.set(ART_PIXEL)
+    this.back.scale.set(ART_PIXEL)
     this.addChildAt(this.rope, 0)
+    this.addChildAt(this.back, 1)
+    this.addChildAt(this.holder, 2)
+    this.applyFrame(this.carrier.texture)
   }
 
   /** Сжимает клешню: замах, резкое смыкание и отскок с приоткрытием. */
@@ -79,6 +93,14 @@ export class Claw extends FrameAnimation {
   /** Разжимает клешню. */
   release(): void {
     void this.animate(this.releasing, this.openTilts)
+  }
+
+  /**
+   * Кладёт игрушку в сборку между задним пальцем и клешней. Игрушка уходит из сборки, когда её добавляют в другой
+   * контейнер; координаты сборки и слоя куба совпадают, поэтому поза игрушки не меняется.
+   */
+  hold(toy: Container): void {
+    if (toy.parent !== this.holder) this.holder.addChild(toy)
   }
 
   /**
@@ -105,6 +127,7 @@ export class Claw extends FrameAnimation {
 
     this.attach = attach
     this.carrier.position.set(attach.x, attach.y)
+    this.back.position.set(attach.x, attach.y)
 
     const rows = (attach.y - top.y) / ART_PIXEL
 
@@ -121,6 +144,17 @@ export class Claw extends FrameAnimation {
     })
 
     return [corner(minX, minY), corner(maxX, minY), corner(maxX, maxY), corner(minX, maxY)]
+  }
+
+  /** Ставит кадр клешни и кадр заднего пальца того же наклона. */
+  protected override applyFrame(texture: Texture | undefined): void {
+    super.applyFrame(texture)
+    if (!texture || this.destroyed) return
+
+    const back = this.backFrames.get(texture) ?? this.backUpright
+
+    this.back.texture = back
+    if (back.defaultAnchor) this.back.anchor.copyFrom(back.defaultAnchor)
   }
 
   /** Проигрывает смену состояния и после неё возвращает кадры поворота нового состояния. */

@@ -28,16 +28,16 @@
       "frame": {
         "x": 44,
         "y": 2,
-        "w": 36,
-        "h": 36
+        "w": 40,
+        "h": 40
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 2,
-        "y": 2,
-        "w": 36,
-        "h": 36
+        "x": 0,
+        "y": 0,
+        "w": 40,
+        "h": 40
       },
       "sourceSize": {
         "w": 40,
@@ -53,15 +53,15 @@
         "x": 2,
         "y": 44,
         "w": 12,
-        "h": 11
+        "h": 13
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
         "x": 0,
-        "y": 2,
+        "y": 0,
         "w": 12,
-        "h": 11
+        "h": 13
       },
       "sourceSize": {
         "w": 12,
@@ -77,15 +77,15 @@
         "x": 16,
         "y": 44,
         "w": 12,
-        "h": 11
+        "h": 13
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
         "x": 0,
         "y": 0,
         "w": 12,
-        "h": 11
+        "h": 13
       },
       "sourceSize": {
         "w": 12,
@@ -99,7 +99,7 @@
     "reset.png": {
       "frame": {
         "x": 2,
-        "y": 57,
+        "y": 59,
         "w": 16,
         "h": 16
       },
@@ -123,7 +123,7 @@
     "reset-pressed.png": {
       "frame": {
         "x": 20,
-        "y": 57,
+        "y": 59,
         "w": 16,
         "h": 16
       },
@@ -214,8 +214,8 @@
     },
     "drop.png": {
       "frame": {
-        "x": 52,
-        "y": 57,
+        "x": 60,
+        "y": 44,
         "w": 24,
         "h": 11
       },
@@ -238,8 +238,8 @@
     },
     "drop-pressed.png": {
       "frame": {
-        "x": 2,
-        "y": 75,
+        "x": 52,
+        "y": 57,
         "w": 24,
         "h": 11
       },
@@ -262,8 +262,8 @@
     },
     "bubble.png": {
       "frame": {
-        "x": 82,
-        "y": 2,
+        "x": 2,
+        "y": 77,
         "w": 24,
         "h": 24
       },
@@ -289,7 +289,7 @@
     "bubble-tail.png": {
       "frame": {
         "x": 28,
-        "y": 75,
+        "y": 77,
         "w": 8,
         "h": 8
       },
@@ -323,8 +323,8 @@
     "image": "hud.png",
     "format": "RGBA8888",
     "size": {
-      "w": 108,
-      "h": 88
+      "w": 86,
+      "h": 103
     },
     "scale": 1,
     "related_multi_packs": []
