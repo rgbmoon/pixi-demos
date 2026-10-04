@@ -16,7 +16,8 @@ import { isReducedMotion } from '@pixi-demos/core/accessibility'
 import type { Random } from '@pixi-demos/core/types'
 
 import {
-  FLOOR_DROP_SIDE_SPEED,
+  FLOOR_DROP_SIDE_MAX_SPEED,
+  FLOOR_DROP_SIDE_MIN_SPEED,
   FLOOR_DROP_SPEED,
   FLOOR_DROP_SPIN_OFFSET,
   FLOOR_EJECT_MS,
@@ -49,7 +50,7 @@ export class FloorPile extends ToyPile {
   }
 
   /**
-   * Роняет приз из окна выдачи: игрушка получает толчок вниз и вбок и летит вперёд в случайные срезы пола.
+   * Роняет приз из окна выдачи: игрушка получает толчок вниз и влево или вправо и летит вперёд в случайные срезы пола.
    * Падая, она расталкивает игрушки, которые уже лежат на полу.
    */
   drop({ toy, hasLamp }: Prize, random: Random): void {
@@ -59,13 +60,16 @@ export class FloorPile extends ToyPile {
     const body = this.create({ slab, y, z, angle: 0, toy, hasLamp }, true)
     const { halfWidth } = getSectionExtent(getSection(toy))
     const weight = getWeight(toy)
+    // Знак броска задаёт сторону, модуль — скорость в диапазоне
+    const side = random() * 2 - 1
+    const sideSpeed = (side < 0 ? -1 : 1) * lerp(FLOOR_DROP_SIDE_MIN_SPEED, FLOOR_DROP_SIDE_MAX_SPEED, Math.abs(side))
 
     this.flights.set(body.id, { target: body.pose.point.x, elapsedMs: 0 })
     body.pose.point.x = x
     // Масса тела равна весу игрушки, поэтому импульс — вес, умноженный на скорость
     this.world.push(
       body.id,
-      { y: (random() * 2 - 1) * FLOOR_DROP_SIDE_SPEED * weight, z: -FLOOR_DROP_SPEED * weight },
+      { y: sideSpeed * weight, z: -FLOOR_DROP_SPEED * weight },
       { y: y + (random() * 2 - 1) * FLOOR_DROP_SPIN_OFFSET * halfWidth, z }
     )
     this.touch()

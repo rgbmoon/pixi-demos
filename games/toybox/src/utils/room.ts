@@ -1,6 +1,5 @@
-import { ART_PIXEL, CABINET_BOTTOM_Z, DECAL_BLOCK_SHARE, DECAL_BLOCK_SIZE, WALL_X } from '#src/constants'
-import type { DecalPlacement, FrameSize, ScreenPoint, ScreenRect, WorldPoint } from '#src/types'
-import { createRandom } from '@pixi-demos/core/random'
+import { ART_PIXEL, CABINET_BOTTOM_Z, WALL_X } from '#src/constants'
+import type { ScreenPoint, ScreenRect, WorldPoint } from '#src/types'
 
 import { worldToScreen } from './projection'
 
@@ -23,28 +22,40 @@ export const toArtRect = ({ left, top, right, bottom }: ScreenRect): ScreenRect 
   bottom: Math.ceil(bottom / ART_PIXEL),
 })
 
-/** Сид блока раскладки декалей: смешение его координат. */
-const getBlockSeed = (column: number, row: number): number =>
-  (Math.imul(column, 73856093) ^ Math.imul(row, 19349663)) >>> 0
-
 /**
- * Декали блока стены: столбцы блоков идут вправо от x = 0, ряды — вверх от верха панели, `y` декали отсчитан от
- * верха панели. Состав и место зависят только от координат блока, поэтому при ресайзе показанные декали не сдвигаются.
- * Декаль целиком лежит в своём блоке.
+ * Пиксели арта ломаной через точки мира: отрезки между соседними точками проходят алгоритмом Брезенхэма, общий
+ * пиксель соседних отрезков не повторяется.
  */
-export const getBlockDecals = (column: number, row: number, sizes: readonly FrameSize[]): DecalPlacement[] => {
-  const random = createRandom(getBlockSeed(column, row))
+export const getArtPolyline = (points: readonly WorldPoint[]): ScreenPoint[] => {
+  const pixels: ScreenPoint[] = []
+  const corners = points.map(toArtPoint)
 
-  if (sizes.length === 0 || random() >= DECAL_BLOCK_SHARE) return []
+  corners.slice(1).forEach((to, index) => {
+    const from = corners[index]
+    const dx = Math.abs(to.x - from.x)
+    const dy = -Math.abs(to.y - from.y)
+    const stepX = Math.sign(to.x - from.x)
+    const stepY = Math.sign(to.y - from.y)
+    let { x, y } = from
+    let error = dx + dy
 
-  const variant = Math.floor(random() * sizes.length)
-  const { width, height } = sizes[variant]
+    if (index > 0) pixels.pop()
+    for (;;) {
+      pixels.push({ x, y })
+      if (x === to.x && y === to.y) break
 
-  return [
-    {
-      variant,
-      x: column * DECAL_BLOCK_SIZE + Math.floor(random() * (DECAL_BLOCK_SIZE - width + 1)),
-      y: -(row + 1) * DECAL_BLOCK_SIZE + Math.floor(random() * (DECAL_BLOCK_SIZE - height + 1)),
-    },
-  ]
+      const doubled = 2 * error
+
+      if (doubled >= dy) {
+        error += dy
+        x += stepX
+      }
+      if (doubled <= dx) {
+        error += dx
+        y += stepY
+      }
+    }
+  })
+
+  return pixels
 }

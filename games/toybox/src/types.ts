@@ -51,6 +51,12 @@ export type WorldPoint = {
   z: number
 }
 
+/** Неподвижный предмет зала: кадр атласа и точка мира под его опорной точкой. */
+export type LitterPlacement = {
+  frame: string
+  point: WorldPoint
+}
+
 /** Точка или вектор в плоскости пола, в ячейках: положение клешни, её скорость, направление хода. */
 export type GroundPoint = {
   x: number
@@ -188,13 +194,6 @@ export type DustMote = {
   vy: number
   age: number
   life: number
-}
-
-/** Декаль фона: номер варианта и левый верхний угол в пикселях арта. */
-export type DecalPlacement = {
-  readonly variant: number
-  readonly x: number
-  readonly y: number
 }
 
 /** Рамка на экране, выровненная по осям. */

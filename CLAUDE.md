@@ -18,7 +18,7 @@
 | [packages/CLAUDE.md](packages/CLAUDE.md)         | общие пакеты: core, net, engine, рил-машина; правила PIXI и канваса  |
 | [games/CLAUDE.md](games/CLAUDE.md)               | устройство игры: уровни, взаимодействие, сторы, фазы, сцена, ассеты  |
 | [games/slot/CLAUDE.md](games/slot/CLAUDE.md)     | слот: механики, цикл раунда, события, звук                           |
-| [games/toybox/CLAUDE.md](games/toybox/CLAUDE.md) | toybox: куча на planck, цикл клешни, проекция, порядок наложения     |
+| [games/toybox/CLAUDE.md](games/toybox/CLAUDE.md) | toybox: куча, клешня, проекция, порядок наложения, арт и PixelLab    |
 | [web/CLAUDE.md](web/CLAUDE.md)                   | приложение: компоненты, страницы, мост React ↔ PIXI, моки            |
 
 Перед работой в каталоге прочитай его CLAUDE.md и CLAUDE.md родительских каталогов. Claude Code

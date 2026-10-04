@@ -81,6 +81,23 @@ describe('пол: выпадение приза', () => {
     expect(body.slab + depth).toBeLessThanOrEqual(FLOOR_PILE_DEPTH)
   })
 
+  // Ось y на экране направлена влево
+  it.each([
+    ['вправо', 0.25, -1],
+    ['влево', 0.75, 1],
+  ])('отбрасывает приз %s по броску: на пустом полу он ложится дальше клетки от оси окна', (_, roll, side) => {
+    const pile = new FloorPile()
+
+    pile.drop(PRIZE, () => roll)
+    settle(pile)
+
+    const [body] = pile.getBodies()
+    const offset = body.pose.point.y - PRIZE_NICHE_FLOOR.y
+
+    expect(Math.sign(offset)).toBe(side)
+    expect(Math.abs(offset)).toBeGreaterThan(1)
+  })
+
   // Постоянный бросок толкает каждый приз к одному краю полосы: так проверяются её стенки
   it.each([
     ['случайных толчках', createRandom(2)],

@@ -2,12 +2,23 @@ import { inject, injectable } from 'inversify'
 import { Container, type DestroyOptions, type Ticker } from 'pixi.js'
 
 import { ROOM_FRAMES } from '#src/assets'
-import { ART_PIXEL, DUST_AREA, GLOW_SOURCE_CENTER, SHADOW_CENTER } from '#src/constants'
+import {
+  ART_PIXEL,
+  CABLE_COLOR,
+  CABLE_PATH,
+  DUST_AREA,
+  FLOOR_GLOW_CENTER,
+  GLOW_SOURCE_CENTER,
+  LITTER_BEHIND_CABINET,
+  OUTLET,
+  SHADOW_CENTER,
+} from '#src/constants'
 import type { ScreenRect } from '#src/types'
+import { Cable } from '#src/ui/room/cable'
 import { Carpet } from '#src/ui/room/carpet'
-import { Decals } from '#src/ui/room/decals'
 import { Dust } from '#src/ui/room/dust'
 import { Glow } from '#src/ui/room/glow'
+import { Litter } from '#src/ui/room/litter'
 import { Wainscot } from '#src/ui/room/wainscot'
 import { WallGlow } from '#src/ui/room/wall-glow'
 import { Wallpaper } from '#src/ui/room/wallpaper'
@@ -18,15 +29,15 @@ import { LiveContainer } from '@pixi-demos/engine/live-container'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 
 /**
- * Фон зала за автоматом: стена с обоями и декалями, панель с плинтусом и ковёр до краёв канваса, мерцающий свет
- * стеклянного куба на стене с пылинками, тень автомата.
+ * Фон зала за автоматом: стена с обоями, панель с плинтусом и ковёр до краёв канваса, мерцающий свет
+ * стеклянного куба на стене с пылинками, свет автомата на ковре, тень автомата, кабель автомата к розетке и мусор на
+ * полу за тумбой.
  */
 @injectable()
 export class RoomController extends LiveContainer {
   private readonly ticker: GameTicker
   private readonly layers = new Container()
   private readonly wallpaper: Wallpaper
-  private readonly decals = new Decals()
   private readonly wainscot: Wainscot
   private readonly carpet: Carpet
   private readonly dust: Dust
@@ -42,9 +53,11 @@ export class RoomController extends LiveContainer {
 
     const source = toArtPoint(GLOW_SOURCE_CENTER)
     const shadow = new Glow(ROOM_FRAMES.shadow, 'normal')
+    const floorGlow = new Glow(ROOM_FRAMES.floorGlow, 'add')
 
     this.glow.position.copyFrom(source)
     shadow.position.copyFrom(toArtPoint(SHADOW_CENTER))
+    floorGlow.position.copyFrom(toArtPoint(FLOOR_GLOW_CENTER))
     this.dust = new Dust({
       left: source.x - DUST_AREA.width / 2,
       top: source.y - DUST_AREA.height / 2,
@@ -54,8 +67,14 @@ export class RoomController extends LiveContainer {
 
     // Ореол стены лежит под ковром: ковёр обрезает его по линии плинтуса
     this.layers.scale.set(ART_PIXEL)
-    this.layers.addChild(this.wallpaper, this.decals, this.wainscot, this.glow, this.dust, this.carpet, shadow)
-    this.addChild(this.layers)
+    this.layers.addChild(this.wallpaper, this.wainscot, this.glow, this.dust, this.carpet, floorGlow, shadow)
+
+    this.addChild(
+      this.layers,
+      new Cable(CABLE_PATH, CABLE_COLOR),
+      new Litter([OUTLET]),
+      new Litter(LITTER_BEHIND_CABINET)
+    )
 
     // Пылинки и мерцание — декоративное движение: при уменьшенном движении пылинок нет, ореол светит ровно
     if (isReducedMotion()) this.dust.visible = false
@@ -76,7 +95,6 @@ export class RoomController extends LiveContainer {
     const panelTop = plinthY - this.wainscot.tileHeight
 
     this.wallpaper.cover({ left, top, right, bottom: panelTop }, panelTop)
-    this.decals.cover({ left, top, right, bottom: panelTop })
     this.wainscot.cover({ left, top: panelTop, right, bottom: plinthY }, panelTop)
     this.carpet.cover({ left, top: plinthY, right, bottom }, plinthY)
   }

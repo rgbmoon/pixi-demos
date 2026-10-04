@@ -490,5 +490,173 @@
       "raw/glow-pixflux-6101.png: непрозрачная мишень из колец с тёмным фоном по всему кадру; при сложении с фоном подкрашивает прямоугольник"
     ],
     "note": "Сравнение света по роадмапу: свет строит пайп light. 28.09.2026 по правкам Сергея свет идёт от боков стеклянного куба, как ореол телевизора у стены, и над крышей его нет: glow{light}.json — источник-прямоугольник 144×40 в середине куба, радиусы x 112, вверх 71 (свет гаснет у крыши), вниз 166 (гаснет у плинтуса); после ревью ореол вдвое шире по горизонтали и мягче по вертикали, neon 0–2, непрозрачность 0,35, наложение сложением. Пятно на полу снято: без продолжения на стене оно читалось оторванным от источника. Тень — shadow{light}.json, 192×40, indigo 0, 0,55. Сырые файлы `raw/` удалены 28.09.2026: результат — в аккаунте PixelLab по `id` (`get_image`, у тайлсетов — `get_topdown_tileset`); пути `raw/…` в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-10-04",
+    "tool": "create_image_pixflux",
+    "params": {
+      "no_background": true,
+      "view": "side",
+      "outline": "lineless",
+      "shading": "flat shading",
+      "detail": "low detail",
+      "color_image": "рампа bone, образец 20×4 (swatch-bone)",
+      "description": "single large stylized 1970s wallpaper flower motif with two leaves, flat graphic shape, vintage american motel wallpaper ornament, symmetrical, isolated on transparent background, flat orthographic front view, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 64,
+      "height": 64,
+      "seed": 7101,
+      "text_guidance_scale": 8
+    },
+    "seed": 7101,
+    "id": "4cfc64da-7f31-4b89-817f-e314e8efd508",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/4cfc64da-7f31-4b89-817f-e314e8efd508/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      0
+    ],
+    "note": "Т21, мотив flower для тайлов ночной комнаты: два тона по светлоте, раскладка со сдвигом на полшага (review.local/t19/patterns.ts). Отбор — по ревью раунда 3. Итог: в финал не вошёл — Сергей выбрал ромбическую решётку, нарисованную скриптом."
+  },
+  {
+    "date": "2026-10-04",
+    "tool": "create_image_pixflux",
+    "params": {
+      "no_background": true,
+      "view": "side",
+      "outline": "lineless",
+      "shading": "flat shading",
+      "detail": "low detail",
+      "color_image": "рампа bone, образец 20×4 (swatch-bone)",
+      "description": "ornate victorian flocked damask wallpaper motif, single symmetrical repeat unit, tall ornament with scrolls and leaves, old hotel corridor wallpaper, isolated on transparent background, flat orthographic front view, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 64,
+      "height": 96,
+      "seed": 7102,
+      "text_guidance_scale": 8
+    },
+    "seed": 7102,
+    "id": "0a6ae034-798d-45bd-ab0f-fb47762d9fc1",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/0a6ae034-798d-45bd-ab0f-fb47762d9fc1/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      0
+    ],
+    "note": "Т21, мотив damask для тайлов ночной комнаты: два тона по светлоте, раскладка со сдвигом на полшага (review.local/t19/patterns.ts). Отбор — по ревью раунда 3. Итог: в финал не вошёл — Сергей выбрал ромбическую решётку, нарисованную скриптом."
+  },
+  {
+    "date": "2026-10-04",
+    "tool": "create_image_pixflux",
+    "params": {
+      "no_background": true,
+      "view": "side",
+      "outline": "lineless",
+      "shading": "flat shading",
+      "detail": "low detail",
+      "color_image": "рампа bone, образец 20×4 (swatch-bone)",
+      "description": "mid-century atomic age wallpaper motif, four pointed sparkle starburst with small boomerang shape, 1950s american motel wallpaper ornament, isolated on transparent background, flat orthographic front view, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 48,
+      "height": 48,
+      "seed": 7103,
+      "text_guidance_scale": 8
+    },
+    "seed": 7103,
+    "id": "362e079c-bf73-43da-9e8b-00b42fd21eba",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/362e079c-bf73-43da-9e8b-00b42fd21eba/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      0
+    ],
+    "note": "Т21, мотив atomic для тайлов ночной комнаты: два тона по светлоте, раскладка со сдвигом на полшага (review.local/t19/patterns.ts). Отбор — по ревью раунда 3. Итог: в финал не вошёл — Сергей выбрал ромбическую решётку, нарисованную скриптом."
+  },
+  {
+    "date": "2026-10-04",
+    "tool": "create_image_pixflux",
+    "params": {
+      "no_background": true,
+      "view": "high top-down",
+      "outline": "lineless",
+      "shading": "flat shading",
+      "detail": "low detail",
+      "color_image": "рампа bone, образец 20×4 (swatch-bone)",
+      "description": "ornate old hotel carpet medallion motif, symmetrical floral rosette with scrolls, seen from above and squashed flat in perspective, wider than tall, isolated on transparent background, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 64,
+      "height": 32,
+      "seed": 7104,
+      "text_guidance_scale": 8
+    },
+    "seed": 7104,
+    "id": "e06aed73-7f03-4e93-8ed1-888d28d82e72",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/e06aed73-7f03-4e93-8ed1-888d28d82e72/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      0
+    ],
+    "note": "Т21, мотив medallion для тайлов ночной комнаты: два тона по светлоте, раскладка со сдвигом на полшага (review.local/t19/patterns.ts). Отбор — по ревью раунда 3. Итог: в финал не вошёл — Сергей выбрал ромбическую решётку, нарисованную скриптом."
+  },
+  {
+    "date": "2026-10-04",
+    "tool": "create_image_pixflux",
+    "params": {
+      "no_background": true,
+      "view": "high top-down",
+      "outline": "lineless",
+      "shading": "flat shading",
+      "detail": "low detail",
+      "color_image": "рампа bone, образец 20×4 (swatch-bone)",
+      "description": "single paisley teardrop motif with small inner details, 1970s motel carpet ornament, seen from above and squashed flat in perspective, wider than tall, isolated on transparent background, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 48,
+      "height": 32,
+      "seed": 7105,
+      "text_guidance_scale": 8
+    },
+    "seed": 7105,
+    "id": "ea3face1-0207-46d6-b107-a1c306bcc440",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/ea3face1-0207-46d6-b107-a1c306bcc440/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      0
+    ],
+    "note": "Т21, мотив paisley для тайлов ночной комнаты: два тона по светлоте, раскладка со сдвигом на полшага (review.local/t19/patterns.ts). Отбор — по ревью раунда 3. Итог: в финал не вошёл — Сергей выбрал ромбическую решётку, нарисованную скриптом."
+  },
+  {
+    "date": "2026-10-04",
+    "tool": "create_image_pixflux",
+    "params": {
+      "no_background": true,
+      "view": "side",
+      "outline": "lineless",
+      "shading": "flat shading",
+      "detail": "low detail",
+      "color_image": "рампа bone, образец 20×4 (swatch-bone)",
+      "description": "tiny rosebud sprig with two small leaves, small vintage wallpaper ornament for striped hotel wallpaper, isolated on transparent background, flat orthographic front view, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 32,
+      "height": 32,
+      "seed": 7106,
+      "text_guidance_scale": 8
+    },
+    "seed": 7106,
+    "id": "035c3a1f-df2e-4920-bb5c-f3615e31ca36",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/035c3a1f-df2e-4920-bb5c-f3615e31ca36/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      0
+    ],
+    "note": "Т21, мотив sprig для тайлов ночной комнаты: два тона по светлоте, раскладка со сдвигом на полшага (review.local/t19/patterns.ts). Отбор — по ревью раунда 3. Итог: в финал не вошёл — Сергей выбрал ромбическую решётку, нарисованную скриптом."
   }
 ]

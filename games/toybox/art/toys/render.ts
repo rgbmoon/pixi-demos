@@ -116,7 +116,7 @@ const SPRITE_SCALES: Readonly<Record<string, number>> = {
  * Почти чёрный цвет баз PixelLab — контур и глубокие тени — слишком контрастен для сцены. При записи полос он
  * смягчается: край силуэта — серо-фиолетовым, внутренние линии — нижней ступенью цвета соседей.
  */
-const HARSH_BLACK = palette.ramps.indigo[0]
+const HARSH_BLACK = palette.ramps.night[0]
 const SOFT_EDGE = palette.ramps.metal[0]
 
 // Свет сверху-слева и от игрока, зафиксирован на экране: при крене освещение не переворачивается

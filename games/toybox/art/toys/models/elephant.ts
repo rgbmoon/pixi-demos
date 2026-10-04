@@ -12,7 +12,7 @@ const FUR = fabric('green', 2)
 const decal = ({ part: { name }, point: [a, b], normal }: ModelHit): ModelColor | undefined => {
   if (name === 'head') {
     if (near(a, b, -2.7, 6.6, 0.25, 0.25) || near(a, b, 3.1, 6.6, 0.25, 0.25)) return ['bone', 4]
-    if (near(a, b, -2.9, 6.4, 0.7, 0.8) || near(a, b, 2.9, 6.4, 0.7, 0.8)) return ['indigo', 0]
+    if (near(a, b, -2.9, 6.4, 0.7, 0.8) || near(a, b, 2.9, 6.4, 0.7, 0.8)) return ['night', 0]
   }
   if (name === 'trunk' && Math.round(b * 1.2) % 3 === 0) return ['green', 1]
   if (name === 'legL' || name === 'legR') {

@@ -1,1 +1,1 @@
-{ "width": 192, "height": 40, "radius": { "x": 96, "y": 20 }, "ramp": "indigo", "steps": [0, 0], "alpha": 0.55 }
+{ "width": 192, "height": 40, "radius": { "x": 96, "y": 20 }, "ramp": "night", "steps": [0, 0], "alpha": 0.55 }

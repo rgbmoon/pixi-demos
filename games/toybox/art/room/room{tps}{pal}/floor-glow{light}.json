@@ -1,0 +1,1 @@
+{ "width": 480, "height": 88, "center": { "x": 240, "y": 44 }, "source": { "width": 160, "height": 12 }, "radius": { "x": 160, "y": 32 }, "ramp": "warm", "steps": [0, 2], "alpha": 0.3 }

@@ -14,8 +14,6 @@ export const ROOM_ATLAS = 'room'
 
 /** Последовательности атласа фона: кадры `<имя>-N` упаковщик собирает в `animations.<имя>`. */
 export const ROOM_SEQUENCES = {
-  /** Варианты декалей стены. */
-  decals: 'decal',
   /** Кадры пульса обоев. */
   wallpaper: 'wallpaper',
 } as const
@@ -38,6 +36,9 @@ export const HATCH_ATLAS = 'hatch'
 /** Алиас атласа игрушек в кэше Assets. */
 export const TOYS_ATLAS = 'toys'
 
+/** Алиас атласа мусора в кэше Assets. */
+export const LITTER_ATLAS = 'litter'
+
 /** Атласы игры: алиас в кэше Assets → URL JSON атласа. */
 export const ATLASES = {
   [ROOM_ATLAS]: `${ASSETS_DIR}/room/room.json`,
@@ -47,6 +48,7 @@ export const ATLASES = {
   [HUD_ATLAS]: `${ASSETS_DIR}/hud/hud.json`,
   [HATCH_ATLAS]: `${ASSETS_DIR}/hatch/hatch.json`,
   [TOYS_ATLAS]: `${ASSETS_DIR}/toys/toys.json`,
+  [LITTER_ATLAS]: `${ASSETS_DIR}/litter/litter.json`,
 } as const
 
 /**
@@ -171,6 +173,7 @@ export const ROOM_FRAMES = {
   wainscot: 'wainscot.png',
   carpet: 'carpet.png',
   wallGlow: 'glow.png',
+  floorGlow: 'floor-glow.png',
   shadow: 'shadow.png',
 } as const
 

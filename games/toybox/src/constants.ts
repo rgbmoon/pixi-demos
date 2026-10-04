@@ -4,6 +4,7 @@ import {
   LampColor,
   LampLight,
   type LightStep,
+  type LitterPlacement,
   PhaseName,
   PrizeLight,
   type ScreenPoint,
@@ -81,13 +82,6 @@ export const MACHINE_CANVAS_SHARE = 1
  * поэтому между задним углом тумбы и плинтусом видно 2 × (WALL_X − GRID_SIZE) px пола.
  */
 export const WALL_X = GRID_SIZE + 8
-/**
- * Сторона блока раскладки декалей стены в пикселях арта: в блоке не больше одной декали, поэтому декали разнесены
- * по стене равномерно.
- */
-export const DECAL_BLOCK_SIZE = 128
-/** Доля блоков стены, в которых лежит декаль. */
-export const DECAL_BLOCK_SHARE = 0.75
 /** Длительности кадров пульса обоев, мс: узор задерживается в тёмной и светлой фазе и быстро переходит между ними. */
 export const WALLPAPER_PULSE_MS = [600, 150, 150, 150, 600, 150, 150, 150]
 /** Шаг сдвига рисунка ковра на пиксель арта, мс: рисунок проходит тайл за 48 шагов. */
@@ -102,8 +96,8 @@ export const DUST_MAX_LIFE_MS = 8000
 /** Наибольшая скорость пылинки, пикселей арта в секунду: оседание быстрее бокового дрейфа. */
 export const DUST_FALL_SPEED = 4
 export const DUST_DRIFT_SPEED = 2
-/** Цвет пылинки — светлая ступень рампы `neon`; свет пылинки складывается с фоном. */
-export const DUST_COLOR = '#f97f96'
+/** Цвет пылинки — светлая ступень рампы `warm`; свет пылинки складывается с фоном. */
+export const DUST_COLOR = '#f4e5ac'
 /** Сид генератора пылинок: их полёт не тратит `Math.random` игры. */
 export const DUST_SEED = 7
 /** Пауза ровного света ореола стены между мерцаниями, мс. */
@@ -119,8 +113,47 @@ export const WALL_GLOW_ALPHA: Readonly<Record<LampLight, number>> = {
 }
 /** Сид генератора мерцания ореола стены: мерцание не тратит `Math.random` игры. */
 export const WALL_GLOW_SEED = 13
+/** Центр пятна света автомата на ковре: середина нижнего края фасада тумбы. */
+export const FLOOR_GLOW_CENTER: WorldPoint = { x: CABINET_FRONT_X, y: GRID_SIZE / 2, z: CABINET_BOTTOM_Z }
 /** Центр тени автомата: середина основания тумбы. */
 export const SHADOW_CENTER: WorldPoint = { x: (CABINET_FRONT_X + GRID_SIZE) / 2, y: GRID_SIZE / 2, z: CABINET_BOTTOM_Z }
+/** Мусор на крыше табло: кадр атласа `litter` и точка мира под его опорной точкой. */
+export const LITTER_ON_ROOF: readonly LitterPlacement[] = [
+  { frame: 'can-red.png', point: { x: 1.2, y: 6.3, z: MARQUEE_TOP_Z } },
+  { frame: 'bottle-lying.png', point: { x: 3.5, y: 3.8, z: MARQUEE_TOP_Z } },
+  { frame: 'cup.png', point: { x: 1.2, y: 1.6, z: MARQUEE_TOP_Z } },
+]
+/** Мусор на полу справа от тумбы: стоит перед её видимой боковиной и рисуется над корпусом, под игрушками на полу. */
+export const LITTER_BESIDE_CABINET: readonly LitterPlacement[] = [
+  { frame: 'bottle.png', point: { x: -2.4, y: -1, z: CABINET_BOTTOM_Z } },
+  { frame: 'can-crushed-red.png', point: { x: -0.6, y: -2.3, z: CABINET_BOTTOM_Z } },
+  { frame: 'butts-pile.png', point: { x: -1.8, y: -3.4, z: CABINET_BOTTOM_Z } },
+  { frame: 'butt-a.png', point: { x: -3.6, y: -4.6, z: CABINET_BOTTOM_Z } },
+  { frame: 'butt-c.png', point: { x: 1.8, y: -1.4, z: CABINET_BOTTOM_Z } },
+  { frame: 'pack.png', point: { x: 3.6, y: -2.6, z: CABINET_BOTTOM_Z } },
+  { frame: 'butt-b.png', point: { x: 5.6, y: -1.6, z: CABINET_BOTTOM_Z } },
+  { frame: 'bottle-green.png', point: { x: 7.6, y: -1.2, z: CABINET_BOTTOM_Z } },
+]
+/** Мусор на полу у левого угла тумбы: стоит за её корпусом и рисуется в слое фона. */
+export const LITTER_BEHIND_CABINET: readonly LitterPlacement[] = [
+  { frame: 'butts-two.png', point: { x: -1.5, y: 9.3, z: CABINET_BOTTOM_Z } },
+  { frame: 'can-crushed-green.png', point: { x: 2, y: 9.5, z: CABINET_BOTTOM_Z } },
+]
+/** Розетка на панели стены у правого края автомата: кадр атласа `litter` и точка стены под низом кадра. */
+export const OUTLET: LitterPlacement = { frame: 'outlet.png', point: { x: WALL_X, y: 0.4, z: CABINET_BOTTOM_Z + 0.4 } }
+/**
+ * Кабель автомата: ломаная от точки под тумбой, скрытой корпусом, по полу к стене и вверх к низу кадра розетки. Изгиб
+ * на полу задают промежуточные точки.
+ */
+export const CABLE_PATH: readonly WorldPoint[] = [
+  { x: 7, y: 0.5, z: CABINET_BOTTOM_Z },
+  { x: 9, y: -0.4, z: CABINET_BOTTOM_Z },
+  { x: 12, y: -0.6, z: CABINET_BOTTOM_Z },
+  { x: WALL_X, y: 0.4, z: CABINET_BOTTOM_Z },
+  OUTLET.point,
+]
+/** Цвет кабеля — ступень 1 рампы `metal`. */
+export const CABLE_COLOR = '#47443e'
 
 /** Плоскость наклонной панели управления. */
 export const CONTROL_PANEL_PLANE: WorldPlane = {
