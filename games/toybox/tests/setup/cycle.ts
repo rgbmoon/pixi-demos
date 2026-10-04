@@ -155,8 +155,8 @@ export const createCycle = (options: CycleOptions = {}): Cycle => {
   const store = container.get(TOYBOX_TOKENS.ToyboxStore)
 
   container.bind(TOYBOX_TOKENS.PrizeOutputController).toConstantValue({
-    show: (appearance: Prize) => {
-      prizes.push({ ...appearance, collected: store.collected })
+    show: (prize: Prize) => {
+      prizes.push({ ...prize, collected: store.collected })
       presentation.push('show')
     },
     open: async () => {

@@ -1,4 +1,4 @@
-import { Assets, type DestroyOptions, type Texture } from 'pixi.js'
+import { Assets, type Texture } from 'pixi.js'
 
 import { HATCH_FRAMES } from '#src/assets'
 import {
@@ -9,8 +9,9 @@ import {
   PRIZE_LIGHT_TINT,
 } from '#src/constants'
 import { TOY_KEYS } from '#src/toys'
-import { PrizeLight, type ToyAppearance } from '#src/types'
+import { Light, type ToyKey } from '#src/types'
 import { Face } from '#src/ui/box/face'
+import { toLightSequence } from '#src/utils/light'
 import { getPrizeHatchFaces } from '#src/utils/machine-geometry'
 import { getPrizeSeat } from '#src/utils/shapes'
 import { FrameAnimation } from '@pixi-demos/engine/frame-animation'
@@ -22,7 +23,6 @@ import { Toy } from './toy'
 /** Ниша за окном выдачи с призом на полу: свет загорается ровно или с перебоями и мерцает, в темноте приз затемнён. */
 export class PrizeNiche extends FrameAnimation<Face> {
   private readonly prize: Toy
-  private readonly lights: Readonly<Record<PrizeLight, Texture>>
   /** Тинт приза по кадру света. */
   private readonly tints: ReadonlyMap<Texture, number>
   private readonly darkness: FrameSequence
@@ -40,17 +40,16 @@ export class PrizeNiche extends FrameAnimation<Face> {
     // До первого приза ниша держит любую игрушку скрытой
     this.prize = new Toy(ticker, TOY_KEYS[0])
     this.prize.visible = false
-    this.lights = lights
-    this.tints = new Map(Object.values(PrizeLight).map((light) => [lights[light], PRIZE_LIGHT_TINT[light]]))
-    this.darkness = this.toSequence([[PrizeLight.off, 0]])
-    this.switching = this.toSequence(PRIZE_LIGHT_SWITCH)
-    this.ignition = this.toSequence(PRIZE_LIGHT_IGNITION)
-    this.flicker = this.toSequence(PRIZE_LIGHT_FLICKER)
+    this.tints = new Map(Object.values(Light).map((light) => [lights[light], PRIZE_LIGHT_TINT[light]]))
+    this.darkness = toLightSequence(lights, [[Light.off, 0]])
+    this.switching = toLightSequence(lights, PRIZE_LIGHT_SWITCH)
+    this.ignition = toLightSequence(lights, PRIZE_LIGHT_IGNITION)
+    this.flicker = toLightSequence(lights, PRIZE_LIGHT_FLICKER)
     this.addChild(this.prize)
   }
 
   /** Ставит игрушку на пол ниши. */
-  setPrize({ toy }: ToyAppearance): void {
+  setPrize(toy: ToyKey): void {
     this.prize.setAppearance(toy)
     this.prize.setPose(getPrizeSeat(toy), 0)
     this.prize.visible = true
@@ -78,24 +77,11 @@ export class PrizeNiche extends FrameAnimation<Face> {
     this.showFrame(this.darkness, 0)
   }
 
-  override destroy(options?: DestroyOptions): void {
-    if (this.destroyed) return
-
-    super.destroy(options)
-  }
-
   protected override applyFrame(texture: Texture | undefined): void {
     super.applyFrame(texture)
 
     const tint = texture && this.tints.get(texture)
 
     if (tint !== undefined && !this.destroyed) this.prize.tint = tint
-  }
-
-  private toSequence(steps: readonly (readonly [PrizeLight, number])[]): FrameSequence {
-    return {
-      frames: steps.map(([light]) => this.lights[light]),
-      durations: steps.map(([, ms]) => ms),
-    }
   }
 }

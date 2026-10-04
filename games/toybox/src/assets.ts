@@ -1,7 +1,7 @@
 import { Assets, BitmapFont, type Spritesheet } from 'pixi.js'
 
 import { TOY_SPECS } from './toy-specs'
-import type { ButtonFrames, LampColor, PrizeLight, ToyKey, ToySequences } from './types'
+import type { ButtonFrames, LampColor, Light, ToyKey, ToySequences } from './types'
 
 // Единый манифест ассетов toybox: все URL в одном месте. Атласы и шрифты собирает `pnpm assets` из
 // `games/toybox/art/`; `preloadGameAssets` грузит их одним `Assets.load` до сборки сцены, классы читают их из
@@ -151,7 +151,7 @@ export const HUD_SEQUENCES = {
 export const HATCH_FRAMES = {
   rim: 'rim.png',
   niche: { off: 'niche-off.png', dim: 'niche-dim.png', on: 'niche-on.png' },
-} as const satisfies { rim: string; niche: Record<PrizeLight, string> }
+} as const satisfies { rim: string; niche: Record<Light, string> }
 
 /** Последовательности атласа окна выдачи: видимая в проёме часть шторки от закрытой до открытой. */
 export const HATCH_SEQUENCES = {

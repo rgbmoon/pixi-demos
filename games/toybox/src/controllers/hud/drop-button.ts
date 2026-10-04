@@ -1,5 +1,4 @@
 import { inject, injectable } from 'inversify'
-import { Sprite } from 'pixi.js'
 
 import { HUD_SEQUENCES } from '#src/assets'
 import { ART_PIXEL, TOUR_DROP_HINT_LIFT } from '#src/constants'
@@ -34,10 +33,7 @@ export class DropButtonController extends LiveContainer {
       },
     })
 
-    const arrow = new Sprite()
-
-    arrow.scale.set(ART_PIXEL)
-    this.hint = new TourHint(ticker, arrow, HUD_SEQUENCES.tourDrop)
+    this.hint = new TourHint(ticker, HUD_SEQUENCES.tourDrop)
     this.hint.position.set(0, -TOUR_DROP_HINT_LIFT * ART_PIXEL)
 
     this.addChild(this.button, this.hint)

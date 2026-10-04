@@ -4,8 +4,8 @@ import { ART_PIXEL, MACHINE_CANVAS_SHARE, MACHINE_MARGIN, TOY_ANGLE_STEP, TRAY_C
 import { TRAY_EXIT_Z } from '#src/heap/constants'
 import { TOY_KEYS } from '#src/toys'
 import type { ScreenPoint } from '#src/types'
-import { getCabinetOutlines, getMachineBounds, getMachineLayout } from '#src/utils/machine-geometry'
-import { worldToScreen } from '#src/utils/projection'
+import { getCabinetFaces, getMachineBounds, getMachineLayout } from '#src/utils/machine-geometry'
+import { getFaceQuad, worldToScreen } from '#src/utils/projection'
 import { getDepth, getPrismOutline, getSection } from '#src/utils/shapes'
 
 /**
@@ -98,7 +98,8 @@ describe('корпус автомата', () => {
   })
 
   it('закрывает игрушку, ушедшую из шахты лотка, при любой игрушке и крене', () => {
-    const faces = getCabinetOutlines().map((face) => face.map((point) => worldToScreen(point)))
+    const { cabinetFront, cabinetSide, panel } = getCabinetFaces()
+    const faces = [cabinetFront, cabinetSide, panel].map((face) => getFaceQuad(face).map((point) => worldToScreen(point)))
     const origin = worldToScreen({ ...TRAY_CENTER, z: TRAY_EXIT_Z })
     const stepsPerTurn = Math.round((2 * Math.PI) / TOY_ANGLE_STEP)
     const exposed: string[] = []

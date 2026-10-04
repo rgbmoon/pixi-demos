@@ -16,6 +16,7 @@ import { snapToArtPixel, worldToScreen } from '#src/utils/projection'
 import { FrameAnimation } from '@pixi-demos/engine/frame-animation'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 import type { FrameSequence } from '@pixi-demos/engine/types'
+import { setSpriteFrame } from '@pixi-demos/engine/utils'
 
 /**
  * Клешня в сборе: трос от каретки, задний палец, игрушка в захвате и сама клешня — в этом порядке снизу вверх. Клешня
@@ -151,10 +152,7 @@ export class Claw extends FrameAnimation {
     super.applyFrame(texture)
     if (!texture || this.destroyed) return
 
-    const back = this.backFrames.get(texture) ?? this.backUpright
-
-    this.back.texture = back
-    if (back.defaultAnchor) this.back.anchor.copyFrom(back.defaultAnchor)
+    setSpriteFrame(this.back, this.backFrames.get(texture) ?? this.backUpright)
   }
 
   /** Проигрывает смену состояния и после неё возвращает кадры поворота нового состояния. */

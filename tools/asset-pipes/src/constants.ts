@@ -25,9 +25,6 @@ export const TILE_PREVIEW_REPEAT = 3
 /** Во сколько раз увеличиваются превью атласов и тайлов. */
 export const PREVIEW_SCALE = 4
 
-/** Набор символов шрифта по умолчанию: латиница, цифры и пунктуация табло и диалога. */
-export const DEFAULT_FONT_CHARS = ` ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,!?:;-+/'"()%#&`
-
 /** Ширина страницы шрифта в пикселях. */
 export const FONT_PAGE_WIDTH = 256
 
@@ -36,12 +33,6 @@ export const FONT_PAGE_PADDING = 2
 
 /** Расстояние между иконкой шрифта и следующим символом. */
 export const FONT_ICON_SPACING = 1
-
-/** Шаг разбиения кривых контура глифа на отрезки. */
-export const GLYPH_CURVE_STEPS = 16
-
-/** Допуск, в пределах которого край контура глифа считается лежащим на границе пикселя. */
-export const GLYPH_EDGE_EPSILON = 1e-6
 
 /** Имя файла с параметрами шрифта в папке `{bmfont}`. */
 export const FONT_SPEC_FILE = 'font.json'

@@ -1,5 +1,5 @@
 import { inject, injectable } from 'inversify'
-import { type DestroyOptions, Sprite } from 'pixi.js'
+import type { DestroyOptions } from 'pixi.js'
 
 import { HUD_SEQUENCES } from '#src/assets'
 import {
@@ -66,10 +66,7 @@ export class ResetButtonController extends LiveContainer {
     })
     this.dialog.position.set(RESET_CONFIRM_TAIL.x * ART_PIXEL, RESET_CONFIRM_TAIL.y * ART_PIXEL)
 
-    const arrow = new Sprite()
-
-    arrow.scale.set(ART_PIXEL)
-    this.hint = new TourHint(ticker, arrow, HUD_SEQUENCES.tourDrop)
+    this.hint = new TourHint(ticker, HUD_SEQUENCES.tourDrop)
     this.hint.position.set(0, -RESET_HINT_LIFT * ART_PIXEL)
 
     this.addChild(this.button, this.hint, this.dialog)

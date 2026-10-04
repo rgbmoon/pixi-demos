@@ -1,4 +1,4 @@
-import type { Application, Container, Ticker } from 'pixi.js'
+import type { Application, Container, Sprite, Texture, Ticker, TilingSprite } from 'pixi.js'
 
 import { isReducedMotion } from '@pixi-demos/core/accessibility'
 import { traceError } from '@pixi-demos/core/errors/utils'
@@ -218,3 +218,12 @@ export const tweenProgress = (
 
     ticker.add(step)
   })
+
+/**
+ * Ставит спрайту кадр вместе с его якорем: `Sprite` читает якорь текстуры только в конструкторе, а у кадров одной
+ * последовательности якоря бывают разные.
+ */
+export const setSpriteFrame = (sprite: Sprite | TilingSprite, texture: Texture): void => {
+  sprite.texture = texture
+  if (texture.defaultAnchor) sprite.anchor.copyFrom(texture.defaultAnchor)
+}

@@ -1,17 +1,24 @@
 import { Assets, type DestroyOptions, Sprite, type Texture } from 'pixi.js'
 
 import { getToySequences } from '#src/assets'
-import { ART_PIXEL, TOY_TWITCH_FRAME_MS, TOY_TWITCH_MAX_PAUSE_MS, TOY_TWITCH_MIN_PAUSE_MS } from '#src/constants'
+import {
+  ART_PIXEL,
+  TOY_ANGLE_STEPS,
+  TOY_TWITCH_FRAME_MS,
+  TOY_TWITCH_MAX_PAUSE_MS,
+  TOY_TWITCH_MIN_PAUSE_MS,
+} from '#src/constants'
 import type { ToyKey, WorldPoint } from '#src/types'
 import { lerp } from '#src/utils/math'
 import { snapToArtPixel, worldToScreen } from '#src/utils/projection'
-import { ANGLE_STEPS, getAngleStep } from '#src/utils/shapes'
+import { getAngleStep } from '#src/utils/shapes'
 import { isReducedMotion } from '@pixi-demos/core/accessibility'
 import { createAbortError, isAbortError, notifyError } from '@pixi-demos/core/errors/utils'
 import type { Random } from '@pixi-demos/core/types'
 import { FrameAnimation } from '@pixi-demos/engine/frame-animation'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 import type { FrameSequence } from '@pixi-demos/engine/types'
+import { setSpriteFrame } from '@pixi-demos/engine/utils'
 
 /**
  * Игрушка в куче, в клешне, в окне выдачи и на полу: спрайт кадра крена из атласа игрушек, подсветка — обводка той же
@@ -93,7 +100,7 @@ export class Toy extends FrameAnimation {
     this.stop()
     this.applyFrame(frames[step])
     this.outline.visible = highlighted
-    if (highlighted) Toy.showFrame(this.outline, outlineFrames[step])
+    if (highlighted) setSpriteFrame(this.outline, outlineFrames[step])
   }
 
   private async twitch(random: Random, signal: AbortSignal): Promise<void> {
@@ -128,12 +135,6 @@ export class Toy extends FrameAnimation {
 
   /** Кадры крена последовательности по именам кадров: последовательность может лежать на нескольких страницах атласа. */
   private static loadSequence(name: string): Texture[] {
-    return Array.from({ length: ANGLE_STEPS }, (_, step) => Assets.get<Texture>(`${name}-${step}.png`))
-  }
-
-  /** Ставит спрайту кадр и якорь кадра: у кадров одной последовательности якоря разные. */
-  private static showFrame(sprite: Sprite, texture: Texture): void {
-    sprite.texture = texture
-    if (texture.defaultAnchor) sprite.anchor.copyFrom(texture.defaultAnchor)
+    return Array.from({ length: TOY_ANGLE_STEPS }, (_, step) => Assets.get<Texture>(`${name}-${step}.png`))
   }
 }

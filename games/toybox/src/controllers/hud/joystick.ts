@@ -1,8 +1,6 @@
 import { inject, injectable } from 'inversify'
-import { Sprite } from 'pixi.js'
 
 import { HUD_SEQUENCES } from '#src/assets'
-import { ART_PIXEL } from '#src/constants'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import { Joystick } from '#src/ui/hud/joystick'
@@ -32,10 +30,7 @@ export class JoystickController extends LiveContainer {
         toyboxStore.setJoystickDirection(vector)
       },
     })
-    const arrows = new Sprite()
-
-    arrows.scale.set(ART_PIXEL)
-    this.hint = new TourHint(ticker, arrows, HUD_SEQUENCES.tourJoystick)
+    this.hint = new TourHint(ticker, HUD_SEQUENCES.tourJoystick)
 
     this.addChild(this.joystick, this.hint)
 

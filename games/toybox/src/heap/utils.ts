@@ -5,8 +5,6 @@ import {
   AXIS_Y,
   CABINET_BOTTOM_Z,
   CUBE_HEIGHT,
-  FLOOR_PILE_DEPTH,
-  FLOOR_PILE_WIDTH,
   GRID_SIZE,
   HEAP_SNAPSHOT_VERSION,
   MARQUEE_LAMP_COUNT,
@@ -39,6 +37,8 @@ import {
   FILL_MAX_TILT,
   FILL_SPAWN_GAP,
   FILL_VOLUME,
+  FLOOR_PILE_DEPTH,
+  FLOOR_PILE_WIDTH,
   HEAP_SETTLE_MAX_STEPS,
   HEAP_STEP_MS,
   TRAY_EXIT_Z,
@@ -55,7 +55,7 @@ const getFloorPileRight = (): number => (GRID_SIZE - FLOOR_PILE_WIDTH) / 2
  * Правая стенка куба (сторона `y = 0`) в срезе `slab`. На экране глубина уходит вправо, и у дальних срезов стенка
  * отодвинута внутрь: игрушка, прижатая к ней, вместе с обводкой подсветки не заходит на заднюю правую стойку.
  */
-export const getRightWallY = (slab: number): number => {
+const getRightWallY = (slab: number): number => {
   // Дальний край игрушки в срезе и внутренний край задней правой стойки на экране за вычетом обводки
   const far = slab + (1 + TOY_INSET) / 2
   const limit = worldToScreen({ x: GRID_SIZE, y: PILLAR_WIDTH / ART_CELL, z: 0 }).x - ART_PIXEL

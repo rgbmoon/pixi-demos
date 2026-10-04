@@ -2,11 +2,10 @@ import {
   type FrameSize,
   type GroundPoint,
   LampColor,
-  LampLight,
+  Light,
   type LightStep,
   type LitterPlacement,
   PhaseName,
-  PrizeLight,
   type ScreenPoint,
   type WorldPlane,
   type WorldPoint,
@@ -104,12 +103,12 @@ export const DUST_SEED = 7
 export const WALL_GLOW_MIN_PAUSE_MS = 40000
 export const WALL_GLOW_MAX_PAUSE_MS = 90000
 /** Провалы мерцания ореола стены: до полнакала и до темноты. */
-export const WALL_GLOW_DIPS: readonly LampLight[] = [LampLight.dim, LampLight.off]
+export const WALL_GLOW_DIPS: readonly Light[] = [Light.dim, Light.off]
 /** Прозрачность ореола стены при каждом состоянии света: в провале ореол тускнеет, но не гаснет. */
-export const WALL_GLOW_ALPHA: Readonly<Record<LampLight, number>> = {
-  [LampLight.off]: 0.45,
-  [LampLight.dim]: 0.75,
-  [LampLight.on]: 1,
+export const WALL_GLOW_ALPHA: Readonly<Record<Light, number>> = {
+  [Light.off]: 0.45,
+  [Light.dim]: 0.75,
+  [Light.on]: 1,
 }
 /** Сид генератора мерцания ореола стены: мерцание не тратит `Math.random` игры. */
 export const WALL_GLOW_SEED = 13
@@ -251,6 +250,8 @@ export const TOY_INSET = 0.875
 export const TOY_CONTACT_SHARE = 0.92
 /** Шаг угла, с которым рисуется крен игрушки. */
 export const TOY_ANGLE_STEP = Math.PI / 18
+/** Число шагов угла на полный оборот: столько кадров крена у каждой игрушки. */
+export const TOY_ANGLE_STEPS = Math.round((2 * Math.PI) / TOY_ANGLE_STEP)
 /** Пауза между тиками игрушки на полу, мс: в среднем раз в минуту. */
 export const TOY_TWITCH_MIN_PAUSE_MS = 45000
 export const TOY_TWITCH_MAX_PAUSE_MS = 75000
@@ -287,6 +288,11 @@ export const RESET_BUTTON_SIZE_UNITS = 64
 export const RESET_BUTTON_LABEL = 'Reset the heap'
 /** Дополнительный отступ невидимой области нажатия от контура. */
 export const CONTROL_HIT_PADDING = 16
+/** Число точек для окружностей, лежащих на гранях корпуса. */
+export const CONTROL_OUTLINE_STEPS = 24
+/** Физические коды клавиш игрового управления. */
+export const KEYBOARD_ARROW_CODES = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'] as const
+export const KEYBOARD_DROP_CODES = ['Enter', 'Space'] as const
 /**
  * Цвет, на который умножается погашенный орган управления: затемнение на полступени рампы. Сдвиг на ступень темнит
  * пиксели органов управления в среднем до 0.716 яркости, полступени — 0.858.
@@ -300,12 +306,6 @@ export const TOUR_STORAGE_KEY = 'pixi-demos:toybox:tour-done'
 export const TOUR_HINT_FRAME_MS = [400, 400] as const
 /** На сколько px арта нижний край кадра стрелки Drop поднят над центром кнопки: стрелка не заходит на купол. */
 export const TOUR_DROP_HINT_LIFT = 5
-/** Число точек для окружностей, лежащих на гранях корпуса. */
-export const CONTROL_OUTLINE_STEPS = 24
-
-/** Физические коды клавиш игрового управления. */
-export const KEYBOARD_ARROW_CODES = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'] as const
-export const KEYBOARD_DROP_CODES = ['Enter', 'Space'] as const
 
 // Выдача приза
 /** Сторона окна выдачи на передней грани тумбы, в ячейках. */
@@ -338,42 +338,36 @@ export const PRIZE_DOOR_CLOSE_MS = [30, 30, 30, 30, 30]
 /** Вероятность, что свет в нише загорится с перебоями и будет мерцать; иначе он сразу горит ровно. */
 export const PRIZE_LIGHT_FLICKER_CHANCE = 0.1
 /** Включение света в нише: кадр света и его длительность, мс. Ниша остаётся тёмной, затем свет загорается ровно. */
-export const PRIZE_LIGHT_SWITCH: readonly (readonly [PrizeLight, number])[] = [
-  [PrizeLight.off, 250],
-  [PrizeLight.on, 50],
+export const PRIZE_LIGHT_SWITCH: readonly LightStep[] = [
+  [Light.off, 250],
+  [Light.on, 50],
 ]
 /** Розжиг света в нише: кадр света и его длительность, мс. Свет загорается с перебоями. */
-export const PRIZE_LIGHT_IGNITION: readonly (readonly [PrizeLight, number])[] = [
-  [PrizeLight.off, 120],
-  [PrizeLight.dim, 60],
-  [PrizeLight.off, 90],
-  [PrizeLight.dim, 50],
-  [PrizeLight.off, 40],
-  [PrizeLight.on, 80],
+export const PRIZE_LIGHT_IGNITION: readonly LightStep[] = [
+  [Light.off, 120],
+  [Light.dim, 60],
+  [Light.off, 90],
+  [Light.dim, 50],
+  [Light.off, 40],
+  [Light.on, 80],
 ]
 /** Мерцание горящего света по кругу: первый кадр горит, поэтому при уменьшенном движении свет горит ровно. */
-export const PRIZE_LIGHT_FLICKER: readonly (readonly [PrizeLight, number])[] = [
-  [PrizeLight.on, 600],
-  [PrizeLight.dim, 60],
-  [PrizeLight.on, 500],
-  [PrizeLight.off, 50],
-  [PrizeLight.on, 80],
-  [PrizeLight.off, 40],
-  [PrizeLight.on, 900],
-  [PrizeLight.dim, 120],
+export const PRIZE_LIGHT_FLICKER: readonly LightStep[] = [
+  [Light.on, 600],
+  [Light.dim, 60],
+  [Light.on, 500],
+  [Light.off, 50],
+  [Light.on, 80],
+  [Light.off, 40],
+  [Light.on, 900],
+  [Light.dim, 120],
 ]
 /** Тинт приза при каждом кадре света: в тёмной нише игрушка почти не видна. */
-export const PRIZE_LIGHT_TINT: Readonly<Record<PrizeLight, number>> = {
-  [PrizeLight.off]: 0x3a3048,
-  [PrizeLight.dim]: 0x9a8a90,
-  [PrizeLight.on]: 0xffffff,
+export const PRIZE_LIGHT_TINT: Readonly<Record<Light, number>> = {
+  [Light.off]: 0x3a3048,
+  [Light.dim]: 0x9a8a90,
+  [Light.on]: 0xffffff,
 }
-
-// Пол перед автоматом
-/** Глубина полосы пола с выигранными игрушками перед фасадом тумбы, в срезах: как у куба. */
-export const FLOOR_PILE_DEPTH = GRID_SIZE
-/** Ширина полосы пола в ячейках: вдвое шире куба, середина полосы — под серединой куба. */
-export const FLOOR_PILE_WIDTH = GRID_SIZE * 2
 
 // Мерцание света
 /** Наибольшее число провалов света за одно мерцание. */
@@ -387,23 +381,23 @@ export const FLICKER_MAX_RETURN_MS = 120
 // Табло
 /** Розжиг лампы табло: лампа загорается с перебоями. */
 export const LAMP_IGNITION: readonly LightStep[] = [
-  [LampLight.off, 60],
-  [LampLight.dim, 40],
-  [LampLight.off, 90],
-  [LampLight.on, 50],
-  [LampLight.off, 40],
-  [LampLight.on, 60],
+  [Light.off, 60],
+  [Light.dim, 40],
+  [Light.off, 90],
+  [Light.on, 50],
+  [Light.off, 40],
+  [Light.on, 60],
 ]
 /** Пауза ровного света лампы между мерцаниями, мс: лампа мерцает раз в пару минут. */
 export const LAMP_MIN_PAUSE_MS = 90000
 export const LAMP_MAX_PAUSE_MS = 150000
 /** Провалы мерцания лампы: только до полнакала, горящая лампа не гаснет. */
-export const LAMP_DIPS: readonly LampLight[] = [LampLight.dim]
+export const LAMP_DIPS: readonly Light[] = [Light.dim]
 /** Прозрачность ореола лампы при каждом состоянии света. */
-export const LAMP_HALO_ALPHA: Readonly<Record<LampLight, number>> = {
-  [LampLight.off]: 0,
-  [LampLight.dim]: 0.5,
-  [LampLight.on]: 1,
+export const LAMP_HALO_ALPHA: Readonly<Record<Light, number>> = {
+  [Light.off]: 0,
+  [Light.dim]: 0.5,
+  [Light.on]: 1,
 }
 /** Цвет ламп выигранных игрушек. */
 export const LAMP_PRIZE_COLOR: LampColor = LampColor.yellow
@@ -443,8 +437,8 @@ export const BUBBLE_TAIL_INSET = 6
 // Реплики игрушек
 /** Доля призов, которые говорят в окне выдачи. */
 export const TOY_SPEECH_CHANCE = 1 / 3
-/** Реплики игрушек. Пока игрушек нет, список общий для всех форм. */
-export const TOY_SPEECH_LINES = ['Help', 'Test', "It's cold out here.", 'Thank you', 'I love you', 'Are you the one?']
+/** Реплики игрушек: список общий для всех игрушек. */
+export const TOY_SPEECH_LINES = ['Help', "It's cold out here.", 'Thank you', 'I love you', 'Are you the one?']
 /** Значки реплики из случайных символов, как ругательство в комиксах; за ними идут восклицательные знаки. */
 export const TOY_SYMBOL_CHARS = '#$&*@%'
 export const TOY_SYMBOL_MIN_LENGTH = 4

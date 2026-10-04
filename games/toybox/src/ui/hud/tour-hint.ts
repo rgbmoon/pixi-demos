@@ -1,7 +1,7 @@
-import { Assets, type Sprite, type Spritesheet } from 'pixi.js'
+import { Assets, Sprite, type Spritesheet } from 'pixi.js'
 
 import { HUD_ATLAS } from '#src/assets'
-import { TOUR_HINT_FRAME_MS } from '#src/constants'
+import { ART_PIXEL, TOUR_HINT_FRAME_MS } from '#src/constants'
 import { FrameAnimation } from '@pixi-demos/engine/frame-animation'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 import type { FrameSequence } from '@pixi-demos/engine/types'
@@ -10,9 +10,10 @@ import type { FrameSequence } from '@pixi-demos/engine/types'
 export class TourHint extends FrameAnimation {
   private readonly sequence: FrameSequence
 
-  constructor(ticker: GameTicker, carrier: Sprite, sequence: string) {
-    super(ticker, carrier)
+  constructor(ticker: GameTicker, sequence: string) {
+    super(ticker, new Sprite())
 
+    this.carrier.scale.set(ART_PIXEL)
     this.sequence = { frames: Assets.get<Spritesheet>(HUD_ATLAS).animations[sequence], durations: TOUR_HINT_FRAME_MS }
     this.visible = false
   }

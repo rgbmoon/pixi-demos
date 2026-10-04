@@ -1,9 +1,9 @@
 import { readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
-import { ART_CELL, ART_PIXEL, AXIS_X, TOY_ANGLE_STEP } from '#src/constants'
+import { ART_CELL, ART_PIXEL, AXIS_X, TOY_ANGLE_STEPS } from '#src/constants'
 import type { PlaneVector, SectionPoint } from '#src/types'
-import { getConvexHull } from '#src/utils/geometry'
+import { getConvexHull, getSignedArea, getTurn } from '#src/utils/geometry'
 import type {
   ModelFrame,
   ModelLight,
@@ -129,8 +129,7 @@ const LIGHT: ModelLight = {
 }
 // Ячейка глубины сдвигает точку на экране на AXIS_X; ось y экрана направлена вниз, у модели — вверх
 const DEPTH_SHIFT = [AXIS_X.x / ART_PIXEL / ART_CELL, -AXIS_X.y / ART_PIXEL / ART_CELL] as const
-const ROLL_COUNT = Math.round((2 * Math.PI) / TOY_ANGLE_STEP)
-const ROLLS = Array.from({ length: ROLL_COUNT }, (_, step) => (step * 360) / ROLL_COUNT)
+const ROLLS = Array.from({ length: TOY_ANGLE_STEPS }, (_, step) => (step * 360) / TOY_ANGLE_STEPS)
 /** Сторона кадра, в котором ищется оболочка лицевой проекции модели: больше любой игрушки. */
 const HULL_FRAME = 96
 /** Предел вершин многоугольника planck. */
@@ -210,10 +209,6 @@ const checkDetails = (name: string, model: ToyModel, pose: ModelPose, options: M
   if (lost.length > 0) problems.push(`${name}: details ${lost.join(', ')} vanish at some rolls`)
 }
 
-/** Удвоенная ориентированная площадь треугольника: знак — направление обхода. */
-const getTurn = (a: PlaneVector, b: PlaneVector, c: PlaneVector): number =>
-  (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)
-
 /**
  * Упрощает выпуклый многоугольник до `MAX_SECTION_VERTICES` вершин: убирает вершину, чей треугольник с соседями меньше
  * всех. Многоугольник остаётся выпуклым и лежит внутри исходного.
@@ -231,11 +226,6 @@ const simplify = (polygon: readonly PlaneVector[]): PlaneVector[] => {
 
   return points
 }
-
-/** Площадь многоугольника. */
-const getArea = (polygon: readonly PlaneVector[]): number =>
-  Math.abs(polygon.reduce((sum, point, index) => sum + getTurn({ x: 0, y: 0 }, point, polygon[(index + 1) % polygon.length]), 0)) /
-  2
 
 /** Центр масс многоугольника. */
 const getCentroid = (polygon: readonly PlaneVector[]): PlaneVector => {
@@ -300,8 +290,8 @@ const renderModelArt = async ({ key, model: source, frame, twitch }: ModelArt): 
   const pivot = { x: frame / 2, y: frame / 2 }
 
   checkDetails(key, model, {}, options)
-  await writeStrip(key, `{strip=${ROLL_COUNT}}{outline}`, render(key, {}), pivot)
-  if (twitch) await writeStrip(`${key}-twitch`, `{strip=${ROLL_COUNT}}`, render(`${key}-twitch`, twitch), pivot)
+  await writeStrip(key, `{strip=${TOY_ANGLE_STEPS}}{outline}`, render(key, {}), pivot)
+  if (twitch) await writeStrip(`${key}-twitch`, `{strip=${TOY_ANGLE_STEPS}}`, render(`${key}-twitch`, twitch), pivot)
 
   return { key, hull: fullHull.map(({ x, y }) => ({ x: x - center.x, y: y - center.y })), twitch: twitch !== undefined }
 }
@@ -330,7 +320,7 @@ const getHeadTwitch = (image: RasterImage): RasterImage => {
 /** Полоса кадров крена спрайта поворотом RotSprite вокруг опорной точки; кадр — квадрат со стороной `frame`. */
 const rotateStrip = (image: RasterImage, pivot: PlaneVector, frame: number): RasterImage => {
   const upscaled = upscaleForRotation(image)
-  const strip = createImage(frame * ROLL_COUNT, frame)
+  const strip = createImage(frame * TOY_ANGLE_STEPS, frame)
   const target = frame / 2 + (pivot.x - Math.floor(pivot.x))
 
   ROLLS.forEach((roll, index) => {
@@ -363,12 +353,12 @@ const renderSpriteArt = async (key: string, twitching: boolean): Promise<ToyArt>
   const body = rotateStrip(image, pivot, frame)
 
   checkMargin(key, body, frame)
-  await writeStrip(key, `{strip=${ROLL_COUNT}}{outline}`, body, framePivot)
+  await writeStrip(key, `{strip=${TOY_ANGLE_STEPS}}{outline}`, body, framePivot)
   if (twitching) {
     const twitch = rotateStrip(getHeadTwitch(image), pivot, frame)
 
     checkMargin(`${key}-twitch`, twitch, frame)
-    await writeStrip(`${key}-twitch`, `{strip=${ROLL_COUNT}}`, twitch, framePivot)
+    await writeStrip(`${key}-twitch`, `{strip=${TOY_ANGLE_STEPS}}`, twitch, framePivot)
   }
 
   return { key, hull: raw.map(({ x, y }) => ({ x: x - pivot.x, y: y + pivot.y })), twitch: twitching }
@@ -377,19 +367,14 @@ const renderSpriteArt = async (key: string, twitching: boolean): Promise<ToyArt>
 /** Сечение в клетках плоскости `(y, z)` против часовой стрелки: ось `y` мира на экране направлена влево. */
 const toSection = (hull: readonly PlaneVector[]): SectionPoint[] => {
   const section = hull.map(({ x, y }) => ({ y: -x / ART_CELL, z: y / ART_CELL }))
-  const area = section.reduce((sum, point, index) => {
-    const next = section[(index + 1) % section.length]
 
-    return sum + point.y * next.z - next.y * point.z
-  }, 0)
-
-  return area < 0 ? section.reverse() : section
+  return getSignedArea(section.map(({ y, z }) => ({ x: y, y: z }))) < 0 ? section.reverse() : section
 }
 
 /** Модуль игрушек: сечение, глубина, вес и наличие тика по ключу игрушки. */
 const formatSpecs = (arts: readonly ToyArt[]): string => {
   const round = (value: number) => Number(value.toFixed(4))
-  const areas = arts.map(({ hull }) => getArea(hull))
+  const areas = arts.map(({ hull }) => Math.abs(getSignedArea(hull)))
   const smallest = Math.min(...areas)
   const largest = Math.max(...areas)
   const toys = arts.map(({ key, hull, twitch }, index) => {

@@ -2,7 +2,7 @@ import { Container } from 'pixi.js'
 
 import { HATCH_FRAMES } from '#src/assets'
 import { TOY_SPEECH_TIP } from '#src/constants'
-import type { ToyAppearance } from '#src/types'
+import type { ToyKey } from '#src/types'
 import { getPrizeHatchFaces } from '#src/utils/machine-geometry'
 import { snapToArtPixel, worldToScreen } from '#src/utils/projection'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
@@ -30,8 +30,8 @@ export class PrizeOutput extends Container {
   }
 
   /** Ставит выигранную игрушку в тёмную нишу за закрытой шторкой. */
-  show(appearance: ToyAppearance): void {
-    this.niche.setPrize(appearance)
+  show(toy: ToyKey): void {
+    this.niche.setPrize(toy)
     this.niche.turnOff()
     this.door.shut()
   }

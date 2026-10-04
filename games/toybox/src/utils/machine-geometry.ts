@@ -28,7 +28,7 @@ import type { FaceCorners, GroundPoint, MachineLayout, ScreenRect, WorldPoint } 
 
 import { getBounds } from './geometry'
 import { clamp } from './math'
-import { worldToScreen } from './projection'
+import { getFaceQuad, worldToScreen } from './projection'
 
 /**
  * Удерживает точку в пределах поля.
@@ -38,66 +38,13 @@ export const clampToField = ({ x, y }: GroundPoint, margin = 0): GroundPoint => 
   y: clamp(y, margin, GRID_SIZE - margin),
 })
 
-/** Контуры наклонной панели, передней грани и правой боковины тумбы. */
-export const getCabinetOutlines = (): WorldPoint[][] => [
-  [
-    { x: 0, y: 0, z: 0 },
-    { x: 0, y: GRID_SIZE, z: 0 },
-    { x: CABINET_FRONT_X, y: GRID_SIZE, z: CABINET_TOP_Z },
-    { x: CABINET_FRONT_X, y: 0, z: CABINET_TOP_Z },
-  ],
-  [
-    { x: CABINET_FRONT_X, y: 0, z: CABINET_TOP_Z },
-    { x: CABINET_FRONT_X, y: GRID_SIZE, z: CABINET_TOP_Z },
-    { x: CABINET_FRONT_X, y: GRID_SIZE, z: CABINET_BOTTOM_Z },
-    { x: CABINET_FRONT_X, y: 0, z: CABINET_BOTTOM_Z },
-  ],
-  [
-    { x: CABINET_FRONT_X, y: 0, z: CABINET_TOP_Z },
-    { x: 0, y: 0, z: 0 },
-    { x: GRID_SIZE, y: 0, z: 0 },
-    { x: GRID_SIZE, y: 0, z: CABINET_BOTTOM_Z },
-    { x: CABINET_FRONT_X, y: 0, z: CABINET_BOTTOM_Z },
-  ],
-]
-
-/** Контуры всех стенок и крыши табло. */
-export const getMarqueeOutlines = (): WorldPoint[][] => [
-  [
-    { x: GRID_SIZE, y: 0, z: CUBE_HEIGHT },
-    { x: GRID_SIZE, y: GRID_SIZE, z: CUBE_HEIGHT },
-    { x: GRID_SIZE, y: GRID_SIZE, z: MARQUEE_TOP_Z },
-    { x: GRID_SIZE, y: 0, z: MARQUEE_TOP_Z },
-  ],
-  [
-    { x: 0, y: 0, z: CUBE_HEIGHT },
-    { x: 0, y: GRID_SIZE, z: CUBE_HEIGHT },
-    { x: 0, y: GRID_SIZE, z: MARQUEE_TOP_Z },
-    { x: 0, y: 0, z: MARQUEE_TOP_Z },
-  ],
-  [
-    { x: 0, y: 0, z: CUBE_HEIGHT },
-    { x: GRID_SIZE, y: 0, z: CUBE_HEIGHT },
-    { x: GRID_SIZE, y: 0, z: MARQUEE_TOP_Z },
-    { x: 0, y: 0, z: MARQUEE_TOP_Z },
-  ],
-  [
-    { x: 0, y: GRID_SIZE, z: CUBE_HEIGHT },
-    { x: GRID_SIZE, y: GRID_SIZE, z: CUBE_HEIGHT },
-    { x: GRID_SIZE, y: GRID_SIZE, z: MARQUEE_TOP_Z },
-    { x: 0, y: GRID_SIZE, z: MARQUEE_TOP_Z },
-  ],
-  [
-    { x: 0, y: 0, z: MARQUEE_TOP_Z },
-    { x: GRID_SIZE, y: 0, z: MARQUEE_TOP_Z },
-    { x: GRID_SIZE, y: GRID_SIZE, z: MARQUEE_TOP_Z },
-    { x: 0, y: GRID_SIZE, z: MARQUEE_TOP_Z },
-  ],
-]
-
-/** Экранные границы автомата по контурам тумбы и табло; стеклянный бокс и органы управления лежат внутри них. */
+/** Экранные границы автомата по граням тумбы и табло; стеклянный бокс и органы управления лежат внутри них. */
 export const getMachineBounds = (): ScreenRect =>
-  getBounds([...getCabinetOutlines(), ...getMarqueeOutlines()].flat().map((point) => worldToScreen(point)))
+  getBounds(
+    Object.values(getCabinetFaces())
+      .flatMap((face) => getFaceQuad(face))
+      .map((point) => worldToScreen(point))
+  )
 
 /**
  * Вписывает корпус с отступом `MACHINE_MARGIN` в долю `MACHINE_CANVAS_SHARE` области `width × height` и центрирует.

@@ -1,8 +1,8 @@
-import { PRIZE_NICHE_FLOOR, TOY_ANGLE_STEP, TOY_CONTACT_SHARE, TOY_INSET } from '#src/constants'
+import { PRIZE_NICHE_FLOOR, TOY_ANGLE_STEP, TOY_ANGLE_STEPS, TOY_CONTACT_SHARE, TOY_INSET } from '#src/constants'
 import { TOY_SPECS } from '#src/toy-specs'
 import type { PlaneVector, ScreenPoint, SectionPoint, ToyKey, ToyPose, WorldPoint } from '#src/types'
 
-import { getConvexHull } from './geometry'
+import { getConvexHull, getSignedArea } from './geometry'
 import { worldToScreen } from './projection'
 
 /** Вес игрушки: от него зависят шанс захвата и масса тела. */
@@ -19,14 +19,7 @@ export const getContactSection = (toy: ToyKey): SectionPoint[] =>
   getSection(toy).map(({ y, z }) => ({ y: y * TOY_CONTACT_SHARE, z: z * TOY_CONTACT_SHARE }))
 
 /** Площадь выпуклого сечения. */
-export const getSectionArea = (section: readonly SectionPoint[]): number =>
-  Math.abs(
-    section.reduce((sum, point, index) => {
-      const next = section[(index + 1) % section.length]
-
-      return sum + point.y * next.z - next.y * point.z
-    }, 0)
-  ) / 2
+export const getSectionArea = (section: readonly SectionPoint[]): number => Math.abs(getSignedArea(toPlane(section)))
 
 /** Наибольшие отступы сечения от центра по осям. */
 export const getSectionExtent = (section: readonly SectionPoint[]): { halfWidth: number; halfHeight: number } => ({
@@ -68,9 +61,6 @@ export const getPrismOutline = (section: readonly SectionPoint[], depth: number,
   )
 }
 
-/** Число шагов угла на полный оборот: столько кадров крена у каждой игрушки. */
-export const ANGLE_STEPS = Math.round((2 * Math.PI) / TOY_ANGLE_STEP)
-
 /** Номер шага угла, ближайшего к крену: по нему выбирается кадр крена. */
 export const getAngleStep = (angle: number): number =>
-  ((Math.round(angle / TOY_ANGLE_STEP) % ANGLE_STEPS) + ANGLE_STEPS) % ANGLE_STEPS
+  ((Math.round(angle / TOY_ANGLE_STEP) % TOY_ANGLE_STEPS) + TOY_ANGLE_STEPS) % TOY_ANGLE_STEPS

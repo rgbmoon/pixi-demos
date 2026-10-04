@@ -2,15 +2,13 @@ import { DOWNSCALE_COVERAGE } from '#src/constants'
 import type { Lab, RasterImage, Rgb } from '#src/types'
 
 import { createImage, getOffset, isOpaque } from './image'
-import { toOklab } from './palette'
+import { getDistance, toOklab } from './palette'
 
 /** Непрозрачный пиксель исходника под пикселем результата: цвет, доля площади и лежит ли он на краю силуэта. */
 type Sample = { rgb: Rgb; lab: Lab; weight: number; edge: boolean }
 
 const isEdge = (image: RasterImage, x: number, y: number): boolean =>
   !isOpaque(image, x - 1, y) || !isOpaque(image, x + 1, y) || !isOpaque(image, x, y - 1) || !isOpaque(image, x, y + 1)
-
-const getDistance = (a: Lab, b: Lab): number => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
 
 /** Самый тёмный по OKLab образец. */
 const getDarkest = (samples: readonly Sample[]): Sample =>

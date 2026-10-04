@@ -5,13 +5,13 @@ import {
   CABINET_BOTTOM_Z,
   CUBE_HEIGHT,
   FIELD_CENTER,
-  FLOOR_PILE_WIDTH,
   FUMBLE_CHANCE,
   GRID_SIZE,
   HEAP_SNAPSHOT_VERSION,
   LIFT_FUMBLE_CHANCE,
 } from '#src/constants'
 import { PersistenceController } from '#src/controllers/persistence'
+import { FLOOR_PILE_WIDTH } from '#src/heap/constants'
 import { isHeapSnapshot } from '#src/heap/utils'
 import { PhaseName } from '#src/types'
 

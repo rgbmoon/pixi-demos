@@ -173,7 +173,7 @@ export class Heap extends ToyPile {
 
     if (!body || body.state !== ToyState.free) return
 
-    this.world.push(body.id, { y: 0, z: -getWeight(body.toy) * PRESS_SPEED }, { y: point.y, z })
+    this.world.push(body.id, { y: 0, z: -PRESS_SPEED }, { y: point.y, z })
     this.touch()
   }
 
@@ -258,12 +258,8 @@ export class Heap extends ToyPile {
 
     if (upper.slab >= lower.slab + lowerDepth || lower.slab >= upper.slab + upperDepth) return false
 
-    const top = toPlane(
-      placeSection(getSection(upper.toy), { ...upper.pose.point, angle: upper.pose.angle })
-    )
-    const bottom = toPlane(
-      placeSection(getSection(lower.toy), { ...lower.pose.point, angle: lower.pose.angle })
-    )
+    const top = toPlane(this.getPlacedSection(upper))
+    const bottom = toPlane(this.getPlacedSection(lower))
     const { axis, gap } = getSeparation(bottom, top)
 
     if (gap > LOAD_CONTACT_GAP) return false
@@ -300,13 +296,7 @@ export class Heap extends ToyPile {
         return (
           other !== undefined &&
           other.state === ToyState.free &&
-          polygonsOverlap(
-            toPlane(placed),
-            toPlane(
-              placeSection(getSection(other.toy), { ...other.pose.point, angle: other.pose.angle })
-            ),
-            RELEASE_RAISE_STEP / 2
-          )
+          polygonsOverlap(toPlane(placed), toPlane(this.getPlacedSection(other)), RELEASE_RAISE_STEP / 2)
         )
       })
 

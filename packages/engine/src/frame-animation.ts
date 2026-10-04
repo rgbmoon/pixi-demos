@@ -4,6 +4,7 @@ import { isReducedMotion } from '@pixi-demos/core/accessibility'
 
 import type { GameTicker } from './game-ticker'
 import type { FrameSequence } from './types'
+import { setSpriteFrame } from './utils'
 
 /**
  * База классов покадровых анимаций: меняет текстуру спрайта по кадрам последовательности на игровом тикере.
@@ -160,9 +161,6 @@ export class FrameAnimation<TCarrier extends Sprite | TilingSprite = Sprite> ext
   protected applyFrame(texture: Texture | undefined): void {
     if (!texture || this.destroyed) return
 
-    this.carrier.texture = texture
-
-    // Sprite читает якорь текстуры только в конструкторе, а у кадров одной последовательности якоря бывают разные
-    if (texture.defaultAnchor) this.carrier.anchor.copyFrom(texture.defaultAnchor)
+    setSpriteFrame(this.carrier, texture)
   }
 }

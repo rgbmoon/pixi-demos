@@ -14,23 +14,14 @@ export const PhaseName = {
 
 export type PhaseName = (typeof PhaseName)[keyof typeof PhaseName]
 
-/** Состояние света в нише окна выдачи. */
-export const PrizeLight = {
+/** Состояние света: лампы табло, ниши окна выдачи и ореола стены. */
+export const Light = {
   off: 'off',
   dim: 'dim',
   on: 'on',
 } as const
 
-export type PrizeLight = (typeof PrizeLight)[keyof typeof PrizeLight]
-
-/** Состояние света лампы табло. */
-export const LampLight = {
-  off: 'off',
-  dim: 'dim',
-  on: 'on',
-} as const
-
-export type LampLight = (typeof LampLight)[keyof typeof LampLight]
+export type Light = (typeof Light)[keyof typeof Light]
 
 /** Цвет лампы табло: жёлтый — обычная работа, маджента — эффекты и механики, красный — в запасе. */
 export const LampColor = {
@@ -41,8 +32,8 @@ export const LampColor = {
 
 export type LampColor = (typeof LampColor)[keyof typeof LampColor]
 
-/** Шаг мерцания: состояние света и его длительность, мс. */
-export type LightStep = readonly [LampLight, number]
+/** Шаг смены света: состояние света и его длительность, мс. */
+export type LightStep = readonly [Light, number]
 
 /** Точка мира: `x` и `y` — оси сетки в ячейках, `z` — высота над полом. */
 export type WorldPoint = {
@@ -103,13 +94,9 @@ export type ToyId = number
 /** Игрушка каталога: ключ её арта в атласе игрушек. */
 export type ToyKey = keyof typeof TOY_SPECS
 
-/** Внешний вид выданной игрушки без её положения в куче. */
-export type ToyAppearance = {
+/** Выданная игрушка: игрушка каталога и отметка, что она зажигает лампу табло. */
+export type Prize = {
   readonly toy: ToyKey
-}
-
-/** Выданная игрушка: внешний вид и отметка, что она зажигает лампу табло. */
-export type Prize = ToyAppearance & {
   readonly hasLamp?: boolean
 }
 

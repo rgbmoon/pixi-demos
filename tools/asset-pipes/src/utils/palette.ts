@@ -48,7 +48,8 @@ export const toOklab = ([red, green, blue]: Rgb): Lab => {
   ]
 }
 
-const getDistance = (a: Lab, b: Lab): number => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
+/** Расстояние между цветами в OKLab: чем меньше, тем цвета ближе на глаз. */
+export const getDistance = (a: Lab, b: Lab): number => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
 
 /** Раскладывает палитру для поиска; палитра с рампами разной длины или повтором цвета отклоняется. */
 export const indexPalette = (palette: Palette): PaletteIndex => {

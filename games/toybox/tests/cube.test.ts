@@ -4,14 +4,13 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { CLAW_ATLAS, CLAW_FRAMES, CLAW_SEQUENCES, getToySequences } from '#src/assets'
 import { ClawRig } from '#src/claw/claw-rig'
-import { CLAW_GRAB_MS, FIELD_CENTER, TRAY_CENTER } from '#src/constants'
+import { CLAW_GRAB_MS, FIELD_CENTER, TOY_ANGLE_STEPS, TRAY_CENTER } from '#src/constants'
 import { CubeController } from '#src/controllers/box/cube'
 import type { ToyBody } from '#src/heap/types'
 import { ToyboxStore } from '#src/stores/toybox'
 import { TOY_KEYS } from '#src/toys'
 import { Claw } from '#src/ui/box/claw'
 import { Toy } from '#src/ui/box/toy'
-import { ANGLE_STEPS } from '#src/utils/shapes'
 import { GameTicker } from '@pixi-demos/engine/game-ticker'
 
 import { createHeap, stand } from './setup/heap'
@@ -26,7 +25,7 @@ const BACK = new Texture()
 
 /** Имена кадров крена и обводки всех игрушек: игрушка берёт кадры из кэша по имени. */
 const TOY_FRAMES = TOY_KEYS.map(getToySequences).flatMap(({ body, outline }) =>
-  [body, outline].flatMap((sequence) => Array.from({ length: ANGLE_STEPS }, (_, step) => `${sequence}-${step}.png`))
+  [body, outline].flatMap((sequence) => Array.from({ length: TOY_ANGLE_STEPS }, (_, step) => `${sequence}-${step}.png`))
 )
 
 describe('кадр куба', () => {

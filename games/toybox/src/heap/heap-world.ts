@@ -153,9 +153,13 @@ export class HeapWorld {
     body.setAwake(true)
   }
 
-  /** Толкает тело импульсом `impulse`, приложенным в точке `point` плоскости сечения. */
-  push(id: ToyId, impulse: SectionPoint, point: SectionPoint): void {
-    this.getBody(id).applyLinearImpulse({ x: impulse.y, y: impulse.z }, { x: point.y, y: point.z }, true)
+  /** Толкает тело в точке `point` плоскости сечения так, что оно получает скорость `velocity`. */
+  push(id: ToyId, velocity: SectionPoint, point: SectionPoint): void {
+    const body = this.getBody(id)
+    // Импульс — скорость, умноженная на массу тела; масса равна весу игрушки
+    const mass = body.getMass()
+
+    body.applyLinearImpulse({ x: velocity.y * mass, y: velocity.z * mass }, { x: point.y, y: point.z }, true)
   }
 
   /** Шаг симуляции на `ms` миллисекунд. */

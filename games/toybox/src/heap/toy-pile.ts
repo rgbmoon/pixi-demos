@@ -1,5 +1,5 @@
-import type { HeapSnapshotBody, ToyId, ToyPose } from '#src/types'
-import { getContactSection, getDepth, getSection, getWeight } from '#src/utils/shapes'
+import type { HeapSnapshotBody, SectionPoint, ToyId, ToyPose } from '#src/types'
+import { getContactSection, getDepth, getSection, getWeight, placeSection } from '#src/utils/shapes'
 import { isReducedMotion } from '@pixi-demos/core/accessibility'
 
 import { HEAP_MAX_STEPS_PER_FRAME, HEAP_SETTLE_MAX_STEPS, HEAP_SETTLE_TIMEOUT_MS, HEAP_STEP_MS } from './constants'
@@ -99,6 +99,11 @@ export abstract class ToyPile {
     this.world.add(body.id, getSection(toy), getContactSection(toy), getWeight(toy), slab, depth, { y, z, angle }, awake)
 
     return body
+  }
+
+  /** Сечение игрушки в её видимой позе: повёрнуто на крен и перенесено в центр. */
+  protected getPlacedSection({ toy, pose }: Readonly<ToyBody>): SectionPoint[] {
+    return placeSection(getSection(toy), { y: pose.point.y, z: pose.point.z, angle: pose.angle })
   }
 
   /** Убирает игрушку из мира и из кучи. */

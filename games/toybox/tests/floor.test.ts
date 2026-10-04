@@ -1,16 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  CABINET_BOTTOM_Z,
-  CABINET_FRONT_X,
-  FLOOR_PILE_DEPTH,
-  FLOOR_PILE_WIDTH,
-  GRID_SIZE,
-  PRIZE_NICHE_FLOOR,
-} from '#src/constants'
+import { CABINET_BOTTOM_Z, CABINET_FRONT_X, GRID_SIZE, PRIZE_NICHE_FLOOR } from '#src/constants'
+import { FLOOR_PILE_DEPTH, FLOOR_PILE_WIDTH } from '#src/heap/constants'
 import { FloorPile } from '#src/heap/floor-pile'
 import { TOY_KEYS } from '#src/toys'
-import type { HeapSnapshotBody, ToyAppearance } from '#src/types'
+import type { HeapSnapshotBody, Prize } from '#src/types'
 import { getDepth } from '#src/utils/shapes'
 import { createRandom } from '@pixi-demos/core/random'
 import type { Random } from '@pixi-demos/core/types'
@@ -30,7 +24,7 @@ const FLOOR_BOUNDS: PileBounds = {
   floor: CABINET_BOTTOM_Z,
 }
 
-const PRIZE: ToyAppearance = { toy: 'elephant' }
+const PRIZE: Prize = { toy: 'elephant' }
 
 /** Крутит кадры, пока пол не придёт в покой. */
 const settle = (pile: FloorPile): void => {

@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify'
 import type { DestroyOptions } from 'pixi.js'
 
-import type { ToyAppearance } from '#src/types'
+import type { Prize } from '#src/types'
 import { PrizeOutput } from '#src/ui/box/prize-output'
 import { createAbortError } from '@pixi-demos/core/errors/utils'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
@@ -22,8 +22,8 @@ export class PrizeOutputController extends LiveContainer {
   }
 
   /** Показывает приз в тёмной нише за закрытой шторкой. */
-  show(appearance: ToyAppearance): void {
-    this.view.show(appearance)
+  show({ toy }: Prize): void {
+    this.view.show(toy)
   }
 
   /** Открывает шторку и зажигает свет в нише до конца или отмены. */

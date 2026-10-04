@@ -1,6 +1,6 @@
-import { Assets, Container, Polygon, type Sprite, type Texture } from 'pixi.js'
+import { Assets, Container, Polygon, Sprite, type Texture } from 'pixi.js'
 
-import { CONTROL_HIT_PADDING, DISABLED_TINT } from '#src/constants'
+import { ART_PIXEL, CONTROL_HIT_PADDING, DISABLED_TINT } from '#src/constants'
 import type { ButtonFrames, ButtonOptions, WorldPlane } from '#src/types'
 import { getProjectedPlaneCircle } from '#src/utils/projection'
 
@@ -10,12 +10,13 @@ export class ControlButton extends Container {
   private readonly frames: ButtonFrames
   private isEnabled = true
 
-  constructor(options: ButtonOptions, plane: WorldPlane, size: number, face: Sprite, frames: ButtonFrames) {
+  constructor(options: ButtonOptions, plane: WorldPlane, size: number, frames: ButtonFrames) {
     super()
 
-    this.face = face
+    this.face = new Sprite(Assets.get<Texture>(frames.normal))
     this.frames = frames
-    this.addChild(face)
+    this.face.scale.set(ART_PIXEL)
+    this.addChild(this.face)
 
     this.eventMode = 'static'
     this.cursor = 'pointer'
