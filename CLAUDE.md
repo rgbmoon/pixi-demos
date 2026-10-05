@@ -123,7 +123,7 @@ games/
                        tokens, types, constants, events, toys, utils; ui/ и controllers/ внутри разбиты
                        по зонам сцены: box/, hud/ и room/, вне зон — controllers/persistence.ts и keyboard.ts
 tools/
-  asset-pipes/         сборка ассетов в Node: пайпы AssetPack, класс сборки AssetBuild и рендер моделей игрушек
+  asset-pipes/         сборка ассетов в Node: пайпы AssetPack и класс сборки AssetBuild
 web/                   приложение
   src/main.tsx         вход; сюда же подключён styles/index.css
   src/app/             composition root: контейнеры, биндинги, роутер, провайдеры

@@ -173,14 +173,14 @@ describe('куча: каталог форм', () => {
 })
 
 describe('куча: захват', () => {
-  const cube = stand('teddy', 3, 4, 0)
-  const pillow = stand('lying-pig', 3, 4, topOf(cube))
-  const ball = stand('dolphin', 3, 4, topOf(pillow))
+  const cube = stand('teddy-c', 3, 4, 0)
+  const pillow = stand('whale-b', 3, 4, topOf(cube))
+  const ball = stand('whale-a', 3, 4, topOf(pillow))
 
   it('отдаёт клешне верхнюю игрушку под точкой, а не ту, что под ней', () => {
     const heap = createHeap([cube, pillow, ball])
 
-    expect(heap.getTopBodyAt({ x: 3.5, y: 4 })?.toy).toBe('dolphin')
+    expect(heap.getTopBodyAt({ x: 3.5, y: 4 })?.toy).toBe('whale-a')
   })
 
   it('находит игрушку любой формы в углу куба из крайнего положения каретки', () => {
@@ -206,7 +206,7 @@ describe('куча: захват', () => {
   })
 
   it('роняет игрушку, лежавшую на поднятой', () => {
-    const heap = createHeap([cube, stand('dolphin', 3, 5, topOf(cube))])
+    const heap = createHeap([cube, stand('whale-a', 3, 5, topOf(cube))])
     const rider = [...heap.getBodies()][1]
     const before = rider.pose.point.z
     const point = { x: 3.5, y: 3.2 }
@@ -271,24 +271,24 @@ describe('куча: захват', () => {
 
   it('снижает шанс захвата у тяжёлой игрушки и у игрушки под грузом, но не у игрушки с соседом сбоку', () => {
     const halfWidth = (toy: ToyKey) => getSectionExtent(getSection(toy)).halfWidth
-    const alone = stand('lying-pig', 1, 1.5, 0)
-    const loaded = stand('lying-pig', 5, 1.5, 0)
-    const buried = stand('lying-pig', 1, 5, 0)
-    const flanked = stand('lying-pig', 5, 5, 0)
-    const light = stand('dolphin', 3, 3.5, 0)
-    const heavy = stand('teddy', 3, 6.5, 0)
+    const alone = stand('whale-b', 1, 1.5, 0)
+    const loaded = stand('whale-b', 5, 1.5, 0)
+    const buried = stand('whale-b', 1, 5, 0)
+    const flanked = stand('whale-b', 5, 5, 0)
+    const light = stand('duckling-d', 3, 3.5, 0)
+    const heavy = stand('teddy-c', 3, 6.5, 0)
     // Груз сдвинут на срез ближе: он делит с нижней игрушкой только её ближний срез
-    const buriedRider = stand('dolphin', 0, 5, topOf(buried))
+    const buriedRider = stand('whale-a', 0, 5, topOf(buried))
     // Нагрузка до первого шага физики: движок не знает контактов между телами, которые уснули при восстановлении
     const heap = createHeap([
       alone,
       loaded,
-      stand('dolphin', 4, 1.5, topOf(loaded)),
+      stand('whale-a', 4, 1.5, topOf(loaded)),
       buried,
       buriedRider,
-      stand('dolphin', 0, 5, topOf(buriedRider)),
+      stand('whale-a', 0, 5, topOf(buriedRider)),
       flanked,
-      stand('dolphin', 5, 5 + halfWidth('lying-pig') + halfWidth('dolphin') + 0.01, 0),
+      stand('whale-a', 5, 5 + halfWidth('whale-b') + halfWidth('whale-a') + 0.01, 0),
       light,
       heavy,
     ])
@@ -305,8 +305,8 @@ describe('куча: захват', () => {
 })
 
 describe('куча: прожатие', () => {
-  const cube = stand('teddy', 3, 4, 0)
-  const ball = stand('dolphin', 3, 4, topOf(cube))
+  const cube = stand('teddy-c', 3, 4, 0)
+  const ball = stand('whale-a', 3, 4, topOf(cube))
 
   it('толкает игрушку под клешнёй: куча выходит из покоя и снова приходит в него целой', () => {
     const heap = createHeap([cube, ball])
@@ -333,8 +333,8 @@ describe('куча: прожатие', () => {
 
 describe('куча: отпускание', () => {
   it('переносит игрушку в срезы под клешнёй и не выпускает её за куб', () => {
-    const ball = stand('dolphin', 3, 2, 0)
-    const cube = stand('teddy', 3, 5.5, 0)
+    const ball = stand('whale-a', 3, 2, 0)
+    const cube = stand('teddy-c', 3, 5.5, 0)
     const heap = createHeap([ball, cube])
     const ballId = liftToRest(heap, above(ball))
 
@@ -353,8 +353,8 @@ describe('куча: отпускание', () => {
   })
 
   it('поднимает игрушку, отпущенную внутри другой, до свободного места', () => {
-    const cubeBody = stand('teddy', 3, 4, 0)
-    const heap = createHeap([cubeBody, stand('dolphin', 6, 2, 0)])
+    const cubeBody = stand('teddy-c', 3, 4, 0)
+    const heap = createHeap([cubeBody, stand('whale-a', 6, 2, 0)])
     const [cube, ball] = [...heap.getBodies()]
     const point = { x: 6.5, y: 2 }
     const grip = { ...point, z: heap.getSurfaceHeightAt(point) }
@@ -372,7 +372,7 @@ describe('куча: отпускание', () => {
 
 describe('куча: лоток', () => {
   it('засчитывает доставленную игрушку призом один раз и убирает её из кучи', () => {
-    const heap = createHeap([stand('teddy', 4, 3, 0), stand('dolphin', 5, 6, 0)])
+    const heap = createHeap([stand('teddy-c', 4, 3, 0), stand('whale-a', 5, 6, 0)])
     const id = liftToRest(heap, { x: 5.5, y: 6 })
     const { toy } = findBody(heap, id)
 
@@ -382,11 +382,11 @@ describe('куча: лоток', () => {
     expect(heap.prizeCount).toBe(1)
     expect(heap.takePrize()).toEqual({ toy })
     expect(heap.prizeCount).toBe(0)
-    expect([...heap.getBodies()].map((body) => body.toy)).toEqual(['teddy'])
+    expect([...heap.getBodies()].map((body) => body.toy)).toEqual(['teddy-c'])
   })
 
   it('засчитывает игрушку, упавшую в шахту лотка без помощи клешни', () => {
-    const heap = createHeap([stand('dolphin', 5, 4, 0)])
+    const heap = createHeap([stand('whale-a', 5, 4, 0)])
 
     liftToRest(heap, { x: 5.5, y: 4 })
     heap.release({ ...TRAY_CENTER, z: 4 })
@@ -424,7 +424,7 @@ describe('куча: снимок', () => {
   })
 
   it('не снимает кучу, пока игрушка в клешне или падает после отпускания', () => {
-    const heap = createHeap([stand('teddy', 3, 4, 0), stand('dolphin', 6, 2, 0)])
+    const heap = createHeap([stand('teddy-c', 3, 4, 0), stand('whale-a', 6, 2, 0)])
 
     liftToRest(heap, { x: 6.5, y: 2 })
 
@@ -440,10 +440,10 @@ describe('куча: снимок', () => {
   })
 
   it('не выдаёт повторно id игрушек после нового восстановления', () => {
-    const heap = createHeap([stand('dolphin', 1, 1, 0), stand('giraffe', 4, 4, 0)])
+    const heap = createHeap([stand('whale-a', 1, 1, 0), stand('giraffe', 4, 4, 0)])
     const first = new Set([...heap.getBodies()].map(({ id }) => id))
 
-    heap.restore([stand('teddy', 3, 3, 0), stand('grey-bunny', 6, 6, 0)])
+    heap.restore([stand('teddy-c', 3, 3, 0), stand('puppy-c', 6, 6, 0)])
 
     expect([...heap.getBodies()].some(({ id }) => first.has(id))).toBe(false)
   })
@@ -451,7 +451,7 @@ describe('куча: снимок', () => {
 
 describe('куча: видимая поза', () => {
   it('сдвигает падающую игрушку на каждом кадре 120 Гц, а не через кадр', () => {
-    const heap = createHeap([stand('dolphin', 3, 4, 0)])
+    const heap = createHeap([stand('whale-a', 3, 4, 0)])
     const id = liftToRest(heap, { x: 3.5, y: 4 })
     const heights: number[] = []
 
@@ -479,7 +479,7 @@ describe('куча: видимая поза', () => {
 
 describe('куча: уменьшенное движение', () => {
   it('приходит в покой за один кадр после отпускания', () => {
-    const heap = createHeap([stand('teddy', 3, 4, 0), stand('dolphin', 6, 2, 0)])
+    const heap = createHeap([stand('teddy-c', 3, 4, 0), stand('whale-a', 6, 2, 0)])
 
     vi.stubGlobal('matchMedia', () => ({ matches: true }))
     liftToRest(heap, { x: 6.5, y: 2 })

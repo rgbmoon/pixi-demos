@@ -3,13 +3,7 @@ import { type BitmapFont, Cache } from 'pixi.js'
 import { describe, expect, it } from 'vitest'
 
 import { FONT_FAMILIES } from '#src/assets'
-import {
-  RESET_CANCEL_ICON,
-  RESET_CONFIRM_ICON,
-  RESET_CONFIRM_TEXT,
-  TOY_SPEECH_LINES,
-  TOY_SYMBOL_CHARS,
-} from '#src/constants'
+import { RESET_CANCEL_ICON, RESET_CONFIRM_ICON, RESET_CONFIRM_TEXT, TOY_SYMBOL_CHARS } from '#src/constants'
 
 /** Символы текста, которых нет в шрифте: BitmapText пропускает их молча. */
 const getMissing = (family: string, text: string): string[] => {
@@ -24,7 +18,7 @@ describe('пиксельные шрифты', () => {
     expect(
       getMissing(
         FONT_FAMILIES.dialog,
-        [...TOY_SPEECH_LINES, TOY_SYMBOL_CHARS, '!', RESET_CONFIRM_TEXT, RESET_CONFIRM_ICON, RESET_CANCEL_ICON].join('')
+        [TOY_SYMBOL_CHARS, '!', RESET_CONFIRM_TEXT, RESET_CONFIRM_ICON, RESET_CANCEL_ICON].join('')
       )
     ).toEqual([])
   })

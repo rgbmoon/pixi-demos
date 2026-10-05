@@ -36,12 +36,6 @@ const CABINET_DECALS: Partial<Record<keyof typeof CABINET_FRAMES, DecalPlacement
 
 // Декали граней куба: отступы от угла грани в пикселях арта
 const BOX_DECALS: Partial<Record<keyof typeof BOX_FRAMES, DecalPlacement[]>> = {
-  glass: [
-    { name: 'crack', corner: 'top-left', x: 1, y: 1 },
-    { name: 'smudge', corner: 'top-right', x: 20, y: 14 },
-    { name: 'print-left', corner: 'bottom-left', x: 30, y: 48 },
-    { name: 'print-right', corner: 'bottom-right', x: 16, y: 38 },
-  ],
   trayBack: [
     { name: 'scratch', corner: 'top-left', x: 5, y: 7 },
     { name: 'scratch', corner: 'bottom-right', x: 6, y: 4 },

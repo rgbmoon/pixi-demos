@@ -1,19 +1,10 @@
 import { readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
-import { ART_CELL, ART_PIXEL, AXIS_X, TOY_ANGLE_STEPS } from '#src/constants'
+import { ART_CELL, TOY_ANGLE_STEPS } from '#src/constants'
 import type { PlaneVector, SectionPoint } from '#src/types'
 import { getConvexHull, getSignedArea, getTurn } from '#src/utils/geometry'
-import type {
-  ModelFrame,
-  ModelLight,
-  ModelPlanePoint,
-  ModelPose,
-  ModelRenderOptions,
-  Palette,
-  RasterImage,
-  ToyModel,
-} from '@pixi-demos/asset-pipes/types'
+import type { Palette, RasterImage } from '@pixi-demos/asset-pipes/types'
 import { downscaleImage } from '@pixi-demos/asset-pipes/utils/downscale'
 import {
   copyImage,
@@ -24,11 +15,8 @@ import {
   encodePng,
   isOpaque,
 } from '@pixi-demos/asset-pipes/utils/image'
-import { moveModel, movePose, renderModel, renderModelStrip } from '@pixi-demos/asset-pipes/utils/model'
 import { softenDarkest } from '@pixi-demos/asset-pipes/utils/outline'
 import { rotateSprite, upscaleForRotation } from '@pixi-demos/asset-pipes/utils/rotsprite'
-
-import { ELEPHANT, ELEPHANT_TWITCH } from './models/elephant'
 
 // Рендер игрушек: `pnpm toys`. Полосы кадров крена пишутся в папку атласа игрушек, атлас собирает `pnpm assets`;
 // сечение, глубина и вес каждой игрушки по её арту пишутся в модуль игры
@@ -38,78 +26,28 @@ const atlas = path.join(root, 'toys{tps}{pal}{trim}')
 const spritesDir = path.join(root, 'sprites')
 const specsModule = path.join(root, '../../src/toy-specs.ts')
 
-/** Игрушка-модель: рендер лучом, свет зафиксирован на экране. */
-type ModelArt = {
-  readonly key: string
-  readonly model: ToyModel
-  readonly frame: number
-  /** Тик на полу, при каждом крене. */
-  readonly twitch?: ModelPose
-}
-
-const MODELS: readonly ModelArt[] = [{ key: 'elephant', model: ELEPHANT, frame: 56, twitch: ELEPHANT_TWITCH }]
-
-/** Спрайты, у которых голова сидит над телом: тик — голова дёргается на пиксель вбок. */
-const TWITCHING_SPRITES: ReadonlySet<string> = new Set([
-  'teddy',
-  'pink-teddy',
-  'brown-teddy',
-  'ginger-teddy',
-  'beagle',
-  'spotted-dog',
-  'monkey',
-  'cat',
-  'white-bunny',
-  'sack-doll',
-])
+/** Спрайты, у которых голова сидит над телом: тик — голова дёргается на пиксель вбок. Сейчас тик выключен у всех. */
+const TWITCHING_SPRITES: ReadonlySet<string> = new Set<string>()
 
 /**
- * Множитель размера базы спрайта: PixelLab рисует все игрушки в одном кадре, и голова куклы выходит ростом с медведя.
+ * Множитель размера базы спрайта: PixelLab рисует все игрушки в одном кадре, и утёнок выходит ростом с медведя.
  * Игрушки без множителя остаются в размере базы.
  */
 const SPRITE_SCALES: Readonly<Record<string, number>> = {
-  'baby-head': 0.6,
-  'doll-arm': 0.6,
-  duck: 0.6,
-  heart: 0.65,
-  mouse: 0.6,
-  star: 0.6,
-  'blue-pig': 0.7,
-  'crab-head': 0.7,
-  'elephant-head': 0.7,
-  'eyepatch-bear': 0.7,
-  'frog-head': 0.7,
-  'pink-bear-head': 0.7,
-  'doll-mask': 0.75,
-  'grey-bird': 0.8,
-  'knit-bear': 0.8,
-  octopus: 0.8,
-  frog: 0.8,
-  'owl-mask': 0.8,
-  'pig-mask': 0.8,
-  tumbler: 0.8,
-  beagle: 0.85,
-  cat: 0.85,
-  dino: 0.85,
-  dolphin: 0.85,
-  dragon: 0.85,
-  'droopy-dog': 0.85,
-  'floppy-bunny': 0.85,
-  'grey-bunny': 0.85,
-  lamb: 0.85,
-  'lying-pig': 0.85,
-  monkey: 0.85,
-  pig: 0.85,
-  'spotted-dog': 0.85,
-  whale: 0.85,
-  'white-bunny': 0.85,
-  gorilla: 0.9,
-  hippo: 0.9,
-  horse: 0.9,
-  lion: 0.9,
-  'purple-hippo': 0.9,
-  'rag-doll': 0.9,
-  'sack-doll': 0.9,
+  ...Object.fromEntries(['duckling-a', 'duckling-b', 'duckling-c', 'duckling-d'].map((key) => [key, 0.6])),
+  ...Object.fromEntries(['star-a', 'star-b', 'star-c', 'star-d', 'crab'].map((key) => [key, 0.6])),
+  ...Object.fromEntries(['frog-a', 'frog-b', 'frog-c', 'frog-d'].map((key) => [key, 0.75])),
+  ...Object.fromEntries(['owl-a', 'owl-b', 'owl-c', 'owl-d'].map((key) => [key, 0.75])),
+  ...Object.fromEntries(['piglet-a', 'piglet-b', 'piglet-c', 'piglet-d'].map((key) => [key, 0.8])),
+  ...Object.fromEntries(['penguin-a', 'penguin-b', 'penguin-c', 'penguin-d'].map((key) => [key, 0.8])),
+  ...Object.fromEntries(['octopus-a', 'octopus-b'].map((key) => [key, 0.8])),
+  ...Object.fromEntries(['bunny-a', 'bunny-b', 'bunny-c'].map((key) => [key, 0.85])),
+  ...Object.fromEntries(['cat-a', 'cat-b', 'cat-c', 'cat-d', 'cat-e', 'cat-f', 'cat-g', 'cat-h'].map((key) => [key, 0.85])),
+  ...Object.fromEntries(['puppy-a', 'puppy-b', 'puppy-c', 'puppy-d'].map((key) => [key, 0.85])),
+  ...Object.fromEntries(['fox-a', 'fox-b', 'fox-c', 'fox-d'].map((key) => [key, 0.85])),
+  ...Object.fromEntries(['whale-a', 'whale-b', 'sheep', 'koala'].map((key) => [key, 0.85])),
+  ...Object.fromEntries(['dino-a', 'dino-b', 'dino-c', 'dino-d'].map((key) => [key, 0.9])),
+  ...Object.fromEntries(['grey-elephant', 'lion', 'panda', 'unicorn'].map((key) => [key, 0.9])),
 }
 
 /**
@@ -119,19 +57,7 @@ const SPRITE_SCALES: Readonly<Record<string, number>> = {
 const HARSH_BLACK = palette.ramps.night[0]
 const SOFT_EDGE = palette.ramps.metal[0]
 
-// Свет сверху-слева и от игрока, зафиксирован на экране: при крене освещение не переворачивается
-const LIGHT_DIRECTION = [-0.45, 0.75, -0.5] as const
-const LIGHT_LENGTH = Math.hypot(...LIGHT_DIRECTION)
-const LIGHT: ModelLight = {
-  direction: [LIGHT_DIRECTION[0] / LIGHT_LENGTH, LIGHT_DIRECTION[1] / LIGHT_LENGTH, LIGHT_DIRECTION[2] / LIGHT_LENGTH],
-  lit: 0.62,
-  shade: 0.05,
-}
-// Ячейка глубины сдвигает точку на экране на AXIS_X; ось y экрана направлена вниз, у модели — вверх
-const DEPTH_SHIFT = [AXIS_X.x / ART_PIXEL / ART_CELL, -AXIS_X.y / ART_PIXEL / ART_CELL] as const
 const ROLLS = Array.from({ length: TOY_ANGLE_STEPS }, (_, step) => (step * 360) / TOY_ANGLE_STEPS)
-/** Сторона кадра, в котором ищется оболочка лицевой проекции модели: больше любой игрушки. */
-const HULL_FRAME = 96
 /** Предел вершин многоугольника planck. */
 const MAX_SECTION_VERTICES = 12
 /** Игрушка не больше этого по обеим осям, в клетках, занимает один срез глубины; крупнее — два. */
@@ -171,42 +97,6 @@ const checkMargin = (name: string, strip: RasterImage, frame: number): void => {
       }
     }
   }
-}
-
-/**
- * Проверяет, что ни одна деталь поверхности модели не пропадает при крене: цвет детали, видимый в одном кадре, есть в
- * каждом кадре полосы.
- */
-const checkDetails = (name: string, model: ToyModel, pose: ModelPose, options: ModelRenderOptions): void => {
-  const { decal } = model
-
-  if (!decal) return
-
-  const frames = ROLLS.map((roll) => {
-    const colors = new Set<string>()
-
-    renderModel(
-      {
-        ...model,
-        decal: (hit) => {
-          const color = decal(hit)
-
-          if (color) colors.add(color.join(':'))
-
-          return color
-        },
-      },
-      pose,
-      roll,
-      options
-    )
-
-    return colors
-  })
-  const seen = new Set(frames.flatMap((colors) => [...colors]))
-  const lost = [...seen].filter((color) => frames.some((colors) => !colors.has(color)))
-
-  if (lost.length > 0) problems.push(`${name}: details ${lost.join(', ')} vanish at some rolls`)
 }
 
 /**
@@ -268,32 +158,6 @@ const getPixelHull = (image: RasterImage, origin: PlaneVector): PlaneVector[] =>
   }
 
   return simplify(getConvexHull(corners))
-}
-
-/** Рендерит модель: оболочка лицевой проекции, модель сдвинута к её центру масс, полосы крена и тика. */
-const renderModelArt = async ({ key, model: source, frame, twitch }: ModelArt): Promise<ToyArt> => {
-  const options: ModelRenderOptions = { ramps: palette.ramps, frame, depthShift: DEPTH_SHIFT, light: LIGHT }
-  const front = renderModel(source, {}, 0, { ...options, frame: HULL_FRAME, depthShift: [0, 0] })
-  const fullHull = getPixelHull(front, { x: HULL_FRAME / 2, y: HULL_FRAME / 2 })
-  const center = getCentroid(fullHull)
-  // Крен рисуется вокруг центра масс сечения: вокруг него же поворачивает тело физика
-  const offset: ModelPlanePoint = [-center.x, -center.y]
-  const model = moveModel(source, offset)
-  const render = (sequence: string, pose: ModelPose): RasterImage => {
-    const frames = ROLLS.map((roll): ModelFrame => ({ pose: movePose(pose, offset), roll }))
-    const strip = renderModelStrip(model, frames, options)
-
-    checkMargin(sequence, strip, frame)
-
-    return strip
-  }
-  const pivot = { x: frame / 2, y: frame / 2 }
-
-  checkDetails(key, model, {}, options)
-  await writeStrip(key, `{strip=${TOY_ANGLE_STEPS}}{outline}`, render(key, {}), pivot)
-  if (twitch) await writeStrip(`${key}-twitch`, `{strip=${TOY_ANGLE_STEPS}}`, render(`${key}-twitch`, twitch), pivot)
-
-  return { key, hull: fullHull.map(({ x, y }) => ({ x: x - center.x, y: y - center.y })), twitch: twitch !== undefined }
 }
 
 /** Тик спрайта: строки выше шеи — самой узкой строки силуэта в средней части высоты — сдвинуты на пиксель вправо. */
@@ -401,13 +265,12 @@ ${toys.join('')}} as const
 `
 }
 
-// Полосы прежнего рендера удаляются: состав игрушек задают модели и папка спрайтов
+// Полосы прежнего рендера удаляются: состав игрушек задаёт папка спрайтов
 for (const file of await readdir(atlas)) await rm(path.join(atlas, file))
 
 const spriteKeys = (await readdir(spritesDir)).filter((file) => file.endsWith('.png')).map((file) => file.slice(0, -4))
 const arts: ToyArt[] = []
 
-for (const art of MODELS) arts.push(await renderModelArt(art))
 for (const key of spriteKeys.sort()) arts.push(await renderSpriteArt(key, TWITCHING_SPRITES.has(key)))
 
 const missing = [...TWITCHING_SPRITES].filter((key) => !spriteKeys.includes(key))

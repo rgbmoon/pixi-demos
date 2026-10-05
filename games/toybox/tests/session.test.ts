@@ -23,8 +23,8 @@ const SLIP_MISS = (1 + LIFT_FUMBLE_CHANCE) / 2
 const FUMBLE_MISS = (1 + FUMBLE_CHANCE) / 2
 
 /** Под кареткой в покое стоит куб с мячом наверху. */
-const cube = stand('teddy', 3, FIELD_CENTER.y, 0)
-const ball = stand('dolphin', 4, FIELD_CENTER.y, topOf(cube))
+const cube = stand('teddy-c', 3, FIELD_CENTER.y, 0)
+const ball = stand('whale-a', 4, FIELD_CENTER.y, topOf(cube))
 const SCENE = [cube, ball]
 
 /** На полу справа от тумбы, за краем куба, лежит выигранный брусок. */
@@ -90,7 +90,7 @@ describe('сессия', () => {
   })
 
   describe('проверка снимка из хранилища', () => {
-    const body = { slab: 3, y: 4, z: 0.9, angle: 0.3, toy: 'teddy' }
+    const body = { slab: 3, y: 4, z: 0.9, angle: 0.3, toy: 'teddy-c' }
     const snapshot = { version: HEAP_SNAPSHOT_VERSION, collected: 3, bodies: [body], floor: [] }
     const withBody = (patch: Record<string, unknown>) => ({ ...snapshot, bodies: [{ ...body, ...patch }] })
 
@@ -112,7 +112,7 @@ describe('сессия', () => {
       expect(isHeapSnapshot({ ...snapshot, version: HEAP_SNAPSHOT_VERSION - 1 })).toBe(false)
       expect(isHeapSnapshot(undefined)).toBe(false)
       expect(isHeapSnapshot('heap')).toBe(false)
-      expect(isHeapSnapshot(withBody({ toy: 'unicorn' }))).toBe(false)
+      expect(isHeapSnapshot(withBody({ toy: 'dragon' }))).toBe(false)
       expect(isHeapSnapshot(withBody({ toy: 'toString' }))).toBe(false)
       expect(isHeapSnapshot(withBody({ toy: undefined }))).toBe(false)
     })

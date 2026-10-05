@@ -4,8 +4,8 @@ import {
   LampColor,
   Light,
   type LightStep,
-  type LitterPlacement,
   PhaseName,
+  type PropPlacement,
   type ScreenPoint,
   type WorldPlane,
   type WorldPoint,
@@ -116,30 +116,8 @@ export const WALL_GLOW_SEED = 13
 export const FLOOR_GLOW_CENTER: WorldPoint = { x: CABINET_FRONT_X, y: GRID_SIZE / 2, z: CABINET_BOTTOM_Z }
 /** Центр тени автомата: середина основания тумбы. */
 export const SHADOW_CENTER: WorldPoint = { x: (CABINET_FRONT_X + GRID_SIZE) / 2, y: GRID_SIZE / 2, z: CABINET_BOTTOM_Z }
-/** Мусор на крыше табло: кадр атласа `litter` и точка мира под его опорной точкой. */
-export const LITTER_ON_ROOF: readonly LitterPlacement[] = [
-  { frame: 'can-red.png', point: { x: 1.2, y: 6.3, z: MARQUEE_TOP_Z } },
-  { frame: 'bottle-lying.png', point: { x: 3.5, y: 3.8, z: MARQUEE_TOP_Z } },
-  { frame: 'cup.png', point: { x: 1.2, y: 1.6, z: MARQUEE_TOP_Z } },
-]
-/** Мусор на полу справа от тумбы: стоит перед её видимой боковиной и рисуется над корпусом, под игрушками на полу. */
-export const LITTER_BESIDE_CABINET: readonly LitterPlacement[] = [
-  { frame: 'bottle.png', point: { x: -2.4, y: -1, z: CABINET_BOTTOM_Z } },
-  { frame: 'can-crushed-red.png', point: { x: -0.6, y: -2.3, z: CABINET_BOTTOM_Z } },
-  { frame: 'butts-pile.png', point: { x: -1.8, y: -3.4, z: CABINET_BOTTOM_Z } },
-  { frame: 'butt-a.png', point: { x: -3.6, y: -4.6, z: CABINET_BOTTOM_Z } },
-  { frame: 'butt-c.png', point: { x: 1.8, y: -1.4, z: CABINET_BOTTOM_Z } },
-  { frame: 'pack.png', point: { x: 3.6, y: -2.6, z: CABINET_BOTTOM_Z } },
-  { frame: 'butt-b.png', point: { x: 5.6, y: -1.6, z: CABINET_BOTTOM_Z } },
-  { frame: 'bottle-green.png', point: { x: 7.6, y: -1.2, z: CABINET_BOTTOM_Z } },
-]
-/** Мусор на полу у левого угла тумбы: стоит за её корпусом и рисуется в слое фона. */
-export const LITTER_BEHIND_CABINET: readonly LitterPlacement[] = [
-  { frame: 'butts-two.png', point: { x: -1.5, y: 9.3, z: CABINET_BOTTOM_Z } },
-  { frame: 'can-crushed-green.png', point: { x: 2, y: 9.5, z: CABINET_BOTTOM_Z } },
-]
-/** Розетка на панели стены у правого края автомата: кадр атласа `litter` и точка стены под низом кадра. */
-export const OUTLET: LitterPlacement = { frame: 'outlet.png', point: { x: WALL_X, y: 0.4, z: CABINET_BOTTOM_Z + 0.4 } }
+/** Розетка на панели стены у правого края автомата: кадр атласа `room` и точка стены под низом кадра. */
+export const OUTLET: PropPlacement = { frame: 'outlet.png', point: { x: WALL_X, y: 0.4, z: CABINET_BOTTOM_Z + 0.4 } }
 /**
  * Кабель автомата: ломаная от точки под тумбой, скрытой корпусом, по полу к стене и вверх к низу кадра розетки. Изгиб
  * на полу задают промежуточные точки.
@@ -234,7 +212,7 @@ export const LIFT_SLIP_MAX_SHARE = 0.85
 
 // Снимок кучи
 /** Версия снимка кучи: не сошлась — снимок игнорируется и куча складывается заново. */
-export const HEAP_SNAPSHOT_VERSION = 8
+export const HEAP_SNAPSHOT_VERSION = 9
 /** Адрес снимка кучи в IndexedDB. */
 export const HEAP_DB_NAME = 'toybox'
 export const HEAP_STORE_NAME = 'heap'
@@ -437,8 +415,6 @@ export const BUBBLE_TAIL_INSET = 6
 // Реплики игрушек
 /** Доля призов, которые говорят в окне выдачи. */
 export const TOY_SPEECH_CHANCE = 1 / 3
-/** Реплики игрушек: список общий для всех игрушек. */
-export const TOY_SPEECH_LINES = ['Help', "It's cold out here.", 'Thank you', 'I love you', 'Are you the one?']
 /** Значки реплики из случайных символов, как ругательство в комиксах; за ними идут восклицательные знаки. */
 export const TOY_SYMBOL_CHARS = '#$&*@%'
 export const TOY_SYMBOL_MIN_LENGTH = 4

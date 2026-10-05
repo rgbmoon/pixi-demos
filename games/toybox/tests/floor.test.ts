@@ -24,7 +24,7 @@ const FLOOR_BOUNDS: PileBounds = {
   floor: CABINET_BOTTOM_Z,
 }
 
-const PRIZE: Prize = { toy: 'elephant' }
+const PRIZE: Prize = { toy: 'grey-elephant' }
 
 /** Крутит кадры, пока пол не придёт в покой. */
 const settle = (pile: FloorPile): void => {
@@ -118,10 +118,10 @@ describe('пол: выпадение приза', () => {
 describe('пол: толчок при открытии шторки', () => {
   /** Стопка из трёх кубов на оси окна выдачи в одном срезе. */
   const getStack = (): HeapSnapshotBody[] => {
-    const base = stand('teddy', 0, PRIZE_NICHE_FLOOR.y, CABINET_BOTTOM_Z)
-    const middle = stand('teddy', 0, PRIZE_NICHE_FLOOR.y, topOf(base))
+    const base = stand('teddy-c', 0, PRIZE_NICHE_FLOOR.y, CABINET_BOTTOM_Z)
+    const middle = stand('teddy-c', 0, PRIZE_NICHE_FLOOR.y, topOf(base))
 
-    return [base, middle, stand('teddy', 0, PRIZE_NICHE_FLOOR.y, topOf(middle))]
+    return [base, middle, stand('teddy-c', 0, PRIZE_NICHE_FLOOR.y, topOf(middle))]
   }
 
   it('роняет стопку под окном выдачи', () => {
@@ -142,8 +142,8 @@ describe('пол: толчок при открытии шторки', () => {
     const pile = new FloorPile()
 
     pile.restore([
-      stand('teddy', 0, PRIZE_NICHE_FLOOR.y - 2, CABINET_BOTTOM_Z),
-      stand('dolphin', 2, PRIZE_NICHE_FLOOR.y, CABINET_BOTTOM_Z),
+      stand('teddy-c', 0, PRIZE_NICHE_FLOOR.y - 2, CABINET_BOTTOM_Z),
+      stand('whale-a', 2, PRIZE_NICHE_FLOOR.y, CABINET_BOTTOM_Z),
       stand('giraffe', 4, PRIZE_NICHE_FLOOR.y + 2, CABINET_BOTTOM_Z),
     ])
 

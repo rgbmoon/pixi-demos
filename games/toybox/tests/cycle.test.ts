@@ -43,12 +43,12 @@ const DELIVERY = [
 const EMPTY_HANDED = DELIVERY.filter((phase) => phase !== PhaseName.presenting)
 
 /** Игрушка стопки на полу: по ней стопка отличается от выпавшего приза. */
-const STACK_TOY = 'elephant'
+const STACK_TOY = 'grey-elephant'
 
 /** Под кареткой в покое стоит куб с мячом наверху, в стороне — треугольник; мяч зажигает лампу табло. */
-const cube = stand('pig-mask', 3, FIELD_CENTER.y, 0)
-const ball = { ...stand('dolphin', 4, FIELD_CENTER.y, topOf(cube)), hasLamp: true }
-const triangle = stand('cat', 6, 2, 0)
+const cube = stand('frog-b', 3, FIELD_CENTER.y, 0)
+const ball = { ...stand('whale-b', 4, FIELD_CENTER.y, topOf(cube)), hasLamp: true }
+const triangle = stand('koala', 6, 2, 0)
 const SCENE = [cube, ball, triangle]
 
 /** Игрушки, оставшиеся в куче. */
@@ -94,7 +94,7 @@ describe('цикл клешни', () => {
     expect(cycle.prizes).toEqual([{ toy: ball.toy, hasLamp: true, collected: 1 }])
     expect(cycle.presentation).toEqual(['show', 'open', 'eject', 'prize:taken', 'close', 'hide'])
     expect(cycle.store.collected).toBe(1)
-    expect(getToys(cycle)).toEqual(['cat', 'pig-mask'])
+    expect(getToys(cycle)).toEqual(['frog-b', 'koala'])
     // Приз лежит в покое на полу перед автоматом с отметкой лампы табло
     expect(cycle.floorPile.takeSnapshot()).toMatchObject([{ toy: ball.toy, hasLamp: true }])
     expect(cycle.rig.getCartPoint()).toMatchObject(FIELD_CENTER)
@@ -108,12 +108,12 @@ describe('цикл клешни', () => {
   })
 
   it('говорящий приз произносит реплику в открытом окне и только потом выпадает на пол', async () => {
-    // Бросок реплики ниже её доли: приз говорит, и первая строка списка выпадает на тот же бросок
+    // Бросок реплики ниже её доли: приз говорит, тот же бросок даёт четыре первых значка и один восклицательный знак
     cycle = await startCycle({ bodies: SCENE, random: () => 0.1 })
     cycle.rolls.push(getGrabRolls(cycle).hit, SLIP_MISS, FUMBLE_MISS)
 
     expect(await cycle.playRound()).toEqual(DELIVERY)
-    expect(cycle.presentation).toEqual(['show', 'open', 'speak:Help', 'eject', 'prize:taken', 'close', 'hide'])
+    expect(cycle.presentation).toEqual(['show', 'open', 'speak:####!', 'eject', 'prize:taken', 'close', 'hide'])
   })
 
   it('открывает шторку с толчком: стопка игрушек под окном выдачи рассыпается', async () => {
@@ -140,7 +140,7 @@ describe('цикл клешни', () => {
     expect(cycle.prizes).toEqual([])
     expect(cycle.floorPile.takeSnapshot()).toEqual([])
     expect(cycle.store.collected).toBe(0)
-    expect(getToys(cycle)).toEqual(['cat', 'dolphin', 'pig-mask'])
+    expect(getToys(cycle)).toEqual(['frog-b', 'koala', 'whale-b'])
     expectSoundHeap(cycle.heap)
   })
 
@@ -173,7 +173,7 @@ describe('цикл клешни', () => {
     expect(await cycle.playRound()).toEqual(EMPTY_HANDED)
     expect(cycle.drops.map(({ phase }) => phase)).toEqual([PhaseName.ascending])
     expect(cycle.store.collected).toBe(0)
-    expect(getToys(cycle)).toEqual(['cat', 'dolphin', 'pig-mask'])
+    expect(getToys(cycle)).toEqual(['frog-b', 'koala', 'whale-b'])
     expectSoundHeap(cycle.heap)
   })
 
@@ -196,7 +196,7 @@ describe('цикл клешни', () => {
     expect(frames[released + 1].phase).toBe(PhaseName.delivering)
     expect(getDistance(frames[released].cart, frames[released + 1].cart)).toBeGreaterThan(0)
     expect(cycle.store.collected).toBe(0)
-    expect(getToys(cycle)).toEqual(['cat', 'dolphin', 'pig-mask'])
+    expect(getToys(cycle)).toEqual(['frog-b', 'koala', 'whale-b'])
   })
 
   it('опускает клешню под кареткой, куда её подвёл игрок', async () => {
@@ -207,14 +207,14 @@ describe('цикл клешни', () => {
     await cycle.playRound()
 
     expect(cycle.prizes).toEqual([{ toy: triangle.toy, collected: 1 }])
-    expect(getToys(cycle)).toEqual(['dolphin', 'pig-mask'])
+    expect(getToys(cycle)).toEqual(['frog-b', 'whale-b'])
   })
 
   it('выдаёт по очереди все игрушки, дошедшие до лотка за цикл', async () => {
     // Куб лежит на подушке у стенки лотка, мяч на кубе свешивается над шахтой: без куба мяч падает в лоток
-    const pillow = stand('lying-pig', 0, TRAY_ORIGIN.y - 1, 0)
-    const base = stand('tumbler', 0, TRAY_ORIGIN.y - 1, topOf(pillow))
-    const rider = stand('dolphin', 1, TRAY_ORIGIN.y + 0.2, topOf(base))
+    const pillow = stand('whale-a', 0, TRAY_ORIGIN.y - 1, 0)
+    const base = stand('penguin-b', 0, TRAY_ORIGIN.y - 1, topOf(pillow))
+    const rider = stand('whale-b', 1, TRAY_ORIGIN.y + 0.2, topOf(base))
 
     cycle = await startCycle({ bodies: [pillow, base, rider] })
 
@@ -237,7 +237,7 @@ describe('цикл клешни', () => {
       { toy: base.toy, collected: 2 },
     ])
     expect(cycle.store.collected).toBe(2)
-    expect(getToys(cycle)).toEqual(['lying-pig'])
+    expect(getToys(cycle)).toEqual(['whale-a'])
     expect(cycle.floorPile.takeSnapshot().map(({ toy }) => toy)).toEqual([rider.toy, base.toy])
   })
 

@@ -51,7 +51,7 @@ describe('кадр куба', () => {
   it('ведёт игрушку в клешне в том же кадре, что клешню, и доставляет её центр точно над лотком', async () => {
     const ticker = new GameTicker()
     const rig = new ClawRig()
-    const heap = createHeap([stand('teddy', 3, FIELD_CENTER.y, 0)])
+    const heap = createHeap([stand('teddy-c', 3, FIELD_CENTER.y, 0)])
     const cube = new CubeController(ticker, heap, new ToyboxStore(), rig)
     const body = heap.getTopBodyAt(FIELD_CENTER) as Readonly<ToyBody>
     const grip = rig.getGripPoint()
@@ -95,7 +95,7 @@ describe('кадр куба', () => {
   it('рисует игрушку в захвате между задним пальцем и клешней и возвращает её в слой, когда игрушка выпала', async () => {
     const ticker = new GameTicker()
     const rig = new ClawRig()
-    const heap = createHeap([stand('teddy', 3, FIELD_CENTER.y, 0)])
+    const heap = createHeap([stand('teddy-c', 3, FIELD_CENTER.y, 0)])
     const cube = new CubeController(ticker, heap, new ToyboxStore(), rig)
     let time = 0
     const frame = () => {

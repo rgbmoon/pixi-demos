@@ -144,7 +144,7 @@ describe('табло', () => {
 
     expect(board.litLamps()).toBe(0)
 
-    board.floorPile.drop({ toy: 'duck', hasLamp: true }, () => 0.5)
+    board.floorPile.drop({ toy: 'duckling-d', hasLamp: true }, () => 0.5)
     board.emitter.emit('prize:taken')
 
     expect(board.litLamps()).toBe(1)
@@ -152,7 +152,7 @@ describe('табло', () => {
     // Игрушка без лампы новую лампу не зажигает
     board.floorPile.drop({ toy: 'giraffe' }, () => 0.5)
     board.emitter.emit('prize:taken')
-    board.floorPile.drop({ toy: 'teddy', hasLamp: true }, () => 0.5)
+    board.floorPile.drop({ toy: 'teddy-c', hasLamp: true }, () => 0.5)
     board.emitter.emit('prize:taken')
 
     expect(board.litLamps()).toBe(2)
@@ -170,7 +170,7 @@ describe('табло', () => {
       y: 4,
       z: CABINET_BOTTOM_Z + 0.5,
       angle: 0,
-      toy: 'duck',
+      toy: 'duckling-d',
     } as const
 
     board = createBoard()

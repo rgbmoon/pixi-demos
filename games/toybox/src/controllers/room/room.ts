@@ -9,7 +9,6 @@ import {
   DUST_AREA,
   FLOOR_GLOW_CENTER,
   GLOW_SOURCE_CENTER,
-  LITTER_BEHIND_CABINET,
   OUTLET,
   SHADOW_CENTER,
 } from '#src/constants'
@@ -18,7 +17,7 @@ import { Cable } from '#src/ui/room/cable'
 import { Carpet } from '#src/ui/room/carpet'
 import { Dust } from '#src/ui/room/dust'
 import { Glow } from '#src/ui/room/glow'
-import { Litter } from '#src/ui/room/litter'
+import { Prop } from '#src/ui/room/prop'
 import { Wainscot } from '#src/ui/room/wainscot'
 import { WallGlow } from '#src/ui/room/wall-glow'
 import { Wallpaper } from '#src/ui/room/wallpaper'
@@ -30,8 +29,7 @@ import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 
 /**
  * Фон зала за автоматом: стена с обоями, панель с плинтусом и ковёр до краёв канваса, мерцающий свет
- * стеклянного куба на стене с пылинками, свет автомата на ковре, тень автомата, кабель автомата к розетке и мусор на
- * полу за тумбой.
+ * стеклянного куба на стене с пылинками, свет автомата на ковре, тень автомата и кабель автомата к розетке.
  */
 @injectable()
 export class RoomController extends LiveContainer {
@@ -69,12 +67,7 @@ export class RoomController extends LiveContainer {
     this.layers.scale.set(ART_PIXEL)
     this.layers.addChild(this.wallpaper, this.wainscot, this.glow, this.dust, this.carpet, floorGlow, shadow)
 
-    this.addChild(
-      this.layers,
-      new Cable(CABLE_PATH, CABLE_COLOR),
-      new Litter([OUTLET]),
-      new Litter(LITTER_BEHIND_CABINET)
-    )
+    this.addChild(this.layers, new Cable(CABLE_PATH, CABLE_COLOR), new Prop(OUTLET))
 
     // Пылинки и мерцание — декоративное движение: при уменьшенном движении пылинок нет, ореол светит ровно
     if (isReducedMotion()) this.dust.visible = false

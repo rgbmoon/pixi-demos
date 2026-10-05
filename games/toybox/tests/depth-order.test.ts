@@ -187,7 +187,7 @@ describe('порядок наложения', () => {
   })
 
   it('рисует верхнюю игрушку стопки поверх нижних', () => {
-    const items = [0.4, 1.2, 2.0].map((z) => toy('dolphin', 3, 4, z))
+    const items = [0.4, 1.2, 2.0].map((z) => toy('whale-a', 3, 4, z))
     const ranks = rank(items)
 
     expect(ranks[1]).toBeGreaterThan(ranks[0])
@@ -195,15 +195,15 @@ describe('порядок наложения', () => {
   })
 
   it('рисует игрушку ближнего среза поверх дальнего', () => {
-    const ranks = rank([4, 3, 2].map((slab) => toy('dolphin', slab, 4, 0.5)))
+    const ranks = rank([4, 3, 2].map((slab) => toy('whale-a', slab, 4, 0.5)))
 
     expect(ranks[1]).toBeGreaterThan(ranks[0])
     expect(ranks[2]).toBeGreaterThan(ranks[1])
   })
 
   it('ставит игрушку на два среза между соседями обоих срезов', () => {
-    const cube = toy('teddy', 3, 4, 0.9)
-    const onTop = toy('dolphin', 3, 4, 2.2)
+    const cube = toy('teddy-c', 3, 4, 0.9)
+    const onTop = toy('whale-a', 3, 4, 2.2)
     const behind = toy('giraffe', 5, 4, 0.5)
     const ranks = rank([cube, onTop, behind])
 
@@ -213,8 +213,8 @@ describe('порядок наложения', () => {
 
   it('прячет за дальней стенкой лотка то, что лежит за ней, и показывает перед ней игрушку в шахте', () => {
     const wall = getPlaneDepthItem(getFaceQuad(getCubeFaces().trayBack))
-    const behind = toy('dolphin', TRAY_ORIGIN.x + TRAY_SIZE.x, 7, 0.5)
-    const falling = toy('dolphin', TRAY_ORIGIN.x + TRAY_SIZE.x - 2, 7, 0.8)
+    const behind = toy('whale-a', TRAY_ORIGIN.x + TRAY_SIZE.x, 7, 0.5)
+    const falling = toy('whale-a', TRAY_ORIGIN.x + TRAY_SIZE.x - 2, 7, 0.8)
 
     expect(getDepthRelation(wall, behind)).toBeGreaterThan(0)
     expect(getDepthRelation(falling, wall)).toBeGreaterThan(0)
@@ -225,8 +225,8 @@ describe('порядок наложения', () => {
     const near = edge({ x: 0, y: 0, z: 0 })
     const far = edge({ x: GRID_SIZE, y: GRID_SIZE, z: 0 })
 
-    expect(getDepthRelation(near, toy('dolphin', 0, 0.45, 1))).toBeGreaterThan(0)
-    expect(getDepthRelation(far, toy('dolphin', GRID_SIZE - 1, GRID_SIZE - 0.45, 1))).toBeLessThan(0)
+    expect(getDepthRelation(near, toy('whale-a', 0, 0.45, 1))).toBeGreaterThan(0)
+    expect(getDepthRelation(far, toy('whale-a', GRID_SIZE - 1, GRID_SIZE - 0.45, 1))).toBeLessThan(0)
   })
 
   it('рисует клешню над игрушкой, на которую она опускается, и прячет её за игрушкой ближнего среза', () => {
@@ -241,9 +241,9 @@ describe('порядок наложения', () => {
         { x: x - 48, y: y + 48 },
       ])
     }
-    const below = toy('teddy', 3, 4, 0.9)
+    const below = toy('teddy-c', 3, 4, 0.9)
     const claw = clawAt({ x: 4, y: 4, z: 2 })
-    const front = toy('teddy', 0, 4, 1.8)
+    const front = toy('teddy-c', 0, 4, 1.8)
     const distant = clawAt({ x: 6.5, y: 4, z: 1.5 })
 
     expect(getDepthRelation(claw, below)).toBeGreaterThan(0)
@@ -257,9 +257,9 @@ describe('слой наложения', () => {
     const moving = new Container()
     const standing = new Container()
     const place = (view: Container, slab: number) => {
-      const point = center('dolphin', slab, 4, 0.5)
+      const point = center('whale-a', slab, 4, 0.5)
 
-      layer.place(view, worldToScreen(point), 0, () => getToyDepthItem('dolphin', point, 0))
+      layer.place(view, worldToScreen(point), 0, () => getToyDepthItem('whale-a', point, 0))
     }
 
     place(moving, 5)

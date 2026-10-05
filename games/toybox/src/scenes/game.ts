@@ -1,13 +1,7 @@
 import { inject, injectable } from 'inversify'
 import { Container } from 'pixi.js'
 
-import {
-  DROP_BUTTON_CENTER,
-  JOYSTICK_CENTER,
-  LITTER_BESIDE_CABINET,
-  LITTER_ON_ROOF,
-  RESET_BUTTON_CENTER,
-} from '#src/constants'
+import { DROP_BUTTON_CENTER, JOYSTICK_CENTER, RESET_BUTTON_CENTER } from '#src/constants'
 import type { CubeController } from '#src/controllers/box/cube'
 import type { FloorPileController } from '#src/controllers/box/floor-pile'
 import type { MarqueeController } from '#src/controllers/box/marquee'
@@ -20,7 +14,6 @@ import type { PersistenceController } from '#src/controllers/persistence'
 import type { RoomController } from '#src/controllers/room/room'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import { Cabinet } from '#src/ui/box/cabinet'
-import { Litter } from '#src/ui/room/litter'
 import { getMachineLayout } from '#src/utils/machine-geometry'
 import { snapToArtPixel, worldToScreen } from '#src/utils/projection'
 
@@ -60,12 +53,8 @@ export class GameScene extends Container {
       controller.position.set(x, y)
     }
 
-    // Игрушки на полу ближе к игроку, чем корпус и мусор у боковины, и выпадают из окна выдачи перед ним; мусор крыши
-    // стоит на крыше табло
-    const sideLitter = new Litter(LITTER_BESIDE_CABINET)
-    const roofLitter = new Litter(LITTER_ON_ROOF)
-
-    this.machine.addChild(cube, new Cabinet(), sideLitter, joystick, drop, marquee, roofLitter, prizeOutput, floorPile, reset)
+    // Игрушки на полу ближе к игроку, чем корпус, и выпадают из окна выдачи перед ним
+    this.machine.addChild(cube, new Cabinet(), joystick, drop, marquee, prizeOutput, floorPile, reset)
     this.addChild(room, this.machine, keyboard, persistence)
   }
 

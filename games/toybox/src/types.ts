@@ -43,7 +43,7 @@ export type WorldPoint = {
 }
 
 /** Неподвижный предмет зала: кадр атласа и точка мира под его опорной точкой. */
-export type LitterPlacement = {
+export type PropPlacement = {
   frame: string
   point: WorldPoint
 }
