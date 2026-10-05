@@ -1,32 +1,30 @@
 import { inject, injectable } from 'inversify'
 import type { DestroyOptions, Ticker } from 'pixi.js'
 
+import { BOX_FRAMES, PILLAR_FRAMES } from '#src/assets'
 import type { ClawRig } from '#src/claw/claw-rig'
-import { CLAW_RADIUS, CUBE_HEIGHT, UNIT_HEIGHT } from '#src/constants'
 import type { Heap } from '#src/heap/heap'
-import type { ToyBody } from '#src/heap/types'
+import { type ToyBody, ToyState } from '#src/heap/types'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
 import type { ToyId, WorldPoint } from '#src/types'
 import { Claw } from '#src/ui/box/claw'
 import { DepthLayer } from '#src/ui/box/depth-layer'
+import { Face } from '#src/ui/box/face'
 import { Floor } from '#src/ui/box/floor'
-import { Frame } from '#src/ui/box/frame'
-import { Pillar } from '#src/ui/box/pillar'
 import { Toy } from '#src/ui/box/toy'
-import { ToyShapes } from '#src/ui/box/toy-shapes'
-import { TrayWall } from '#src/ui/box/tray-wall'
-import { getPlaneDepthItem, getPointDepthItem, getToyDepthItem } from '#src/utils/depth'
-import { getFaceOutline, getTrayWallOutlines } from '#src/utils/machine-geometry'
-import { worldToScreen } from '#src/utils/projection'
+import { getClawDepthItem, getPlaneDepthItem, getToyDepthItem } from '#src/utils/depth'
+import { getCubeFaces, getPillarFaces } from '#src/utils/machine-geometry'
+import { getFaceQuad, worldToScreen } from '#src/utils/projection'
 import { getAngleStep } from '#src/utils/shapes'
 import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 import { LiveContainer } from '@pixi-demos/engine/live-container'
 import { ENGINE_TOKENS } from '@pixi-demos/engine/tokens'
 
 /**
- * Стеклянный куб автомата. Пол и верхняя грань лежат под слоем `DepthLayer`, в слое — игрушки, клешня в сборе,
- * вертикальные рёбра и стенки лотка; их порядок наложения задаёт попарное сравнение по глубине.
+ * Стеклянный куб автомата. Пол лежит под слоем `DepthLayer`, в слое — игрушки, клешня в сборе, стойки и стенки
+ * лотка; их порядок наложения задаёт попарное сравнение по глубине. Стекло фронта лежит над слоем, верх куба закрывает
+ * табло.
  *
  * Каждый кадр контроллер продвигает модели клешни и кучи, переносит их позы в View-компоненты одним проходом
  * и сортирует слой.
@@ -38,10 +36,13 @@ export class CubeController extends LiveContainer {
   private readonly toyboxStore: ToyboxStore
   private readonly rig: ClawRig
   private readonly layer = new DepthLayer()
-  private readonly claw = new Claw()
-  private readonly shapes = new ToyShapes()
+  private readonly claw: Claw
+  /** Сжата ли клешня на экране: смену состояния модели контроллер проигрывает анимацией. */
+  private isClawClosed = false
   private readonly toys = new Map<ToyId, Toy>()
   private readonly seen = new Set<ToyId>()
+  /** Игрушка в захвате в этом кадре: её View-компонент лежит в сборке клешни, а не в слое. */
+  private held?: Readonly<ToyBody>
 
   constructor(
     @inject(ENGINE_TOKENS.GameTicker) ticker: GameTicker,
@@ -55,19 +56,26 @@ export class CubeController extends LiveContainer {
     this.heap = heap
     this.toyboxStore = toyboxStore
     this.rig = rig
+    this.claw = new Claw(ticker)
 
     // Детали куба неподвижны: предмет сортировки каждой строится один раз
-    for (const outline of getTrayWallOutlines()) {
-      this.layer.place(new TrayWall(outline), { x: 0, y: 0 }, 0, () => getPlaneDepthItem(outline))
+    const cube = getCubeFaces()
+
+    for (const key of ['trayBack', 'traySide'] as const) {
+      const quad = getFaceQuad(cube[key])
+
+      this.layer.place(new Face(BOX_FRAMES[key], cube[key]), { x: 0, y: 0 }, 0, () => getPlaneDepthItem(quad))
     }
 
-    for (const corner of getFaceOutline(0)) {
-      this.layer.place(new Pillar(corner), { x: 0, y: 0 }, 0, () =>
-        getPlaneDepthItem([corner, { ...corner, z: CUBE_HEIGHT }])
-      )
+    const pillars = getPillarFaces()
+
+    for (const key of Object.keys(PILLAR_FRAMES) as (keyof typeof PILLAR_FRAMES)[]) {
+      const quad = getFaceQuad(pillars[key])
+
+      this.layer.place(new Face(PILLAR_FRAMES[key], pillars[key]), { x: 0, y: 0 }, 0, () => getPlaneDepthItem(quad))
     }
 
-    this.addChild(new Floor(), new Frame(), this.layer)
+    this.addChild(new Floor(), this.layer, new Face(BOX_FRAMES.glass, cube.glass))
 
     this.ticker.add(this.step)
   }
@@ -79,8 +87,6 @@ export class CubeController extends LiveContainer {
     this.toys.clear()
 
     super.destroy(options)
-    // Общие контексты геометрии уничтожаются после игрушек, которые на них ссылаются
-    this.shapes.destroy()
   }
 
   /** Кадр бокса: ход клешни, шаг кучи за точкой захвата, позы View-компонентов и порядок наложения. */
@@ -101,6 +107,7 @@ export class CubeController extends LiveContainer {
     const highlighted = this.toyboxStore.canDrop ? this.heap.getTopBodyAt(this.rig.getCartPoint())?.id : undefined
 
     this.seen.clear()
+    this.held = undefined
 
     for (const body of this.heap.getBodies()) {
       const toy = this.toys.get(body.id) ?? this.addToy(body)
@@ -109,24 +116,55 @@ export class CubeController extends LiveContainer {
       this.seen.add(body.id)
       toy.setPose(point, angle)
       toy.setHighlighted(body.id === highlighted)
+
+      // Игрушка в захвате рисуется между задним пальцем и клешней; отпущенную `place` возвращает в слой
+      if (body.state === ToyState.carried) {
+        this.held = body
+        this.layer.remove(toy)
+        this.claw.hold(toy)
+        continue
+      }
+
       this.layer.place(toy, worldToScreen(point), getAngleStep(angle), () =>
-        getToyDepthItem(body.shape, body.variant, point, angle)
+        getToyDepthItem(body.toy, point, angle)
       )
     }
 
     if (this.seen.size !== this.toys.size) this.removeGone()
   }
 
-  /** Ставит клешню в сборе в точки модели; предмет сортировки сборки — точка захвата. */
+  /**
+   * Ставит клешню в сборе в точки модели и проигрывает сжатие и разжатие клешни; предмет сортировки сборки — корпус
+   * клешни над точкой захвата и игрушка в захвате.
+   */
   private syncClaw(grip: WorldPoint): void {
+    if (this.rig.isClosed !== this.isClawClosed) {
+      this.isClawClosed = this.rig.isClosed
+      if (this.isClawClosed) this.claw.grip()
+      else this.claw.release()
+    }
+
     this.claw.setPose(this.rig.getCartPoint(), grip)
-    this.layer.place(this.claw, worldToScreen(grip), 0, () =>
-      getPointDepthItem(grip, CLAW_RADIUS, CLAW_RADIUS / UNIT_HEIGHT)
+
+    const { held } = this
+
+    if (!held) {
+      this.layer.place(this.claw, worldToScreen(grip), 0, () => getClawDepthItem(grip, this.claw.getOutline()))
+
+      return
+    }
+
+    // Предмет перестраивается по точке и шагу крена игрушки, пока она садится в клешню; шаг сдвинут на 1, чтобы
+    // захват игрушки без крена перестроил предмет пустой клешни
+    const { point, angle } = held.pose
+
+    this.layer.place(this.claw, worldToScreen(point), getAngleStep(angle) + 1, () =>
+      getClawDepthItem(grip, this.claw.getOutline(), getToyDepthItem(held.toy, point, angle))
     )
   }
 
   private addToy(body: Readonly<ToyBody>): Toy {
-    const toy = new Toy(this.shapes, body.shape, body.variant, body.color)
+    const toy = new Toy(this.ticker, body.toy)
 
     this.toys.set(body.id, toy)
 

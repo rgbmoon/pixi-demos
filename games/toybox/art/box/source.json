@@ -1,0 +1,216 @@
+[
+  {
+    "date": "2026-09-30",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "button tufted quilted vinyl wall panel, diamond stitching with small buttons, dark indigo blue vinyl, cracked and scuffed vinyl, a small tear with foam stuffing, dark stains, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, purple and magenta neon accents, crisp pixel art, clean pixel clusters, flat orthographic front view, no perspective, no text, no letters, no logos",
+      "width": 128,
+      "height": 128,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "highly detailed",
+      "no_background": false,
+      "init_image": "art/box/raw/sketch-a.png",
+      "init_image_strength": 110,
+      "seed": 6101,
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 6101,
+    "id": "f693ea3d-85ac-468e-bbf3-aff3e87efd07",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/f693ea3d-85ac-468e-bbf3-aff3e87efd07/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "raw/sample-a.png"
+    ],
+    "note": "Вариант A, индиго: эскиз indigo[0–3], стёжка сохранилась, подушки со светом слева сверху; модель добавила серые квадратные нашивки по стене, износа нет. Эскиз — ромбы стёжки 16×16 с пуговицами 2×2, шов на ступень темнее основы, подушка — выпуклость со светом сверху, износ скриптом: разрыв с поролоном bone[2–3], две трещины, два пятна. Тайл задней стенки — самый частый цвет образца в каждой позиции периода 16 × 16. 30.09.2026 решение Сергея: задней стенки, LED-планки и света в кубе нет — сквозь заднюю и левую стороны куба видна стена зала; образец не используется. Сырые файлы raw/ удалены 30.09.2026: результат — в аккаунте PixelLab по id (get_image выдаёт свежую ссылку); эскизы sketch-*.png были только локальными; пути raw/… в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-30",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "button tufted quilted vinyl wall panel, diamond stitching with small buttons, dark purple vinyl, cracked and scuffed vinyl, a small tear with foam stuffing, dark stains, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, purple and magenta neon accents, crisp pixel art, clean pixel clusters, flat orthographic front view, no perspective, no text, no letters, no logos",
+      "width": 128,
+      "height": 128,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "highly detailed",
+      "no_background": false,
+      "init_image": "art/box/raw/sketch-b.png",
+      "init_image_strength": 110,
+      "seed": 6101,
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 6101,
+    "id": "a9d99910-6397-4d00-96d4-0ef47de7d156",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/a9d99910-6397-4d00-96d4-0ef47de7d156/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "raw/sample-b.png"
+    ],
+    "note": "Вариант B, фиолетовый: эскиз neon[0–1] с тенями indigo[0–1]; стёжка сохранилась, пуговицы — светлые точки neon[3–4], износа нет. Эскиз — ромбы стёжки 16×16 с пуговицами 2×2, шов на ступень темнее основы, подушка — выпуклость со светом сверху, износ скриптом: разрыв с поролоном bone[2–3], две трещины, два пятна. Тайл задней стенки — самый частый цвет образца в каждой позиции периода 16 × 16. 30.09.2026 решение Сергея: задней стенки, LED-планки и света в кубе нет — сквозь заднюю и левую стороны куба видна стена зала; образец не используется. Сырые файлы raw/ удалены 30.09.2026: результат — в аккаунте PixelLab по id (get_image выдаёт свежую ссылку); эскизы sketch-*.png были только локальными; пути raw/… в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-30",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "button tufted quilted vinyl wall panel, diamond stitching with small buttons, dark burgundy vinyl, cracked and scuffed vinyl, a small tear with foam stuffing, dark stains, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, purple and magenta neon accents, crisp pixel art, clean pixel clusters, flat orthographic front view, no perspective, no text, no letters, no logos",
+      "width": 128,
+      "height": 128,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "highly detailed",
+      "no_background": false,
+      "init_image": "art/box/raw/sketch-c.png",
+      "init_image_strength": 110,
+      "seed": 6101,
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 6101,
+    "id": "acbab1da-dc9c-4d7f-aaeb-c5ca6e0b2d2a",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/acbab1da-dc9c-4d7f-aaeb-c5ca6e0b2d2a/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "raw/sample-c.png"
+    ],
+    "note": "Вариант C, бордовый: эскиз red[0–3]; подушки круглее, чем на эскизе, на пересечениях швов точки neon[2], износа нет. Эскиз — ромбы стёжки 16×16 с пуговицами 2×2, шов на ступень темнее основы, подушка — выпуклость со светом сверху, износ скриптом: разрыв с поролоном bone[2–3], две трещины, два пятна. Тайл задней стенки — самый частый цвет образца в каждой позиции периода 16 × 16. 30.09.2026 решение Сергея: задней стенки, LED-планки и света в кубе нет — сквозь заднюю и левую стороны куба видна стена зала; образец не используется. Сырые файлы raw/ удалены 30.09.2026: результат — в аккаунте PixelLab по id (get_image выдаёт свежую ссылку); эскизы sketch-*.png были только локальными; пути raw/… в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-30",
+    "tool": "script",
+    "seed": null,
+    "id": null,
+    "urls": [],
+    "cost": 0,
+    "params": {
+      "floor": "ковролин: тайл 16×16, основа indigo[1], крапины indigo[0] и blue[0] по 14 % (вариант blue: основа blue[0], крапины indigo[1] и blue[1]); шум — хэш координат пикселя с сидом 11, тайл бесшовный по построению",
+      "chute": "проём лотка 32×4: дальний борт metal[2], стенка шахты metal[0], пустота indigo[0]; боковые борта metal[1]",
+      "tray": "акрил {alpha}: дымка bone[3] альфа 64, борт — строка bone[4] альфа 204 и строка bone[3] альфа 128, ребро у стыка стенок bone[4] альфа 128, царапины bone[4] альфа 128 — декали scratch 5×5"
+    },
+    "picked": [
+      "box{tps}{pal}/*{compose}/"
+    ],
+    "rejected": [],
+    "note": "Детали атласа box собраны скриптом, генераций 0. Скрипт в репозитории не хранится: правила записаны здесь. Раскладки граней — getFaceLayouts в assetpack.config.ts, углы граней — getCubeFaces. Цвет пола — на ревью Сергея."
+  },
+  {
+    "date": "2026-10-01",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "four small greasy handprints on a glass window, palm and five spread fingers, smudged oily prints, flat light gray silhouettes, worn dirty surfaces, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 64,
+      "height": 64,
+      "view": "side",
+      "outline": "lineless",
+      "shading": "flat shading",
+      "detail": "low detail",
+      "no_background": true,
+      "color_image": "art/palette/palette.png",
+      "seed": 7101,
+      "text_guidance_scale": 8
+    },
+    "seed": 7101,
+    "id": "a2f07276-1323-4208-b17a-ed3352e25a15",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/a2f07276-1323-4208-b17a-ed3352e25a15/download"
+    ],
+    "cost": 1,
+    "picked": [
+      "raw/prints-7101.png: ладони 1 и 4 по порядку сверху вниз, слева направо"
+    ],
+    "rejected": [],
+    "note": "Т7, отпечатки ладоней стекла: четыре ладони 20×24 с растопыренными пальцами, основной цвет blue[1], блики blue[3–4] и bone[4]. Из выхода берётся силуэт, цвет и альфу ставит скрипт (запись script)."
+  },
+  {
+    "date": "2026-10-01",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "several small greasy smears on a glass window, curved wipe streaks left by a dirty cloth, oily fingertip smudges, flat light gray shapes, worn dirty surfaces, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 64,
+      "height": 64,
+      "view": "side",
+      "outline": "lineless",
+      "shading": "flat shading",
+      "detail": "low detail",
+      "no_background": true,
+      "color_image": "art/palette/palette.png",
+      "seed": 7102,
+      "text_guidance_scale": 8
+    },
+    "seed": 7102,
+    "id": "126fa98f-a1a5-4ddd-82aa-ba26dd882293",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/126fa98f-a1a5-4ddd-82aa-ba26dd882293/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "raw/smudges-7102.png"
+    ],
+    "note": "Т7, разводы стекла, тест 1: мелкие розовые пятна по 2–10 px вместо полос, 74 px на холсте — отклонён."
+  },
+  {
+    "date": "2026-10-01",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "two wide curved smears wiped across a glass window with a dirty rag, streaky semicircular arcs, uneven greasy bands with gaps, flat light gray shapes, worn dirty surfaces, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 64,
+      "height": 64,
+      "view": "side",
+      "outline": "lineless",
+      "shading": "flat shading",
+      "detail": "low detail",
+      "no_background": true,
+      "color_image": "art/palette/palette.png",
+      "seed": 7103,
+      "text_guidance_scale": 10
+    },
+    "seed": 7103,
+    "id": "c08fe765-8af7-422c-896f-026693fba5a4",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/c08fe765-8af7-422c-896f-026693fba5a4/download"
+    ],
+    "cost": 1,
+    "picked": [
+      "raw/smudges-7103.png: верхний мазок"
+    ],
+    "rejected": [],
+    "note": "Т7, разводы стекла, тест 2: два горизонтальных мазка тряпкой 53×22 с продольными полосами, заливка bone[4]. Из мазка берутся только полосы: сплошной мазок занял бы 870 px, и прозрачная площадь стекла упала бы ниже 90 %."
+  },
+  {
+    "date": "2026-10-01",
+    "tool": "script",
+    "seed": null,
+    "id": null,
+    "urls": [],
+    "cost": 0,
+    "params": {
+      "crack": "трещина crack 15×21 от верхнего края: основная ломаная из точки (4, 0) под 62° длиной 24 px, ветки от 35 % пути под 15° длиной 9,6 px и от 70 % пути под 115° длиной 6 px; отрезки 2–5 px с отклонением угла до ±0,5 рад, генератор LCG с сидом 11; растр по Брезенхему без L-уголков, толщина 1 px; bone[4] альфа 72. Отклонены: трещина 17×37 с сидом 7 и альфой 102, трещина от удара (6 лучей из точки, 2 дуги), сиды 7, 23, 31 при длине 24",
+      "rim": "кромка edge-top и edge-left 1×1: bone[4] альфа 102 (было metal[4]); fill — прозрачный пиксель 1×1",
+      "prints": "print-left — ладонь 4, print-right — ладонь 1 из prints-7101 (компоненты связности): основной цвет генерации → bone[3] альфа 24, остальные цвета → bone[3] альфа 44",
+      "smudge": "smudge 53×22 — верхний мазок smudges-7103: самый частый цвет (сплошная заливка) отбрасывается, остальные → bone[3] альфа 16",
+      "layout": "раскладка — BOX_DECALS.glass в assetpack.config.ts, углы грани — getCubeFaces().glass"
+    },
+    "picked": [
+      "box{tps}{pal}/glass{compose}{alpha}/"
+    ],
+    "rejected": [
+      "блики metal[4] и bone[4] альфа 153 (полосы 2:1 у верхнего левого и нижнего правого углов, блик на правом боку) — заменены трещиной по решению Сергея 01.10.2026; грань правого бока удалена"
+    ],
+    "note": "Детали стекла собраны скриптом из генераций 7101 и 7103. Скрипт в репозитории не хранится: правила записаны здесь. 01.10.2026 решения Сергея по первому ревью: ладони поменять местами, опустить и сделать бледнее, мазок бледнее, вместо бликов — тонкая трещина bone слева сверху прозрачнее блика. Второе ревью: трещина от края, меньше и прозрачнее; кромка — bone. 05.10.2026 трещина, разводы и отпечатки ладоней убраны со стекла: кадры и раскладка удалены, выходы — в аккаунте PixelLab."
+  }
+]

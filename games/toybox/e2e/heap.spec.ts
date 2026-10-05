@@ -31,11 +31,13 @@ test.describe('куча между заходами', () => {
     const played = await readSavedSnapshot(page)
 
     await page.getByRole('button', { name: 'Reset the heap', exact: true }).dispatchEvent('click')
+    await page.getByRole('button', { name: 'Confirm reset', exact: true }).dispatchEvent('click')
     await expect.poll(() => readSnapshot(page)).not.toEqual(played)
 
     const fresh = await readSavedSnapshot(page)
 
     expect(fresh?.collected).toBe(0)
+    expect(fresh?.floor).toEqual([])
     expect(fresh).not.toEqual(initial)
 
     // Новая куча переживает перезаход так же, как прежняя

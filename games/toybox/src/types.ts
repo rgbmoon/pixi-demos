@@ -1,3 +1,5 @@
+import type { TOY_SPECS } from '#src/toy-specs'
+
 export const PhaseName = {
   booting: 'booting',
   idle: 'idle',
@@ -12,11 +14,38 @@ export const PhaseName = {
 
 export type PhaseName = (typeof PhaseName)[keyof typeof PhaseName]
 
+/** Состояние света: лампы табло, ниши окна выдачи и ореола стены. */
+export const Light = {
+  off: 'off',
+  dim: 'dim',
+  on: 'on',
+} as const
+
+export type Light = (typeof Light)[keyof typeof Light]
+
+/** Цвет лампы табло: жёлтый — обычная работа, маджента — эффекты и механики, красный — в запасе. */
+export const LampColor = {
+  yellow: 'yellow',
+  magenta: 'magenta',
+  red: 'red',
+} as const
+
+export type LampColor = (typeof LampColor)[keyof typeof LampColor]
+
+/** Шаг смены света: состояние света и его длительность, мс. */
+export type LightStep = readonly [Light, number]
+
 /** Точка мира: `x` и `y` — оси сетки в ячейках, `z` — высота над полом. */
 export type WorldPoint = {
   x: number
   y: number
   z: number
+}
+
+/** Неподвижный предмет зала: кадр атласа и точка мира под его опорной точкой. */
+export type PropPlacement = {
+  frame: string
+  point: WorldPoint
 }
 
 /** Точка или вектор в плоскости пола, в ячейках: положение клешни, её скорость, направление хода. */
@@ -43,15 +72,6 @@ export type WorldPlane = {
   readonly vertical: WorldPoint
 }
 
-/**
- * Наклон растра плоскости в проекции: сдвиг столбца по вертикали на пиксель ширины и строки по горизонтали
- * на пиксель высоты.
- */
-export type PlaneShear = {
-  readonly column: number
-  readonly row: number
-}
-
 /** Масштаб и начало координат корпуса на канвасе. */
 export type MachineLayout = {
   readonly scale: number
@@ -71,34 +91,19 @@ export type ClawDrop = {
  */
 export type ToyId = number
 
-export type ShapeKey = 'single' | 'bar2' | 'square4' | 'cube8' | 'triangle'
+/** Игрушка каталога: ключ её арта в атласе игрушек. */
+export type ToyKey = keyof typeof TOY_SPECS
 
-/** Внешний вид выданной игрушки без её положения в куче. */
-export type ToyAppearance = {
-  readonly shape: ShapeKey
-  readonly color: number
+/** Выданная игрушка: игрушка каталога и отметка, что она зажигает лампу табло. */
+export type Prize = {
+  readonly toy: ToyKey
+  readonly hasLamp?: boolean
 }
 
 /** Точка плоскости сечения: `y` — ось поля вдоль фронтальной грани, `z` — высота. */
 export type SectionPoint = {
   y: number
   z: number
-}
-
-/** Положение формы: выпуклое сечение в плоскости `(y, z)` и глубина в срезах. */
-export type ShapeVariant = {
-  /** Вершины выпуклого многоугольника сечения в клетках, против часовой стрелки. */
-  readonly section: readonly SectionPoint[]
-  /** Радиус скругления углов сечения в клетках. */
-  readonly radius: number
-  readonly depth: number
-}
-
-/** Форма игрушки: её положения, вес в клетках и то, как часто она попадается при наполнении. */
-export type Shape = {
-  readonly variants: readonly ShapeVariant[]
-  readonly weight: number
-  readonly fillWeight: number
 }
 
 /** Центр игрушки в плоскости сечения и её крен в радианах. */
@@ -108,22 +113,23 @@ export type ToyPose = {
   angle: number
 }
 
-/** Игрушка в снимке: форма, срезы и поза покоя. */
+/** Игрушка в снимке: игрушка каталога, срезы, поза покоя и отметка лампы табло. */
 export type HeapSnapshotBody = {
-  shape: ShapeKey
-  variant: number
   slab: number
   y: number
   z: number
   angle: number
-  color: number
+  toy: ToyKey
+  /** Выигранная игрушка зажигает следующую лампу табло; у остальных игрушек поля нет. */
+  hasLamp?: boolean
 }
 
-/** Снимок кучи для хранилища: позы покоя без скоростей. */
+/** Снимок для хранилища: позы покоя кучи в кубе и игрушек на полу, без скоростей. */
 export type HeapSnapshot = {
   version: number
   collected: number
   bodies: HeapSnapshotBody[]
+  floor: HeapSnapshotBody[]
 }
 
 /**
@@ -144,6 +150,39 @@ export type DepthItem = {
   readonly key: number
 }
 
+/** Размер кадра в пикселях арта. */
+export type FrameSize = {
+  readonly width: number
+  readonly height: number
+}
+
+/** Грань корпуса в мире: левый верхний угол рисунка, конец его верхнего края и конец левого края. */
+export type FaceCorners = {
+  readonly origin: WorldPoint
+  readonly right: WorldPoint
+  readonly down: WorldPoint
+}
+
+/** Аффинная матрица кадра грани в единицах сцены: столбцы — шаг пикселя кадра вправо и вниз, затем начало. */
+export type FaceMatrix = {
+  readonly a: number
+  readonly b: number
+  readonly c: number
+  readonly d: number
+  readonly tx: number
+  readonly ty: number
+}
+
+/** Пылинка фона: место в пикселях арта, скорость в пикселях арта за секунду, возраст и срок жизни в мс. */
+export type DustMote = {
+  x: number
+  y: number
+  vx: number
+  vy: number
+  age: number
+  life: number
+}
+
 /** Рамка на экране, выровненная по осям. */
 export type ScreenRect = {
   readonly left: number
@@ -156,6 +195,32 @@ export type ScreenRect = {
 export type ButtonOptions = {
   label: string
   onTap: () => void
+}
+
+/** Действия кнопок диалога подтверждения сброса. */
+export type ResetConfirmOptions = {
+  onConfirm: () => void
+  onCancel: () => void
+}
+
+/** Куда смотрит острие хвоста облака диалога относительно облака: вверх или вниз, вправо или влево. */
+export type BubbleTail = {
+  readonly up: boolean
+  readonly right: boolean
+}
+
+/** Кадры кнопки атласа органов управления: обычная и нажатая. */
+export type ButtonFrames = {
+  readonly normal: string
+  readonly pressed: string
+}
+
+/** Последовательности атласа игрушки: кадры крена, обводка подсветки тех же поз и тик на полу, если он нарисован. */
+export type ToySequences = {
+  readonly body: string
+  readonly outline: string
+  /** Поза тика на полу по кадрам крена. */
+  readonly twitch?: string
 }
 
 export type JoystickOptions = {

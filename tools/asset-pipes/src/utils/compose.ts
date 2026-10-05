@@ -1,9 +1,9 @@
 import { FACE_PARTS } from '#src/constants'
 import type { FaceCorner, FaceLayout, RasterImage } from '#src/types'
 
-import { createImage, cropImage, drawImage } from './image'
+import { copyImage, createImage, cropImage, drawImage } from './image'
 
-/** Рисует деталь повтором вдоль отрезка оси от `start` до `end`; последний повтор обрезается. */
+/** Копирует деталь повтором вдоль отрезка оси от `start` до `end`; последний повтор обрезается. */
 const tileAlong = (
   target: RasterImage,
   part: RasterImage,
@@ -19,8 +19,8 @@ const tileAlong = (
     const piece =
       axis === 'x' ? cropImage(part, 0, 0, visible, part.height) : cropImage(part, 0, 0, part.width, visible)
 
-    if (axis === 'x') drawImage(target, piece, position, offset)
-    else drawImage(target, piece, offset, position)
+    if (axis === 'x') copyImage(target, piece, position, offset)
+    else copyImage(target, piece, offset, position)
   }
 }
 
@@ -38,7 +38,8 @@ const placeAtCorner = (
 
 /**
  * Собирает плоскую грань из набора деталей: заливка повтором по всей площади, кромки повтором вдоль краёв между
- * углами, углы, затем декали от своих углов. Обязательна только заливка; грань, на которую не помещаются углы,
+ * углами, углы, затем декали от своих углов. Кромки и углы задают силуэт грани: их прозрачные пиксели стирают
+ * заливку, прозрачные пиксели декали — нет. Обязательна только заливка; грань, на которую не помещаются углы,
  * отклоняется.
  */
 export const composeFace = (parts: ReadonlyMap<string, RasterImage>, layout: FaceLayout): RasterImage => {
@@ -86,7 +87,7 @@ export const composeFace = (parts: ReadonlyMap<string, RasterImage>, layout: Fac
 
     const { x, y } = placeAtCorner(layout, name, corner.width, corner.height, { x: 0, y: 0 })
 
-    drawImage(face, corner, x, y)
+    copyImage(face, corner, x, y)
   }
 
   for (const decal of layout.decals ?? []) {

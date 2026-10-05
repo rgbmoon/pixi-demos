@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { rotateSprite, upscaleForRotation } from '#src/utils/rotsprite'
+import { getRotationAngles, rotateSprite, upscaleForRotation } from '#src/utils/rotsprite'
 
 import { fromRows, getVisibleColors, toRows } from './setup/raster'
 
@@ -42,5 +42,11 @@ describe('пайп rotsprite', () => {
         expect(palette.has(color)).toBe(true)
       }
     }
+  })
+
+  it('с дугой оставляет кадры того же шага в её пределах, кадр без поворота — посередине', () => {
+    expect(getRotationAngles(4)).toEqual([0, 90, 180, 270])
+    expect(getRotationAngles(180, 5)).toEqual([-4, -2, 0, 2, 4])
+    expect(getRotationAngles(180, 0)).toEqual([0])
   })
 })

@@ -1,85 +1,68 @@
-import { Container, type DestroyOptions, Graphics } from 'pixi.js'
+import { Container } from 'pixi.js'
 
-import {
-  CABINET_FRONT_PLANE,
-  LINE_THICKNESS,
-  PRIZE_DOOR_INSET,
-  PRIZE_HATCH_SIZE,
-  PRIZE_SCALE,
-  PRIZE_TAKE_GROWTH,
-} from '#src/constants'
-import type { ToyAppearance } from '#src/types'
-import { getPrizeHatchOutline } from '#src/utils/machine-geometry'
-import { getProjectedPlaneRectangle, projectPlaneOffset } from '#src/utils/projection'
-import { PALETTE } from '@pixi-demos/core/palette'
+import { HATCH_FRAMES } from '#src/assets'
+import { TOY_SPEECH_TIP } from '#src/constants'
+import type { ToyKey } from '#src/types'
+import { getPrizeHatchFaces } from '#src/utils/machine-geometry'
+import { snapToArtPixel, worldToScreen } from '#src/utils/projection'
+import type { GameTicker } from '@pixi-demos/engine/game-ticker'
 
-import { Toy } from './toy'
-import { ToyShapes } from './toy-shapes'
+import { Face } from './face'
+import { PrizeDoor } from './prize-door'
+import { PrizeNiche } from './prize-niche'
+import { ToySpeech } from './toy-speech'
 
-/** Окно выдачи на передней грани тумбы */
+/** Окно выдачи на передней грани тумбы: ниша с призом, шторка, металлический обод и облако реплики приза. */
 export class PrizeOutput extends Container {
-  private readonly shapes = new ToyShapes()
-  private readonly prize = new Toy(this.shapes, 'single', 0, 0xffffff)
-  private readonly door = new Graphics()
+  private readonly niche: PrizeNiche
+  private readonly door: PrizeDoor
+  private readonly speech: ToySpeech
 
-  constructor() {
+  constructor(ticker: GameTicker) {
     super()
 
-    const hatch = getPrizeHatchOutline()
-    const doorSize = PRIZE_HATCH_SIZE - PRIZE_DOOR_INSET * 2
-    const mask = new Graphics().poly(hatch).fill(PALETTE.white)
-    const content = new Container()
-    const border = new Graphics().poly(hatch).stroke({ color: PALETTE.primary, width: LINE_THICKNESS })
+    this.niche = new PrizeNiche(ticker)
+    this.door = new PrizeDoor(ticker)
+    this.speech = new ToySpeech(ticker)
+    this.speech.position.copyFrom(snapToArtPixel(worldToScreen(TOY_SPEECH_TIP)))
 
-    mask.includeInBuild = false
-    mask.measurable = false
-
-    // Заливка на всю площадь окна перекрывает игрушку, пока дверца закрыта
-    this.door
-      .poly(hatch)
-      .fill(PALETTE.background)
-      .poly(getProjectedPlaneRectangle(CABINET_FRONT_PLANE, doorSize, doorSize))
-      .stroke({ color: PALETTE.primary, width: LINE_THICKNESS })
-
-    content.mask = mask
-    content.addChild(this.prize, this.door)
-
-    this.addChild(mask, content, border)
+    this.addChild(this.niche, this.door, new Face(HATCH_FRAMES.rim, getPrizeHatchFaces().rim), this.speech)
   }
 
-  /** Ставит выигранную игрушку за закрытую дверцу. */
-  show(appearance: ToyAppearance): void {
-    this.prize.setAppearance(appearance.shape, 0, appearance.color)
-    this.prize.scale.set(PRIZE_SCALE)
-    this.prize.alpha = 1
-    this.prize.visible = true
-    this.setDoorProgress(0)
+  /** Ставит выигранную игрушку в тёмную нишу за закрытой шторкой. */
+  show(toy: ToyKey): void {
+    this.niche.setPrize(toy)
+    this.niche.turnOff()
+    this.door.shut()
   }
 
-  /** Сдвигает дверцу вверх по передней грани: 0 — дверца закрыта, 1 — окно открыто полностью. */
-  setDoorProgress(progress: number): void {
-    const { x, y } = projectPlaneOffset(CABINET_FRONT_PLANE, 0, -PRIZE_HATCH_SIZE * progress)
-
-    this.door.position.set(x, y)
+  /** Поднимает шторку, затем зажигает свет в нише; промис резолвится, когда свет загорелся. */
+  async open(signal: AbortSignal): Promise<void> {
+    await this.door.open(signal)
+    await this.niche.turnOn(signal)
   }
 
-  /** Растворяет игрушку с небольшим увеличением: 0 — начало получения, 1 — игрушка забрана. */
-  setTakeProgress(progress: number): void {
-    this.prize.alpha = 1 - progress
-    this.prize.scale.set(PRIZE_SCALE + progress * PRIZE_TAKE_GROWTH)
+  /** Выводит реплику приза в облаке над окном; промис резолвится, когда выведен последний символ. */
+  speak(speech: string, signal: AbortSignal): Promise<void> {
+    return this.speech.say(speech, signal)
   }
 
-  /** Прячет игрушку и закрывает дверцу. */
+  /** Убирает игрушку из ниши вместе с её репликой: шторка остаётся открытой, свет горит. */
+  eject(): void {
+    this.niche.hidePrize()
+    this.speech.hush()
+  }
+
+  /** Опускает шторку; промис резолвится, когда окно закрыто. */
+  close(signal: AbortSignal): Promise<void> {
+    return this.door.close(signal)
+  }
+
+  /** Прячет игрушку и реплику, гасит свет и закрывает шторку. */
   hide(): void {
-    this.prize.visible = false
-    this.prize.alpha = 1
-    this.setDoorProgress(0)
-  }
-
-  override destroy(options?: DestroyOptions): void {
-    if (this.destroyed) return
-
-    super.destroy(options)
-    this.shapes.destroy()
+    this.niche.hidePrize()
+    this.speech.hush()
+    this.niche.turnOff()
+    this.door.shut()
   }
 }

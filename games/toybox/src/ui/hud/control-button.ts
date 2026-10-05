@@ -1,39 +1,56 @@
-import { Container, Graphics, Polygon } from 'pixi.js'
+import { Assets, Container, Polygon, Sprite, type Texture } from 'pixi.js'
 
-import { BUTTON_FILL_ALPHA, CONTROL_HIT_PADDING, DISABLED_ALPHA, LINE_THICKNESS } from '#src/constants'
-import type { ButtonOptions, WorldPlane } from '#src/types'
+import { ART_PIXEL, CONTROL_HIT_PADDING, DISABLED_TINT } from '#src/constants'
+import type { ButtonFrames, ButtonOptions, WorldPlane } from '#src/types'
 import { getProjectedPlaneCircle } from '#src/utils/projection'
-import { PALETTE } from '@pixi-demos/core/palette'
 
-/** Круглая кнопка на плоскости корпуса: подложка, область нажатия и доступность. Иконку добавляет наследник. */
+/** Круглая кнопка на грани корпуса: кадры обычной и нажатой кнопки, затемнение погашенной, нажатие и доступность. */
 export class ControlButton extends Container {
-  constructor(options: ButtonOptions, plane: WorldPlane, size: number) {
+  private readonly face: Sprite
+  private readonly frames: ButtonFrames
+  private isEnabled = true
+
+  constructor(options: ButtonOptions, plane: WorldPlane, size: number, frames: ButtonFrames) {
     super()
 
-    const radius = size / 2
-    const backing = new Graphics()
-      .poly(getProjectedPlaneCircle(plane, radius))
-      .fill({ color: PALETTE.primary, alpha: BUTTON_FILL_ALPHA })
-      .stroke({ width: LINE_THICKNESS, color: PALETTE.primary })
-
-    this.addChild(backing)
+    this.face = new Sprite(Assets.get<Texture>(frames.normal))
+    this.frames = frames
+    this.face.scale.set(ART_PIXEL)
+    this.addChild(this.face)
 
     this.eventMode = 'static'
     this.cursor = 'pointer'
-    this.hitArea = new Polygon(getProjectedPlaneCircle(plane, radius + CONTROL_HIT_PADDING))
+    this.hitArea = new Polygon(getProjectedPlaneCircle(plane, size / 2 + CONTROL_HIT_PADDING))
     this.accessible = true
     this.accessibleType = 'button'
     this.accessibleHint = options.label
     this.accessiblePointerEvents = 'none'
 
+    this.on('pointerdown', this.handleDown)
+    this.on('pointerup', this.handleUp)
+    this.on('pointerupoutside', this.handleUp)
     this.on('pointertap', options.onTap)
   }
 
-  /** Включает или гасит кнопку: интерактивность, курсор, прозрачность и доступность. */
+  /** Включает или гасит кнопку: интерактивность, курсор, затемнение и доступность. */
   setEnabled(enabled: boolean): void {
+    this.isEnabled = enabled
     this.eventMode = enabled ? 'static' : 'none'
     this.cursor = enabled ? 'pointer' : 'default'
-    this.alpha = enabled ? 1 : DISABLED_ALPHA
     this.accessible = enabled
+    this.face.tint = enabled ? 0xffffff : DISABLED_TINT
+    this.setFrame(this.frames.normal)
+  }
+
+  private handleDown = (): void => {
+    this.setFrame(this.frames.pressed)
+  }
+
+  private handleUp = (): void => {
+    if (this.isEnabled) this.setFrame(this.frames.normal)
+  }
+
+  private setFrame(frame: string): void {
+    this.face.texture = Assets.get<Texture>(frame)
   }
 }

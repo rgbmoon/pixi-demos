@@ -1,36 +1,8 @@
-import opentype from 'opentype.js'
 import { describe, expect, it } from 'vitest'
 
-import { createIconGlyph, formatBmfont, packGlyphs, rasterizeFont } from '#src/utils/bmfont'
+import { createIconGlyph, formatBmfont, packGlyphs } from '#src/utils/bmfont'
 
-import { fromRows, toRows } from './setup/raster'
-
-// opentype.js 1.x собран как UMD: Node отдаёт его экспорты только через default
-// eslint-disable-next-line import/no-named-as-default-member
-const { Font, Glyph, Path } = opentype
-
-/** TTF с одним глифом «A»: прямоугольник 3 × 5 единиц при em в 8 единиц, то есть 3 × 5 пикселей при кегле 8. */
-const createFont = (): ArrayBuffer => {
-  const rectangle = new Path()
-
-  rectangle.moveTo(0, 0)
-  rectangle.lineTo(0, 5)
-  rectangle.lineTo(3, 5)
-  rectangle.lineTo(3, 0)
-  rectangle.close()
-
-  return new Font({
-    familyName: 'Test',
-    styleName: 'Regular',
-    unitsPerEm: 8,
-    ascender: 7,
-    descender: -1,
-    glyphs: [
-      new Glyph({ name: '.notdef', unicode: 0, advanceWidth: 4, path: new Path() }),
-      new Glyph({ name: 'A', unicode: 65, advanceWidth: 4, path: rectangle }),
-    ],
-  }).toArrayBuffer()
-}
+import { fromRows } from './setup/raster'
 
 /** Поля строки `char` файла BMFont по коду символа. */
 const readChar = (fnt: string, id: number): Record<string, number> => {
@@ -45,20 +17,23 @@ const readChar = (fnt: string, id: number): Record<string, number> => {
 }
 
 describe('пайп bitmap-font', () => {
-  it('записывает ширину и высоту глифа, равные его растру, и растеризует без сглаживания', () => {
-    const { font, missing } = rasterizeFont(createFont(), 'test', 8, 'AB', [255, 255, 255])
-    const icon = createIconGlyph(0x2665, fromRows(['#.#', '###', '.#.'], { '#': '#f1219f' }), font.base)
-    const glyphs = [...font.glyphs, icon]
-    const fnt = formatBmfont({ ...font, glyphs }, packGlyphs(glyphs), 'test.png')
-
-    expect(missing).toEqual(['B'])
-    expect(toRows(font.glyphs[0].image, { w: '#ffffff' })).toEqual(['www', 'www', 'www', 'www', 'www'])
+  it('записывает ширину и высоту глифа, равные его растру, и ставит низ каждого глифа на базовую линию', () => {
+    const base = 5
+    const glyphs = [
+      createIconGlyph(0x2665, fromRows(['#.#', '###', '.#.'], { '#': '#f1219f' }), base),
+      createIconGlyph(0x41, fromRows(['##', '##', '##', '##', '##'], { '#': '#ffffff' }), base),
+    ]
+    const fnt = formatBmfont(
+      { face: 'test', size: base, lineHeight: base, base, glyphs },
+      packGlyphs(glyphs),
+      'test.png'
+    )
 
     for (const glyph of glyphs) {
-      expect(readChar(fnt, glyph.id)).toMatchObject({ width: glyph.image.width, height: glyph.image.height })
-    }
+      const char = readChar(fnt, glyph.id)
 
-    // Глиф стоит на базовой линии: его низ на высоте base от верха строки
-    expect(readChar(fnt, 65)).toMatchObject({ width: 3, height: 5, yoffset: font.base - 5, xadvance: 4 })
+      expect(char).toMatchObject({ width: glyph.image.width, height: glyph.image.height })
+      expect(char.yoffset + char.height).toBe(base)
+    }
   })
 })

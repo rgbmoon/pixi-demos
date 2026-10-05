@@ -1,8 +1,17 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { CUBE_HEIGHT, FIELD_CENTER, FUMBLE_CHANCE, GRID_SIZE, HEAP_SNAPSHOT_VERSION, LIFT_FUMBLE_CHANCE } from '#src/constants'
+import {
+  CABINET_BOTTOM_Z,
+  CUBE_HEIGHT,
+  FIELD_CENTER,
+  FUMBLE_CHANCE,
+  GRID_SIZE,
+  HEAP_SNAPSHOT_VERSION,
+  LIFT_FUMBLE_CHANCE,
+} from '#src/constants'
 import { PersistenceController } from '#src/controllers/persistence'
+import { FLOOR_PILE_WIDTH } from '#src/heap/constants'
 import { isHeapSnapshot } from '#src/heap/utils'
 import { PhaseName } from '#src/types'
 
@@ -14,9 +23,12 @@ const SLIP_MISS = (1 + LIFT_FUMBLE_CHANCE) / 2
 const FUMBLE_MISS = (1 + FUMBLE_CHANCE) / 2
 
 /** Под кареткой в покое стоит куб с мячом наверху. */
-const cube = stand('cube8', 3, FIELD_CENTER.y, 0)
-const ball = stand('single', 4, FIELD_CENTER.y, topOf(cube))
+const cube = stand('teddy-c', 3, FIELD_CENTER.y, 0)
+const ball = stand('whale-a', 4, FIELD_CENTER.y, topOf(cube))
 const SCENE = [cube, ball]
+
+/** На полу справа от тумбы, за краем куба, лежит выигранный брусок. */
+const FLOOR = [stand('giraffe', 2, -2, CABINET_BOTTOM_Z)]
 
 const getIds = (cycle: Cycle): Set<number> => new Set([...cycle.heap.getBodies()].map(({ id }) => id))
 
@@ -32,17 +44,23 @@ describe('сессия', () => {
   })
 
   describe('загрузка', () => {
-    it('поднимает кучу и счёт из сохранённого снимка и объявляет игру готовой', async () => {
+    it('поднимает кучу, игрушки на полу и счёт из сохранённого снимка и объявляет игру готовой', async () => {
       const booted = vi.fn()
 
-      cycle = createCycle({ bodies: SCENE, collected: 5 })
+      cycle = createCycle({ bodies: SCENE, floor: FLOOR, collected: 5 })
       cycle.emitter.on('game:booted', booted)
       await cycle.start()
 
       expect(booted).toHaveBeenCalledOnce()
       expect(cycle.heap.takeSnapshot()).toEqual(SCENE)
+      expect(cycle.floorPile.takeSnapshot()).toEqual(FLOOR)
       expect(cycle.store.collected).toBe(5)
-      expect(cycle.store.checkpoint).toEqual({ version: HEAP_SNAPSHOT_VERSION, collected: 5, bodies: SCENE })
+      expect(cycle.store.checkpoint).toEqual({
+        version: HEAP_SNAPSHOT_VERSION,
+        collected: 5,
+        bodies: SCENE,
+        floor: FLOOR,
+      })
     })
 
     it('оставляет пустой сохранённый куб пустым, а не насыпает его заново', async () => {
@@ -66,13 +84,14 @@ describe('сессия', () => {
         version: HEAP_SNAPSHOT_VERSION,
         collected: 0,
         bodies: cycle.heap.takeSnapshot(),
+        floor: [],
       })
     })
   })
 
   describe('проверка снимка из хранилища', () => {
-    const body = { shape: 'cube8', variant: 0, slab: 3, y: 4, z: 0.9, angle: 0.3, color: 0xffa24b }
-    const snapshot = { version: HEAP_SNAPSHOT_VERSION, collected: 3, bodies: [body] }
+    const body = { slab: 3, y: 4, z: 0.9, angle: 0.3, toy: 'teddy-c' }
+    const snapshot = { version: HEAP_SNAPSHOT_VERSION, collected: 3, bodies: [body], floor: [] }
     const withBody = (patch: Record<string, unknown>) => ({ ...snapshot, bodies: [{ ...body, ...patch }] })
 
     it('принимает снимок своей версии, в том числе пустой', () => {
@@ -80,20 +99,32 @@ describe('сессия', () => {
       expect(isHeapSnapshot({ ...snapshot, bodies: [] })).toBe(true)
     })
 
-    it('отбрасывает чужую версию, мусор и незнакомую форму', () => {
+    it('принимает игрушку пола за краем куба и отбрасывает игрушку за краем полосы пола или снимок без пола', () => {
+      const floorBody = (y: number) => ({ ...snapshot, floor: [{ ...FLOOR[0], y }] })
+      const { floor: _, ...withoutFloor } = snapshot
+
+      expect(isHeapSnapshot(floorBody(-2))).toBe(true)
+      expect(isHeapSnapshot(floorBody((GRID_SIZE - FLOOR_PILE_WIDTH) / 2 - 0.5))).toBe(false)
+      expect(isHeapSnapshot(withoutFloor)).toBe(false)
+    })
+
+    it('отбрасывает чужую версию, мусор и игрушку вне каталога', () => {
       expect(isHeapSnapshot({ ...snapshot, version: HEAP_SNAPSHOT_VERSION - 1 })).toBe(false)
       expect(isHeapSnapshot(undefined)).toBe(false)
       expect(isHeapSnapshot('heap')).toBe(false)
-      expect(isHeapSnapshot(withBody({ shape: 'pyramid' }))).toBe(false)
-      expect(isHeapSnapshot(withBody({ shape: 'ell3' }))).toBe(false)
-      expect(isHeapSnapshot(withBody({ shape: 'toString' }))).toBe(false)
+      expect(isHeapSnapshot(withBody({ toy: 'dragon' }))).toBe(false)
+      expect(isHeapSnapshot(withBody({ toy: 'toString' }))).toBe(false)
+      expect(isHeapSnapshot(withBody({ toy: undefined }))).toBe(false)
     })
 
-    it('отбрасывает положение вне каталога и срез, из которого игрушка выходит за куб', () => {
-      expect(isHeapSnapshot(withBody({ variant: 1 }))).toBe(false)
-      expect(isHeapSnapshot(withBody({ variant: 0.5 }))).toBe(false)
+    it('отбрасывает срез, из которого игрушка выходит за куб', () => {
       expect(isHeapSnapshot(withBody({ slab: GRID_SIZE - 1 }))).toBe(false)
       expect(isHeapSnapshot(withBody({ slab: -1 }))).toBe(false)
+    })
+
+    it('принимает отметку лампы табло и отбрасывает её не флагом', () => {
+      expect(isHeapSnapshot(withBody({ hasLamp: true }))).toBe(true)
+      expect(isHeapSnapshot(withBody({ hasLamp: 1 }))).toBe(false)
     })
 
     it.each([NaN, Infinity, -0.5, GRID_SIZE + 0.5])('отбрасывает координату %s', (value) => {
@@ -103,10 +134,10 @@ describe('сессия', () => {
   })
 
   describe('сброс', () => {
-    it('насыпает новую кучу и обнуляет счёт, не выходя из покоя', async () => {
+    it('насыпает новую кучу, убирает игрушки с пола и обнуляет счёт, не выходя из покоя', async () => {
       const reset = vi.fn()
 
-      cycle = await startCycle({ bodies: SCENE, collected: 3 })
+      cycle = await startCycle({ bodies: SCENE, floor: FLOOR, collected: 3 })
 
       const before = getIds(cycle)
       const phases = cycle.phases.length
@@ -117,11 +148,13 @@ describe('сессия', () => {
       expect(reset).toHaveBeenCalledOnce()
       expect([...getIds(cycle)].some((id) => before.has(id))).toBe(false)
       expect(cycle.heap.takeSnapshot().length).toBeGreaterThan(0)
+      expect(cycle.floorPile.takeSnapshot()).toEqual([])
       expect(cycle.store.collected).toBe(0)
       expect(cycle.store.checkpoint).toEqual({
         version: HEAP_SNAPSHOT_VERSION,
         collected: 0,
         bodies: cycle.heap.takeSnapshot(),
+        floor: [],
       })
       expect(cycle.phases).toHaveLength(phases)
 
@@ -161,7 +194,7 @@ describe('сессия', () => {
 
       await current.start()
 
-      expect(current.writes).toEqual([{ version: HEAP_SNAPSHOT_VERSION, collected: 0, bodies: SCENE }])
+      expect(current.writes).toEqual([{ version: HEAP_SNAPSHOT_VERSION, collected: 0, bodies: SCENE, floor: [] }])
 
       current.rolls.push(getGrabRolls(current).hit, SLIP_MISS, FUMBLE_MISS)
       current.emitter.emit('ui:dropRequested')
@@ -178,6 +211,7 @@ describe('сессия', () => {
         version: HEAP_SNAPSHOT_VERSION,
         collected: 1,
         bodies: current.heap.takeSnapshot(),
+        floor: current.floorPile.takeSnapshot(),
       })
     })
   })

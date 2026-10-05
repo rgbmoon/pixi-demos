@@ -36,6 +36,9 @@ export class KeyboardController extends LiveContainer {
   }
 
   private handle(change: KeyboardChange, emitter: GameEmitter<GameEvents>): void {
+    // Игрок, нашедший клавиши, прошёл тур по управлению
+    if (change.pressed) this.toyboxStore.completeTour()
+
     if ((KEYBOARD_DROP_CODES as readonly string[]).includes(change.code)) {
       if (change.pressed && !change.repeat && this.toyboxStore.canDrop) emitter.emit('ui:dropRequested')
 

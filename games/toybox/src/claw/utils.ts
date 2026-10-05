@@ -67,7 +67,7 @@ const getTrayEntryShare = (from: GroundPoint, to: GroundPoint): number => {
   for (const axis of ['x', 'y'] as const) {
     const distance = to[axis] - from[axis]
     const low = TRAY_ORIGIN[axis]
-    const high = TRAY_ORIGIN[axis] + TRAY_SIZE
+    const high = TRAY_ORIGIN[axis] + TRAY_SIZE[axis]
 
     if (distance === 0) {
       if (from[axis] < low || from[axis] > high) return 1

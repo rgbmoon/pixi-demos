@@ -1,0 +1,811 @@
+[
+  {
+    "date": "2026-09-26",
+    "tool": "create_topdown_tileset",
+    "params": {
+      "lower_description": "faded dusty violet damask wallpaper, flat wall surface, worn dirty, muted desaturated colors, dim light, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "upper_description": "faded dusty violet damask wallpaper with brown water stains and grime, flat wall surface, muted desaturated colors, dim light, crisp pixel art, no text",
+      "mode": "standard",
+      "tile_size": {
+        "width": 32,
+        "height": 32
+      },
+      "view": "high top-down",
+      "outline": "lineless",
+      "shading": "basic shading",
+      "detail": "medium detail",
+      "transition_size": 0
+    },
+    "seed": null,
+    "id": "6df10df7-3906-4d71-9bde-6750735b44ba",
+    "urls": [
+      "https://api.pixellab.ai/mcp/tilesets/6df10df7-3906-4d71-9bde-6750735b44ba/image",
+      "https://api.pixellab.ai/mcp/tilesets/6df10df7-3906-4d71-9bde-6750735b44ba/metadata"
+    ],
+    "cost": 3,
+    "picked": [],
+    "rejected": [
+      "raw/wallpaper-lower.png: узор 32 px слишком частый, заменён тайлом из мотива 27.09.2026",
+      "переходы: приподнятое плато с рыжей кромкой, на пятна не похоже",
+      "raw/wallpaper-upper.png (wang_15) — запас на заплатки"
+    ],
+    "note": "Сид у инструмента не задаётся. Тайл приведён к рампам indigo и metal: при всех рампах в узор попадают точки pink, при одной indigo стена слишком насыщенная. Сырые файлы `raw/` удалены 28.09.2026: результат — в аккаунте PixelLab по `id` (`get_image`, у тайлсетов — `get_topdown_tileset`); пути `raw/…` в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-26",
+    "tool": "create_topdown_tileset",
+    "params": {
+      "lower_description": "worn dirty motel carpet, faded dark purple geometric pattern, flat floor surface, muted desaturated colors, dim light, crisp pixel art, no text",
+      "upper_description": "worn dirty motel carpet with dark stains and threadbare bald patches, muted desaturated colors, dim light, crisp pixel art, no text",
+      "mode": "standard",
+      "tile_size": {
+        "width": 32,
+        "height": 32
+      },
+      "view": "high top-down",
+      "outline": "lineless",
+      "shading": "basic shading",
+      "detail": "medium detail",
+      "transition_size": 0
+    },
+    "seed": null,
+    "id": "d9ee688e-2c7e-4d4a-85bb-5aefc2ea1518",
+    "urls": [
+      "https://api.pixellab.ai/mcp/tilesets/d9ee688e-2c7e-4d4a-85bb-5aefc2ea1518/image",
+      "https://api.pixellab.ai/mcp/tilesets/d9ee688e-2c7e-4d4a-85bb-5aefc2ea1518/metadata"
+    ],
+    "cost": 3,
+    "picked": [],
+    "rejected": [
+      "raw/carpet-lower.png: узор 32 px слишком частый, заменён тайлом из мотива 27.09.2026",
+      "переходы: плато с кромкой",
+      "raw/carpet-upper.png (wang_15)"
+    ],
+    "note": "Ближайший цвет палитры рассыпает узор в шум: тёмные тона почти равноудалены от pink[0], metal[0] и indigo[1]. Тона разложены по ступеням red[0..2] по светлоте OKLab, доли пикселей 0,55 / 0,3 / 0,15. Сырые файлы `raw/` удалены 28.09.2026: результат — в аккаунте PixelLab по `id` (`get_image`, у тайлсетов — `get_topdown_tileset`); пути `raw/…` в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-26",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "dark stained wooden wainscot wall panel with a wide baseboard along the bottom edge, chipped varnish, scratches, grime, flat orthographic front view, no perspective, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 128,
+      "height": 64,
+      "view": "side",
+      "outline": "lineless",
+      "shading": "medium shading",
+      "detail": "medium detail",
+      "no_background": false,
+      "seed": 4104,
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 4104,
+    "id": "c367002b-ed6a-4569-aae4-0085a075ed94",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/c367002b-ed6a-4569-aae4-0085a075ed94/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "raw/wainscot-pixflux-4104.png"
+    ],
+    "note": "Вместо полосы текстуры — сцена: панель посреди тёмной комнаты и пол. Сырые файлы `raw/` удалены 28.09.2026: результат — в аккаунте PixelLab по `id` (`get_image`, у тайлсетов — `get_topdown_tileset`); пути `raw/…` в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-26",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "dark wooden wainscot wall paneling texture, vertical planks with dark grooves, chair rail molding on top, baseboard along the bottom, chipped varnish, scratches, grime, texture fills the whole image edge to edge, flat orthographic front view, no perspective, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 128,
+      "height": 64,
+      "view": "side",
+      "outline": "lineless",
+      "shading": "medium shading",
+      "detail": "medium detail",
+      "no_background": false,
+      "seed": 4104,
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png",
+      "init_image": "art/room/raw/wainscot-sketch.png",
+      "init_image_strength": 300
+    },
+    "seed": 4104,
+    "id": "238ad8d8-5341-4733-a857-fe702de60b37",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/238ad8d8-5341-4733-a857-fe702de60b37/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "raw/wainscot-pixflux-4104-init.png"
+    ],
+    "note": "Эскиз — поручень, доски с пазами через 8 px, плинтус цветами brown. При силе 300 результат почти равен эскизу: фактуры нет. Сырые файлы `raw/` удалены 28.09.2026: результат — в аккаунте PixelLab по `id` (`get_image`, у тайлсетов — `get_topdown_tileset`); пути `raw/…` в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-26",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "dark wooden wainscot wall paneling texture, vertical planks with dark grooves, chair rail molding on top, baseboard along the bottom, chipped varnish, scratches, grime, texture fills the whole image edge to edge, flat orthographic front view, no perspective, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 128,
+      "height": 64,
+      "view": "side",
+      "outline": "lineless",
+      "shading": "medium shading",
+      "detail": "medium detail",
+      "no_background": false,
+      "seed": 4104,
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png",
+      "init_image": "art/room/raw/wainscot-sketch.png",
+      "init_image_strength": 150
+    },
+    "seed": 4104,
+    "id": "c57f7e56-724e-44f9-9424-b9dc0c0649d0",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/c57f7e56-724e-44f9-9424-b9dc0c0649d0/download"
+    ],
+    "cost": 1,
+    "picked": [
+      "raw/wainscot-pixflux-4104-init150.png → room{tps}{pal}/wainscot{tile=x}.png"
+    ],
+    "rejected": [],
+    "note": "Эскиз тот же, добавились сколы. Шаг досок 8 px, ширина 128 кратна ему: тайл стыкуется по x без правки. 27.09.2026 панель затемнена по просьбе Сергея: brown[3]→brown[2], brown[2]→brown[1], brown[1]→brown[0], brown[0]→red[0]. Сдвиг всех ступеней на одну вниз сливает пазы: нижняя ступень упирается в brown[0]; перенос пазов в indigo[0] даёт синие линии, отвергнут. Сырые файлы `raw/` удалены 28.09.2026: результат — в аккаунте PixelLab по `id` (`get_image`, у тайлсетов — `get_topdown_tileset`); пути `raw/…` в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-27",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "large ornate damask medallion, single symmetric wallpaper ornament, flat printed pattern, faded, isolated, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 64,
+      "height": 64,
+      "seed": 4104,
+      "view": "side",
+      "outline": "lineless",
+      "shading": "flat shading",
+      "detail": "medium detail",
+      "no_background": true,
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 4104,
+    "id": "6a58a173-13af-43dd-b351-b8e8bd2fb3ac",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/6a58a173-13af-43dd-b351-b8e8bd2fb3ac/download"
+    ],
+    "cost": 1,
+    "picked": [
+      "raw/wallpaper-motif-4104.png → room{tps}{pal}/wallpaper-0{tile}.png … wallpaper-7{tile}.png"
+    ],
+    "rejected": [],
+    "note": "Мотив 54×58. 28.09.2026 по просьбе Сергея узор в 1,5 раза меньше и тише: мотив и заполнитель уменьшены в 1,5 раза (пиксель результата берёт цвет, занимающий большую часть его площади), тайл 64×64, фон indigo[0], мотив и заполнитель — indigo[1]; центры мотивов (16, 16) и (48, 48), заполнителей (48, 16) и (16, 48). Заполнитель — центр мотива 17×17 с круглой маской радиуса 7,6. Отвергнуто: тайл 128 — узор редкий; тайл 96 — крупный и контрастный. Из цветов мотива red[0], brown[0], metal[0], indigo[1] + metal[0] Сергей выбрал indigo[1]. 28.09.2026 анимация обоев: 8 кадров пульса из того же тайла — пиксели мотива indigo[1] смешиваются с indigo[2] упорядоченным дизерингом Bayer 4×4 с долями 0, ¼, ½, ¾, 1, ¾, ½, ¼; шаг матрицы 4 делит сторону тайла, кадры бесшовные. Цикл цветов пайпом palette отвергнут: он проходит все 5 ступеней рампы, и стена или мотивы мигали бы до светлых ступеней. Сырые файлы `raw/` удалены 28.09.2026: результат — в аккаунте PixelLab по `id` (`get_image`, у тайлсетов — `get_topdown_tileset`); пути `raw/…` в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-27",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "retro 1970s motel carpet medallion motif, single symmetric geometric ornament, flat printed pattern, seen from a low angle, faded, isolated, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 64,
+      "height": 32,
+      "seed": 4104,
+      "view": "low top-down",
+      "outline": "lineless",
+      "shading": "flat shading",
+      "detail": "medium detail",
+      "no_background": true,
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 4104,
+    "id": "e844373d-7e33-4e36-a334-ee11aa3691b9",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/e844373d-7e33-4e36-a334-ee11aa3691b9/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "raw/carpet-motif-4104.png"
+    ],
+    "note": "Сплющенное кольцо с крестом: в повторе читается как ряды запрещающих знаков. Сырые файлы `raw/` удалены 28.09.2026: результат — в аккаунте PixelLab по `id` (`get_image`, у тайлсетов — `get_topdown_tileset`); пути `raw/…` в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-27",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "retro 1970s motel carpet motif, interlocking diamonds and scrolls geometric ornament, single symmetric motif, flat printed pattern, seen from a low angle, faded, isolated, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 64,
+      "height": 32,
+      "seed": 4105,
+      "view": "low top-down",
+      "outline": "lineless",
+      "shading": "flat shading",
+      "detail": "medium detail",
+      "no_background": true,
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 4105,
+    "id": "72e12730-bcc1-4418-85b7-610c67519834",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/72e12730-bcc1-4418-85b7-610c67519834/download"
+    ],
+    "cost": 1,
+    "picked": [
+      "raw/carpet-motif-4105.png → room{tps}{pal}/carpet{tile}.png"
+    ],
+    "rejected": [],
+    "note": "Вместо отдельного мотива — заполненная панель 64×32 в духе килима. 28.09.2026 по просьбе Сергея узор в 2 раза меньше: медальон при уменьшении вдвое не читается, главным мотивом стала звезда с края панели в родном размере — тёмные пиксели кропа x 2–14, y 9–21 с круглой маской радиуса 5,8; заполнитель — ромб 5×5 из 9 пикселей. Тайл 48×24: фон red[0], звёзды и ромбы red[1]; звёзды в (12, 6) и (36, 18), ромбы в (36, 6) и (12, 18). Сырые файлы `raw/` удалены 28.09.2026: результат — в аккаунте PixelLab по `id` (`get_image`, у тайлсетов — `get_topdown_tileset`); пути `raw/…` в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-27",
+    "tool": "create_1_direction_object",
+    "params": {
+      "description": "grime and damage decal for a dark motel wall, isolated object, flat orthographic front view, no perspective, dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "name": "room wall decals",
+      "view": "sidescroller",
+      "item_descriptions": [
+        "torn patch of a different faded wallpaper glued over the wall, ragged edges",
+        "rectangular patch of mismatched faded wallpaper with a peeling corner",
+        "long strip of wallpaper peeling off and curling down, exposing grey plaster",
+        "irregular patch of bare cracked grey plaster where wallpaper is torn off",
+        "small torn corner of wallpaper hanging loose",
+        "hole punched in the wall with broken plaster edges",
+        "small dent in the wall with crumbling plaster",
+        "long thin vertical crack in the wall plaster",
+        "branching crack spreading across the wall",
+        "chipped spot on the wall exposing plaster",
+        "deep gouge scratch marks on the wall",
+        "dark scuff marks on the lower wall",
+        "nail hole with a rusty streak running down",
+        "bent rusty nail sticking out of the wall",
+        "brown water stain with rings on the wall",
+        "large faded water leak stain",
+        "dirty drips running down the wall from above",
+        "black soot smudge on the wall",
+        "greasy dirty handprint on the wall",
+        "two smeared dirty handprints on the wall",
+        "cluster of dark mold spots on the wall",
+        "splash stain of spilled dark soda on the wall",
+        "faded lighter rectangle where a picture frame used to hang",
+        "dirty smear on the wall",
+        "small dark splatter stain on the wall"
+      ],
+      "style_images": [
+        "art/room/raw/style-wallpaper-42.png",
+        "art/room/raw/style-wainscot-42.png"
+      ]
+    },
+    "seed": null,
+    "id": "34386a01-5eab-4c5a-95e1-ced2c810c01a",
+    "urls": [
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/34386a01-5eab-4c5a-95e1-ced2c810c01a/rotations/frame_<N>.png"
+    ],
+    "cost": 25,
+    "picked": [
+      "raw/decals/frame_7.png → room{tps}{pal}/decal-0.png",
+      "raw/decals/frame_8.png → room{tps}{pal}/decal-1.png",
+      "raw/decals/frame_10.png → room{tps}{pal}/decal-2.png"
+    ],
+    "rejected": [
+      "28.09.2026 Сергей оставил только frame_7, frame_8 и frame_10 (трещины и борозды); остальные отобранные кандидаты — объекты PixelLab с тегом toybox-room-decal, сырые файлы удалены",
+      "30: надпись GRAFFITI; 44, 51: похожи на буквы",
+      "21: похоже на кровь; 29, 40, 61: похожи на следы от пуль",
+      "25, 27, 35, 41, 48, 59: привязаны к углу или полу",
+      "38: пустой кадр",
+      "остальные: не читаются на стене или повторяют выбранные"
+    ],
+    "note": "64 кандидата 42×42. Пачка снята dismiss_review, ссылки кандидатов не открываются. Цвета декали разложены по светлоте в brown[0] и metal[0] с долями пикселей 0,6 / 0,4, альфа 0/255. Сырые файлы `raw/` удалены 28.09.2026: результат — в аккаунте PixelLab по `id` (`get_image`, у тайлсетов — `get_topdown_tileset`); пути `raw/…` в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-28",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "long thin jagged hairline crack running down a plaster wall, single dark 1 pixel line with a few short side branches, isolated on transparent background, flat orthographic front view, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 48,
+      "height": 96,
+      "seed": 5101,
+      "shading": "flat shading",
+      "no_background": true,
+      "view": "side",
+      "outline": "lineless",
+      "detail": "low detail",
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 5101,
+    "id": "a8c4fac1-dde7-4d20-ac8a-ca1ef5377713",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/a8c4fac1-dde7-4d20-ac8a-ca1ef5377713/download"
+    ],
+    "cost": 1,
+    "picked": [
+      "raw/cracks/crack-5101.png → room{tps}{pal}/decal-3.png"
+    ],
+    "rejected": [],
+    "note": "Крупная декаль по образцу frame_7, frame_8, frame_10 пачки декалей. Цвета разложены по светлоте в brown[0] и metal[0] с долями 0,6 / 0,4. Сырые файлы `raw/` удалены 28.09.2026: результат — в аккаунте PixelLab по `id` (`get_image`, у тайлсетов — `get_topdown_tileset`); пути `raw/…` в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-28",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "long thin jagged hairline crack running down a plaster wall, single dark 1 pixel line with a few short side branches, isolated on transparent background, flat orthographic front view, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 48,
+      "height": 96,
+      "seed": 5102,
+      "shading": "flat shading",
+      "no_background": true,
+      "view": "side",
+      "outline": "lineless",
+      "detail": "low detail",
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 5102,
+    "id": "782fe612-a81e-459f-812d-263598d61853",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/782fe612-a81e-459f-812d-263598d61853/download"
+    ],
+    "cost": 1,
+    "picked": [
+      "raw/cracks/crack-5102.png → room{tps}{pal}/decal-4.png"
+    ],
+    "rejected": [],
+    "note": "Крупная декаль по образцу frame_7, frame_8, frame_10 пачки декалей. Цвета разложены по светлоте в brown[0] и metal[0] с долями 0,6 / 0,4. Сырые файлы `raw/` удалены 28.09.2026: результат — в аккаунте PixelLab по `id` (`get_image`, у тайлсетов — `get_topdown_tileset`); пути `raw/…` в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-28",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "large branching crack in a plaster wall, thin dark 1 pixel jagged lines spreading outward from one impact point like a star, isolated on transparent background, flat orthographic front view, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 96,
+      "height": 96,
+      "seed": 5103,
+      "shading": "flat shading",
+      "no_background": true,
+      "view": "side",
+      "outline": "lineless",
+      "detail": "low detail",
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 5103,
+    "id": "07cbf4d9-711f-4c7c-9574-fa2ecf3699a0",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/07cbf4d9-711f-4c7c-9574-fa2ecf3699a0/download"
+    ],
+    "cost": 1,
+    "picked": [
+      "raw/cracks/crack-5103.png → room{tps}{pal}/decal-5.png"
+    ],
+    "rejected": [],
+    "note": "Крупная декаль по образцу frame_7, frame_8, frame_10 пачки декалей. Цвета разложены по светлоте в brown[0] и metal[0] с долями 0,6 / 0,4. Сырые файлы `raw/` удалены 28.09.2026: результат — в аккаунте PixelLab по `id` (`get_image`, у тайлсетов — `get_topdown_tileset`); пути `raw/…` в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-28",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "large branching crack in a plaster wall, thin dark 1 pixel jagged lines spreading outward from one impact point like a star, isolated on transparent background, flat orthographic front view, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 96,
+      "height": 96,
+      "seed": 5104,
+      "shading": "flat shading",
+      "no_background": true,
+      "view": "side",
+      "outline": "lineless",
+      "detail": "low detail",
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 5104,
+    "id": "ac408eb0-987f-458e-90b9-ca787d7cfb1e",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/ac408eb0-987f-458e-90b9-ca787d7cfb1e/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "raw/cracks/crack-5104.png: лучи идут прямыми линиями к углам: похоже на паутину, а не на трещину"
+    ],
+    "note": "28.09.2026 неиспользуемые сырые файлы удалены из raw: результаты хранятся в аккаунте PixelLab, по `id` их отдаёт `get_image` (тайлсеты — `get_topdown_tileset`); ссылка `urls` на картинку pixflux через 1–2 дня отдаёт 404. Сырые файлы `raw/` удалены 28.09.2026: результат — в аккаунте PixelLab по `id` (`get_image`, у тайлсетов — `get_topdown_tileset`); пути `raw/…` в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-28",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "three deep parallel diagonal gouge scratches torn into a wall, long claw marks with dark grooves and grey scraped edges, isolated on transparent background, flat orthographic front view, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 80,
+      "height": 80,
+      "seed": 5105,
+      "shading": "basic shading",
+      "no_background": true,
+      "view": "side",
+      "outline": "lineless",
+      "detail": "low detail",
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 5105,
+    "id": "35c5b121-2ab3-4687-a7c9-204dbbea1a16",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/35c5b121-2ab3-4687-a7c9-204dbbea1a16/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "raw/cracks/crack-5105.png: 28.09.2026 Сергей убрал борозды из набора"
+    ],
+    "note": "Крупная декаль по образцу frame_7, frame_8, frame_10 пачки декалей. Цвета разложены по светлоте в brown[0] и metal[0] с долями 0,6 / 0,4. Сырые файлы `raw/` удалены 28.09.2026: результат — в аккаунте PixelLab по `id` (`get_image`, у тайлсетов — `get_topdown_tileset`); пути `raw/…` в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-28",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "three deep parallel diagonal gouge scratches torn into a wall, long claw marks with dark grooves and grey scraped edges, isolated on transparent background, flat orthographic front view, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 80,
+      "height": 80,
+      "seed": 5106,
+      "shading": "basic shading",
+      "no_background": true,
+      "view": "side",
+      "outline": "lineless",
+      "detail": "low detail",
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 5106,
+    "id": "4813b03d-8d0e-45eb-8178-12cfe796d743",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/4813b03d-8d0e-45eb-8178-12cfe796d743/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "raw/cracks/crack-5106.png: 28.09.2026 Сергей убрал борозды из набора"
+    ],
+    "note": "Крупная декаль по образцу frame_7, frame_8, frame_10 пачки декалей. Цвета разложены по светлоте в brown[0] и metal[0] с долями 0,6 / 0,4. Сырые файлы `raw/` удалены 28.09.2026: результат — в аккаунте PixelLab по `id` (`get_image`, у тайлсетов — `get_topdown_tileset`); пути `raw/…` в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-09-28",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "soft round magenta neon light glow cast on a dark wall, radial falloff from bright center to dark edges, dithered pixel art gradient, isolated light spot, no objects, crisp pixel art, no text, no letters, no logos",
+      "width": 400,
+      "height": 320,
+      "no_background": true,
+      "view": "side",
+      "outline": "lineless",
+      "shading": "basic shading",
+      "detail": "low detail",
+      "seed": 6101,
+      "text_guidance_scale": 8,
+      "color_image": "art/palette/palette.png"
+    },
+    "seed": 6101,
+    "id": "fd741d9e-a0c6-482f-8373-87728bc4ec34",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/fd741d9e-a0c6-482f-8373-87728bc4ec34/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "raw/glow-pixflux-6101.png: непрозрачная мишень из колец с тёмным фоном по всему кадру; при сложении с фоном подкрашивает прямоугольник"
+    ],
+    "note": "Сравнение света по роадмапу: свет строит пайп light. 28.09.2026 по правкам Сергея свет идёт от боков стеклянного куба, как ореол телевизора у стены, и над крышей его нет: glow{light}.json — источник-прямоугольник 144×40 в середине куба, радиусы x 112, вверх 71 (свет гаснет у крыши), вниз 166 (гаснет у плинтуса); после ревью ореол вдвое шире по горизонтали и мягче по вертикали, neon 0–2, непрозрачность 0,35, наложение сложением. Пятно на полу снято: без продолжения на стене оно читалось оторванным от источника. Тень — shadow{light}.json, 192×40, indigo 0, 0,55. Сырые файлы `raw/` удалены 28.09.2026: результат — в аккаунте PixelLab по `id` (`get_image`, у тайлсетов — `get_topdown_tileset`); пути `raw/…` в этой записи — историческая справка."
+  },
+  {
+    "date": "2026-10-04",
+    "tool": "create_image_pixflux",
+    "params": {
+      "no_background": true,
+      "view": "side",
+      "outline": "lineless",
+      "shading": "flat shading",
+      "detail": "low detail",
+      "color_image": "рампа bone, образец 20×4 (swatch-bone)",
+      "description": "single large stylized 1970s wallpaper flower motif with two leaves, flat graphic shape, vintage american motel wallpaper ornament, symmetrical, isolated on transparent background, flat orthographic front view, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 64,
+      "height": 64,
+      "seed": 7101,
+      "text_guidance_scale": 8
+    },
+    "seed": 7101,
+    "id": "4cfc64da-7f31-4b89-817f-e314e8efd508",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/4cfc64da-7f31-4b89-817f-e314e8efd508/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      0
+    ],
+    "note": "Т21, мотив flower для тайлов ночной комнаты: два тона по светлоте, раскладка со сдвигом на полшага (review.local/t19/patterns.ts). Отбор — по ревью раунда 3. Итог: в финал не вошёл — Сергей выбрал ромбическую решётку, нарисованную скриптом."
+  },
+  {
+    "date": "2026-10-04",
+    "tool": "create_image_pixflux",
+    "params": {
+      "no_background": true,
+      "view": "side",
+      "outline": "lineless",
+      "shading": "flat shading",
+      "detail": "low detail",
+      "color_image": "рампа bone, образец 20×4 (swatch-bone)",
+      "description": "ornate victorian flocked damask wallpaper motif, single symmetrical repeat unit, tall ornament with scrolls and leaves, old hotel corridor wallpaper, isolated on transparent background, flat orthographic front view, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 64,
+      "height": 96,
+      "seed": 7102,
+      "text_guidance_scale": 8
+    },
+    "seed": 7102,
+    "id": "0a6ae034-798d-45bd-ab0f-fb47762d9fc1",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/0a6ae034-798d-45bd-ab0f-fb47762d9fc1/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      0
+    ],
+    "note": "Т21, мотив damask для тайлов ночной комнаты: два тона по светлоте, раскладка со сдвигом на полшага (review.local/t19/patterns.ts). Отбор — по ревью раунда 3. Итог: в финал не вошёл — Сергей выбрал ромбическую решётку, нарисованную скриптом."
+  },
+  {
+    "date": "2026-10-04",
+    "tool": "create_image_pixflux",
+    "params": {
+      "no_background": true,
+      "view": "side",
+      "outline": "lineless",
+      "shading": "flat shading",
+      "detail": "low detail",
+      "color_image": "рампа bone, образец 20×4 (swatch-bone)",
+      "description": "mid-century atomic age wallpaper motif, four pointed sparkle starburst with small boomerang shape, 1950s american motel wallpaper ornament, isolated on transparent background, flat orthographic front view, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 48,
+      "height": 48,
+      "seed": 7103,
+      "text_guidance_scale": 8
+    },
+    "seed": 7103,
+    "id": "362e079c-bf73-43da-9e8b-00b42fd21eba",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/362e079c-bf73-43da-9e8b-00b42fd21eba/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      0
+    ],
+    "note": "Т21, мотив atomic для тайлов ночной комнаты: два тона по светлоте, раскладка со сдвигом на полшага (review.local/t19/patterns.ts). Отбор — по ревью раунда 3. Итог: в финал не вошёл — Сергей выбрал ромбическую решётку, нарисованную скриптом."
+  },
+  {
+    "date": "2026-10-04",
+    "tool": "create_image_pixflux",
+    "params": {
+      "no_background": true,
+      "view": "high top-down",
+      "outline": "lineless",
+      "shading": "flat shading",
+      "detail": "low detail",
+      "color_image": "рампа bone, образец 20×4 (swatch-bone)",
+      "description": "ornate old hotel carpet medallion motif, symmetrical floral rosette with scrolls, seen from above and squashed flat in perspective, wider than tall, isolated on transparent background, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 64,
+      "height": 32,
+      "seed": 7104,
+      "text_guidance_scale": 8
+    },
+    "seed": 7104,
+    "id": "e06aed73-7f03-4e93-8ed1-888d28d82e72",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/e06aed73-7f03-4e93-8ed1-888d28d82e72/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      0
+    ],
+    "note": "Т21, мотив medallion для тайлов ночной комнаты: два тона по светлоте, раскладка со сдвигом на полшага (review.local/t19/patterns.ts). Отбор — по ревью раунда 3. Итог: в финал не вошёл — Сергей выбрал ромбическую решётку, нарисованную скриптом."
+  },
+  {
+    "date": "2026-10-04",
+    "tool": "create_image_pixflux",
+    "params": {
+      "no_background": true,
+      "view": "high top-down",
+      "outline": "lineless",
+      "shading": "flat shading",
+      "detail": "low detail",
+      "color_image": "рампа bone, образец 20×4 (swatch-bone)",
+      "description": "single paisley teardrop motif with small inner details, 1970s motel carpet ornament, seen from above and squashed flat in perspective, wider than tall, isolated on transparent background, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 48,
+      "height": 32,
+      "seed": 7105,
+      "text_guidance_scale": 8
+    },
+    "seed": 7105,
+    "id": "ea3face1-0207-46d6-b107-a1c306bcc440",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/ea3face1-0207-46d6-b107-a1c306bcc440/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      0
+    ],
+    "note": "Т21, мотив paisley для тайлов ночной комнаты: два тона по светлоте, раскладка со сдвигом на полшага (review.local/t19/patterns.ts). Отбор — по ревью раунда 3. Итог: в финал не вошёл — Сергей выбрал ромбическую решётку, нарисованную скриптом."
+  },
+  {
+    "date": "2026-10-04",
+    "tool": "create_image_pixflux",
+    "params": {
+      "no_background": true,
+      "view": "side",
+      "outline": "lineless",
+      "shading": "flat shading",
+      "detail": "low detail",
+      "color_image": "рампа bone, образец 20×4 (swatch-bone)",
+      "description": "tiny rosebud sprig with two small leaves, small vintage wallpaper ornament for striped hotel wallpaper, isolated on transparent background, flat orthographic front view, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 32,
+      "height": 32,
+      "seed": 7106,
+      "text_guidance_scale": 8
+    },
+    "seed": 7106,
+    "id": "035c3a1f-df2e-4920-bb5c-f3615e31ca36",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/035c3a1f-df2e-4920-bb5c-f3615e31ca36/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      0
+    ],
+    "note": "Т21, мотив sprig для тайлов ночной комнаты: два тона по светлоте, раскладка со сдвигом на полшага (review.local/t19/patterns.ts). Отбор — по ревью раунда 3. Итог: в финал не вошёл — Сергей выбрал ромбическую решётку, нарисованную скриптом."
+  },
+  {
+    "date": "2026-10-04",
+    "tool": "create_1_direction_object",
+    "params": {
+      "description": "discarded trash item lying on the floor of a dark neglected motel game room, dim light, worn dirty surfaces, muted desaturated colors, soft dim ambient light, side view, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "name": "toybox litter batch 1",
+      "view": "sidescroller",
+      "item_descriptions": "56 описаний: банки стоят, лежат, смятые (0–14), стеклянные бутылки стоят и лежат, разбитая (15–24), бумажные стаканчики (25–29), пачки из-под сигарет (30–34), окурки (35–46), розетка с вилкой и кабелем вниз (47–55); слоты 56–63 — по description",
+      "style_images": "3 спрайта игрушек brown-teddy, duck, tumbler: обрезка полей, downscaleImage до 30 px по длинной стороне, кадр 32×32 у нижнего края"
+    },
+    "seed": null,
+    "id": "33d21304-5a96-4518-816d-86f303a29e12",
+    "urls": [
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_0.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_1.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_2.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_3.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_4.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_5.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_6.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_7.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_8.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_9.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_10.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_11.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_12.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_13.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_14.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_15.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_16.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_17.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_18.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_19.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_20.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_21.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_22.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_23.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_24.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_25.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_26.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_27.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_28.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_29.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_30.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_31.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_32.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_33.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_34.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_35.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_36.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_37.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_38.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_39.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_40.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_41.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_42.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_43.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_44.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_45.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_46.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_47.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_48.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_49.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_50.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_51.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_52.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_53.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_54.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_55.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_56.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_57.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_58.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_59.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_60.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_61.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_62.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d1273fe-16a3-41fc-98cb-e102a2233a63/33d21304-5a96-4518-816d-86f303a29e12/rotations/frame_63.png"
+    ],
+    "cost": 20,
+    "picked": [
+      0,
+      1,
+      3,
+      5,
+      8,
+      9,
+      11,
+      13,
+      14,
+      15,
+      16,
+      19,
+      20,
+      22,
+      24,
+      25,
+      26,
+      27,
+      28,
+      30,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      44,
+      45,
+      47,
+      48,
+      49,
+      52,
+      53,
+      54,
+      56
+    ],
+    "rejected": [
+      2,
+      4,
+      6,
+      7,
+      10,
+      12,
+      17,
+      18,
+      21,
+      23,
+      29,
+      31,
+      43,
+      46,
+      50,
+      51,
+      55,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63
+    ],
+    "note": "Отобранные кадры переведены в объекты аккаунта с тегом toybox-litter: 0: 339c47da-4c7f-4482-bd8f-3af9910a520c, 1: d0d130f1-5f48-4372-9fbc-fa5e0cb49f78, 3: 2927758f-9aac-478b-a53a-c3e6297fc2bb, 5: 0c7bc3c7-597c-4a14-8f8c-c3253938f932, 8: 38ba7847-6ea3-4718-b350-d5f40cc790f8, 9: b47983ba-64fe-4ff0-a0e9-8de61c243aef, 11: 28f311f9-28e1-426c-8bad-960da4a887f1, 13: 76912df2-1381-43c9-857e-2d9e1ed961a1, 14: 70d46489-3328-483c-b888-528a9d7a46ac, 15: 2cbd6a1c-bd68-4800-ab23-0756df5a61c1, 16: e88cd83f-61e6-4b60-a34a-8e354ef1936f, 19: 81ccb78f-e715-4c67-a8f7-1881abaac276, 20: c36227a0-81db-4838-ba16-3690ca1099c3, 22: 9861e8e3-aa56-49c1-adad-09dadfb846aa, 24: 14c9caed-64a7-4283-b3d9-e25cce1947ec, 25: 4553e515-522b-46b8-bd12-20441cc5695c, 26: 224bf4ff-2fdc-4a84-82da-9b566b952dd9, 27: fce344e5-c449-4521-83d3-499b77e6a58d, 28: 9e014823-7157-409f-b705-e7c760e1ef7e, 30: dcdfcdb7-e17b-4e7e-ab09-5e25d2aeb42f, 32: 0b177933-144c-4c8e-9212-9ee9d15f858c, 33: c86899f8-a5ac-4183-aa70-8411cf5f1f3f, 34: b4fbe986-404a-4bc2-bb2c-28c1e9f405b8, 35: 658aa874-2946-4746-8c6c-341f2d701851, 36: d699da02-5ec1-4bf7-a174-d9e987e2d7fa, 37: 9618aa1b-d43d-4741-a6eb-1bb8b91a76f5, 38: d255f23b-5663-475a-bbe2-eb335dcdc356, 39: bfbf58ca-21d6-4bbc-9b37-6bf95619d50a, 40: 071ad60f-77e8-4350-8e01-5263753a37ae, 41: 23468754-a76a-4d4d-bff2-ae3229786ae6, 42: ced948c1-8576-4e23-b83d-052402ea731c, 44: 10dbcd81-c8c1-41ef-88ef-3d76a5fa5ee4, 45: 8018fae2-63f9-45a9-aa86-7dd91b7a20fb, 47: 852079b9-c9d0-4d9d-8553-a597d46c8d40, 48: 7ad4654a-d6d9-4c6a-8837-da4f8465e732, 49: f7c11238-ca46-4abb-a030-3a169badc2a9, 52: ae9cfc29-9cf1-431c-811c-bf541e724f68, 53: 96b91b10-d79f-4972-824e-8e83e4f29202, 54: 0d941fd3-babe-4183-85c1-dc50c4a2fdf2, 56: 5888f6ad-b749-4863-9b01-1d4156164a2a. 31 — пачка с узнаваемой расцветкой бренда, 57–63 — вне состава. Кадры атласа: приведение к палитре, обрезка полей, downscaleImage до размера по длинной стороне, softenDarkest indigo[0] → metal[0]; кадр ← кандидат и размер: can-red ← 0, 24 px, bottle-lying ← 25, 38 px, bottle ← 19, 40 px, can-crushed-red ← 11, 22 px, pack ← 33, 22 px, bottle-green ← 20, 40 px, can-crushed-green ← 13, 22 px, outlet ← 49, 28 px, cup ← 26, 24 px. Окурки (butt-a, butt-b, butt-c, butts-pile, butts-two) нарисованы скриптом без генерации: толщина 2 px, части от кончика — metal[1]/metal[0], бумага bone[3]/bone[1], фильтр warm[2]/warm[1], пепел metal[2] и bone[0]; окурки кандидатов вдвое толще банки по пропорции. 05.10.2026 мусор убран из сцены: кадры мусора удалены, розетка (outlet) перенесена в атлас room вместе с этой записью."
+  }
+]

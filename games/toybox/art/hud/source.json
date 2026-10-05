@@ -1,0 +1,462 @@
+[
+  {
+    "date": "2026-10-01",
+    "tool": "script",
+    "params": {
+      "generator": "эскизы органов управления: рендер лучом в плоскости панели. Кадр — панель без наклона: x = u − 0.28267·h, y = 0.43482·v − 0.8915·h (u — горизонталь панели, v — вдоль склона к игроку, h — высота по нормали, px арта). Свет (−0.45, −0.25, 1), ступень рампы — 2 + (N·L − N₀·L)·k",
+      "drop": "кольцо Ø24 (отверстие Ø17, высота 1, скруглённая кромка) metal, купол Ø16: стенка 1.2 + шапка 2.4 neon, блик neon[4]; нажатая — купол ниже на 1 px; зазор indigo[0]; нижняя кромка силуэта metal[0]",
+      "joystick": "кольцо как у Drop, резиновый пыльник — конус r 8.6 → 2.6 на высоте 4, две складки metal[0] спереди; шар Ø12 red в плоскости экрана; стержень — тайл 2×8 metal[3]/metal[1]",
+      "reset": "16×16 в плоскости фасада: кольцо r 8–6.5 metal, зазор indigo[0], колпачок r 5.5 blue, круговая стрелка 7×7 bone[4]; нажатая — колпачок на ступень темнее, стрелка на 1 px ниже"
+    },
+    "seed": null,
+    "id": null,
+    "urls": [],
+    "cost": 0,
+    "picked": [],
+    "rejected": [],
+    "note": "Эскизы и холсты 32×32 для pixflux — в raw/. Кадр Drop и основания 24×14, центр основания в (12, 9); в атласе обрезан до 24×11, центр в (12, 6). Папка raw/ удалена 01.10.2026: выходы pixflux — в аккаунте PixelLab по id, эскизы и палитры предметов были только локальными; пути raw/… — историческая справка."
+  },
+  {
+    "date": "2026-10-01",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "round arcade push button in a metal bezel ring on a control panel, magenta plastic dome, low top-down view, worn chrome bezel, light scratches, grime, dim light, muted desaturated colors, purple and magenta neon accents, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 32,
+      "height": 32,
+      "no_background": true,
+      "view": "low top-down",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "medium detail",
+      "seed": 9101,
+      "init_image": "raw/init-drop.png",
+      "init_image_strength": 400,
+      "color_image": "raw/palette-drop.png"
+    },
+    "seed": 9101,
+    "id": "5a88f1e9-b571-4382-9f9a-d5ec8b652fac",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/5a88f1e9-b571-4382-9f9a-d5ec8b652fac/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [],
+    "note": "Почти повторяет эскиз, добавлены потёртости. На ревью."
+  },
+  {
+    "date": "2026-10-01",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "round arcade push button in a metal bezel ring on a control panel, magenta plastic dome, low top-down view, worn chrome bezel, light scratches, grime, dim light, muted desaturated colors, purple and magenta neon accents, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 32,
+      "height": 32,
+      "no_background": true,
+      "view": "low top-down",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "medium detail",
+      "seed": 9102,
+      "init_image": "raw/init-drop.png",
+      "init_image_strength": 400,
+      "color_image": "raw/palette-drop.png"
+    },
+    "seed": 9102,
+    "id": "7397ecfa-5dbb-4754-ae77-c0c301285b25",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/7397ecfa-5dbb-4754-ae77-c0c301285b25/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [],
+    "note": "Почти повторяет эскиз, добавлены потёртости. На ревью."
+  },
+  {
+    "date": "2026-10-01",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "round arcade push button in a metal bezel ring on a control panel, magenta plastic dome, low top-down view, worn chrome bezel, light scratches, grime, dim light, muted desaturated colors, purple and magenta neon accents, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 32,
+      "height": 32,
+      "no_background": true,
+      "view": "low top-down",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "medium detail",
+      "seed": 9103,
+      "init_image": "raw/init-drop.png",
+      "init_image_strength": 400,
+      "color_image": "raw/palette-drop.png"
+    },
+    "seed": 9103,
+    "id": "ccfe8017-c847-4bc6-8c41-15a3370712b7",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/ccfe8017-c847-4bc6-8c41-15a3370712b7/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [],
+    "note": "Почти повторяет эскиз, добавлены потёртости. На ревью."
+  },
+  {
+    "date": "2026-10-01",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "arcade joystick base, black rubber dust boot with folds in a round metal bezel ring on a control panel, no stick, no ball, low top-down view, worn, light scratches, grime, dim light, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 32,
+      "height": 32,
+      "no_background": true,
+      "view": "low top-down",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "medium detail",
+      "seed": 9201,
+      "init_image": "raw/init-joystick-base.png",
+      "init_image_strength": 400,
+      "color_image": "raw/palette-joystick.png"
+    },
+    "seed": 9201,
+    "id": "0a26ebc2-2011-43a8-84f2-74c6700e2b7c",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/0a26ebc2-2011-43a8-84f2-74c6700e2b7c/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [],
+    "note": "Почти повторяет эскиз, добавлены потёртости. На ревью."
+  },
+  {
+    "date": "2026-10-01",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "arcade joystick base, black rubber dust boot with folds in a round metal bezel ring on a control panel, no stick, no ball, low top-down view, worn, light scratches, grime, dim light, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 32,
+      "height": 32,
+      "no_background": true,
+      "view": "low top-down",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "medium detail",
+      "seed": 9202,
+      "init_image": "raw/init-joystick-base.png",
+      "init_image_strength": 400,
+      "color_image": "raw/palette-joystick.png"
+    },
+    "seed": 9202,
+    "id": "527f40f8-8655-4e61-b452-1b5fa18eab3e",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/527f40f8-8655-4e61-b452-1b5fa18eab3e/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [],
+    "note": "Почти повторяет эскиз, добавлены потёртости. На ревью."
+  },
+  {
+    "date": "2026-10-01",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "arcade joystick base, black rubber dust boot with folds in a round metal bezel ring on a control panel, no stick, no ball, low top-down view, worn, light scratches, grime, dim light, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 32,
+      "height": 32,
+      "no_background": true,
+      "view": "low top-down",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "medium detail",
+      "seed": 9203,
+      "init_image": "raw/init-joystick-base.png",
+      "init_image_strength": 400,
+      "color_image": "raw/palette-joystick.png"
+    },
+    "seed": 9203,
+    "id": "aecb8753-158e-49b3-9ec5-9fe8775e78f4",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/aecb8753-158e-49b3-9ec5-9fe8775e78f4/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [],
+    "note": "Почти повторяет эскиз, добавлены потёртости. На ревью."
+  },
+  {
+    "date": "2026-10-01",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "small round arcade button with a circular refresh arrow icon, steel blue plastic cap in a metal bezel ring, front view, worn, light scratches, grime, dim light, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 32,
+      "height": 32,
+      "no_background": true,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "medium detail",
+      "seed": 9301,
+      "init_image": "raw/init-reset.png",
+      "init_image_strength": 400,
+      "color_image": "raw/palette-reset.png"
+    },
+    "seed": 9301,
+    "id": "075297e2-c921-4bcd-8e6e-dce1f9d1e1c8",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/075297e2-c921-4bcd-8e6e-dce1f9d1e1c8/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [],
+    "note": "Модель убрала металлическое кольцо и наконечник стрелки. На ревью."
+  },
+  {
+    "date": "2026-10-01",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "small round arcade button with a circular refresh arrow icon, steel blue plastic cap in a metal bezel ring, front view, worn, light scratches, grime, dim light, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 32,
+      "height": 32,
+      "no_background": true,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "medium detail",
+      "seed": 9302,
+      "init_image": "raw/init-reset.png",
+      "init_image_strength": 400,
+      "color_image": "raw/palette-reset.png"
+    },
+    "seed": 9302,
+    "id": "771ea19e-4ae3-4983-a2c0-7352931e167b",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/771ea19e-4ae3-4983-a2c0-7352931e167b/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [],
+    "note": "Модель убрала металлическое кольцо и наконечник стрелки. На ревью."
+  },
+  {
+    "date": "2026-10-01",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "small round arcade button with a circular refresh arrow icon, steel blue plastic cap in a metal bezel ring, front view, worn, light scratches, grime, dim light, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 32,
+      "height": 32,
+      "no_background": true,
+      "view": "side",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "medium detail",
+      "seed": 9303,
+      "init_image": "raw/init-reset.png",
+      "init_image_strength": 400,
+      "color_image": "raw/palette-reset.png"
+    },
+    "seed": 9303,
+    "id": "7a0dcd17-47a0-4a75-aa1f-7a8983ae9b75",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/7a0dcd17-47a0-4a75-aa1f-7a8983ae9b75/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [],
+    "note": "Модель убрала металлическое кольцо и наконечник стрелки. На ревью."
+  },
+  {
+    "date": "2026-10-01",
+    "tool": "script",
+    "params": {
+      "generator": "кадры атласа hud{tps}{pal}: обрезка выбранных вариантов, нажатые кадры и стрелки тура",
+      "pressed": "у варианта pixflux пиксели купола сдвигаются на 1 px вниз в пределах купола и отверстия, освободившаяся строка — indigo[0]",
+      "tourJoystick": "4 стрелки (влево/вправо 3×6, вперёд/назад 6×3) в кадре панели без наклона вокруг центра шара (−5, −15) от центра основания: шар на высоте JOYSTICK_STICK_LENGTH 16 px по нормали к панели; отступ 8 px, во втором кадре 9; заливка bone[4] или neon[3], контур indigo[0]; кадр 30×32, опорная точка (18, 29)",
+      "tourDrop": "стрелка вниз 6×6 в плоскости экрана, контур indigo[0], кадр 8×10, опорная точка (4, 10); во втором кадре ниже на 2 px",
+      "disabled": "{dim=1&2} пайпа palette"
+    },
+    "seed": null,
+    "id": null,
+    "urls": [],
+    "cost": 0,
+    "picked": [],
+    "rejected": [],
+    "note": "Скрипт в репозитории не хранится."
+  },
+  {
+    "date": "2026-10-01",
+    "tool": "script",
+    "params": {
+      "generator": "ревью 1: эскизы в экранной проекции — пиксель экрана переводится в кадр панели обращением матрицы (1, 1/16; −6/22, 1), дальше тот же луч; холст 32×20, центр основания в (16, 11)",
+      "drop": "купол рампы red, как шар джойстика",
+      "reset": "16×16: кольцо metal без тёмной обводки (свет сверху слева, тень снизу справа), колпачок warm[2] или metal[1] с узким бликом и тенью по краю, круговая стрелка 8×9 толщиной 2 px цветом warm[0] или metal[3]; нажатая — без блика, стрелка ниже на 1 px",
+      "plate": "болты плашки сброса (art/cabinet/…/marquee-front{compose}/plate.png): metal[4] → metal[1]"
+    },
+    "seed": null,
+    "id": null,
+    "urls": [],
+    "cost": 0,
+    "picked": [
+      "reset warm"
+    ],
+    "rejected": [
+      "reset metal: сливается с плашкой"
+    ],
+    "note": "Причина: под матрицей панели пиксель арта — косой параллелограмм, его края рендер рисует лесенкой в пиксель рендера, и контур подложек выглядел рваным."
+  },
+  {
+    "date": "2026-10-01",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "round arcade push button in a metal bezel ring on a control panel, red plastic dome, low top-down view, worn chrome bezel, light scratches, grime, dim light, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 32,
+      "height": 32,
+      "no_background": true,
+      "view": "low top-down",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "medium detail",
+      "init_image_strength": 400,
+      "seed": 9102,
+      "init_image": "raw/init-drop-s.png",
+      "color_image": "raw/palette-drop-red.png"
+    },
+    "seed": 9102,
+    "id": "c4338151-df2a-4fee-b33e-f02233f163e9",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/c4338151-df2a-4fee-b33e-f02233f163e9/download"
+    ],
+    "cost": 1,
+    "picked": [
+      "drop"
+    ],
+    "rejected": [],
+    "note": "Пиксели, перешедшие в другую рампу или за силуэт эскиза, возвращены к эскизу."
+  },
+  {
+    "date": "2026-10-01",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "arcade joystick base, black rubber dust boot with folds in a round metal bezel ring on a control panel, no stick, no ball, low top-down view, worn, light scratches, grime, dim light, muted desaturated colors, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "width": 32,
+      "height": 32,
+      "no_background": true,
+      "view": "low top-down",
+      "outline": "selective outline",
+      "shading": "medium shading",
+      "detail": "medium detail",
+      "init_image_strength": 400,
+      "seed": 9203,
+      "init_image": "raw/init-joystick-base-s.png",
+      "color_image": "raw/palette-joystick.png"
+    },
+    "seed": 9203,
+    "id": "79b09f8a-a084-4aa5-aa0c-32458f589154",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/79b09f8a-a084-4aa5-aa0c-32458f589154/download"
+    ],
+    "cost": 1,
+    "picked": [
+      "joystick-base"
+    ],
+    "rejected": [],
+    "note": "То же правило рамп."
+  },
+  {
+    "date": "2026-10-01",
+    "tool": "script",
+    "params": {
+      "generator": "ревью 1: стрелки тура одного рисунка 10×9 (древко 4×4, наконечник 10→2), контур indigo[0], заливка bone[4]; во втором кадре стрелка сдвинута на 2 px по своему направлению",
+      "tourJoystick": "4 стрелки вокруг шара (−1, −15) от центра основания на 2 px от шара вдоль осей панели: влево-вправо с подъёмом 1:16, вперёд-назад со сдвигом 6:22; кадр 40×39, опорная точка (21, 34)",
+      "tourDrop": "кадр 12×13, опорная точка (6, 13)",
+      "disabled": "кадров нет: погашенный орган управления умножается на DISABLED_TINT 0xdbdbdb — полступени рампы (ступень темнит пиксели органов управления в среднем до 0.716 яркости). Шахматка из пикселей на ступень темнее отклонена: видимый растр"
+    },
+    "seed": null,
+    "id": null,
+    "urls": [],
+    "cost": 0,
+    "picked": [],
+    "rejected": [],
+    "note": "Скрипт в репозитории не хранится."
+  },
+  {
+    "date": "2026-10-01",
+    "tool": "script",
+    "params": {
+      "generator": "ревью 2",
+      "tourJoystick": "стрелки — симметричный крест вокруг шара (−1, −15) на 2 px от него: влево x −18, вправо x 7, обе y −20; вверх y −32, вниз y −7, обе x −6; кадр 40×40, опорная точка (21, 35)",
+      "reset": "колпачок warm[1] вместо warm[2], блик warm[2], тень и стрелка warm[0]"
+    },
+    "seed": null,
+    "id": null,
+    "urls": [],
+    "cost": 0,
+    "picked": [],
+    "rejected": [
+      "крест вдоль осей панели: стрелки по отдельности ровные, вместе крест кривой"
+    ],
+    "note": "Сергей: кнопка сброса не должна бросаться в глаза."
+  },
+  {
+    "date": "2026-10-02",
+    "tool": "create_image_pixflux",
+    "params": {
+      "description": "comic speech bubble, rounded rectangle balloon with thin dark outline and light off-white fill, small triangular pointer tail beside it, flat 2D game UI, crisp pixel art, clean pixel clusters, no text, no letters, no logos",
+      "init_image": "эскиз скриптом 32×32: облако 24×24 (контур metal[0], заливка bone[4]), хвост 8×8, фон indigo[0]",
+      "init_image_strength": 150,
+      "color_image": "рампы bone и metal, indigo[0]",
+      "width": 32,
+      "height": 32,
+      "no_background": false,
+      "outline": "single color outline",
+      "shading": "flat shading",
+      "detail": "low detail",
+      "view": "side",
+      "seed": 1401
+    },
+    "seed": 1401,
+    "id": "24f282e0-422c-4c72-91b3-5ce040677785",
+    "urls": [
+      "https://api.pixellab.ai/mcp/images/24f282e0-422c-4c72-91b3-5ce040677785/download"
+    ],
+    "cost": 1,
+    "picked": [],
+    "rejected": [
+      "bubble"
+    ],
+    "note": "Контур облака слился с фоном и пропал на трёх сторонах, снизу появилась серая тень, справа — лишний тёмный пиксель, хвост искажён. Нижняя кромка неоднородна для 9-slice."
+  },
+  {
+    "date": "2026-10-02",
+    "tool": "script",
+    "params": {
+      "generator": "Т14: облако диалога скриптом в цветах палитры",
+      "bubble": "24×24, бордеры 9-slice по 8 px; контур 1 px metal[0], заливка bone[4], скругление углов радиусом ~6 px",
+      "tail": "8×8, остриё вниз-влево; верхняя строка — заливка, она перекрывает контур облака; вниз-вправо и вверх — отражением спрайта"
+    },
+    "seed": null,
+    "id": null,
+    "urls": [],
+    "cost": 0,
+    "picked": [
+      "bubble",
+      "bubble-tail"
+    ],
+    "rejected": [],
+    "note": "Сергей выбрал эскиз скриптом: у pixflux силой 150 контур слился с фоном, снизу тень, хвост искажён."
+  },
+  {
+    "date": "2026-10-02",
+    "tool": "script",
+    "params": {
+      "generator": "Т13, ревью 1: кнопка сброса в цвет текста табло",
+      "reset": "колпачок warm[1] → red[3], блик warm[2] → red[4], тень и стрелка warm[0] → red[2]; кадры reset и reset-pressed, металлическое кольцо без изменений"
+    },
+    "seed": null,
+    "id": null,
+    "urls": [],
+    "cost": 0,
+    "picked": [
+      "reset",
+      "reset-pressed"
+    ],
+    "rejected": [
+      "плашка кнопки в red[3]: Сергей оставил её металлической"
+    ],
+    "note": "Сергей: заливка кнопки оранжевая вместо янтарной."
+  }
+]

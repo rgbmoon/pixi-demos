@@ -18,7 +18,8 @@
     "coverage": "vitest run --coverage",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
-    "assets": "tsx assetpack.config.ts"
+    "assets": "tsx assetpack.config.ts",
+    "toys": "tsx art/toys/render.ts"
   },
   "dependencies": {
     "@pixi-demos/core": "workspace:*",

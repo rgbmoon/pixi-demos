@@ -4,8 +4,16 @@ import type { PlaneVector, ScreenRect } from '#src/types'
 const EPSILON = 1e-9
 
 /** Ориентация тройки точек: положительная означает поворот против часовой стрелки. */
-const getTurn = (origin: PlaneVector, first: PlaneVector, second: PlaneVector): number =>
+export const getTurn = (origin: PlaneVector, first: PlaneVector, second: PlaneVector): number =>
   (first.x - origin.x) * (second.y - origin.y) - (first.y - origin.y) * (second.x - origin.x)
+
+/** Ориентированная площадь многоугольника: положительна при обходе против часовой стрелки. */
+export const getSignedArea = (polygon: readonly PlaneVector[]): number =>
+  polygon.reduce((sum, point, index) => {
+    const next = polygon[(index + 1) % polygon.length]
+
+    return sum + point.x * next.y - next.x * point.y
+  }, 0) / 2
 
 /** Выпуклая оболочка набора точек, обходом Эндрю. */
 export const getConvexHull = (points: readonly PlaneVector[]): PlaneVector[] => {

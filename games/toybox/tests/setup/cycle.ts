@@ -6,6 +6,7 @@ import type { ClawRig } from '#src/claw/claw-rig'
 import { HEAP_SNAPSHOT_VERSION } from '#src/constants'
 import type { PrizeOutputController } from '#src/controllers/box/prize-output'
 import type { GameEvents } from '#src/events'
+import type { FloorPile } from '#src/heap/floor-pile'
 import type { Heap } from '#src/heap/heap'
 import type { ToyboxStore } from '#src/stores/toybox'
 import { TOYBOX_TOKENS } from '#src/tokens'
@@ -14,7 +15,7 @@ import {
   type HeapSnapshot,
   type HeapSnapshotBody,
   PhaseName,
-  type ToyAppearance,
+  type Prize,
   type WorldPoint,
 } from '#src/types'
 import { bindFsm } from '@pixi-demos/core/bindings'
@@ -38,6 +39,8 @@ const MAX_WAIT_MS = 60_000
 export type CycleOptions = {
   /** Куча в сохранённом снимке: сцена руками или насыпанная куча. */
   bodies?: HeapSnapshotBody[]
+  /** Игрушки на полу в сохранённом снимке. */
+  floor?: HeapSnapshotBody[]
   /** Счёт в сохранённом снимке. */
   collected?: number
   /** Сырое значение хранилища вместо снимка из `bodies` и `collected`: так проверяется несовместимый снимок. */
@@ -52,6 +55,7 @@ export type CycleFrame = {
   readonly cart: WorldPoint
   readonly grip: WorldPoint
   readonly holding: boolean
+  readonly closed: boolean
 }
 
 /** Потеря игрушки на ходу: фаза и точки клешни в момент, когда она разжалась. */
@@ -66,6 +70,7 @@ export type Cycle = {
   fsm: Fsm
   store: ToyboxStore
   heap: Heap
+  floorPile: FloorPile
   rig: ClawRig
   emitter: GameEmitter<GameEvents>
   /** Значения `Math.random` по очереди; пустая очередь отдаёт `random` из опций. */
@@ -76,7 +81,7 @@ export type Cycle = {
   frames: CycleFrame[]
   drops: CycleDrop[]
   /** Показанные призы и счёт в момент показа. */
-  prizes: Array<ToyAppearance & { readonly collected: number }>
+  prizes: Array<Prize & { readonly collected: number }>
   /** Порядок презентации приза: методы окна выдачи и событие `prize:taken`. */
   presentation: string[]
   /** Записи в хранилище по порядку. */
@@ -98,9 +103,9 @@ export type Cycle = {
 const flush = (): Promise<void> => new Promise((resolve) => setImmediate(resolve))
 
 /**
- * Собирает цикл без единого PIXI-объекта на сцене: настоящие автомат, фазы, стор, модели кучи и клешни и
- * игровой тикер, который тест крутит кадрами. Кадр повторяет шаг `CubeController`: ход клешни, затем шаг кучи
- * за точкой захвата, и только потом ожидания фаз. Дублёры стоят на границах: хранилище в памяти и окно выдачи,
+ * Собирает цикл без единого PIXI-объекта на сцене: настоящие автомат, фазы, стор, модели кучи, пола и клешни и
+ * игровой тикер, который тест крутит кадрами. Кадр повторяет шаги `CubeController` и `FloorPileController`: ход
+ * клешни, шаг кучи за точкой захвата, шаг пола, и только потом ожидания фаз. Дублёры стоят на границах: хранилище в памяти и окно выдачи,
  * которое только записывает, что ему показали. Автомат не запускается — это делает `start`.
  */
 export const createCycle = (options: CycleOptions = {}): Cycle => {
@@ -121,7 +126,12 @@ export const createCycle = (options: CycleOptions = {}): Cycle => {
   const notices: Notice[] = []
   const stored = Object.hasOwn(options, 'stored')
     ? options.stored
-    : { version: HEAP_SNAPSHOT_VERSION, collected: options.collected ?? 0, bodies: options.bodies ?? [] }
+    : {
+        version: HEAP_SNAPSHOT_VERSION,
+        collected: options.collected ?? 0,
+        bodies: options.bodies ?? [],
+        floor: options.floor ?? [],
+      }
   const storage = {
     read: async () => structuredClone(stored),
     write: async (snapshot: HeapSnapshot) => {
@@ -145,15 +155,18 @@ export const createCycle = (options: CycleOptions = {}): Cycle => {
   const store = container.get(TOYBOX_TOKENS.ToyboxStore)
 
   container.bind(TOYBOX_TOKENS.PrizeOutputController).toConstantValue({
-    show: (appearance: ToyAppearance) => {
-      prizes.push({ ...appearance, collected: store.collected })
+    show: (prize: Prize) => {
+      prizes.push({ ...prize, collected: store.collected })
       presentation.push('show')
     },
     open: async () => {
       presentation.push('open')
     },
-    take: async () => {
-      presentation.push('take')
+    speak: async (speech: string) => {
+      presentation.push(`speak:${speech}`)
+    },
+    eject: () => {
+      presentation.push('eject')
     },
     close: async () => {
       presentation.push('close')
@@ -165,6 +178,7 @@ export const createCycle = (options: CycleOptions = {}): Cycle => {
 
   const fsm = container.get(CORE_TOKENS.Fsm)
   const heap = container.get(TOYBOX_TOKENS.Heap)
+  const floorPile = container.get(TOYBOX_TOKENS.FloorPile)
   const rig = container.get(TOYBOX_TOKENS.ClawRig)
   const emitter = container.get(TOYBOX_TOKENS.GameEmitter)
   const fallback = options.random ?? (() => 0.5)
@@ -181,7 +195,14 @@ export const createCycle = (options: CycleOptions = {}): Cycle => {
   ticker.add((current) => {
     rig.advance(current.deltaMS, store.direction)
     heap.advance(current.deltaMS, rig.getGripPoint())
-    frames.push({ phase: store.phase, cart: rig.getCartPoint(), grip: rig.getGripPoint(), holding: heap.isHolding })
+    floorPile.advance(current.deltaMS)
+    frames.push({
+      phase: store.phase,
+      cart: rig.getCartPoint(),
+      grip: rig.getGripPoint(),
+      holding: heap.isHolding,
+      closed: rig.isClosed,
+    })
   })
 
   let time = 0
@@ -206,6 +227,7 @@ export const createCycle = (options: CycleOptions = {}): Cycle => {
     fsm,
     store,
     heap,
+    floorPile,
     rig,
     emitter,
     rolls,

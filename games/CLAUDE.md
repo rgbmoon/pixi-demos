@@ -15,7 +15,7 @@
 ```
 types/constants/tokens/assets/sounds/utils/skeletons/reels/toys  ←  лист
 api          →  лист
-heap         →  лист;   покадровая модель кучи toybox, физический движок доступен только heap/heap-world.ts
+heap         →  лист;   покадровые модели куч toybox — в кубе и на полу, физический движок доступен только heap/heap-world.ts
 claw         →  лист;   покадровая модель клешни toybox; модели heap и claw друг друга не импортируют
 stores       →  api, лист
 phases       →  heap, claw, stores, api, лист;   controllers — только type

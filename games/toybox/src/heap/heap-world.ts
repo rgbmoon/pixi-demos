@@ -1,7 +1,7 @@
 import { Box, Polygon, World } from 'planck'
 import type { Body, Fixture } from 'planck'
 
-import { CUBE_HEIGHT, GRID_SIZE, TRAY_ORIGIN, TRAY_SIZE, TRAY_WALL_HEIGHT } from '#src/constants'
+import { CUBE_HEIGHT } from '#src/constants'
 import type { SectionPoint, ToyId, ToyPose } from '#src/types'
 import { getSectionArea } from '#src/utils/shapes'
 
@@ -14,67 +14,40 @@ import {
   TOY_LINEAR_DAMPING,
   TOY_RESTITUTION,
   TRAY_EXIT_Z,
-  TRAY_WALL_THICKNESS,
   WAKE_MARGIN,
-  WALL_THICKNESS,
 } from './constants'
-import type { CollisionFilter, SurfaceHit } from './types'
+import type { CollisionFilter, SurfaceHit, WorldStatics } from './types'
 
 /**
- * Физический мир кучи на planck: плоскость `(y, z)` с креном, статика куба и лотка, тела игрушек по id.
- * Срезы глубины разводят тела битами фильтра. Единственный модуль игры, который может импортировать движок planck, потребители физики идут через него.
+ * Физический мир кучи на planck: плоскость `(y, z)` с креном, статика из конфига, тела игрушек по id.
+ * Срезы глубины разводят тела битами фильтра. У тела две фикстуры: полное сечение сталкивается со статикой и задаёт
+ * массу, сечение касания — с другими игрушками. Единственный модуль игры, который может импортировать движок planck, потребители физики идут через него.
  */
 export class HeapWorld {
   private readonly world = new World({ gravity: { x: 0, y: -HEAP_GRAVITY } })
   private readonly bodies = new Map<ToyId, Body>()
+  private readonly spanEdge: number | undefined
 
-  constructor() {
+  constructor({ boxes, spanEdge }: WorldStatics) {
     const ground = this.world.createBody({ type: 'static' })
-    const allSlabs = (1 << GRID_SIZE) - 1
-    const traySlabs = ((1 << TRAY_SIZE) - 1) << TRAY_ORIGIN.x
-    const wallHeight = CUBE_HEIGHT - TRAY_EXIT_Z + WALL_THICKNESS
-    const wallCenter = (CUBE_HEIGHT + TRAY_EXIT_Z - WALL_THICKNESS) / 2
-    const trayWallHeight = TRAY_WALL_HEIGHT - TRAY_EXIT_Z + WALL_THICKNESS
-    const addStatic = (width: number, height: number, y: number, z: number, mask: number) =>
+
+    this.spanEdge = spanEdge
+
+    for (const { y, z, width, height, mask } of boxes) {
       ground.createFixture({
         shape: new Box(width / 2, height / 2, { x: y, y: z }),
         friction: TOY_FRICTION,
         filterCategoryBits: COLLISION_STATIC,
         filterMaskBits: mask,
       })
-
-    // Пол перед шахтой лотка — во всех срезах, над шахтой — только в срезах за лотком
-    addStatic(TRAY_ORIGIN.y, WALL_THICKNESS, TRAY_ORIGIN.y / 2, -WALL_THICKNESS / 2, allSlabs)
-    addStatic(
-      GRID_SIZE - TRAY_ORIGIN.y,
-      WALL_THICKNESS,
-      (GRID_SIZE + TRAY_ORIGIN.y) / 2,
-      -WALL_THICKNESS / 2,
-      allSlabs & ~traySlabs
-    )
-    addStatic(WALL_THICKNESS, wallHeight, -WALL_THICKNESS / 2, wallCenter, allSlabs)
-    addStatic(WALL_THICKNESS, wallHeight, GRID_SIZE + WALL_THICKNESS / 2, wallCenter, allSlabs)
-    addStatic(
-      TRAY_WALL_THICKNESS,
-      trayWallHeight,
-      TRAY_ORIGIN.y,
-      (TRAY_WALL_HEIGHT + TRAY_EXIT_Z - WALL_THICKNESS) / 2,
-      traySlabs
-    )
-    // Дальняя стенка лотка стоит на границе срезов: в неё упирается только игрушка, занимающая оба
-    addStatic(
-      GRID_SIZE - TRAY_ORIGIN.y,
-      TRAY_WALL_HEIGHT,
-      (GRID_SIZE + TRAY_ORIGIN.y) / 2,
-      TRAY_WALL_HEIGHT / 2,
-      COLLISION_FAR_SPAN
-    )
+    }
   }
 
   /** Добавляет тело игрушки в срезы от `slab` на глубину `depth`; масса тела равна весу игрушки. */
   add(
     id: ToyId,
     section: readonly SectionPoint[],
+    contact: readonly SectionPoint[],
     weight: number,
     slab: number,
     depth: number,
@@ -90,17 +63,22 @@ export class HeapWorld {
       awake,
       userData: id,
     })
-    const { category, mask } = HeapWorld.getFilter(slab, depth)
 
+    body.createFixture({
+      shape: new Polygon(contact.map((point) => ({ x: point.y, y: point.z }))),
+      density: 0,
+      friction: TOY_FRICTION,
+      restitution: TOY_RESTITUTION,
+    })
+    // Id несёт только полное сечение: лучи и запросы видят игрушку по нему
     body.createFixture({
       shape: new Polygon(section.map((point) => ({ x: point.y, y: point.z }))),
       density: weight / getSectionArea(section),
       friction: TOY_FRICTION,
       restitution: TOY_RESTITUTION,
       userData: id,
-      filterCategoryBits: category,
-      filterMaskBits: mask,
     })
+    this.setFilters(body, slab, depth)
     this.bodies.set(id, body)
   }
 
@@ -129,26 +107,22 @@ export class HeapWorld {
    */
   carry(id: ToyId): void {
     const body = this.getBody(id)
-    const fixture = body.getFixtureList()
+    const { lowerBound, upperBound } = HeapWorld.getHull(body).getAABB(0)
 
-    if (fixture) {
-      const { lowerBound, upperBound } = fixture.getAABB(0)
+    this.world.queryAABB(
+      {
+        lowerBound: { x: lowerBound.x - WAKE_MARGIN, y: lowerBound.y - WAKE_MARGIN },
+        upperBound: { x: upperBound.x + WAKE_MARGIN, y: upperBound.y + WAKE_MARGIN },
+      },
+      (other) => {
+        if (other.getBody() !== body && other.getBody().isDynamic()) other.getBody().setAwake(true)
 
-      this.world.queryAABB(
-        {
-          lowerBound: { x: lowerBound.x - WAKE_MARGIN, y: lowerBound.y - WAKE_MARGIN },
-          upperBound: { x: upperBound.x + WAKE_MARGIN, y: upperBound.y + WAKE_MARGIN },
-        },
-        (other) => {
-          if (other.getBody() !== body && other.getBody().isDynamic()) other.getBody().setAwake(true)
-
-          return true
-        }
-      )
-    }
+        return true
+      }
+    )
 
     body.setType('kinematic')
-    this.setMask(body, 0)
+    HeapWorld.disableCollisions(body)
     body.setLinearVelocity({ x: 0, y: 0 })
     body.setAngularVelocity(0)
   }
@@ -161,12 +135,10 @@ export class HeapWorld {
   /** Отпускает тело в срезы от `slab` на глубину `depth`: оно снова падает и сталкивается. */
   drop(id: ToyId, slab: number, depth: number, { y, z, angle }: ToyPose): void {
     const body = this.getBody(id)
-    const fixture = body.getFixtureList()
-    const { category, mask } = HeapWorld.getFilter(slab, depth)
 
     body.setTransform({ x: y, y: z }, angle)
     body.setType('dynamic')
-    fixture?.setFilterData({ groupIndex: 0, categoryBits: category, maskBits: mask })
+    this.setFilters(body, slab, depth)
     body.setAwake(true)
   }
 
@@ -175,15 +147,19 @@ export class HeapWorld {
     const body = this.getBody(id)
 
     body.setType('dynamic')
-    this.setMask(body, 0)
+    HeapWorld.disableCollisions(body)
     body.setLinearVelocity({ x: 0, y: 0 })
     body.setAngularVelocity(0)
     body.setAwake(true)
   }
 
-  /** Толкает тело импульсом `impulse`, приложенным в точке `point` плоскости сечения. */
-  push(id: ToyId, impulse: SectionPoint, point: SectionPoint): void {
-    this.getBody(id).applyLinearImpulse({ x: impulse.y, y: impulse.z }, { x: point.y, y: point.z }, true)
+  /** Толкает тело в точке `point` плоскости сечения так, что оно получает скорость `velocity`. */
+  push(id: ToyId, velocity: SectionPoint, point: SectionPoint): void {
+    const body = this.getBody(id)
+    // Импульс — скорость, умноженная на массу тела; масса равна весу игрушки
+    const mass = body.getMass()
+
+    body.applyLinearImpulse({ x: velocity.y * mass, y: velocity.z * mass }, { x: point.y, y: point.z }, true)
   }
 
   /** Шаг симуляции на `ms` миллисекунд. */
@@ -217,11 +193,11 @@ export class HeapWorld {
    * или статику, с которыми столкнулась бы игрушка этих срезов. Без попадания верх равен полу.
    */
   castDown(y: number, slab: number, depth: number): SurfaceHit {
-    const filter = HeapWorld.getFilter(slab, depth)
+    const { category } = this.getFilters(slab, depth).hull
     let hit: SurfaceHit = { id: undefined, z: 0 }
 
     this.world.rayCast({ x: y, y: CUBE_HEIGHT }, { x: y, y: TRAY_EXIT_Z }, (fixture, point, _normal, fraction) => {
-      if (!HeapWorld.collides(fixture, filter)) return -1
+      if (!HeapWorld.blocks(fixture, category)) return -1
 
       hit = { id: HeapWorld.getToyId(fixture), z: point.y }
 
@@ -233,7 +209,7 @@ export class HeapWorld {
 
   /** Игрушки срезов от `slab` на глубину `depth`, чьи рамки пересекают рамку сечения. */
   queryToys(section: readonly SectionPoint[], slab: number, depth: number): ToyId[] {
-    const filter = HeapWorld.getFilter(slab, depth)
+    const { category } = this.getFilters(slab, depth).hull
     const found = new Set<ToyId>()
     const ys = section.map(({ y }) => y)
     const zs = section.map(({ z }) => z)
@@ -246,7 +222,7 @@ export class HeapWorld {
       (fixture) => {
         const id = HeapWorld.getToyId(fixture)
 
-        if (id !== undefined && HeapWorld.collides(fixture, filter)) found.add(id)
+        if (id !== undefined && HeapWorld.blocks(fixture, category)) found.add(id)
 
         return true
       }
@@ -263,24 +239,58 @@ export class HeapWorld {
     return body
   }
 
-  private setMask(body: Body, mask: number): void {
-    const fixture = body.getFixtureList()
+  private setFilters(body: Body, slab: number, depth: number): void {
+    const { hull, contact } = this.getFilters(slab, depth)
 
-    fixture?.setFilterData({ groupIndex: 0, categoryBits: fixture.getFilterCategoryBits(), maskBits: mask })
+    for (let fixture = body.getFixtureList(); fixture; fixture = fixture.getNext()) {
+      const { category, mask } = HeapWorld.getToyId(fixture) === undefined ? contact : hull
+
+      fixture.setFilterData({ groupIndex: 0, categoryBits: category, maskBits: mask })
+    }
   }
 
-  /** Фильтр игрушки: биты её срезов, у игрушки в срезах 1 и 2 — ещё бит дальней стенки лотка. */
-  private static getFilter(slab: number, depth: number): CollisionFilter {
+  /**
+   * Фильтры фикстур игрушки. Полное сечение несёт биты срезов, у игрушки по обе стороны от `spanEdge` — ещё бит стенки
+   * на этой границе, и сталкивается только со статикой. Сечение касания сталкивается только с игрушками общих срезов.
+   */
+  private getFilters(slab: number, depth: number): { hull: CollisionFilter; contact: CollisionFilter } {
     const slabs = ((1 << depth) - 1) << slab
-    const farEdge = TRAY_ORIGIN.x + TRAY_SIZE
-    const spansFarWall = slab < farEdge && slab + depth > farEdge
+    const { spanEdge } = this
+    const spansEdge = spanEdge !== undefined && slab < spanEdge && slab + depth > spanEdge
 
-    return { category: slabs | (spansFarWall ? COLLISION_FAR_SPAN : 0), mask: slabs | COLLISION_STATIC }
+    return {
+      hull: { category: slabs | (spansEdge ? COLLISION_FAR_SPAN : 0), mask: COLLISION_STATIC },
+      contact: { category: slabs, mask: slabs },
+    }
   }
 
-  /** Столкнулась бы фикстура с игрушкой такого фильтра: то же правило битов, что у движка. */
-  private static collides(fixture: Fixture, { category, mask }: CollisionFilter): boolean {
-    return (fixture.getFilterMaskBits() & category) !== 0 && (fixture.getFilterCategoryBits() & mask) !== 0
+  private static disableCollisions(body: Body): void {
+    for (let fixture = body.getFixtureList(); fixture; fixture = fixture.getNext()) {
+      fixture.setFilterData({ groupIndex: 0, categoryBits: fixture.getFilterCategoryBits(), maskBits: 0 })
+    }
+  }
+
+  /**
+   * Преграда для полного сечения игрушки с битами `category`: статика, в которую оно упрётся, или полное сечение
+   * игрушки общих срезов. Игрушка в клешне и падающая в шахту преградой не служат.
+   */
+  private static blocks(fixture: Fixture, category: number): boolean {
+    if (fixture.getBody().isStatic()) return (fixture.getFilterMaskBits() & category) !== 0
+
+    return (
+      HeapWorld.getToyId(fixture) !== undefined &&
+      fixture.getFilterMaskBits() !== 0 &&
+      (fixture.getFilterCategoryBits() & category) !== 0
+    )
+  }
+
+  /** Фикстура полного сечения тела. */
+  private static getHull(body: Body): Fixture {
+    for (let fixture = body.getFixtureList(); fixture; fixture = fixture.getNext()) {
+      if (HeapWorld.getToyId(fixture) !== undefined) return fixture
+    }
+
+    throw new Error('Toy body without a hull fixture')
   }
 
   private static getToyId(fixture: Fixture): ToyId | undefined {

@@ -7,6 +7,12 @@ export const ROTSPRITE_SCALE = 8
 /** Число знаков после запятой, до которого округляются углы кадра поворота: убирает ошибку плавающей точки. */
 export const ROTSPRITE_PRECISION = 9
 
+/** Доля площади пикселя под непрозрачными пикселями исходника, с которой пиксель уменьшенного растра непрозрачен. */
+export const DOWNSCALE_COVERAGE = 0.45
+
+/** Радиус, в котором смягчение самого тёмного цвета ищет соседей из рамп палитры, px. */
+export const SOFTEN_RADIUS = 2
+
 /** Матрица Bayer 4×4 построчно: порядок порогов упорядоченного дизеринга. */
 export const BAYER_4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5] as const
 
@@ -19,9 +25,6 @@ export const TILE_PREVIEW_REPEAT = 3
 /** Во сколько раз увеличиваются превью атласов и тайлов. */
 export const PREVIEW_SCALE = 4
 
-/** Набор символов шрифта по умолчанию: латиница, цифры и пунктуация табло и диалога. */
-export const DEFAULT_FONT_CHARS = ` ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,!?:;-+/'"()%#&`
-
 /** Ширина страницы шрифта в пикселях. */
 export const FONT_PAGE_WIDTH = 256
 
@@ -30,12 +33,6 @@ export const FONT_PAGE_PADDING = 2
 
 /** Расстояние между иконкой шрифта и следующим символом. */
 export const FONT_ICON_SPACING = 1
-
-/** Шаг разбиения кривых контура глифа на отрезки. */
-export const GLYPH_CURVE_STEPS = 16
-
-/** Допуск, в пределах которого край контура глифа считается лежащим на границе пикселя. */
-export const GLYPH_EDGE_EPSILON = 1e-6
 
 /** Имя файла с параметрами шрифта в папке `{bmfont}`. */
 export const FONT_SPEC_FILE = 'font.json'
@@ -56,11 +53,15 @@ export const FACE_PARTS = {
 /** Суффикс сайдкара кадра. */
 export const SIDECAR_SUFFIX = '.meta.json'
 
-/** Опции встроенного упаковщика: без поворотов кадров и уменьшенных копий. */
+/**
+ * Опции встроенного упаковщика: без поворотов кадров, обрезки полей и уменьшенных копий. Обрезку делает `sharp.trim`
+ * с медианным фильтром: он стирает линии толщиной в пиксель и обрезает по ним кадр.
+ */
 export const TEXTURE_PACKER_OPTIONS = {
   texturePacker: {
     padding: 2,
     allowRotation: false,
+    allowTrim: false,
     nameStyle: 'relative',
     removeFileExtension: false,
     autodetectAnimations: true,

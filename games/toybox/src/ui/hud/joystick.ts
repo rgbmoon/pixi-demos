@@ -1,31 +1,39 @@
-import { Circle, Container, type FederatedPointerEvent, Graphics } from 'pixi.js'
-
 import {
-  CELL_SIZE,
+  Assets,
+  Circle,
+  Container,
+  type FederatedPointerEvent,
+  Matrix,
+  Sprite,
+  type Texture,
+  TilingSprite,
+} from 'pixi.js'
+
+import { HUD_FRAMES } from '#src/assets'
+import {
+  ART_PIXEL,
   CONTROL_PANEL_PLANE,
-  DISABLED_ALPHA,
-  JOYSTICK_FILL_ALPHA,
+  DISABLED_TINT,
+  JOYSTICK_BOOT_HEIGHT,
   JOYSTICK_HIT_RADIUS,
-  JOYSTICK_KNOB_RADIUS,
   JOYSTICK_RADIUS,
-  JOYSTICK_STEM_THICKNESS,
-  LINE_THICKNESS,
+  JOYSTICK_STICK_LENGTH,
+  JOYSTICK_TILT,
 } from '#src/constants'
 import type { JoystickOptions, ScreenPoint } from '#src/types'
-import {
-  getProjectedPlaneCircle,
-  projectPlaneOffset,
-  screenToPlaneOffset,
-  worldToScreen,
-} from '#src/utils/projection'
-import { PALETTE } from '@pixi-demos/core/palette'
+import { projectPlaneNormal, projectPlaneOffset, screenToPlaneOffset, snapToArtPixel } from '#src/utils/projection'
 
-/** Джойстик, основание и ход ручки которого лежат в мировой плоскости панели управления. */
+/**
+ * Джойстик на панели управления: наклон панели заложен в рисунок основания, шар на стержне отклоняется в плоскости
+ * панели. Стержень растёт из пыльника по нормали к панели.
+ */
 export class Joystick extends Container {
-  private readonly stem = new Graphics()
-  private readonly head = new Graphics()
-  /** Центр головки в нейтральном положении: над центром основания на высоте её радиуса. */
-  private readonly rest = worldToScreen({ x: 0, y: 0, z: JOYSTICK_KNOB_RADIUS / CELL_SIZE })
+  private readonly base = new Sprite(Assets.get<Texture>(HUD_FRAMES.joystickBase))
+  private readonly stick = new TilingSprite({ texture: Assets.get<Texture>(HUD_FRAMES.joystickStick) })
+  private readonly ball = new Sprite(Assets.get<Texture>(HUD_FRAMES.joystickBall))
+  /** Центр шара в нейтральном положении и верх пыльника. */
+  private readonly rest = projectPlaneNormal(CONTROL_PANEL_PLANE, JOYSTICK_STICK_LENGTH * ART_PIXEL)
+  private readonly bootTop = projectPlaneNormal(CONTROL_PANEL_PLANE, JOYSTICK_BOOT_HEIGHT * ART_PIXEL)
   private readonly onMove: (vector: ScreenPoint) => void
   private isDragging = false
 
@@ -33,16 +41,11 @@ export class Joystick extends Container {
     super()
 
     this.onMove = options.onMove
-
-    const base = new Graphics()
-      .poly(getProjectedPlaneCircle(CONTROL_PANEL_PLANE, JOYSTICK_RADIUS))
-      .fill({ color: PALETTE.primary, alpha: JOYSTICK_FILL_ALPHA })
-      .stroke({ width: LINE_THICKNESS, color: PALETTE.primary })
-
-    this.head.poly(getProjectedPlaneCircle(CONTROL_PANEL_PLANE, JOYSTICK_KNOB_RADIUS)).fill(PALETTE.primary)
+    this.base.scale.set(ART_PIXEL)
+    this.ball.scale.set(ART_PIXEL)
     this.tilt({ x: 0, y: 0 })
 
-    this.addChild(base, this.stem, this.head)
+    this.addChild(this.base, this.stick, this.ball)
 
     this.eventMode = 'static'
     this.cursor = 'pointer'
@@ -61,7 +64,7 @@ export class Joystick extends Container {
 
     this.eventMode = enabled ? 'static' : 'none'
     this.cursor = enabled ? 'pointer' : 'default'
-    this.alpha = enabled ? 1 : DISABLED_ALPHA
+    for (const part of [this.base, this.stick, this.ball]) part.tint = enabled ? 0xffffff : DISABLED_TINT
   }
 
   /** Возвращает ручку в центр и объявляет нулевое отклонение. */
@@ -86,7 +89,10 @@ export class Joystick extends Container {
     this.release()
   }
 
-  /** Ограничивает жест окружностью в плоскости панели и возвращает его экранное направление. */
+  /**
+   * Ограничивает жест окружностью в плоскости панели и возвращает его экранное направление. Шар отклоняется на ту же
+   * долю своего хода.
+   */
   private apply(event: FederatedPointerEvent): void {
     const local = event.getLocalPosition(this)
     const plane = screenToPlaneOffset(CONTROL_PANEL_PLANE, local)
@@ -100,7 +106,7 @@ export class Joystick extends Container {
     }
 
     const strength = Math.min(distance, JOYSTICK_RADIUS) / JOYSTICK_RADIUS
-    const scale = (strength * JOYSTICK_RADIUS) / distance
+    const scale = (strength * JOYSTICK_TILT * ART_PIXEL) / distance
     const offset = projectPlaneOffset(CONTROL_PANEL_PLANE, plane.x * scale, plane.y * scale)
     const screenDistance = Math.hypot(offset.x, offset.y)
 
@@ -108,15 +114,26 @@ export class Joystick extends Container {
     this.onMove({ x: (offset.x / screenDistance) * strength, y: (offset.y / screenDistance) * strength })
   }
 
-  /**
-   * Сдвигает головку на экранное смещение `offset` и перерисовывает стойку от центра основания до головки.
-   * Головка поднята над основанием, поэтому стойка нулевой длины не бывает.
-   */
+  /** Ставит шар со смещением `offset` от нейтрального положения и тянет к нему стержень от верха пыльника. */
   private tilt(offset: ScreenPoint): void {
-    const x = this.rest.x + offset.x
-    const y = this.rest.y + offset.y
+    const ball = snapToArtPixel({ x: this.rest.x + offset.x, y: this.rest.y + offset.y })
+    const height = this.bootTop.y - ball.y
+    const rows = Math.round(height / ART_PIXEL)
+    const { width } = this.stick.texture
 
-    this.head.position.set(x, y)
-    this.stem.clear().moveTo(0, 0).lineTo(x, y).stroke({ width: JOYSTICK_STEM_THICKNESS, color: PALETTE.primary })
+    this.ball.position.set(ball.x, ball.y)
+    this.stick.setSize(width, rows)
+    this.stick.tilePosition.set(0, rows)
+    // Сдвиг строк ведёт стержень от центра шара к верху пыльника
+    this.stick.setFromMatrix(
+      new Matrix(
+        ART_PIXEL,
+        0,
+        ((this.bootTop.x - ball.x) / height) * ART_PIXEL,
+        ART_PIXEL,
+        ball.x - (width / 2) * ART_PIXEL,
+        ball.y
+      )
+    )
   }
 }

@@ -11,10 +11,11 @@ import { lightPipe } from '#src/pipes/light'
 import { outlinePipe } from '#src/pipes/outline'
 import { palettePipe } from '#src/pipes/palette'
 import { previewPipe } from '#src/pipes/preview'
-import { projectionPipe } from '#src/pipes/projection'
 import { rotspritePipe } from '#src/pipes/rotsprite'
 import { stagePipe } from '#src/pipes/stage'
+import { stripPipe } from '#src/pipes/strip'
 import { tileCheckPipe } from '#src/pipes/tile-check'
+import { trimPipe } from '#src/pipes/trim'
 import type { AssetBuildOptions } from '#src/types'
 
 /**
@@ -53,7 +54,6 @@ export class AssetBuild {
       palette,
       targetPalette,
       faces = {},
-      projections = {},
       outlineColor,
       previewDir,
     } = this.options
@@ -67,8 +67,9 @@ export class AssetBuild {
       pipes: [
         composePipe(faces),
         palettePipe({ palette, target: targetPalette }),
-        projectionPipe(projections),
+        stripPipe(),
         rotspritePipe(),
+        trimPipe(),
         outlinePipe(outlineColor),
         lightPipe(targetPalette ?? palette),
         tileCheckPipe(previewDir),

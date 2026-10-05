@@ -59,15 +59,6 @@ export type FrameMeta = {
   borders?: FrameBorders
 }
 
-/**
- * Наклон растра грани в проекции игры: сдвиг столбца по вертикали на пиксель ширины и строки по горизонтали
- * на пиксель высоты.
- */
-export type ShearSlopes = {
-  readonly column: number
-  readonly row: number
-}
-
 export type FaceCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
 
 /** Декаль грани: имя детали, угол грани и отступ от него внутрь грани в пикселях. */
@@ -85,26 +76,49 @@ export type FaceLayout = {
   readonly decals?: readonly DecalPlacement[]
 }
 
-/** Параметры пятна света из файла `<имя>{light}.json`; ступени рампы — от тусклой к яркой. */
+/** Размер прямоугольника в пикселях. */
+export type RasterSize = {
+  readonly width: number
+  readonly height: number
+}
+
+/** Радиусы угасания света по горизонтали и отдельно вверх и вниз. */
+export type LightSideRadius = {
+  readonly x: number
+  readonly top: number
+  readonly bottom: number
+}
+
+/** Радиусы угасания света: общий, по осям или по сторонам. */
+export type LightRadius = number | RasterPoint | LightSideRadius
+
+/**
+ * Параметры пятна света из файла `<имя>{light}.json`; ступени рампы — от тусклой к яркой. Источник `source` —
+ * прямоугольник с центром в `center`: свет угасает от его края, без источника — от центра.
+ */
 export type LightSpot = {
   readonly width: number
   readonly height: number
   readonly center?: RasterPoint
-  readonly radius: number | RasterPoint
+  readonly source?: RasterSize
+  readonly radius: LightRadius
   readonly ramp: string
   readonly steps: readonly [number, number]
   readonly alpha?: number
 }
 
-/** Параметры шрифта из файла `font.json` папки `{bmfont}`. */
-export type FontSpec = {
-  /** Размер кегля в пикселях: столько пикселей занимает em шрифта. */
-  readonly size?: number
-  readonly chars?: string
-  /** Цвет глифов TTF; по умолчанию белый, под `tint`. */
+/** Цвета шрифта: общие в `font.json` или одного стиля из `styles`. */
+export type FontStyle = {
+  /** Цвет, в который перекрашиваются PNG-глифы; без него глифы остаются в своих цветах. */
   readonly color?: string
   /** Цвет контура-свечения толщиной 1 px вокруг глифов. */
   readonly outline?: string
+}
+
+/** Параметры шрифта из файла `font.json` папки `{bmfont}`. */
+export type FontSpec = FontStyle & {
+  /** Стили одного набора глифов: каждый собирается в свой BMFont `<папка>-<стиль>`, поля стиля заменяют общие. */
+  readonly styles?: Readonly<Record<string, FontStyle>>
 }
 
 /** Глиф шрифта: растр и метрики в пикселях относительно начала строки. */
@@ -131,9 +145,13 @@ export type BitmapFontPage = {
   readonly positions: ReadonlyMap<number, RasterPoint>
 }
 
-/** Кадр в JSON атласа: поля, которые читает и дописывает `frame-meta`. */
+/** Кадр в JSON атласа: поля встроенного упаковщика и поля, которые дописывает `frame-meta`. */
 export type AtlasFrame = {
-  sourceSize: { w: number; h: number }
+  frame: { x: number; y: number; w: number; h: number }
+  rotated?: boolean
+  trimmed?: boolean
+  spriteSourceSize?: { x: number; y: number; w: number; h: number }
+  sourceSize?: { w: number; h: number }
   anchor?: RasterPoint
   borders?: FrameBorders
 }
@@ -161,8 +179,6 @@ export type AssetBuildOptions = {
   readonly targetPalette?: Palette
   /** Раскладки граней по имени папки `{compose}`. */
   readonly faces?: Readonly<Record<string, FaceLayout>>
-  /** Наклоны граней по значению тега `{face=…}`. */
-  readonly projections?: Readonly<Record<string, ShearSlopes>>
   /** Цвет контура подсветки. */
   readonly outlineColor: string
   /** Каталог превью атласов и тайлов для ревью; без него превью не пишутся. */

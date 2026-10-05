@@ -1,40 +1,36 @@
-import { Container, Graphics } from 'pixi.js'
+import { Assets, Container, Matrix, type Texture, TilingSprite } from 'pixi.js'
 
-import { LINE_THICKNESS } from '#src/constants'
-import type { ScreenPoint, WorldPoint } from '#src/types'
-import { snapToArtPixel, worldToScreen } from '#src/utils/projection'
-import { PALETTE } from '@pixi-demos/core/palette'
+import { CLAW_FRAMES } from '#src/assets'
+import { ART_PIXEL } from '#src/constants'
+import type { ScreenPoint } from '#src/types'
 
-/** Трос между мировыми точками каретки и клешни. */
+/**
+ * Трос: вертикальный тайл, наклон при качании задаёт матрица сдвига строк. Рисунок привязан к нижнему концу и
+ * движется вместе с клешнёй.
+ */
 export class Rope extends Container {
-  private readonly line = new Graphics()
-  /** Концы нарисованного отрезка на экране. */
-  private top?: ScreenPoint
-  private bottom?: ScreenPoint
+  private readonly cable = new TilingSprite({ texture: Assets.get<Texture>(CLAW_FRAMES.rope) })
 
   constructor() {
     super()
 
-    this.addChild(this.line)
+    this.addChild(this.cable)
   }
 
-  /** Перетягивает трос между точками мира; отрезок, совпадающий с нарисованным, не перерисовывается. */
-  setSpan(from: WorldPoint, to: WorldPoint): void {
-    const top = snapToArtPixel(worldToScreen(from))
-    const bottom = snapToArtPixel(worldToScreen(to))
+  /**
+   * Тянет трос из точки `top` на `rows` пикселей арта вниз; `slope` — сдвиг по горизонтали на единицу высоты.
+   * Средний столбец троса проходит через `top`.
+   */
+  setSpan(top: ScreenPoint, rows: number, slope: number): void {
+    this.cable.visible = rows > 0
+    if (!this.cable.visible) return
 
-    if (Rope.isSame(this.top, top) && Rope.isSame(this.bottom, bottom)) return
+    const { width } = this.cable.texture
 
-    this.top = top
-    this.bottom = bottom
-    this.line
-      .clear()
-      .moveTo(top.x, top.y)
-      .lineTo(bottom.x, bottom.y)
-      .stroke({ width: LINE_THICKNESS, color: PALETTE.cyan })
-  }
-
-  private static isSame(drawn: ScreenPoint | undefined, next: ScreenPoint): boolean {
-    return drawn?.x === next.x && drawn.y === next.y
+    this.cable.setSize(width, rows)
+    this.cable.tilePosition.set(0, rows)
+    this.cable.setFromMatrix(
+      new Matrix(ART_PIXEL, 0, slope * ART_PIXEL, ART_PIXEL, top.x - (width / 2) * ART_PIXEL, top.y)
+    )
   }
 }

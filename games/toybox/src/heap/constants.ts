@@ -1,4 +1,4 @@
-import { PALETTE } from '@pixi-demos/core/palette'
+import { GRID_SIZE } from '#src/constants'
 
 // Физика кучи
 /** Ускорение свободного падения, клеток в секунду за секунду: падение с высоты 4 занимает ≈0,36 с. */
@@ -15,7 +15,7 @@ export const WALL_THICKNESS = 0.5
 /** Толщина стенки лотка в физике, в клетках. */
 export const TRAY_WALL_THICKNESS = 0.06
 /** Конечная высота игрушки в шахте: полностью перекрыта корпусом с учётом контура и обводки. */
-export const TRAY_EXIT_Z = -1.5
+export const TRAY_EXIT_Z = -2
 
 /**
  * Биты фильтра столкновений. Биты 0–7 — срезы глубины: игрушки сталкиваются, если занимают общий срез.
@@ -38,8 +38,8 @@ export const HEAP_SETTLE_TIMEOUT_MS = 8000
 /**
  * Профиль купола при наполнении
  */
-export const DOME_CENTER_HEIGHT = 4.2
-export const DOME_EDGE_HEIGHT = 1.6
+export const DOME_CENTER_HEIGHT = 3.4
+export const DOME_EDGE_HEIGHT = 2.8
 export const DOME_PEAK_JITTER = 1.2
 export const DOME_FALLOFF_MIN = 0.7
 export const DOME_FALLOFF_MAX = 1.6
@@ -56,12 +56,6 @@ export const FILL_BATCH_STEPS = 20
 export const FILL_SPAWN_GAP = 0.1
 /** Наибольший крен новой игрушки, радианы в обе стороны. */
 export const FILL_MAX_TILT = 0.3
-/** Корневой цвет игрушек: от него каждая уходит случайным сдвигом. */
-export const TOY_ROOT_COLOR = PALETTE.orange
-/** Разброс тона игрушки вокруг корневого цвета, градусы в обе стороны. */
-export const TOY_HUE_SPREAD = 45
-/** Разброс светлоты игрушки вокруг корневого цвета, доли в обе стороны. */
-export const TOY_LIGHTNESS_SPREAD = 0.14
 
 // Захват и отпускание
 /** Доля успешных захватов свободной игрушки весом в одну клетку. */
@@ -83,3 +77,31 @@ export const WAKE_MARGIN = 0.1
 export const PRESS_SPEED = 10
 /** Шаг подъёма отпущенной игрушки, пересекающей кучу: она поднимается до свободного места. */
 export const RELEASE_RAISE_STEP = 0.05
+
+// Пол перед автоматом
+/** Глубина полосы пола с выигранными игрушками перед фасадом тумбы, в срезах: как у куба. */
+export const FLOOR_PILE_DEPTH = GRID_SIZE
+/** Ширина полосы пола в ячейках: вдвое шире куба, середина полосы — под серединой куба. */
+export const FLOOR_PILE_WIDTH = GRID_SIZE * 2
+
+// Выпадение приза на пол
+/** Скорость, с которой приз выбрасывается из окна выдачи вниз, клеток в секунду: он расталкивает игрушки на полу. */
+export const FLOOR_DROP_SPEED = 8
+/** Боковая скорость приза при выпадении, клеток в секунду: сторону задаёт бросок, приз не падает под окно. */
+export const FLOOR_DROP_SIDE_MIN_SPEED = 6
+export const FLOOR_DROP_SIDE_MAX_SPEED = 9
+/** Наибольшее смещение точки толчка от центра приза, доля его полуширины: толчок мимо центра закручивает игрушку. */
+export const FLOOR_DROP_SPIN_OFFSET = 0.2
+/** За столько выпавший приз долетает от фасада тумбы до своих срезов пола. */
+export const FLOOR_EJECT_MS = 300
+/**
+ * Толчок пола при открытии шторки, клеток в секунду: игрушка, лежащая на других игрушках под окном выдачи, получает
+ * скорость вбок от оси окна у своего верха и опрокидывается.
+ */
+export const FLOOR_NUDGE_SPEED = 4
+/** Игрушка, чей низ ближе этого к полу, в клетках, лежит на полу: толчок её не двигает. */
+export const FLOOR_NUDGE_REST_TOLERANCE = 0.05
+/** Полуширина полосы под окном выдачи, в клетках: игрушки дальше от оси окна толчок не получают. */
+export const FLOOR_NUDGE_REACH = 3.5
+/** Игрушка ближе этого к оси окна, в клетках, считается стоящей на оси: сторону толчка ей задаёт бросок. */
+export const FLOOR_NUDGE_AXIS_TOLERANCE = 0.05

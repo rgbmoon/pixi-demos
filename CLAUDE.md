@@ -18,7 +18,7 @@
 | [packages/CLAUDE.md](packages/CLAUDE.md)         | общие пакеты: core, net, engine, рил-машина; правила PIXI и канваса  |
 | [games/CLAUDE.md](games/CLAUDE.md)               | устройство игры: уровни, взаимодействие, сторы, фазы, сцена, ассеты  |
 | [games/slot/CLAUDE.md](games/slot/CLAUDE.md)     | слот: механики, цикл раунда, события, звук                           |
-| [games/toybox/CLAUDE.md](games/toybox/CLAUDE.md) | toybox: куча на planck, цикл клешни, проекция, порядок наложения     |
+| [games/toybox/CLAUDE.md](games/toybox/CLAUDE.md) | toybox: куча, клешня, проекция, порядок наложения, арт и PixelLab    |
 | [web/CLAUDE.md](web/CLAUDE.md)                   | приложение: компоненты, страницы, мост React ↔ PIXI, моки            |
 
 Перед работой в каталоге прочитай его CLAUDE.md и CLAUDE.md родительских каталогов. Claude Code
@@ -121,7 +121,7 @@ games/
                        внутри разбиты по зонам сцены: hud/ и reels/
   toybox/              автомат с игрушками: bindings, claw/ heap/ stores/ phases/ scenes/ + листовые
                        tokens, types, constants, events, toys, utils; ui/ и controllers/ внутри разбиты
-                       по зонам сцены: box/ и hud/, вне зон — controllers/persistence.ts и keyboard.ts
+                       по зонам сцены: box/, hud/ и room/, вне зон — controllers/persistence.ts и keyboard.ts
 tools/
   asset-pipes/         сборка ассетов в Node: пайпы AssetPack и класс сборки AssetBuild
 web/                   приложение
@@ -149,7 +149,7 @@ web/                   приложение
   reels               →  ничего;                        независимая библиотека, запрещены pixi.js и react
   reels-pixi-adapter  →  reels;                         pixi.js — peerDependency
   games/*             →  core, net, engine, reels, reels-pixi-adapter;  никогда друг в друга;
-                         конфиг сборки ассетов (assetpack.config.ts) — ещё asset-pipes
+                         конфиг сборки ассетов (assetpack.config.ts) и скрипты art/ — ещё asset-pipes
   tools/asset-pipes   →  ничего;                        Node, запрещены pixi.js и react
   web: components     →  core, net;                     PIXI только динамическим import()
   web: pages/*        →  всё; из игры — только её контракт

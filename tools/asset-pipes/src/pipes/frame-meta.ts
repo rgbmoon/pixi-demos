@@ -11,6 +11,7 @@ import { findNonUniformBands } from '#src/utils/nine-slice'
 /**
  * Дописывает в JSON атласа `anchor` и `borders` кадров из сайдкаров: встроенный упаковщик их не пишет, а PIXI
  * читает как `defaultAnchor` и `defaultBorders` текстуры. Кромки и центр кадра 9-slice проверяет на однородность.
+ * JSON пишется без отступов, у необрезанного и неповёрнутого кадра остаются `frame` и дописанные поля.
  */
 export const frameMetaPipe = (): AssetPipe => ({
   name: 'frame-meta',
@@ -26,7 +27,9 @@ export const frameMetaPipe = (): AssetPipe => ({
       const framePath = path.join(folder, name)
       const meta = await readSidecar(framePath)
 
-      if (meta?.pivot) frame.anchor = { x: meta.pivot.x / frame.sourceSize.w, y: meta.pivot.y / frame.sourceSize.h }
+      const { w, h } = frame.sourceSize ?? frame.frame
+
+      if (meta?.pivot) frame.anchor = { x: meta.pivot.x / w, y: meta.pivot.y / h }
 
       if (meta?.borders) {
         frame.borders = meta.borders
@@ -37,9 +40,17 @@ export const frameMetaPipe = (): AssetPipe => ({
           BuildReporter.warn(`[frame-meta] ${name}: 9-slice ${bands.join(', ')} change along the stretch direction`)
         }
       }
+
+      // Размер исходника необрезанного кадра PIXI берёт из `frame`
+      if (!frame.trimmed && !frame.rotated) {
+        delete frame.trimmed
+        delete frame.rotated
+        delete frame.spriteSourceSize
+        delete frame.sourceSize
+      }
     }
 
-    asset.buffer = Buffer.from(`${JSON.stringify(atlas, null, 2)}\n`)
+    asset.buffer = Buffer.from(`${JSON.stringify(atlas)}\n`)
 
     return [asset]
   },

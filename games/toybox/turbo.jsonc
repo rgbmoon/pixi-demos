@@ -2,6 +2,25 @@
   "$schema": "https://turborepo.dev/schema.json",
   "extends": ["//"],
   "tasks": {
+    // Тесты в jsdom читают метрики шрифтов из собранных BMFont игры
+    "test": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/CLAUDE.md",
+        "$TURBO_ROOT$/vitest.shared.ts",
+        "$TURBO_ROOT$/.env",
+        "$TURBO_ROOT$/web/public/games/toybox/assets/fonts/**",
+      ],
+    },
+    "coverage": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/CLAUDE.md",
+        "$TURBO_ROOT$/vitest.shared.ts",
+        "$TURBO_ROOT$/.env",
+        "$TURBO_ROOT$/web/public/games/toybox/assets/fonts/**",
+      ],
+    },
     "e2e": {
       "inputs": [
         "e2e/**",

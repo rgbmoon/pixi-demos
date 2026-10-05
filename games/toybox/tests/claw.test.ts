@@ -5,7 +5,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ClawRig } from '#src/claw/claw-rig'
 import { CLAW_MAX_SPEED, CLAW_REST_HEIGHT, SWAY_MAX_OFFSET } from '#src/claw/constants'
 import { pickFumbleShare } from '#src/claw/utils'
-import { CART_SIZE, FIELD_CENTER, FUMBLE_START_CLEARANCE, GRID_SIZE, TRAY_CENTER, TRAY_ORIGIN, TRAY_SIZE } from '#src/constants'
+import {
+  CART_SIZE,
+  FIELD_CENTER,
+  FUMBLE_START_CLEARANCE,
+  GRID_SIZE,
+  TRAY_CENTER,
+  TRAY_ORIGIN,
+  TRAY_SIZE,
+} from '#src/constants'
 import type { ClawDrop, GroundPoint, WorldPoint } from '#src/types'
 import { createRandom } from '@pixi-demos/core/random'
 
@@ -74,7 +82,7 @@ const finish = async (rig: ClawRig, motion: Promise<void>, direction = STILL): P
 
 /** Лежит ли точка пола над лотком. */
 const isOverTray = ({ x, y }: GroundPoint): boolean =>
-  x >= TRAY_ORIGIN.x && x <= TRAY_ORIGIN.x + TRAY_SIZE && y >= TRAY_ORIGIN.y && y <= TRAY_ORIGIN.y + TRAY_SIZE
+  x >= TRAY_ORIGIN.x && x <= TRAY_ORIGIN.x + TRAY_SIZE.x && y >= TRAY_ORIGIN.y && y <= TRAY_ORIGIN.y + TRAY_SIZE.y
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -127,11 +135,11 @@ describe('клешня: ход по вводу игрока', () => {
 })
 
 describe('клешня: качание на тросе', () => {
-  /** Клешня у ближней стенки: впереди полный ход через поле. */
+  /** Клешня у ближней стенки с местом на отклонение к ней: впереди полный ход через поле. */
   const createRigAtWall = async (): Promise<ClawRig> => {
     const rig = new ClawRig()
 
-    await finish(rig, rig.moveTo({ x: CART_SIZE / 2, y: FIELD_CENTER.y }))
+    await finish(rig, rig.moveTo({ x: CART_SIZE / 2 + SWAY_MAX_OFFSET, y: FIELD_CENTER.y }))
     drive(rig, STILL, SETTLE_FRAMES)
 
     return rig
@@ -215,6 +223,20 @@ describe('клешня: качание на тросе', () => {
 
     expect(peak).toBeLessThanOrEqual(SWAY_MAX_OFFSET)
   })
+
+  it('не выводит клешню за стенку куба, когда каретка с разгона упирается в стенку', () => {
+    const rig = new ClawRig()
+    let farthest = 0
+
+    for (let frame = 0; frame < 180; frame++) {
+      drive(rig, frame < 90 ? FORWARD : STILL, 1)
+      farthest = Math.max(farthest, rig.getGripPoint().x)
+    }
+
+    expect(rig.getCartPoint().x).toBe(GRID_SIZE - CART_SIZE / 2)
+    expect(farthest).toBeLessThanOrEqual(GRID_SIZE - CART_SIZE / 2)
+    expect(getSwing(rig)).toEqual({ x: 0, y: 0 })
+  })
 })
 
 describe('клешня: движения фаз', () => {
@@ -281,7 +303,7 @@ describe('клешня: потеря игрушки на ходу', () => {
     const rig = new ClawRig()
     const drops: { grip: WorldPoint; current: WorldPoint }[] = []
 
-    await finish(rig, rig.descend(1))
+    await finish(rig, rig.descend(2))
 
     const slip: ClawDrop = { share: 0.3, onDrop: (grip) => drops.push({ grip, current: rig.getGripPoint() }) }
 
@@ -289,7 +311,7 @@ describe('клешня: потеря игрушки на ходу', () => {
 
     expect(drops).toHaveLength(1)
     expect(drops[0].grip).toEqual(drops[0].current)
-    expect(drops[0].grip.z).toBeCloseTo(1 + (CLAW_REST_HEIGHT - 1) * 0.3, 12)
+    expect(drops[0].grip.z).toBeCloseTo(2 + (CLAW_REST_HEIGHT - 2) * 0.3, 12)
   })
 
   it.each([false, true])('роняет игрушку на заданной доле пути каретки; уменьшенное движение: %s', async (reduced) => {
@@ -310,6 +332,20 @@ describe('клешня: потеря игрушки на ходу', () => {
     expect(drops[0].grip).toEqual(drops[0].current)
     expect(drops[0].cart.x).toBeCloseTo(from.x + (target.x - from.x) * 0.31, 12)
     expect(drops[0].cart.y).toBeCloseTo(from.y + (target.y - from.y) * 0.31, 12)
+  })
+
+  it('остаётся сжатой после потери игрушки на ходу и разжимается только по команде над лотком', async () => {
+    const rig = new ClawRig()
+    const closed: boolean[] = []
+
+    await finish(rig, rig.grab(new AbortController().signal))
+    await finish(rig, rig.ascend({ share: 0.5, onDrop: () => closed.push(rig.isClosed) }))
+    await finish(rig, rig.carryTo(TRAY_CENTER, { share: 0.5, onDrop: () => closed.push(rig.isClosed) }))
+    closed.push(rig.isClosed)
+    rig.open()
+    closed.push(rig.isClosed)
+
+    expect(closed).toEqual([true, true, true, false])
   })
 
   it('роняет игрушку над кубом: дальше порога от места захвата и до входа в лоток', () => {

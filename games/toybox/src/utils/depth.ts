@@ -1,9 +1,9 @@
-import { DEPTH_OVERLAP_TOLERANCE, TOY_INSET } from '#src/constants'
-import type { DepthItem, PlaneVector, ScreenPoint, ShapeKey, WorldPoint } from '#src/types'
+import { CLAW_HUB_HALF_WIDTH, DEPTH_OVERLAP_TOLERANCE, TOY_INSET } from '#src/constants'
+import type { DepthItem, PlaneVector, ScreenPoint, ToyKey, WorldPoint } from '#src/types'
 
 import { getAxes, getBounds, getConvexHull, getSeparation, projectPolygon } from './geometry'
 import { getDepthOrder, getViewRay, worldToScreen } from './projection'
-import { getPrismOutline, getSection, getVariant, placeSection, toPlane } from './shapes'
+import { getContactSection, getDepth, getPrismOutline, getSection, placeSection, toPlane } from './shapes'
 
 /** Допуск сравнения границ глубины: касание срезов не считается их пересечением. */
 const DEPTH_EPSILON = 1e-6
@@ -126,17 +126,17 @@ export const orderByDepth = (items: readonly DepthItem[], relate: (first: number
 }
 
 /** Предмет сортировки для игрушки: центр позы и крен. */
-export const getToyDepthItem = (shape: ShapeKey, variant: number, point: WorldPoint, angle: number): DepthItem => {
-  const { depth } = getVariant(shape, variant)
-  const section = getSection(shape, variant)
+export const getToyDepthItem = (toy: ToyKey, point: WorldPoint, angle: number): DepthItem => {
+  const depth = getDepth(toy)
   const center = worldToScreen(point)
   const half = (depth * TOY_INSET) / 2
 
+  // Соседние игрушки вдавлены друг в друга: прямая между ними проходит по сечениям касания, силуэт — по рисунку
   return createItem(
     point.x - half,
     point.x + half,
-    toPlane(placeSection(section, { y: point.y, z: point.z, angle })),
-    getPrismOutline(section, depth, angle).map(({ x, y }) => ({ x: x + center.x, y: y + center.y })),
+    toPlane(placeSection(getContactSection(toy), { y: point.y, z: point.z, angle })),
+    getPrismOutline(getSection(toy), depth, angle).map(({ x, y }) => ({ x: x + center.x, y: y + center.y })),
     getDepthOrder(point)
   )
 }
@@ -158,21 +158,26 @@ export const getPlaneDepthItem = (points: readonly WorldPoint[]): DepthItem => {
   )
 }
 
-/** Предмет сортировки для точки мира: клешня. `radius` — полусторона на экране, `sectionRadius` — в клетках. */
-export const getPointDepthItem = (point: WorldPoint, radius: number, sectionRadius: number): DepthItem => {
-  const center = worldToScreen(point)
-  const square = (cx: number, cy: number, half: number): PlaneVector[] => [
-    { x: cx - half, y: cy - half },
-    { x: cx + half, y: cy - half },
-    { x: cx + half, y: cy + half },
-    { x: cx - half, y: cy + half },
+/**
+ * Предмет сортировки для клешни: сечение — квадрат корпуса над точкой захвата, поэтому игрушку под собой клешня
+ * закрывает; силуэт — рамка её рисунка на экране. Игрушка в захвате рисуется внутри сборки клешни, и предмет
+ * охватывает её `held`: диапазон глубины, сечение и силуэт сборки — объединение клешни и игрушки.
+ */
+export const getClawDepthItem = (grip: WorldPoint, outline: readonly ScreenPoint[], held?: DepthItem): DepthItem => {
+  const hub = [
+    { x: grip.y - CLAW_HUB_HALF_WIDTH, y: grip.z },
+    { x: grip.y + CLAW_HUB_HALF_WIDTH, y: grip.z },
+    { x: grip.y + CLAW_HUB_HALF_WIDTH, y: grip.z + 2 * CLAW_HUB_HALF_WIDTH },
+    { x: grip.y - CLAW_HUB_HALF_WIDTH, y: grip.z + 2 * CLAW_HUB_HALF_WIDTH },
   ]
 
+  if (!held) return createItem(grip.x, grip.x, hub, outline, getDepthOrder(grip))
+
   return createItem(
-    point.x,
-    point.x,
-    square(point.y, point.z, sectionRadius),
-    square(center.x, center.y, radius),
-    getDepthOrder(point)
+    Math.min(grip.x, held.near),
+    Math.max(grip.x, held.far),
+    getConvexHull([...hub, ...held.section]),
+    getConvexHull([...outline, ...held.outline]),
+    getDepthOrder(grip)
   )
 }
